@@ -1,9 +1,16 @@
 import { FastifyPluginAsync } from 'fastify'
 
 const root: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
-  fastify.get('/', async function (request, reply) {
-    return { root: true }
-  })
+    fastify.get('/', async function () {
+        return {
+            success: true,
+            data: {
+                service: 'atelie-guadalupe-backend',
+                status: 'ok',
+                timestamp: fastify.getNow()
+            }
+        }
+    })
 }
 
 export default root

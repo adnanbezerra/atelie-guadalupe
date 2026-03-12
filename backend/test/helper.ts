@@ -12,6 +12,9 @@ const AppPath = path.join(__dirname, "..", "src", "app.ts");
 // Fill in this config with all the configurations
 // needed for testing the application
 function config() {
+    process.env.DATABASE_URL = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/atelie_guadalupe";
+    process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-secret";
+
     return {
         skipOverride: true, // Register our application with fastify-plugin
     };
