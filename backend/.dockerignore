@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.git
+.gitignore
+.DS_Store
+.env
+.env.*
+logs
+*.log
+test
+docs
+PLANEJAMENTO_BACKEND.md
+prompt.md
