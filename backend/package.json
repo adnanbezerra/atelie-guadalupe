@@ -14,7 +14,8 @@
         "dev": "pnpm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"pnpm run watch:ts\" \"pnpm run dev:start\"",
         "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
         "prisma:generate": "pnpm exec prisma generate",
-        "prisma:migrate:dev": "pnpm exec prisma migrate dev"
+        "prisma:migrate:dev": "pnpm exec prisma migrate dev",
+        "prisma:seed": "ts-node prisma/seed.ts"
     },
     "keywords": [],
     "author": "",
