@@ -8,6 +8,7 @@ Backend em Fastify para ecommerce de cosmeticos naturais, imagens catolicas e te
 - TypeScript
 - Prisma 7
 - PostgreSQL
+- MongoDB
 - Zod
 - JWT
 - bcrypt
@@ -19,6 +20,7 @@ Backend em Fastify para ecommerce de cosmeticos naturais, imagens catolicas e te
 - produtos
 - carrinho
 - pedidos
+- storage de imagens de produtos em MongoDB/GridFS
 - plugins base de JWT, Prisma, rate limit, CORS e tratamento de erro
 
 ## Scripts
@@ -44,6 +46,9 @@ JWT_EXPIRES_IN=1d
 RATE_LIMIT_MAX=120
 RATE_LIMIT_TIME_WINDOW=1 minute
 CORS_ORIGIN=http://localhost:3000
+MONGODB_URL=mongodb://localhost:27017
+MONGODB_DB_NAME=atelie_guadalupe_media
+MEDIA_BASE_URL=http://localhost:3000
 SEED_ADMIN_EMAIL=admin@atelie.com
 SEED_ADMIN_PASSWORD=Senha@123
 SEED_ADMIN_DOCUMENT=00000000000
@@ -56,6 +61,7 @@ SEED_ADMIN_NAME=Admin Inicial
 - As migrations reais ainda nao foram executadas.
 - O seed foi preparado, mas depende de um banco acessivel para ser rodado.
 - O client do Prisma e gerado em `src/generated/prisma`.
+- As imagens de produtos sao gravadas no MongoDB GridFS e o Postgres persiste apenas a URL resultante.
 
 ## Fluxo recomendado quando for ligar o banco
 

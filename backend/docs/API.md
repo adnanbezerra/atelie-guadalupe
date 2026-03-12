@@ -57,6 +57,24 @@ Erro:
 - `PATCH /products/:uuid`
 - `DELETE /products/:uuid`
 
+Payload de criacao/atualizacao de imagem:
+
+```json
+{
+    "image": {
+        "filename": "sabonete.jpg",
+        "contentType": "image/jpeg",
+        "base64": "<base64>"
+    }
+}
+```
+
+O backend envia a imagem para o MongoDB GridFS e salva no Postgres apenas a URL final em `imageUrl`.
+
+### Media
+
+- `GET /media/images/:id`
+
 ### Cart
 
 - `GET /cart`

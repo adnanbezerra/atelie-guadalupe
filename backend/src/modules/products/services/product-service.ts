@@ -1,5 +1,6 @@
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
+import { ImageStorage, UploadImageInput } from "../../../core/storage/image-storage";
 import { slugify } from "../../../core/utils/slug";
 import { createUuid } from "../../../core/utils/uuid";
 import { ProductRepository } from "../repositories/product-repository";
@@ -8,7 +9,7 @@ import { presentProduct } from "./product-presenter";
 type CreateProductInput = {
     name: string;
     priceInCents: number;
-    imageUrl: string;
+    image: UploadImageInput;
     stock: number;
     shortDescription: string;
     longDescription: string;
@@ -26,7 +27,10 @@ type ListProductsInput = {
 };
 
 export class ProductService {
-    public constructor(private readonly productRepository: ProductRepository) {}
+    public constructor(
+        private readonly productRepository: ProductRepository,
+        private readonly imageStorage: ImageStorage
+    ) {}
 
     public async list(query: ListProductsInput): Promise<Either<AppError, Record<string, unknown>>> {
         const result = await this.productRepository.listActive(query);
@@ -60,12 +64,14 @@ export class ProductService {
             return left(AppError.conflict("Ja existe um produto com este nome"));
         }
 
+        const imageUrl = await this.imageStorage.uploadProductImage(input.image);
+
         const product = await this.productRepository.create({
             uuid: createUuid(),
             slug,
             name: input.name.trim(),
             priceInCents: input.priceInCents,
-            imageUrl: input.imageUrl,
+            imageUrl,
             stock: input.stock,
             shortDescription: input.shortDescription.trim(),
             longDescription: input.longDescription.trim()
@@ -82,8 +88,9 @@ export class ProductService {
             return left(AppError.notFound("Produto nao encontrado"));
         }
 
+        const { image, ...restInput } = input;
         const data = {
-            ...input,
+            ...restInput,
             ...(input.name ? { slug: slugify(input.name) } : {})
         };
 
@@ -94,7 +101,16 @@ export class ProductService {
             }
         }
 
-        const product = await this.productRepository.updateByUuid(productUuid, data);
+        let imageUrl: string | undefined;
+        if (image) {
+            imageUrl = await this.imageStorage.uploadProductImage(image);
+            await this.imageStorage.deleteProductImageByUrl(existingProduct.imageUrl);
+        }
+
+        const product = await this.productRepository.updateByUuid(productUuid, {
+            ...data,
+            ...(imageUrl ? { imageUrl } : {})
+        });
 
         return right({
             product: presentProduct(product)
@@ -107,6 +123,7 @@ export class ProductService {
             return left(AppError.notFound("Produto nao encontrado"));
         }
 
+        await this.imageStorage.deleteProductImageByUrl(existingProduct.imageUrl);
         await this.productRepository.updateByUuid(productUuid, {
             isActive: false
         });

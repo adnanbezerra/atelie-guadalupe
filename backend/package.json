@@ -33,6 +33,7 @@
         "fastify": "^5.0.0",
         "fastify-cli": "^7.4.1",
         "fastify-plugin": "^5.0.0",
+        "mongodb": "^7.1.0",
         "pg": "^8.20.0",
         "prisma": "^7.5.0",
         "uuid": "^13.0.0",

@@ -5,7 +5,7 @@ import { ProductService } from "../services/product-service";
 
 const productRoutes: FastifyPluginAsync = async (fastify) => {
     const productRepository = new ProductRepository(fastify.prisma);
-    const productService = new ProductService(productRepository);
+    const productService = new ProductService(productRepository, fastify.imageStorage);
     const controller = new ProductController(fastify, productService);
 
     fastify.get("/", controller.list);
