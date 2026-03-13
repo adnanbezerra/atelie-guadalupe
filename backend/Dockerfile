@@ -18,8 +18,6 @@ FROM deps AS build
 
 COPY src ./src
 
-ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/atelie_guadalupe"
-
 RUN pnpm exec prisma generate
 RUN pnpm run build:ts
 
