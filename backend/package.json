@@ -10,6 +10,10 @@
         "test": "pnpm run build:ts && tsc -p test/tsconfig.json && c8 node --test -r ts-node/register \"test/**/*.ts\"",
         "start": "pnpm run build:ts && fastify start -l info dist/app.js",
         "build:ts": "tsc",
+        "lint": "pnpm exec eslint .",
+        "lint:fix": "pnpm exec eslint . --fix",
+        "format": "pnpm exec prettier . --write",
+        "format:check": "pnpm exec prettier . --check",
         "watch:ts": "tsc -w",
         "dev": "pnpm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"pnpm run watch:ts\" \"pnpm run dev:start\"",
         "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
@@ -40,12 +44,18 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@types/bcrypt": "^6.0.0",
         "@types/node": "^24.0.8",
         "c8": "^10.1.2",
         "concurrently": "^9.0.0",
+        "eslint": "^10.0.3",
+        "eslint-config-prettier": "^10.1.8",
         "fastify-tsconfig": "^3.0.0",
+        "globals": "^17.4.0",
+        "prettier": "^3.8.1",
         "ts-node": "^10.4.0",
-        "typescript": "~5.9.2"
+        "typescript": "~5.9.2",
+        "typescript-eslint": "^8.57.0"
     }
 }

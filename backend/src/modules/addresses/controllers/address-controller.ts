@@ -1,6 +1,10 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { sendEither } from "../../../core/http/send-either";
-import { addressUuidParamSchema, createAddressSchema, updateAddressSchema } from "../schemas/address-schema";
+import {
+    addressUuidParamSchema,
+    createAddressSchema,
+    updateAddressSchema
+} from "../schemas/address-schema";
 import { AddressService } from "../services/address-service";
 
 export class AddressController {
@@ -23,13 +27,20 @@ export class AddressController {
     public updateMyAddress = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(addressUuidParamSchema, request.params);
         const input = this.fastify.validateSchema(updateAddressSchema, request.body);
-        const result = await this.addressService.updateMyAddress(request.currentUser!.sub, params.uuid, input);
+        const result = await this.addressService.updateMyAddress(
+            request.currentUser!.sub,
+            params.uuid,
+            input
+        );
         return sendEither(reply, result);
     };
 
     public deleteMyAddress = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(addressUuidParamSchema, request.params);
-        const result = await this.addressService.deleteMyAddress(request.currentUser!.sub, params.uuid);
+        const result = await this.addressService.deleteMyAddress(
+            request.currentUser!.sub,
+            params.uuid
+        );
         return sendEither(reply, result);
     };
 }

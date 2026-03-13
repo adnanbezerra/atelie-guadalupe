@@ -32,11 +32,15 @@ export class ProductService {
         private readonly imageStorage: ImageStorage
     ) {}
 
-    public async list(query: ListProductsInput): Promise<Either<AppError, Record<string, unknown>>> {
+    public async list(
+        query: ListProductsInput
+    ): Promise<Either<AppError, Record<string, unknown>>> {
         const result = await this.productRepository.listActive(query);
 
         return right({
-            items: result.items.map((item: Parameters<typeof presentProduct>[0]) => presentProduct(item)),
+            items: result.items.map((item: Parameters<typeof presentProduct>[0]) =>
+                presentProduct(item)
+            ),
             pagination: {
                 page: query.page,
                 pageSize: query.pageSize,
@@ -46,7 +50,9 @@ export class ProductService {
         });
     }
 
-    public async detail(productUuid: string): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
+    public async detail(
+        productUuid: string
+    ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
         const product = await this.productRepository.findByUuid(productUuid);
         if (!product || !product.isActive) {
             return left(AppError.notFound("Produto nao encontrado"));
@@ -57,7 +63,9 @@ export class ProductService {
         });
     }
 
-    public async create(input: CreateProductInput): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
+    public async create(
+        input: CreateProductInput
+    ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
         const slug = slugify(input.name);
         const existingProduct = await this.productRepository.findBySlug(slug);
         if (existingProduct) {
@@ -82,7 +90,10 @@ export class ProductService {
         });
     }
 
-    public async update(productUuid: string, input: UpdateProductInput): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
+    public async update(
+        productUuid: string,
+        input: UpdateProductInput
+    ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
         const existingProduct = await this.productRepository.findByUuid(productUuid);
         if (!existingProduct) {
             return left(AppError.notFound("Produto nao encontrado"));

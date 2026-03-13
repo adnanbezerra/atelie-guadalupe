@@ -1,7 +1,12 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { sendEither } from "../../../core/http/send-either";
 import { RoleName } from "../../../generated/prisma/enums";
-import { createManagedUserSchema, updateManagedUserSchema, updateMeSchema, uuidParamSchema } from "../schemas/user-schema";
+import {
+    createManagedUserSchema,
+    updateManagedUserSchema,
+    updateMeSchema,
+    uuidParamSchema
+} from "../schemas/user-schema";
 import { UserService } from "../services/user-service";
 
 export class UserController {

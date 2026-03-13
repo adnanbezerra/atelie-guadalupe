@@ -1,7 +1,11 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { OrderStatus } from "../../../generated/prisma/enums";
 import { sendEither } from "../../../core/http/send-either";
-import { createOrderSchema, orderUuidParamSchema, updateOrderStatusSchema } from "../schemas/order-schema";
+import {
+    createOrderSchema,
+    orderUuidParamSchema,
+    updateOrderStatusSchema
+} from "../schemas/order-schema";
 import { OrderService } from "../services/order-service";
 
 export class OrderController {
@@ -26,23 +30,32 @@ export class OrderController {
 
     public detail = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(orderUuidParamSchema, request.params);
-        const result = await this.orderService.detail({
-            sub: request.currentUser!.sub,
-            role: request.currentUser!.role
-        }, params.uuid);
+        const result = await this.orderService.detail(
+            {
+                sub: request.currentUser!.sub,
+                role: request.currentUser!.role
+            },
+            params.uuid
+        );
         return sendEither(reply, result);
     };
 
     public updateStatus = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(orderUuidParamSchema, request.params);
         const input = this.fastify.validateSchema(updateOrderStatusSchema, request.body);
-        const result = await this.orderService.updateStatus(params.uuid, input.status as OrderStatus);
+        const result = await this.orderService.updateStatus(
+            params.uuid,
+            input.status as OrderStatus
+        );
         return sendEither(reply, result);
     };
 
     public cancel = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(orderUuidParamSchema, request.params);
-        const result = await this.orderService.cancelOwnOrder(request.currentUser!.sub, params.uuid);
+        const result = await this.orderService.cancelOwnOrder(
+            request.currentUser!.sub,
+            params.uuid
+        );
         return sendEither(reply, result);
     };
 }

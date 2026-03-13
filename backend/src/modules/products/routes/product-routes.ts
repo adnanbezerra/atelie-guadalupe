@@ -11,17 +11,29 @@ const productRoutes: FastifyPluginAsync = async (fastify) => {
     fastify.get("/", controller.list);
     fastify.get("/:uuid", controller.detail);
 
-    fastify.post("/", {
-        preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
-    }, controller.create);
+    fastify.post(
+        "/",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
+        },
+        controller.create
+    );
 
-    fastify.patch("/:uuid", {
-        preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
-    }, controller.update);
+    fastify.patch(
+        "/:uuid",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
+        },
+        controller.update
+    );
 
-    fastify.delete("/:uuid", {
-        preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
-    }, controller.delete);
+    fastify.delete(
+        "/:uuid",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
+        },
+        controller.delete
+    );
 };
 
 export default productRoutes;

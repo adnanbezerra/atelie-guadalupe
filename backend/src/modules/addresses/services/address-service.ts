@@ -30,7 +30,9 @@ export class AddressService {
         private readonly addressRepository: AddressRepository
     ) {}
 
-    public async listMyAddresses(userUuid: string): Promise<Either<AppError, { addresses: Array<ReturnType<typeof presentAddress>> }>> {
+    public async listMyAddresses(
+        userUuid: string
+    ): Promise<Either<AppError, { addresses: Array<ReturnType<typeof presentAddress>> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -38,11 +40,16 @@ export class AddressService {
 
         const addresses = await this.addressRepository.listByUserId(user.id);
         return right({
-            addresses: addresses.map((address: Parameters<typeof presentAddress>[0]) => presentAddress(address))
+            addresses: addresses.map((address: Parameters<typeof presentAddress>[0]) =>
+                presentAddress(address)
+            )
         });
     }
 
-    public async createMyAddress(userUuid: string, input: AddressInput): Promise<Either<AppError, { address: ReturnType<typeof presentAddress> }>> {
+    public async createMyAddress(
+        userUuid: string,
+        input: AddressInput
+    ): Promise<Either<AppError, { address: ReturnType<typeof presentAddress> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -75,7 +82,11 @@ export class AddressService {
         });
     }
 
-    public async updateMyAddress(userUuid: string, addressUuid: string, input: AddressUpdateInput): Promise<Either<AppError, { address: ReturnType<typeof presentAddress> }>> {
+    public async updateMyAddress(
+        userUuid: string,
+        addressUuid: string,
+        input: AddressUpdateInput
+    ): Promise<Either<AppError, { address: ReturnType<typeof presentAddress> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -100,7 +111,10 @@ export class AddressService {
         });
     }
 
-    public async deleteMyAddress(userUuid: string, addressUuid: string): Promise<Either<AppError, { deleted: true }>> {
+    public async deleteMyAddress(
+        userUuid: string,
+        addressUuid: string
+    ): Promise<Either<AppError, { deleted: true }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));

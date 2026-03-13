@@ -1,6 +1,11 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { sendEither } from "../../../core/http/send-either";
-import { createProductSchema, listProductsQuerySchema, productUuidParamSchema, updateProductSchema } from "../schemas/product-schema";
+import {
+    createProductSchema,
+    listProductsQuerySchema,
+    productUuidParamSchema,
+    updateProductSchema
+} from "../schemas/product-schema";
 import { ProductService } from "../services/product-service";
 
 export class ProductController {

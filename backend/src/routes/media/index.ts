@@ -20,9 +20,12 @@ const mediaRoutePlugin: FastifyPluginAsync = async (fastify) => {
 
         const params = fastify.validateSchema(mediaImageParamSchema, request.params);
 
-        const files = await fastify.mongoDb!.collection("product-images.files").find({
-            _id: fastify.mongoObjectId(params.id)
-        }).toArray();
+        const files = await fastify
+            .mongoDb!.collection("product-images.files")
+            .find({
+                _id: fastify.mongoObjectId(params.id)
+            })
+            .toArray();
 
         if (files.length === 0) {
             return reply.status(404).send({

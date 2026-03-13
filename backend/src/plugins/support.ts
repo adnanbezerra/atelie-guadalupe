@@ -1,13 +1,12 @@
 import fp from "fastify-plugin";
+import { FastifyPluginOptions } from "fastify";
 import { ZodError } from "zod";
 import { AppError } from "../core/errors/app-error";
 import { formatZodIssues } from "../core/http/validation";
 
-export interface SupportPluginOptions {
-    // Shared support plugin options live here when needed.
-}
+export type SupportPluginOptions = FastifyPluginOptions;
 
-export default fp<SupportPluginOptions>(async (fastify, opts) => {
+export default fp<SupportPluginOptions>(async (fastify) => {
     fastify.decorate("getNow", function () {
         return new Date().toISOString();
     });

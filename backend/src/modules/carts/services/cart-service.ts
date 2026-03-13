@@ -22,7 +22,9 @@ export class CartService {
         private readonly cartRepository: CartRepository
     ) {}
 
-    public async getMyCart(userUuid: string): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
+    public async getMyCart(
+        userUuid: string
+    ): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -35,7 +37,10 @@ export class CartService {
         });
     }
 
-    public async addItem(userUuid: string, input: AddCartItemInput): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
+    public async addItem(
+        userUuid: string,
+        input: AddCartItemInput
+    ): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -51,12 +56,17 @@ export class CartService {
         }
 
         const cart = await this.getOrCreateCart(user.id);
-        const existingItem = await this.cartRepository.findItemByCartAndProduct(cart.id, product.id);
+        const existingItem = await this.cartRepository.findItemByCartAndProduct(
+            cart.id,
+            product.id
+        );
 
         if (existingItem) {
             const nextQuantity = existingItem.quantity + input.quantity;
             if (product.stock < nextQuantity) {
-                return left(AppError.business("Quantidade solicitada maior que o estoque disponivel"));
+                return left(
+                    AppError.business("Quantidade solicitada maior que o estoque disponivel")
+                );
             }
 
             await this.cartRepository.updateItemByUuid(existingItem.uuid, {
@@ -82,7 +92,11 @@ export class CartService {
         });
     }
 
-    public async updateItem(userUuid: string, cartItemUuid: string, input: UpdateCartItemInput): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
+    public async updateItem(
+        userUuid: string,
+        cartItemUuid: string,
+        input: UpdateCartItemInput
+    ): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -116,7 +130,10 @@ export class CartService {
         });
     }
 
-    public async removeItem(userUuid: string, cartItemUuid: string): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
+    public async removeItem(
+        userUuid: string,
+        cartItemUuid: string
+    ): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -138,7 +155,9 @@ export class CartService {
         });
     }
 
-    public async clear(userUuid: string): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
+    public async clear(
+        userUuid: string
+    ): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));

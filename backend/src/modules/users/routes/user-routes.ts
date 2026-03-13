@@ -16,37 +16,69 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     const userController = new UserController(fastify, userService);
     const addressController = new AddressController(fastify, addressService);
 
-    fastify.get("/me", {
-        preHandler: [fastify.authenticate]
-    }, userController.getMe);
+    fastify.get(
+        "/me",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        userController.getMe
+    );
 
-    fastify.patch("/me", {
-        preHandler: [fastify.authenticate]
-    }, userController.updateMe);
+    fastify.patch(
+        "/me",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        userController.updateMe
+    );
 
-    fastify.post("/", {
-        preHandler: [fastify.authenticate, fastify.authorize(["ADMIN"])]
-    }, userController.createManagedUser);
+    fastify.post(
+        "/",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN"])]
+        },
+        userController.createManagedUser
+    );
 
-    fastify.patch("/:uuid", {
-        preHandler: [fastify.authenticate, fastify.authorize(["ADMIN"])]
-    }, userController.updateManagedUser);
+    fastify.patch(
+        "/:uuid",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN"])]
+        },
+        userController.updateManagedUser
+    );
 
-    fastify.get("/me/addresses", {
-        preHandler: [fastify.authenticate]
-    }, addressController.listMyAddresses);
+    fastify.get(
+        "/me/addresses",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        addressController.listMyAddresses
+    );
 
-    fastify.post("/me/addresses", {
-        preHandler: [fastify.authenticate]
-    }, addressController.createMyAddress);
+    fastify.post(
+        "/me/addresses",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        addressController.createMyAddress
+    );
 
-    fastify.patch("/me/addresses/:uuid", {
-        preHandler: [fastify.authenticate]
-    }, addressController.updateMyAddress);
+    fastify.patch(
+        "/me/addresses/:uuid",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        addressController.updateMyAddress
+    );
 
-    fastify.delete("/me/addresses/:uuid", {
-        preHandler: [fastify.authenticate]
-    }, addressController.deleteMyAddress);
+    fastify.delete(
+        "/me/addresses/:uuid",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        addressController.deleteMyAddress
+    );
 };
 
 export default userRoutes;

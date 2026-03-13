@@ -177,10 +177,13 @@ test("order service restricts detail to order owner for USER role", async () => 
         } as never
     );
 
-    const result = await service.detail({
-        sub: "user-1",
-        role: RoleName.USER
-    }, "order-1");
+    const result = await service.detail(
+        {
+            sub: "user-1",
+            role: RoleName.USER
+        },
+        "order-1"
+    );
 
     assert.equal(result.success, false);
 });

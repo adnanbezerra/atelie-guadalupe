@@ -15,16 +15,18 @@ export const createProductSchema = z.object({
     longDescription: z.string().trim().min(20).max(5000)
 });
 
-export const updateProductSchema = z.object({
-    name: z.string().trim().min(3).max(160).optional(),
-    priceInCents: z.int().positive().optional(),
-    image: imageUploadSchema.optional(),
-    stock: z.int().min(0).optional(),
-    shortDescription: z.string().trim().min(10).max(255).optional(),
-    longDescription: z.string().trim().min(20).max(5000).optional()
-}).refine((data) => Object.keys(data).length > 0, {
-    message: "Informe ao menos um campo para atualizacao"
-});
+export const updateProductSchema = z
+    .object({
+        name: z.string().trim().min(3).max(160).optional(),
+        priceInCents: z.int().positive().optional(),
+        image: imageUploadSchema.optional(),
+        stock: z.int().min(0).optional(),
+        shortDescription: z.string().trim().min(10).max(255).optional(),
+        longDescription: z.string().trim().min(20).max(5000).optional()
+    })
+    .refine((data) => Object.keys(data).length > 0, {
+        message: "Informe ao menos um campo para atualizacao"
+    });
 
 export const productUuidParamSchema = z.object({
     uuid: z.uuid()

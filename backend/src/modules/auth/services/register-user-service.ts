@@ -27,7 +27,9 @@ export class RegisterUserService {
         private readonly userRepository: UserRepository
     ) {}
 
-    public async execute(input: RegisterInput): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
+    public async execute(
+        input: RegisterInput
+    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
         const email = normalizeEmail(input.email);
         const document = normalizeDocument(input.document);
 
@@ -66,7 +68,9 @@ export class RegisterUserService {
 export class LoginService {
     public constructor(private readonly userRepository: UserRepository) {}
 
-    public async execute(input: LoginInput): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
+    public async execute(
+        input: LoginInput
+    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
         const email = normalizeEmail(input.email);
         const user = await this.userRepository.findByEmail(email);
 

@@ -6,7 +6,8 @@ import { ImageStorage } from "../core/storage/image-storage";
 export default fp(async (fastify) => {
     const mongoUrl = process.env.MONGODB_URL;
     const dbName = process.env.MONGODB_DB_NAME;
-    const mediaBaseUrl = process.env.MEDIA_BASE_URL ?? `http://localhost:${process.env.PORT ?? "3000"}`;
+    const mediaBaseUrl =
+        process.env.MEDIA_BASE_URL ?? `http://localhost:${process.env.PORT ?? "3000"}`;
 
     let mongoClient: MongoClient | null = null;
     let mongoDb: Db | null = null;
@@ -28,7 +29,10 @@ export default fp(async (fastify) => {
     fastify.decorate("mongoClient", mongoClient);
     fastify.decorate("mongoDb", mongoDb);
     fastify.decorate("mongoBucket", mongoBucket);
-    fastify.decorate("imageStorage", new MongoImageStorage(mongoBucket, mediaBaseUrl) as ImageStorage);
+    fastify.decorate(
+        "imageStorage",
+        new MongoImageStorage(mongoBucket, mediaBaseUrl) as ImageStorage
+    );
     fastify.decorate("mongoObjectId", function (value: string) {
         return new ObjectId(value);
     });

@@ -42,7 +42,10 @@ export class OrderService {
         private readonly orderRepository: OrderRepository
     ) {}
 
-    public async createFromCart(currentUserUuid: string, input: CreateOrderInput): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
+    public async createFromCart(
+        currentUserUuid: string,
+        input: CreateOrderInput
+    ): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
         const user = await this.userRepository.findByUuid(currentUserUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -72,7 +75,10 @@ export class OrderService {
             }
         }
 
-        const subtotalInCents = cart.items.reduce((total, item) => total + (item.product.priceInCents * item.quantity), 0);
+        const subtotalInCents = cart.items.reduce(
+            (total, item) => total + item.product.priceInCents * item.quantity,
+            0
+        );
         const shippingInCents = 0;
         const discountInCents = 0;
         const totalInCents = subtotalInCents + shippingInCents - discountInCents;
@@ -110,22 +116,28 @@ export class OrderService {
         });
     }
 
-    public async list(currentUser: CurrentUser): Promise<Either<AppError, { orders: Array<ReturnType<typeof presentOrder>> }>> {
+    public async list(
+        currentUser: CurrentUser
+    ): Promise<Either<AppError, { orders: Array<ReturnType<typeof presentOrder>> }>> {
         const user = await this.userRepository.findByUuid(currentUser.sub);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
         }
 
-        const orders = currentUser.role === RoleName.USER
-            ? await this.orderRepository.listByUserId(user.id)
-            : await this.orderRepository.listAll();
+        const orders =
+            currentUser.role === RoleName.USER
+                ? await this.orderRepository.listByUserId(user.id)
+                : await this.orderRepository.listAll();
 
         return right({
             orders: orders.map((order) => presentOrder(order))
         });
     }
 
-    public async detail(currentUser: CurrentUser, orderUuid: string): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
+    public async detail(
+        currentUser: CurrentUser,
+        orderUuid: string
+    ): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
         const user = await this.userRepository.findByUuid(currentUser.sub);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -145,7 +157,10 @@ export class OrderService {
         });
     }
 
-    public async updateStatus(orderUuid: string, nextStatus: OrderStatus): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
+    public async updateStatus(
+        orderUuid: string,
+        nextStatus: OrderStatus
+    ): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
         const order = await this.orderRepository.findByUuid(orderUuid);
         if (!order) {
             return left(AppError.notFound("Pedido nao encontrado"));
@@ -163,7 +178,10 @@ export class OrderService {
         });
     }
 
-    public async cancelOwnOrder(currentUserUuid: string, orderUuid: string): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
+    public async cancelOwnOrder(
+        currentUserUuid: string,
+        orderUuid: string
+    ): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
         const user = await this.userRepository.findByUuid(currentUserUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -178,7 +196,10 @@ export class OrderService {
             return left(AppError.business("Pedido nao pode mais ser cancelado"));
         }
 
-        const updatedOrder = await this.orderRepository.updateStatus(orderUuid, OrderStatus.CANCELLED);
+        const updatedOrder = await this.orderRepository.updateStatus(
+            orderUuid,
+            OrderStatus.CANCELLED
+        );
 
         return right({
             order: presentOrder(updatedOrder)

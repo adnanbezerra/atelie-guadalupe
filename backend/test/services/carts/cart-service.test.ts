@@ -21,7 +21,11 @@ test("cart service creates cart on first read", async () => {
         })
     };
 
-    const service = new CartService(userRepository as never, productRepository as never, cartRepository as never);
+    const service = new CartService(
+        userRepository as never,
+        productRepository as never,
+        cartRepository as never
+    );
     const result = await service.getMyCart("user-1");
 
     assert.equal(result.success, true);
@@ -61,7 +65,11 @@ test("cart service blocks quantity above stock", async () => {
         findItemByCartAndProduct: async () => null
     };
 
-    const service = new CartService(userRepository as never, productRepository as never, cartRepository as never);
+    const service = new CartService(
+        userRepository as never,
+        productRepository as never,
+        cartRepository as never
+    );
     const result = await service.addItem("user-1", {
         productUuid: "product-1",
         quantity: 2
@@ -142,7 +150,11 @@ test("cart service increments quantity when product already exists in cart", asy
         }
     };
 
-    const service = new CartService(userRepository as never, productRepository as never, cartRepository as never);
+    const service = new CartService(
+        userRepository as never,
+        productRepository as never,
+        cartRepository as never
+    );
     const result = await service.addItem("user-1", {
         productUuid: "product-1",
         quantity: 2

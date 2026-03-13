@@ -1,6 +1,10 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { sendEither } from "../../../core/http/send-either";
-import { addCartItemSchema, cartItemUuidParamSchema, updateCartItemSchema } from "../schemas/cart-schema";
+import {
+    addCartItemSchema,
+    cartItemUuidParamSchema,
+    updateCartItemSchema
+} from "../schemas/cart-schema";
 import { CartService } from "../services/cart-service";
 
 export class CartController {
@@ -23,7 +27,11 @@ export class CartController {
     public updateItem = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(cartItemUuidParamSchema, request.params);
         const input = this.fastify.validateSchema(updateCartItemSchema, request.body);
-        const result = await this.cartService.updateItem(request.currentUser!.sub, params.uuid, input);
+        const result = await this.cartService.updateItem(
+            request.currentUser!.sub,
+            params.uuid,
+            input
+        );
         return sendEither(reply, result);
     };
 

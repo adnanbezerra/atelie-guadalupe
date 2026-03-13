@@ -2,11 +2,7 @@ import { ObjectId, GridFSBucket } from "mongodb";
 import { AppError } from "../errors/app-error";
 import { ImageStorage, UploadImageInput } from "./image-storage";
 
-const allowedContentTypes = new Set([
-    "image/jpeg",
-    "image/png",
-    "image/webp"
-]);
+const allowedContentTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export class MongoImageStorage implements ImageStorage {
     public constructor(

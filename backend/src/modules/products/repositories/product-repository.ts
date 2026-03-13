@@ -30,15 +30,21 @@ export class ProductRepository {
     public async listActive(query: ProductListQuery) {
         const where = {
             isActive: true,
-            ...(query.search ? { name: { contains: query.search, mode: "insensitive" as const } } : {}),
-            ...(typeof query.minPriceInCents === "number" ? { priceInCents: { gte: query.minPriceInCents } } : {}),
+            ...(query.search
+                ? { name: { contains: query.search, mode: "insensitive" as const } }
+                : {}),
+            ...(typeof query.minPriceInCents === "number"
+                ? { priceInCents: { gte: query.minPriceInCents } }
+                : {}),
             ...(typeof query.maxPriceInCents === "number"
                 ? {
-                    priceInCents: {
-                        ...(typeof query.minPriceInCents === "number" ? { gte: query.minPriceInCents } : {}),
-                        lte: query.maxPriceInCents
-                    }
-                }
+                      priceInCents: {
+                          ...(typeof query.minPriceInCents === "number"
+                              ? { gte: query.minPriceInCents }
+                              : {}),
+                          lte: query.maxPriceInCents
+                      }
+                  }
                 : {}),
             ...(query.inStock ? { stock: { gt: 0 } } : {})
         };

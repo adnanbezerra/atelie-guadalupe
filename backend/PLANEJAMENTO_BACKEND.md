@@ -170,7 +170,7 @@ src/
 Todos os services devem retornar algo como:
 
 ```ts
-type Either<L, R> = Left<L> | Right<R>
+type Either<L, R> = Left<L> | Right<R>;
 ```
 
 Exemplos:
@@ -1071,23 +1071,23 @@ Regras mínimas:
 
 ## 12.2 Matriz de acesso
 
-| Recurso | USER | SUBADMIN | ADMIN |
-|---|---|---|---|
-| Registrar conta pública | Sim | Sim | Sim |
-| Fazer login | Sim | Sim | Sim |
-| Editar próprio perfil | Sim | Sim | Sim |
-| Editar qualquer usuário | Não | Não | Sim |
-| Criar USER administrativamente | Não | Não | Sim |
-| Criar SUBADMIN | Não | Não | Sim |
-| Criar ADMIN | Não | Não | Sim |
-| Ler produtos | Sim | Sim | Sim |
-| Criar produto | Não | Sim | Sim |
-| Editar produto | Não | Sim | Sim |
-| Remover produto | Não | Sim | Sim |
-| Gerir próprio carrinho | Sim | Sim | Sim |
-| Criar pedido próprio | Sim | Sim | Sim |
-| Listar todos os pedidos | Não | Sim | Sim |
-| Alterar status de pedido | Não | Sim | Sim |
+| Recurso                        | USER | SUBADMIN | ADMIN |
+| ------------------------------ | ---- | -------- | ----- |
+| Registrar conta pública        | Sim  | Sim      | Sim   |
+| Fazer login                    | Sim  | Sim      | Sim   |
+| Editar próprio perfil          | Sim  | Sim      | Sim   |
+| Editar qualquer usuário        | Não  | Não      | Sim   |
+| Criar USER administrativamente | Não  | Não      | Sim   |
+| Criar SUBADMIN                 | Não  | Não      | Sim   |
+| Criar ADMIN                    | Não  | Não      | Sim   |
+| Ler produtos                   | Sim  | Sim      | Sim   |
+| Criar produto                  | Não  | Sim      | Sim   |
+| Editar produto                 | Não  | Sim      | Sim   |
+| Remover produto                | Não  | Sim      | Sim   |
+| Gerir próprio carrinho         | Sim  | Sim      | Sim   |
+| Criar pedido próprio           | Sim  | Sim      | Sim   |
+| Listar todos os pedidos        | Não  | Sim      | Sim   |
+| Alterar status de pedido       | Não  | Sim      | Sim   |
 
 ## 13. Estratégia de Rate Limit
 

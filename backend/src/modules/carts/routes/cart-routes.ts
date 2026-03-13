@@ -12,25 +12,45 @@ const cartRoutes: FastifyPluginAsync = async (fastify) => {
     const cartService = new CartService(userRepository, productRepository, cartRepository);
     const controller = new CartController(fastify, cartService);
 
-    fastify.get("/", {
-        preHandler: [fastify.authenticate]
-    }, controller.getMyCart);
+    fastify.get(
+        "/",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        controller.getMyCart
+    );
 
-    fastify.post("/items", {
-        preHandler: [fastify.authenticate]
-    }, controller.addItem);
+    fastify.post(
+        "/items",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        controller.addItem
+    );
 
-    fastify.patch("/items/:uuid", {
-        preHandler: [fastify.authenticate]
-    }, controller.updateItem);
+    fastify.patch(
+        "/items/:uuid",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        controller.updateItem
+    );
 
-    fastify.delete("/items/:uuid", {
-        preHandler: [fastify.authenticate]
-    }, controller.removeItem);
+    fastify.delete(
+        "/items/:uuid",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        controller.removeItem
+    );
 
-    fastify.delete("/items", {
-        preHandler: [fastify.authenticate]
-    }, controller.clear);
+    fastify.delete(
+        "/items",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        controller.clear
+    );
 };
 
 export default cartRoutes;

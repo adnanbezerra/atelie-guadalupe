@@ -1,7 +1,10 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
 import { RoleName } from "../../src/generated/prisma/enums";
-import { LoginService, RegisterUserService } from "../../src/modules/auth/services/register-user-service";
+import {
+    LoginService,
+    RegisterUserService
+} from "../../src/modules/auth/services/register-user-service";
 
 test("register user service creates a default USER account", async () => {
     const roleRepository = {

@@ -11,23 +11,31 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     const loginService = new LoginService(userRepository);
     const controller = new AuthController(fastify, registerUserService, loginService);
 
-    fastify.post("/register", {
-        config: {
-            rateLimit: {
-                max: 3,
-                timeWindow: "1 minute"
+    fastify.post(
+        "/register",
+        {
+            config: {
+                rateLimit: {
+                    max: 3,
+                    timeWindow: "1 minute"
+                }
             }
-        }
-    }, controller.register);
+        },
+        controller.register
+    );
 
-    fastify.post("/login", {
-        config: {
-            rateLimit: {
-                max: 5,
-                timeWindow: "1 minute"
+    fastify.post(
+        "/login",
+        {
+            config: {
+                rateLimit: {
+                    max: 5,
+                    timeWindow: "1 minute"
+                }
             }
-        }
-    }, controller.login);
+        },
+        controller.login
+    );
 };
 
 export default authRoutes;

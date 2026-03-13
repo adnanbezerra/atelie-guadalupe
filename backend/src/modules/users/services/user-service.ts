@@ -34,7 +34,9 @@ export class UserService {
         private readonly roleRepository: RoleRepository
     ) {}
 
-    public async getMe(userUuid: string): Promise<Either<AppError, { user: Record<string, unknown> }>> {
+    public async getMe(
+        userUuid: string
+    ): Promise<Either<AppError, { user: Record<string, unknown> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -43,12 +45,17 @@ export class UserService {
         return right({
             user: {
                 ...presentUser(user),
-                addresses: user.addresses.map((address: Parameters<typeof presentAddress>[0]) => presentAddress(address))
+                addresses: user.addresses.map((address: Parameters<typeof presentAddress>[0]) =>
+                    presentAddress(address)
+                )
             }
         });
     }
 
-    public async updateMe(userUuid: string, input: UpdateMeInput): Promise<Either<AppError, { user: Record<string, unknown> }>> {
+    public async updateMe(
+        userUuid: string,
+        input: UpdateMeInput
+    ): Promise<Either<AppError, { user: Record<string, unknown> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -72,12 +79,16 @@ export class UserService {
         return right({
             user: {
                 ...presentUser(updatedUser),
-                addresses: updatedUser.addresses.map((address: Parameters<typeof presentAddress>[0]) => presentAddress(address))
+                addresses: updatedUser.addresses.map(
+                    (address: Parameters<typeof presentAddress>[0]) => presentAddress(address)
+                )
             }
         });
     }
 
-    public async createManagedUser(input: CreateManagedUserInput): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
+    public async createManagedUser(
+        input: CreateManagedUserInput
+    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
         const email = normalizeEmail(input.email);
         const document = normalizeDocument(input.document);
 
@@ -111,7 +122,10 @@ export class UserService {
         });
     }
 
-    public async updateManagedUser(userUuid: string, input: UpdateManagedUserInput): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
+    public async updateManagedUser(
+        userUuid: string,
+        input: UpdateManagedUserInput
+    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
         const user = await this.userRepository.findByUuid(userUuid);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));

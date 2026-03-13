@@ -7,10 +7,13 @@ import { JwtUserPayload } from "../core/security/jwt-user-payload";
 type AllowedRole = "ADMIN" | "SUBADMIN" | "USER";
 
 export default fp(async (fastify) => {
-    fastify.decorate("authenticate", async function (request: FastifyRequest, _reply: FastifyReply) {
-        const payload = await request.jwtVerify<JwtUserPayload>();
-        request.currentUser = payload;
-    });
+    fastify.decorate(
+        "authenticate",
+        async function (request: FastifyRequest, _reply: FastifyReply) {
+            const payload = await request.jwtVerify<JwtUserPayload>();
+            request.currentUser = payload;
+        }
+    );
 
     fastify.decorate("authorize", function (allowedRoles: AllowedRole[]) {
         return async function (request: FastifyRequest, _reply: FastifyReply) {
@@ -30,7 +33,9 @@ export default fp(async (fastify) => {
 declare module "fastify" {
     export interface FastifyInstance {
         authenticate(request: FastifyRequest, reply: FastifyReply): Promise<void>;
-        authorize(allowedRoles: AllowedRole[]): (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+        authorize(
+            allowedRoles: AllowedRole[]
+        ): (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     }
 
     export interface FastifyRequest {
