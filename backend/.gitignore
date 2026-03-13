@@ -63,4 +63,4 @@ test/types/index.js
 
 # compiled app
 dist
-/generated
+generated
