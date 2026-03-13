@@ -43,24 +43,37 @@ async function main() {
                 }
             });
 
+            const normalizedEmail = adminEmail.trim().toLowerCase();
+            const normalizedDocument = adminDocument.replace(/\D/g, "");
+
+            const existingAdminByEmail = await prisma.user.findUnique({
+                where: {
+                    email: normalizedEmail
+                }
+            });
+
+            if (existingAdminByEmail) {
+                return;
+            }
+
+            const existingAdminByDocument = await prisma.user.findUnique({
+                where: {
+                    document: normalizedDocument
+                }
+            });
+
+            if (existingAdminByDocument) {
+                return;
+            }
+
             const passwordHash = await bcrypt.hash(adminPassword, 12);
 
-            await prisma.user.upsert({
-                where: {
-                    email: adminEmail.trim().toLowerCase()
-                },
-                update: {
-                    name: adminName,
-                    document: adminDocument.replace(/\D/g, ""),
-                    passwordHash,
-                    roleId: adminRole.id,
-                    isActive: true
-                },
-                create: {
+            await prisma.user.create({
+                data: {
                     uuid: createUuid(),
                     name: adminName,
-                    email: adminEmail.trim().toLowerCase(),
-                    document: adminDocument.replace(/\D/g, ""),
+                    email: normalizedEmail,
+                    document: normalizedDocument,
                     passwordHash,
                     isActive: true,
                     roleId: adminRole.id
