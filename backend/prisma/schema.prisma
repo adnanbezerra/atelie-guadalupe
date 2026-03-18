@@ -32,6 +32,11 @@ enum CartItemStatus {
     REMOVED
 }
 
+enum ProductSize {
+    GRAMS_70
+    GRAMS_100
+}
+
 model Role {
     id        Int      @id @default(autoincrement())
     name      RoleName @unique
@@ -89,9 +94,10 @@ model Address {
 model Product {
     id               Int         @id @default(autoincrement())
     uuid             String      @unique @db.Uuid
+    lineId           Int
+    line             ProductLine @relation(fields: [lineId], references: [id])
     name             String
     slug             String      @unique
-    priceInCents     Int
     imageUrl         String
     stock            Int
     shortDescription String
@@ -102,9 +108,24 @@ model Product {
     createdAt        DateTime    @default(now())
     updatedAt        DateTime    @updatedAt
 
+    @@index([lineId])
     @@index([slug])
     @@index([uuid])
     @@index([isActive])
+}
+
+model ProductLine {
+    id                  Int       @id @default(autoincrement())
+    uuid                String    @unique @db.Uuid
+    name                String    @unique
+    slug                String    @unique
+    pricePerGramInCents Int
+    products            Product[]
+    createdAt           DateTime  @default(now())
+    updatedAt           DateTime  @updatedAt
+
+    @@index([slug])
+    @@index([uuid])
 }
 
 model Cart {
@@ -124,6 +145,7 @@ model CartItem {
     uuid                String         @unique @db.Uuid
     cartId              Int
     productId           Int
+    productSize         ProductSize
     quantity            Int
     unitPriceInCents    Int
     productNameSnapshot String
@@ -133,7 +155,7 @@ model CartItem {
     createdAt           DateTime       @default(now())
     updatedAt           DateTime       @updatedAt
 
-    @@unique([cartId, productId])
+    @@unique([cartId, productId, productSize])
     @@index([cartId])
     @@index([productId])
     @@index([uuid])
@@ -170,6 +192,7 @@ model OrderItem {
     uuid                String   @unique @db.Uuid
     orderId             Int
     productId           Int?
+    productSize         ProductSize
     productNameSnapshot String
     imageUrlSnapshot    String?
     quantity            Int
