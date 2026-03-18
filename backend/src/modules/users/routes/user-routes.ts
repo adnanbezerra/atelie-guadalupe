@@ -66,9 +66,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
     fastify.patch(
         "/me/addresses/:uuid",
-        {
-            preHandler: [fastify.authenticate]
-        },
+        { preHandler: [fastify.authenticate] },
         addressController.updateMyAddress
     );
 
