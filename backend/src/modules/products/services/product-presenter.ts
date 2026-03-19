@@ -1,13 +1,20 @@
+import { listProductSizePrices } from "./product-pricing";
+
 type ProductEntity = {
     uuid: string;
     slug: string;
     name: string;
-    priceInCents: number;
     imageUrl: string;
     stock: number;
     shortDescription: string;
     longDescription: string;
     isActive: boolean;
+    line: {
+        uuid: string;
+        slug: string;
+        name: string;
+        pricePerGramInCents: number;
+    };
     createdAt: Date;
     updatedAt: Date;
 };
@@ -17,7 +24,12 @@ export function presentProduct(product: ProductEntity) {
         uuid: product.uuid,
         slug: product.slug,
         name: product.name,
-        priceInCents: product.priceInCents,
+        line: {
+            uuid: product.line.uuid,
+            slug: product.line.slug,
+            name: product.line.name
+        },
+        priceOptions: listProductSizePrices(product.line.pricePerGramInCents),
         imageUrl: product.imageUrl,
         stock: product.stock,
         shortDescription: product.shortDescription,

@@ -1,5 +1,5 @@
 import { PrismaClient } from "../../../generated/prisma/client";
-import { OrderStatus } from "../../../generated/prisma/enums";
+import { OrderStatus, ProductSize } from "../../../generated/prisma/enums";
 
 type CreateOrderInput = {
     uuid: string;
@@ -15,6 +15,7 @@ type CreateOrderInput = {
     items: Array<{
         uuid: string;
         productId?: number;
+        productSize: ProductSize;
         productNameSnapshot: string;
         imageUrlSnapshot?: string;
         quantity: number;

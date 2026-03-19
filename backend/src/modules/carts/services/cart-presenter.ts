@@ -1,5 +1,9 @@
+import { ProductSize } from "../../../generated/prisma/enums";
+import { getProductSizeInGrams } from "../../products/services/product-pricing";
+
 type CartItemEntity = {
     uuid: string;
+    productSize: ProductSize;
     quantity: number;
     unitPriceInCents: number;
     productNameSnapshot: string;
@@ -23,6 +27,8 @@ export function presentCartItem(item: CartItemEntity) {
         uuid: item.uuid,
         productUuid: item.product.uuid,
         name: item.productNameSnapshot,
+        productSize: item.productSize,
+        grams: getProductSizeInGrams(item.productSize),
         quantity: item.quantity,
         unitPriceInCents: item.unitPriceInCents,
         totalPriceInCents: item.unitPriceInCents * item.quantity,

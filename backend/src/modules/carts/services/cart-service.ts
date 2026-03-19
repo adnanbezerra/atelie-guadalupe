@@ -1,18 +1,22 @@
+import { ProductSize } from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import { ProductRepository } from "../../products/repositories/product-repository";
+import { calculateProductPriceInCents } from "../../products/services/product-pricing";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { CartRepository } from "../repositories/cart-repository";
 import { presentCart } from "./cart-presenter";
 
 type AddCartItemInput = {
     productUuid: string;
+    productSize: ProductSize;
     quantity: number;
 };
 
 type UpdateCartItemInput = {
     quantity: number;
+    productSize?: ProductSize;
 };
 
 export class CartService {
@@ -58,7 +62,13 @@ export class CartService {
         const cart = await this.getOrCreateCart(user.id);
         const existingItem = await this.cartRepository.findItemByCartAndProduct(
             cart.id,
-            product.id
+            product.id,
+            input.productSize
+        );
+
+        const unitPriceInCents = calculateProductPriceInCents(
+            product.line.pricePerGramInCents,
+            input.productSize
         );
 
         if (existingItem) {
@@ -70,8 +80,9 @@ export class CartService {
             }
 
             await this.cartRepository.updateItemByUuid(existingItem.uuid, {
+                productSize: input.productSize,
                 quantity: nextQuantity,
-                unitPriceInCents: product.priceInCents,
+                unitPriceInCents,
                 productNameSnapshot: product.name
             });
         } else {
@@ -79,8 +90,9 @@ export class CartService {
                 uuid: createUuid(),
                 cartId: cart.id,
                 productId: product.id,
+                productSize: input.productSize,
                 quantity: input.quantity,
-                unitPriceInCents: product.priceInCents,
+                unitPriceInCents,
                 productNameSnapshot: product.name
             });
         }
@@ -117,9 +129,46 @@ export class CartService {
             return left(AppError.business("Quantidade solicitada maior que o estoque disponivel"));
         }
 
+        const nextProductSize = input.productSize ?? item.productSize;
+        const nextUnitPriceInCents = calculateProductPriceInCents(
+            item.product.line.pricePerGramInCents,
+            nextProductSize
+        );
+
+        if (nextProductSize !== item.productSize) {
+            const conflictingItem = await this.cartRepository.findItemByCartAndProduct(
+                cart.id,
+                item.productId,
+                nextProductSize
+            );
+
+            if (conflictingItem && conflictingItem.uuid !== item.uuid) {
+                const nextQuantity = conflictingItem.quantity + input.quantity;
+                if (item.product.stock < nextQuantity) {
+                    return left(
+                        AppError.business("Quantidade solicitada maior que o estoque disponivel")
+                    );
+                }
+
+                await this.cartRepository.updateItemByUuid(conflictingItem.uuid, {
+                    quantity: nextQuantity,
+                    unitPriceInCents: nextUnitPriceInCents,
+                    productNameSnapshot: item.product.name
+                });
+                await this.cartRepository.deleteItemByUuid(item.uuid);
+
+                const mergedCart = await this.getOrCreateCart(cart.userId);
+
+                return right({
+                    cart: presentCart(mergedCart)
+                });
+            }
+        }
+
         await this.cartRepository.updateItemByUuid(cartItemUuid, {
+            productSize: nextProductSize,
             quantity: input.quantity,
-            unitPriceInCents: item.product.priceInCents,
+            unitPriceInCents: nextUnitPriceInCents,
             productNameSnapshot: item.product.name
         });
 

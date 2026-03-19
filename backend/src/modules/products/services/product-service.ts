@@ -1,14 +1,23 @@
+import { ProductSize } from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { ImageStorage, UploadImageInput } from "../../../core/storage/image-storage";
 import { slugify } from "../../../core/utils/slug";
 import { createUuid } from "../../../core/utils/uuid";
 import { ProductRepository } from "../repositories/product-repository";
+import { presentProductLine } from "./product-line-presenter";
 import { presentProduct } from "./product-presenter";
+
+type CreateProductLineInput = {
+    name: string;
+    pricePerGramInCents: number;
+};
+
+type UpdateProductLineInput = Partial<CreateProductLineInput>;
 
 type CreateProductInput = {
     name: string;
-    priceInCents: number;
+    lineUuid: string;
     image: UploadImageInput;
     stock: number;
     shortDescription: string;
@@ -21,6 +30,8 @@ type ListProductsInput = {
     page: number;
     pageSize: number;
     search?: string;
+    lineUuid?: string;
+    size?: ProductSize;
     minPriceInCents?: number;
     maxPriceInCents?: number;
     inStock?: boolean;
@@ -31,6 +42,65 @@ export class ProductService {
         private readonly productRepository: ProductRepository,
         private readonly imageStorage: ImageStorage
     ) {}
+
+    public async listLines(): Promise<
+        Either<AppError, { lines: Array<ReturnType<typeof presentProductLine>> }>
+    > {
+        const lines = await this.productRepository.listLines();
+
+        return right({
+            lines: lines.map((line) => presentProductLine(line))
+        });
+    }
+
+    public async createLine(
+        input: CreateProductLineInput
+    ): Promise<Either<AppError, { line: ReturnType<typeof presentProductLine> }>> {
+        const slug = slugify(input.name);
+        const existingLine = await this.productRepository.findLineBySlug(slug);
+        if (existingLine) {
+            return left(AppError.conflict("Ja existe uma linha com este nome"));
+        }
+
+        const line = await this.productRepository.createLine({
+            uuid: createUuid(),
+            name: input.name.trim(),
+            slug,
+            pricePerGramInCents: input.pricePerGramInCents
+        });
+
+        return right({
+            line: presentProductLine(line)
+        });
+    }
+
+    public async updateLine(
+        lineUuid: string,
+        input: UpdateProductLineInput
+    ): Promise<Either<AppError, { line: ReturnType<typeof presentProductLine> }>> {
+        const existingLine = await this.productRepository.findLineByUuid(lineUuid);
+        if (!existingLine) {
+            return left(AppError.notFound("Linha nao encontrada"));
+        }
+
+        const data = {
+            ...input,
+            ...(input.name ? { name: input.name.trim(), slug: slugify(input.name) } : {})
+        };
+
+        if (data.slug && data.slug !== existingLine.slug) {
+            const slugConflict = await this.productRepository.findLineBySlug(data.slug);
+            if (slugConflict && slugConflict.uuid !== existingLine.uuid) {
+                return left(AppError.conflict("Ja existe uma linha com este nome"));
+            }
+        }
+
+        const line = await this.productRepository.updateLineByUuid(lineUuid, data);
+
+        return right({
+            line: presentProductLine(line)
+        });
+    }
 
     public async list(
         query: ListProductsInput
@@ -67,18 +137,26 @@ export class ProductService {
         input: CreateProductInput
     ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
         const slug = slugify(input.name);
-        const existingProduct = await this.productRepository.findBySlug(slug);
+        const [existingProduct, line] = await Promise.all([
+            this.productRepository.findBySlug(slug),
+            this.productRepository.findLineByUuid(input.lineUuid)
+        ]);
+
         if (existingProduct) {
             return left(AppError.conflict("Ja existe um produto com este nome"));
+        }
+
+        if (!line) {
+            return left(AppError.notFound("Linha nao encontrada"));
         }
 
         const imageUrl = await this.imageStorage.uploadProductImage(input.image);
 
         const product = await this.productRepository.create({
             uuid: createUuid(),
+            lineId: line.id,
             slug,
             name: input.name.trim(),
-            priceInCents: input.priceInCents,
             imageUrl,
             stock: input.stock,
             shortDescription: input.shortDescription.trim(),
@@ -99,10 +177,21 @@ export class ProductService {
             return left(AppError.notFound("Produto nao encontrado"));
         }
 
-        const { image, ...restInput } = input;
-        const data = {
+        const { image, lineUuid, ...restInput } = input;
+        const data: {
+            name?: string;
+            slug?: string;
+            lineId?: number;
+            stock?: number;
+            shortDescription?: string;
+            longDescription?: string;
+        } = {
             ...restInput,
-            ...(input.name ? { slug: slugify(input.name) } : {})
+            ...(input.name ? { name: input.name.trim(), slug: slugify(input.name) } : {}),
+            ...(input.shortDescription
+                ? { shortDescription: input.shortDescription.trim() }
+                : {}),
+            ...(input.longDescription ? { longDescription: input.longDescription.trim() } : {})
         };
 
         if (data.slug && data.slug !== existingProduct.slug) {
@@ -110,6 +199,15 @@ export class ProductService {
             if (slugConflict && slugConflict.uuid !== existingProduct.uuid) {
                 return left(AppError.conflict("Ja existe um produto com este nome"));
             }
+        }
+
+        if (lineUuid) {
+            const line = await this.productRepository.findLineByUuid(lineUuid);
+            if (!line) {
+                return left(AppError.notFound("Linha nao encontrada"));
+            }
+
+            data.lineId = line.id;
         }
 
         let imageUrl: string | undefined;

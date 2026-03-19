@@ -5,8 +5,21 @@ import { ProductService } from "../../src/modules/products/services/product-serv
 test("product service creates slug from product name", async () => {
     const repository = {
         findBySlug: async () => null,
+        findLineByUuid: async () => ({
+            id: 5,
+            uuid: "line-1",
+            slug: "linha-sabonetes",
+            name: "Linha Sabonetes",
+            pricePerGramInCents: 37
+        }),
         create: async (input: Record<string, unknown>) => ({
             ...input,
+            line: {
+                uuid: "line-1",
+                slug: "linha-sabonetes",
+                name: "Linha Sabonetes",
+                pricePerGramInCents: 37
+            },
             isActive: true,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -23,7 +36,7 @@ test("product service creates slug from product name", async () => {
     const service = new ProductService(repository as never, imageStorage as never);
     const result = await service.create({
         name: "Sabonete Artesanal de Lavanda",
-        priceInCents: 2590,
+        lineUuid: "line-1",
         image: {
             filename: "lavanda.jpg",
             contentType: "image/jpeg",

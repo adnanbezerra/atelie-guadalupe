@@ -8,8 +8,25 @@ const productRoutes: FastifyPluginAsync = async (fastify) => {
     const productService = new ProductService(productRepository, fastify.imageStorage);
     const controller = new ProductController(fastify, productService);
 
+    fastify.get("/lines", controller.listLines);
     fastify.get("/", controller.list);
     fastify.get("/:uuid", controller.detail);
+
+    fastify.post(
+        "/lines",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
+        },
+        controller.createLine
+    );
+
+    fastify.patch(
+        "/lines/:uuid",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
+        },
+        controller.updateLine
+    );
 
     fastify.post(
         "/",

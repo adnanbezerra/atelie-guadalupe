@@ -258,10 +258,21 @@ Definido em `prisma/schema.prisma`.
 - `User`
 - `Address`
 - `Product`
+- `ProductLine`
 - `Cart`
 - `CartItem`
 - `Order`
 - `OrderItem`
+
+## Regra atual de produtos e precificacao
+
+- todo produto pertence a uma linha
+- a linha concentra o campo `pricePerGramInCents`
+- o produto nao possui mais preco proprio salvo no banco
+- os tamanhos disponiveis sao fixos: `70g` e `100g`
+- o backend calcula o preco final a partir de `pricePerGramInCents * gramas`
+- o carrinho e o pedido armazenam o tamanho escolhido e o `unitPriceInCents` calculado no momento da operacao
+- a API publica de produtos deve expor os precos calculados por tamanho, nao um preco unico fixo
 
 ### Convenções de modelagem
 

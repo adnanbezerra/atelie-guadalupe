@@ -1,7 +1,9 @@
-import { OrderStatus } from "../../../generated/prisma/enums";
+import { OrderStatus, ProductSize } from "../../../generated/prisma/enums";
+import { getProductSizeInGrams } from "../../products/services/product-pricing";
 
 type OrderItemEntity = {
     uuid: string;
+    productSize: ProductSize;
     productNameSnapshot: string;
     imageUrlSnapshot: string | null;
     quantity: number;
@@ -40,6 +42,8 @@ type OrderEntity = {
 function presentOrderItem(item: OrderItemEntity) {
     return {
         uuid: item.uuid,
+        productSize: item.productSize,
+        grams: getProductSizeInGrams(item.productSize),
         productNameSnapshot: item.productNameSnapshot,
         imageUrlSnapshot: item.imageUrlSnapshot,
         quantity: item.quantity,

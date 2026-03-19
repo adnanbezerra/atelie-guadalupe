@@ -76,7 +76,7 @@ export class OrderService {
         }
 
         const subtotalInCents = cart.items.reduce(
-            (total, item) => total + item.product.priceInCents * item.quantity,
+            (total, item) => total + item.unitPriceInCents * item.quantity,
             0
         );
         const shippingInCents = 0;
@@ -98,11 +98,12 @@ export class OrderService {
                 return {
                     uuid: createUuid(),
                     productId: item.product.id,
+                    productSize: item.productSize,
                     productNameSnapshot: item.product.name,
                     imageUrlSnapshot: item.product.imageUrl,
                     quantity: item.quantity,
-                    unitPriceInCents: item.product.priceInCents,
-                    totalPriceInCents: item.product.priceInCents * item.quantity
+                    unitPriceInCents: item.unitPriceInCents,
+                    totalPriceInCents: item.unitPriceInCents * item.quantity
                 };
             })
         });

@@ -1,4 +1,5 @@
 import { PrismaClient } from "../../../generated/prisma/client";
+import { ProductSize } from "../../../generated/prisma/enums";
 
 type CreateCartInput = {
     uuid: string;
@@ -9,12 +10,14 @@ type CreateCartItemInput = {
     uuid: string;
     cartId: number;
     productId: number;
+    productSize: ProductSize;
     quantity: number;
     unitPriceInCents: number;
     productNameSnapshot: string;
 };
 
 type UpdateCartItemInput = {
+    productSize?: ProductSize;
     quantity?: number;
     unitPriceInCents?: number;
     productNameSnapshot?: string;
@@ -34,7 +37,11 @@ export class CartRepository {
                         status: "ACTIVE"
                     },
                     include: {
-                        product: true
+                        product: {
+                            include: {
+                                line: true
+                            }
+                        }
                     },
                     orderBy: {
                         createdAt: "asc"
@@ -50,7 +57,11 @@ export class CartRepository {
             include: {
                 items: {
                     include: {
-                        product: true
+                        product: {
+                            include: {
+                                line: true
+                            }
+                        }
                     }
                 }
             }
@@ -63,21 +74,30 @@ export class CartRepository {
                 uuid
             },
             include: {
-                product: true,
+                product: {
+                    include: {
+                        line: true
+                    }
+                },
                 cart: true
             }
         });
     }
 
-    public findItemByCartAndProduct(cartId: number, productId: number) {
+    public findItemByCartAndProduct(cartId: number, productId: number, productSize: ProductSize) {
         return this.prisma.cartItem.findFirst({
             where: {
                 cartId,
                 productId,
+                productSize,
                 status: "ACTIVE"
             },
             include: {
-                product: true
+                product: {
+                    include: {
+                        line: true
+                    }
+                }
             }
         });
     }
@@ -86,7 +106,11 @@ export class CartRepository {
         return this.prisma.cartItem.create({
             data: input,
             include: {
-                product: true
+                product: {
+                    include: {
+                        line: true
+                    }
+                }
             }
         });
     }
@@ -98,7 +122,11 @@ export class CartRepository {
             },
             data: input,
             include: {
-                product: true,
+                product: {
+                    include: {
+                        line: true
+                    }
+                },
                 cart: true
             }
         });

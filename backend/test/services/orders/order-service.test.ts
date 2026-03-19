@@ -62,12 +62,13 @@ test("order service creates order from cart snapshot", async () => {
             items: [
                 {
                     uuid: "item-1",
+                    productSize: "GRAMS_70",
                     quantity: 2,
+                    unitPriceInCents: 2590,
                     product: {
                         id: 99,
                         name: "Sabonete",
                         imageUrl: "https://cdn.exemplo.com/sabonete.jpg",
-                        priceInCents: 2590,
                         stock: 5,
                         isActive: true
                     }
@@ -106,6 +107,7 @@ test("order service creates order from cart snapshot", async () => {
             items: [
                 {
                     uuid: "order-item-1",
+                    productSize: "GRAMS_70",
                     productNameSnapshot: "Sabonete",
                     imageUrlSnapshot: "https://cdn.exemplo.com/sabonete.jpg",
                     quantity: 2,

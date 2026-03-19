@@ -48,10 +48,12 @@ test("cart service blocks quantity above stock", async () => {
             id: 2,
             uuid: "product-1",
             name: "Sabonete",
-            priceInCents: 2590,
             imageUrl: "https://cdn.exemplo.com/lavanda.jpg",
             stock: 1,
-            isActive: true
+            isActive: true,
+            line: {
+                pricePerGramInCents: 37
+            }
         })
     };
 
@@ -72,6 +74,7 @@ test("cart service blocks quantity above stock", async () => {
     );
     const result = await service.addItem("user-1", {
         productUuid: "product-1",
+        productSize: "GRAMS_70",
         quantity: 2
     });
 
@@ -93,10 +96,12 @@ test("cart service increments quantity when product already exists in cart", asy
             id: 2,
             uuid: "product-1",
             name: "Sabonete",
-            priceInCents: 2590,
             imageUrl: "https://cdn.exemplo.com/lavanda.jpg",
             stock: 10,
-            isActive: true
+            isActive: true,
+            line: {
+                pricePerGramInCents: 37
+            }
         })
     };
 
@@ -121,6 +126,7 @@ test("cart service increments quantity when product already exists in cart", asy
                 items: [
                     {
                         uuid: "item-1",
+                        productSize: "GRAMS_70",
                         quantity: 3,
                         unitPriceInCents: 2590,
                         productNameSnapshot: "Sabonete",
@@ -157,6 +163,7 @@ test("cart service increments quantity when product already exists in cart", asy
     );
     const result = await service.addItem("user-1", {
         productUuid: "product-1",
+        productSize: "GRAMS_70",
         quantity: 2
     });
 
