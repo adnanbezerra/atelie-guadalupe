@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --background: #f5f2ea;
+    --surface: #fffdf8;
+    --surface-strong: #ffffff;
+    --foreground: #1f2937;
+    --muted: #667085;
+    --border: rgba(15, 23, 42, 0.09);
+    --primary: #1940b3;
+    --primary-foreground: #ffffff;
+    --secondary: #d1a054;
+    --accent: #e7e0d4;
+    --destructive: #b42318;
+    --success: #167a45;
+    --warning: #b54708;
+    --ring: rgba(25, 64, 179, 0.3);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-surface: var(--surface);
+    --color-surface-strong: var(--surface-strong);
+    --color-foreground: var(--foreground);
+    --color-muted: var(--muted);
+    --color-border: var(--border);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-accent: var(--accent);
+    --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --font-sans: var(--font-sans);
+    --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+    border-color: var(--border);
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(25, 64, 179, 0.12),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at top right,
+            rgba(209, 160, 84, 0.2),
+            transparent 28%
+        ),
+        linear-gradient(180deg, #f9f5ef 0%, #f4efe6 48%, #f5f2ea 100%);
+    color: var(--foreground);
+    font-family: var(--font-sans), sans-serif;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+    transition:
+        color 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+button,
+[role="button"] {
+    cursor: pointer;
+}
+
+.font-display {
+    font-family: var(--font-display), serif;
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(18px);
+}
+
+.artisan-grid {
+    background-image:
+        linear-gradient(rgba(25, 64, 179, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25, 64, 179, 0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+}
+
+.admin-grid {
+    background-image:
+        linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
 }
