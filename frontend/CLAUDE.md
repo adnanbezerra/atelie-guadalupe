@@ -4,7 +4,14 @@
 
 - Frontend em Next.js App Router com foco em SSR para as páginas principais.
 - Integração com backend baseada em `docs/API.md`.
-- Layouts e conteúdo visual inspirados nas telas fornecidas via Stitch.
+- Layouts e conteúdo visual guiados pelas telas fornecidas via Stitch.
+
+## Diretriz visual atual
+
+- Para as rotas já refatoradas, o Stitch é a fonte de verdade visual.
+- O escopo desta etapa foi estético: preservar integrações, hooks e contratos já existentes, trocando apenas casca visual, hierarquia, espaçamento, tipografia e composição.
+- Quando houver dúvida entre “interpretar” e “copiar”, priorizar copiar o Stitch.
+- Os HTMLs baixados do Stitch podem ser usados como referência local em `.stitch/` para checagem de fidelidade.
 
 ## Rotas
 
@@ -35,6 +42,15 @@
 
 - Componentes base seguem a linha do shadcn: `Button`, `Card`, `Input`, `Select`, `Textarea`, `Badge`, `Skeleton`.
 - Skeletons existem em `loading.tsx` de rotas e também dentro dos catálogos client-side.
+- Tipografia e ícones foram aproximados ao Stitch com `Noto Sans`, `Noto Serif`, `Public Sans` e `Material Symbols Outlined`.
+
+## Estado atual das telas
+
+- `/` segue a composição principal do Stitch, incluindo hero e bloco de creme personalizado, sem seção extra fora da referência.
+- `/carrinho` usa header e footer próprios no estilo da tela Stitch, em vez de depender do shell público compartilhado.
+- `/beleza-natural` e `/artesanato` renderizam layouts próprios dentro de `components/collections/collection-catalog.tsx`, com estrutura visual específica de cada tela.
+- `/admin`, `/admin/produtos`, `/admin/cobranca` e `/admin/usuarios` usam molduras administrativas alinhadas ao Stitch; nas páginas de cobrança e usuários, o frame completo foi recriado no próprio client component.
+- `components/admin/admin-shell.tsx` hoje funciona como pass-through, porque as telas administrativas relevantes carregam sua própria moldura visual.
 
 ## Lacunas do contrato atual
 
