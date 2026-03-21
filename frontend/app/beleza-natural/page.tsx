@@ -11,12 +11,10 @@ type BeautyCollectionPageProps = {
 export default async function BeautyCollectionPage({
     searchParams,
 }: BeautyCollectionPageProps) {
-    const resolvedSearchParams = searchParams
-        ? await searchParams
-        : undefined;
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
     const search = Array.isArray(resolvedSearchParams?.search)
-        ? resolvedSearchParams.search[0] ?? ""
-        : resolvedSearchParams?.search ?? "";
+        ? (resolvedSearchParams.search[0] ?? "")
+        : (resolvedSearchParams?.search ?? "");
 
     const [linesResult, productsResult] = await Promise.allSettled([
         fetchProductLines(),

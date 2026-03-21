@@ -11,12 +11,10 @@ type HomePageProps = {
 };
 
 export default async function HomePage({ searchParams }: HomePageProps) {
-    const resolvedSearchParams = searchParams
-        ? await searchParams
-        : undefined;
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
     const search = Array.isArray(resolvedSearchParams?.search)
-        ? resolvedSearchParams.search[0] ?? ""
-        : resolvedSearchParams?.search ?? "";
+        ? (resolvedSearchParams.search[0] ?? "")
+        : (resolvedSearchParams?.search ?? "");
 
     const [productsResult] = await Promise.allSettled([
         fetchProducts({ page: 1, pageSize: 18, search: search || undefined }),

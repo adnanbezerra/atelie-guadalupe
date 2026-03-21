@@ -11,12 +11,10 @@ type CraftsCollectionPageProps = {
 export default async function CraftsCollectionPage({
     searchParams,
 }: CraftsCollectionPageProps) {
-    const resolvedSearchParams = searchParams
-        ? await searchParams
-        : undefined;
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
     const search = Array.isArray(resolvedSearchParams?.search)
-        ? resolvedSearchParams.search[0] ?? ""
-        : resolvedSearchParams?.search ?? "";
+        ? (resolvedSearchParams.search[0] ?? "")
+        : (resolvedSearchParams?.search ?? "");
 
     const [linesResult, productsResult] = await Promise.allSettled([
         fetchProductLines(),
