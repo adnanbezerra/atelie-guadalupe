@@ -42,48 +42,8 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
     }
 
     return (
-        <div className="flex min-h-screen overflow-hidden bg-[#f6f6f8] font-sans text-slate-900">
-            <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-                <div className="flex items-center gap-3 p-6">
-                    <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
-                        <span className="material-symbols-outlined">brush</span>
-                    </div>
-                    <h2 className="font-display text-lg font-bold text-primary">
-                        Ateliê Guadalupe
-                    </h2>
-                </div>
-                <nav className="mt-4 flex-1 space-y-2 px-4">
-                    <AdminLinkShell
-                        href="/admin"
-                        icon="dashboard"
-                        label="Dashboard"
-                    />
-                    <AdminLinkShell
-                        href="/admin/usuarios"
-                        icon="group"
-                        label="Administradores"
-                        active
-                    />
-                    <AdminLinkShell
-                        href="/admin/cobranca"
-                        icon="shopping_bag"
-                        label="Vendas"
-                    />
-                    <AdminLinkShell
-                        href="/admin/produtos"
-                        icon="inventory_2"
-                        label="Produtos"
-                    />
-                    <AdminLinkShell
-                        href="/admin"
-                        icon="settings"
-                        label="Configurações"
-                    />
-                </nav>
-            </aside>
-
-            <main className="flex-1 overflow-hidden">
-                <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
+        <div className="flex min-h-full flex-col overflow-hidden font-sans text-slate-900">
+            <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
                     <div className="flex items-center gap-2 text-slate-500">
                         <span className="text-sm">Painel de Controle</span>
                         <span className="material-symbols-outlined text-sm">
@@ -108,8 +68,8 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
                     </div>
                 </header>
 
-                <div className="h-[calc(100vh-4rem)] overflow-y-auto p-8">
-                    <div className="mx-auto max-w-6xl">
+            <div className="p-8">
+                <div className="mx-auto max-w-6xl">
                         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <h1 className="font-display text-3xl font-bold text-slate-900">
@@ -326,35 +286,8 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
                                 </p>
                             </div>
                         </div>
-                    </div>
                 </div>
-            </main>
+            </div>
         </div>
-    );
-}
-
-function AdminLinkShell({
-    href,
-    icon,
-    label,
-    active = false,
-}: {
-    href: string;
-    icon: string;
-    label: string;
-    active?: boolean;
-}) {
-    return (
-        <a
-            className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
-                active
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-600 hover:bg-primary/10 hover:text-primary"
-            }`}
-            href={href}
-        >
-            <span className="material-symbols-outlined">{icon}</span>
-            <span className="font-medium">{label}</span>
-        </a>
     );
 }

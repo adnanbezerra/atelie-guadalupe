@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
@@ -53,61 +52,8 @@ export function AdminProductsClient({
     }, [products.data?.items]);
 
     return (
-        <div className="min-h-screen bg-[#f6f6f8] text-slate-900">
-            <div className="flex h-screen overflow-hidden">
-                <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-                    <div className="flex items-center gap-3 p-6">
-                        <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white">
-                            <span className="material-symbols-outlined">
-                                auto_awesome
-                            </span>
-                        </div>
-                        <h2 className="font-display text-xl font-bold text-primary">
-                            Guadalupe
-                        </h2>
-                    </div>
-                    <nav className="flex-1 space-y-2 px-4 py-4">
-                        <Link
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
-                            href="/admin"
-                        >
-                            <span className="material-symbols-outlined">
-                                dashboard
-                            </span>
-                            <span className="font-medium">Dashboard</span>
-                        </Link>
-                        <Link
-                            className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2 text-white shadow-md shadow-primary/20"
-                            href="/admin/produtos"
-                        >
-                            <span className="material-symbols-outlined">
-                                inventory_2
-                            </span>
-                            <span className="font-medium">Produtos</span>
-                        </Link>
-                        <Link
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
-                            href="/admin/cobranca"
-                        >
-                            <span className="material-symbols-outlined">
-                                shopping_cart
-                            </span>
-                            <span className="font-medium">Vendas</span>
-                        </Link>
-                        <Link
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
-                            href="/admin/usuarios"
-                        >
-                            <span className="material-symbols-outlined">
-                                group
-                            </span>
-                            <span className="font-medium">Clientes</span>
-                        </Link>
-                    </nav>
-                </aside>
-
-                <main className="flex flex-1 flex-col overflow-y-auto">
-                    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
+        <div className="flex min-h-full flex-col">
+            <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
                         <div className="flex max-w-md flex-1 items-center">
                             <div className="relative w-full">
                                 <span className="material-symbols-outlined absolute top-1/2 left-3 -translate-y-1/2 text-slate-400">
@@ -133,7 +79,7 @@ export function AdminProductsClient({
                         </div>
                     </header>
 
-                    <div className="mx-auto w-full max-w-7xl p-8">
+            <div className="mx-auto w-full max-w-7xl p-8">
                         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
                             <div>
                                 <h1 className="font-display text-3xl font-bold text-slate-900">
@@ -373,8 +319,6 @@ export function AdminProductsClient({
                                 </table>
                             </div>
                         </div>
-                    </div>
-                </main>
             </div>
         </div>
     );

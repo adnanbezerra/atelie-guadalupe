@@ -33,52 +33,8 @@ export function AdminBillingClient({
     }, [customPrice, customerName, selectedProduct]);
 
     return (
-        <div className="flex min-h-screen overflow-hidden bg-[#f6f6f8] text-slate-900">
-            <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-                <div className="flex items-center gap-3 p-6">
-                    <div className="size-8 text-primary">
-                        <svg fill="currentColor" viewBox="0 0 48 48">
-                            <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" />
-                        </svg>
-                    </div>
-                    <h1 className="font-display text-xl font-bold tracking-tight text-primary">
-                        Guadalupe
-                    </h1>
-                </div>
-                <nav className="flex-1 space-y-1 px-4">
-                    <LinkShell
-                        href="/admin"
-                        icon="dashboard"
-                        label="Dashboard"
-                    />
-                    <LinkShell
-                        href="/admin/cobranca"
-                        icon="payments"
-                        label="Vendas & Checkout"
-                        active
-                    />
-                    <LinkShell
-                        href="/admin/produtos"
-                        icon="inventory_2"
-                        label="Produtos"
-                    />
-                    <LinkShell
-                        href="/admin/usuarios"
-                        icon="group"
-                        label="Clientes"
-                    />
-                </nav>
-                <div className="border-t border-slate-200 p-4">
-                    <LinkShell
-                        href="/admin"
-                        icon="settings"
-                        label="Configurações"
-                    />
-                </div>
-            </aside>
-
-            <main className="flex-1 overflow-y-auto">
-                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
+        <div className="flex min-h-full flex-col overflow-y-auto">
+            <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
                     <h2 className="font-display text-lg font-semibold">
                         Painel Administrativo
                     </h2>
@@ -103,7 +59,7 @@ export function AdminBillingClient({
                     </div>
                 </header>
 
-                <div className="mx-auto max-w-5xl p-8">
+            <div className="mx-auto max-w-5xl p-8">
                     <div className="mb-8 border-b border-slate-200">
                         <nav className="flex gap-8">
                             <button className="border-b-2 border-primary px-1 pb-4 text-sm font-bold text-primary">
@@ -381,34 +337,7 @@ export function AdminBillingClient({
                             ))}
                         </div>
                     </section>
-                </div>
-            </main>
+            </div>
         </div>
-    );
-}
-
-function LinkShell({
-    href,
-    icon,
-    label,
-    active = false,
-}: {
-    href: string;
-    icon: string;
-    label: string;
-    active?: boolean;
-}) {
-    return (
-        <a
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                active
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-600 hover:bg-slate-100"
-            }`}
-            href={href}
-        >
-            <span className="material-symbols-outlined">{icon}</span>
-            <span className="font-medium">{label}</span>
-        </a>
     );
 }

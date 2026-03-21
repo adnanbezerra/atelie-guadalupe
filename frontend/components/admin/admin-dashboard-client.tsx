@@ -1,13 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import logo from "public/logo-empty.png";
 import { useMemo } from "react";
 import { useOrders } from "@/hooks/use-orders";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { Order, Product } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import Image from "next/image";
 
 type AdminDashboardClientProps = {
     initialOrders: Order[];
@@ -56,88 +53,8 @@ export function AdminDashboardClient({
     );
 
     return (
-        <div className="min-h-screen bg-[#f6f6f8] text-slate-900">
-            <div className="flex h-screen overflow-hidden">
-                <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-                    <div className="p-6">
-                        <div className="flex items-center gap-3">
-                            <Image
-                                src={logo}
-                                alt="Logo do Ateliê Guadalupe"
-                                className="w-auto h-[50px]"
-                            />
-                            <div>
-                                <h1 className="text-lg font-bold leading-tight text-primary">
-                                    Ateliê Guadalupe
-                                </h1>
-                                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                                    Administração
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <nav className="flex-1 space-y-1 px-4">
-                        <Link
-                            className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white"
-                            href="/admin"
-                        >
-                            <span className="material-symbols-outlined">
-                                dashboard
-                            </span>
-                            <span className="text-sm font-medium">Painel</span>
-                        </Link>
-                        <Link
-                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
-                            href="/admin/produtos"
-                        >
-                            <span className="material-symbols-outlined">
-                                inventory_2
-                            </span>
-                            <span className="text-sm font-medium">
-                                Produtos
-                            </span>
-                        </Link>
-                        <Link
-                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
-                            href="/admin/cobranca"
-                        >
-                            <span className="material-symbols-outlined">
-                                shopping_cart
-                            </span>
-                            <span className="text-sm font-medium">
-                                Vendas/Links
-                            </span>
-                        </Link>
-                        <Link
-                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
-                            href="/admin/usuarios"
-                        >
-                            <span className="material-symbols-outlined">
-                                group
-                            </span>
-                            <span className="text-sm font-medium">
-                                Usuários
-                            </span>
-                        </Link>
-                    </nav>
-                    <div className="border-t border-slate-200 p-4">
-                        <Link
-                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
-                            href="/"
-                        >
-                            Visão de usuário
-                        </Link>
-                        <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-red-600">
-                            <span className="material-symbols-outlined">
-                                logout
-                            </span>
-                            <span className="text-sm font-medium">Sair</span>
-                        </button>
-                    </div>
-                </aside>
-
-                <main className="flex-1 overflow-y-auto">
-                    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/80 px-8 py-4 backdrop-blur-md">
+        <>
+            <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/80 px-8 py-4 backdrop-blur-md">
                         <h2 className="text-xl font-bold tracking-tight">
                             Visão Geral do Ateliê
                         </h2>
@@ -161,7 +78,7 @@ export function AdminDashboardClient({
                         </div>
                     </header>
 
-                    <div className="space-y-8 p-8">
+            <div className="space-y-8 p-8">
                         <div className="flex flex-col gap-1">
                             <h1 className="text-3xl font-bold text-slate-900">
                                 Salve Maria, Administrador
@@ -379,9 +296,7 @@ export function AdminDashboardClient({
                                 </table>
                             </div>
                         </div>
-                    </div>
-                </main>
             </div>
-        </div>
+        </>
     );
 }
