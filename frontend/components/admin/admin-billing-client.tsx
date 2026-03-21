@@ -46,7 +46,11 @@ export function AdminBillingClient({
                     </h1>
                 </div>
                 <nav className="flex-1 space-y-1 px-4">
-                    <LinkShell href="/admin" icon="dashboard" label="Dashboard" />
+                    <LinkShell
+                        href="/admin"
+                        icon="dashboard"
+                        label="Dashboard"
+                    />
                     <LinkShell
                         href="/admin/cobranca"
                         icon="payments"
@@ -58,10 +62,18 @@ export function AdminBillingClient({
                         icon="inventory_2"
                         label="Produtos"
                     />
-                    <LinkShell href="/admin/usuarios" icon="group" label="Clientes" />
+                    <LinkShell
+                        href="/admin/usuarios"
+                        icon="group"
+                        label="Clientes"
+                    />
                 </nav>
                 <div className="border-t border-slate-200 p-4">
-                    <LinkShell href="/admin" icon="settings" label="Configurações" />
+                    <LinkShell
+                        href="/admin"
+                        icon="settings"
+                        label="Configurações"
+                    />
                 </div>
             </aside>
 
@@ -114,70 +126,76 @@ export function AdminBillingClient({
                                     produto específico ou oferta personalizada.
                                 </p>
                                 <form className="space-y-4">
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium">
-                                    Produto Base
-                                </label>
-                                <select
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                    onChange={(event) =>
-                                        setSelectedProduct(event.target.value)
-                                    }
-                                    value={selectedProduct}
-                                >
-                                    {initialProducts.map((product) => (
-                                        <option
-                                            key={product.uuid}
-                                            value={product.uuid}
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-medium">
+                                            Produto Base
+                                        </label>
+                                        <select
+                                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                            onChange={(event) =>
+                                                setSelectedProduct(
+                                                    event.target.value,
+                                                )
+                                            }
+                                            value={selectedProduct}
                                         >
-                                            {product.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium">
-                                        Preço Personalizado (R$)
-                                    </label>
-                                    <input
-                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                        onChange={(event) =>
-                                            setCustomPrice(event.target.value)
-                                        }
-                                        placeholder="0,00"
-                                        value={customPrice}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium">
-                                        Expiração (Opcional)
-                                    </label>
-                                    <input
-                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                        type="date"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium">
-                                    Nome do Cliente (Opcional)
-                                </label>
-                                <input
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                    onChange={(event) =>
-                                        setCustomerName(event.target.value)
-                                    }
-                                    placeholder="Ex: Maria Oliveira"
-                                    value={customerName}
-                                />
-                            </div>
-                            <button
-                                className="mt-4 w-full rounded-lg bg-primary py-3 font-bold text-white"
-                                type="button"
-                            >
-                                Gerar URL Única
-                            </button>
+                                            {initialProducts.map((product) => (
+                                                <option
+                                                    key={product.uuid}
+                                                    value={product.uuid}
+                                                >
+                                                    {product.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="mb-1.5 block text-sm font-medium">
+                                                Preço Personalizado (R$)
+                                            </label>
+                                            <input
+                                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                                onChange={(event) =>
+                                                    setCustomPrice(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                placeholder="0,00"
+                                                value={customPrice}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-sm font-medium">
+                                                Expiração (Opcional)
+                                            </label>
+                                            <input
+                                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                                type="date"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-medium">
+                                            Nome do Cliente (Opcional)
+                                        </label>
+                                        <input
+                                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                            onChange={(event) =>
+                                                setCustomerName(
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Ex: Maria Oliveira"
+                                            value={customerName}
+                                        />
+                                    </div>
+                                    <button
+                                        className="mt-4 w-full rounded-lg bg-primary py-3 font-bold text-white"
+                                        type="button"
+                                    >
+                                        Gerar URL Única
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -214,123 +232,127 @@ export function AdminBillingClient({
                         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div className="p-8">
                                 <form className="space-y-8">
-                            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                                <div className="space-y-4">
-                                    <h4 className="flex items-center gap-2 font-semibold text-slate-700">
-                                        <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                            1
-                                        </span>
-                                        Seleção da Base
-                                    </h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {initialProducts.slice(0, 2).map((product, index) => (
-                                            <label
-                                                key={product.uuid}
-                                                className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 ${
-                                                    index === 0
-                                                        ? "border-primary bg-primary/5"
-                                                        : "border-slate-200"
-                                                }`}
-                                            >
-                                                <span className="text-sm font-bold">
-                                                    {product.name}
+                                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                                        <div className="space-y-4">
+                                            <h4 className="flex items-center gap-2 font-semibold text-slate-700">
+                                                <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                                    1
                                                 </span>
-                                                <span className="text-xs text-slate-500">
-                                                    {index === 0
-                                                        ? "Pele Seca/Mista"
-                                                        : "Pele Oleosa"}
+                                                Seleção da Base
+                                            </h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {initialProducts
+                                                    .slice(0, 2)
+                                                    .map((product, index) => (
+                                                        <label
+                                                            key={product.uuid}
+                                                            className={`relative flex cursor-pointer flex-col rounded-xl border-2 p-4 ${
+                                                                index === 0
+                                                                    ? "border-primary bg-primary/5"
+                                                                    : "border-slate-200"
+                                                            }`}
+                                                        >
+                                                            <span className="text-sm font-bold">
+                                                                {product.name}
+                                                            </span>
+                                                            <span className="text-xs text-slate-500">
+                                                                {index === 0
+                                                                    ? "Pele Seca/Mista"
+                                                                    : "Pele Oleosa"}
+                                                            </span>
+                                                            {index === 0 ? (
+                                                                <span className="material-symbols-outlined absolute right-2 top-2 text-sm text-primary">
+                                                                    check_circle
+                                                                </span>
+                                                            ) : null}
+                                                        </label>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <h4 className="flex items-center gap-2 font-semibold text-slate-700">
+                                                <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                                    2
                                                 </span>
-                                                {index === 0 ? (
-                                                    <span className="material-symbols-outlined absolute right-2 top-2 text-sm text-primary">
-                                                        check_circle
+                                                Óleos Essenciais (Máx 3)
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {[
+                                                    "Lavanda",
+                                                    "Alecrim",
+                                                    "Bergamota",
+                                                    "Melaleuca",
+                                                    "Menta",
+                                                ].map((item, index) => (
+                                                    <span
+                                                        key={item}
+                                                        className={`inline-flex items-center rounded-full border px-3 py-1.5 text-sm ${
+                                                            index === 1 ||
+                                                            index === 3
+                                                                ? "border-primary bg-primary/20 text-primary"
+                                                                : "border-slate-200 bg-slate-100"
+                                                        }`}
+                                                    >
+                                                        {item}
                                                     </span>
-                                                ) : null}
-                                            </label>
-                                        ))}
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <h4 className="flex items-center gap-2 font-semibold text-slate-700">
-                                        <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                            2
-                                        </span>
-                                        Óleos Essenciais (Máx 3)
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {[
-                                            "Lavanda",
-                                            "Alecrim",
-                                            "Bergamota",
-                                            "Melaleuca",
-                                            "Menta",
-                                        ].map((item, index) => (
-                                            <span
-                                                key={item}
-                                                className={`inline-flex items-center rounded-full border px-3 py-1.5 text-sm ${
-                                                    index === 1 || index === 3
-                                                        ? "border-primary bg-primary/20 text-primary"
-                                                        : "border-slate-200 bg-slate-100"
-                                                }`}
-                                            >
-                                                {item}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="space-y-4 border-t border-slate-100 pt-4">
-                                <h4 className="flex items-center gap-2 font-semibold text-slate-700">
-                                    <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                        3
-                                    </span>
-                                    Personalização do Rótulo
-                                </h4>
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="mb-1.5 block text-sm font-medium">
-                                                Texto do Rótulo
-                                            </label>
-                                            <input
-                                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                                onChange={(event) =>
-                                                    setLabelText(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                placeholder="Ex: Creme de Noite da Maria"
-                                                value={labelText}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="mb-1.5 block text-sm font-medium">
-                                                Instruções de Uso
-                                            </label>
-                                            <textarea
-                                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                                placeholder="Ex: Aplicar antes de dormir..."
-                                                rows={3}
-                                            />
+                                    <div className="space-y-4 border-t border-slate-100 pt-4">
+                                        <h4 className="flex items-center gap-2 font-semibold text-slate-700">
+                                            <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                                3
+                                            </span>
+                                            Personalização do Rótulo
+                                        </h4>
+                                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="mb-1.5 block text-sm font-medium">
+                                                        Texto do Rótulo
+                                                    </label>
+                                                    <input
+                                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                                        onChange={(event) =>
+                                                            setLabelText(
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        placeholder="Ex: Creme de Noite da Maria"
+                                                        value={labelText}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1.5 block text-sm font-medium">
+                                                        Instruções de Uso
+                                                    </label>
+                                                    <textarea
+                                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                                        placeholder="Ex: Aplicar antes de dormir..."
+                                                        rows={3}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                                                <div className="flex h-24 w-48 flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-4 shadow-inner">
+                                                    <p className="font-display text-xs font-bold text-primary">
+                                                        ATELIÊ GUADALUPE
+                                                    </p>
+                                                    <div className="mb-2 mt-1 h-px w-full bg-primary/30" />
+                                                    <p className="text-[10px] font-medium leading-tight">
+                                                        {labelText ||
+                                                            "Creme de Noite da Maria"}
+                                                    </p>
+                                                    <p className="mt-1 text-[8px] text-slate-400">
+                                                        Personalizado para você
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-                                        <div className="flex h-24 w-48 flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-4 shadow-inner">
-                                            <p className="font-display text-xs font-bold text-primary">
-                                                ATELIÊ GUADALUPE
-                                            </p>
-                                            <div className="mb-2 mt-1 h-px w-full bg-primary/30" />
-                                            <p className="text-[10px] font-medium leading-tight">
-                                                {labelText ||
-                                                    "Creme de Noite da Maria"}
-                                            </p>
-                                            <p className="mt-1 text-[8px] text-slate-400">
-                                                Personalizado para você
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                                 </form>
                             </div>
                         </div>

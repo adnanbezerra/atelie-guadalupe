@@ -48,7 +48,9 @@ export function AdminShell({ children, currentUser }: AdminShellProps) {
                             </div>
                             <div>
                                 <h2 className="font-display text-lg font-bold text-primary">
-                                    {billingShell ? "Guadalupe" : "Ateliê Guadalupe"}
+                                    {billingShell
+                                        ? "Guadalupe"
+                                        : "Ateliê Guadalupe"}
                                 </h2>
                                 {billingShell ? null : (
                                     <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
@@ -174,7 +176,9 @@ export function AdminShell({ children, currentUser }: AdminShellProps) {
                         ) : (
                             <div className="flex items-center gap-3 p-2">
                                 <div className="flex size-10 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                                    {currentUser ? getInitials(currentUser.name) : "AG"}
+                                    {currentUser
+                                        ? getInitials(currentUser.name)
+                                        : "AG"}
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold">
@@ -197,7 +201,9 @@ export function AdminShell({ children, currentUser }: AdminShellProps) {
                             </h2>
                         ) : (
                             <div className="flex items-center gap-2 text-slate-500">
-                                <span className="text-sm">Painel de Controle</span>
+                                <span className="text-sm">
+                                    Painel de Controle
+                                </span>
                                 <span className="material-symbols-outlined text-sm">
                                     chevron_right
                                 </span>
@@ -217,14 +223,17 @@ export function AdminShell({ children, currentUser }: AdminShellProps) {
                                 <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
                                     <div className="text-right">
                                         <p className="text-sm font-semibold">
-                                            {currentUser?.name ?? "Admin Guadalupe"}
+                                            {currentUser?.name ??
+                                                "Admin Guadalupe"}
                                         </p>
                                         <p className="text-xs text-slate-500">
                                             {currentUser?.role ?? "Gestor"}
                                         </p>
                                     </div>
                                     <div className="flex size-10 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                                        {currentUser ? getInitials(currentUser.name) : "AG"}
+                                        {currentUser
+                                            ? getInitials(currentUser.name)
+                                            : "AG"}
                                     </div>
                                 </div>
                             ) : (

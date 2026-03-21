@@ -287,7 +287,8 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
                                         onChange={(event) =>
                                             setFormState((current) => ({
                                                 ...current,
-                                                role: event.target.value as UserRole,
+                                                role: event.target
+                                                    .value as UserRole,
                                             }))
                                         }
                                         value={formState.role}

@@ -39,10 +39,7 @@ export function CatalogPageClient({
 
     const resource = useProducts(query, initialPayload);
     const payload = resource.data ?? initialPayload;
-    const products = filterProductsByCollection(
-        payload.items,
-        collection,
-    );
+    const products = filterProductsByCollection(payload.items, collection);
     const payloadLines =
         "lines" in payload && Array.isArray(payload.lines) ? payload.lines : [];
     const lines = filterLinesByCollection(payloadLines, collection);

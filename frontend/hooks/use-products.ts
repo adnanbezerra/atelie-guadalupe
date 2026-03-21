@@ -101,8 +101,12 @@ export function useProducts(
               ? second
               : null;
     const query =
-        first && "items" in first ? (second as ProductQuery) : (first as ProductQuery);
-    const [data, setData] = useState<ProductsPayload | null>(initialData ?? null);
+        first && "items" in first
+            ? (second as ProductQuery)
+            : (first as ProductQuery);
+    const [data, setData] = useState<ProductsPayload | null>(
+        initialData ?? null,
+    );
     const [isLoading, setIsLoading] = useState(!initialData);
     const [error, setError] = useState<string | null>(null);
     const queryKey = JSON.stringify(query);

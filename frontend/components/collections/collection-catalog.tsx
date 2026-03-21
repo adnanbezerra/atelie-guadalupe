@@ -60,37 +60,60 @@ export function CollectionCatalog({
                 <nav className="sticky top-0 z-50 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
                     <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center gap-8">
-                            <Link className="font-public text-2xl font-bold tracking-tight text-[#4A3728]" href="/">
+                            <Link
+                                className="font-public text-2xl font-bold tracking-tight text-[#4A3728]"
+                                href="/"
+                            >
                                 Ateliê Guadalupe
                             </Link>
                             <div className="hidden space-x-6 md:flex">
-                                <Link className="font-public text-sm font-medium" href="/beleza-natural">
+                                <Link
+                                    className="font-public text-sm font-medium"
+                                    href="/beleza-natural"
+                                >
                                     Beleza Natural
                                 </Link>
-                                <Link className="border-b-2 border-[#D4AF37] font-public text-sm font-medium text-[#4A3728]" href="/artesanato">
+                                <Link
+                                    className="border-b-2 border-[#D4AF37] font-public text-sm font-medium text-[#4A3728]"
+                                    href="/artesanato"
+                                >
                                     Artesanato
                                 </Link>
                             </div>
                         </div>
                         <div className="flex items-center gap-6">
                             <div className="hidden w-64 items-center rounded-full border border-neutral-200 bg-neutral-100 px-4 py-2 lg:flex">
-                                <span className="material-symbols-outlined text-sm text-neutral-400">search</span>
+                                <span className="material-symbols-outlined text-sm text-neutral-400">
+                                    search
+                                </span>
                                 <input
                                     className="w-full border-none bg-transparent text-sm outline-none"
-                                    onChange={(event) => setSearch(event.target.value)}
+                                    onChange={(event) =>
+                                        setSearch(event.target.value)
+                                    }
                                     placeholder="Buscar arte sacra..."
                                     value={search}
                                 />
                             </div>
                             <div className="flex items-center gap-4">
-                                <Link className="relative rounded-full p-2 hover:bg-neutral-100" href="/carrinho">
-                                    <span className="material-symbols-outlined">shopping_cart</span>
+                                <Link
+                                    className="relative rounded-full p-2 hover:bg-neutral-100"
+                                    href="/carrinho"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        shopping_cart
+                                    </span>
                                     <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[10px] text-white">
                                         0
                                     </span>
                                 </Link>
-                                <Link className="rounded-full p-2 hover:bg-neutral-100" href="/admin">
-                                    <span className="material-symbols-outlined">person</span>
+                                <Link
+                                    className="rounded-full p-2 hover:bg-neutral-100"
+                                    href="/admin"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        person
+                                    </span>
                                 </Link>
                             </div>
                         </div>
@@ -100,8 +123,12 @@ export function CollectionCatalog({
                 <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                     <nav className="mb-8 flex items-center gap-2 text-sm text-neutral-500">
                         <Link href="/">Home</Link>
-                        <span className="material-symbols-outlined text-xs">chevron_right</span>
-                        <span className="font-medium text-[#4A3728]">Artesanato</span>
+                        <span className="material-symbols-outlined text-xs">
+                            chevron_right
+                        </span>
+                        <span className="font-medium text-[#4A3728]">
+                            Artesanato
+                        </span>
                     </nav>
 
                     <header className="mb-12">
@@ -149,23 +176,31 @@ export function CollectionCatalog({
                                         Material
                                     </h3>
                                     <ul className="space-y-3">
-                                        {["Madeira Nobre", "Cerâmica", "Linho e Seda"].map(
-                                            (label) => (
-                                                <li key={label}>
-                                                    <label className="flex cursor-pointer items-center gap-3 text-sm">
-                                                        <input name="material" type="radio" />
-                                                        {label}
-                                                    </label>
-                                                </li>
-                                            ),
-                                        )}
+                                        {[
+                                            "Madeira Nobre",
+                                            "Cerâmica",
+                                            "Linho e Seda",
+                                        ].map((label) => (
+                                            <li key={label}>
+                                                <label className="flex cursor-pointer items-center gap-3 text-sm">
+                                                    <input
+                                                        name="material"
+                                                        type="radio"
+                                                    />
+                                                    {label}
+                                                </label>
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                                 <div>
                                     <h3 className="mb-4 font-public font-semibold text-neutral-900">
                                         Faixa de Preço
                                     </h3>
-                                    <input className="w-full accent-[#4A3728]" type="range" />
+                                    <input
+                                        className="w-full accent-[#4A3728]"
+                                        type="range"
+                                    />
                                     <div className="mt-4 flex justify-between text-xs text-neutral-500">
                                         <span>R$ 0</span>
                                         <span>R$ 2.000+</span>
@@ -185,7 +220,8 @@ export function CollectionCatalog({
                                                 src={
                                                     product.imageUrl ||
                                                     craftsFallbacks[
-                                                        index % craftsFallbacks.length
+                                                        index %
+                                                            craftsFallbacks.length
                                                     ]
                                                 }
                                             />
@@ -201,7 +237,9 @@ export function CollectionCatalog({
                                         </p>
                                         <div className="mt-3 flex items-center justify-between">
                                             <span className="text-xl font-bold text-[#4A3728]">
-                                                {getPriceLabel(product.priceOptions)}
+                                                {getPriceLabel(
+                                                    product.priceOptions,
+                                                )}
                                             </span>
                                             <Link
                                                 className="rounded bg-[#4A3728] px-4 py-2 text-xs font-medium tracking-wider text-white uppercase"
@@ -238,7 +276,6 @@ export function CollectionCatalog({
                         </div>
                     </div>
                 </main>
-
             </div>
         );
     }
@@ -257,10 +294,16 @@ export function CollectionCatalog({
                             </h2>
                         </Link>
                         <nav className="hidden items-center gap-6 md:flex">
-                            <Link className="border-b-2 border-primary text-sm font-medium" href="/beleza-natural">
+                            <Link
+                                className="border-b-2 border-primary text-sm font-medium"
+                                href="/beleza-natural"
+                            >
                                 Beleza Natural
                             </Link>
-                            <Link className="text-sm font-medium" href="/artesanato">
+                            <Link
+                                className="text-sm font-medium"
+                                href="/artesanato"
+                            >
                                 Aromaterapia
                             </Link>
                             <Link className="text-sm font-medium" href="/">
@@ -275,18 +318,26 @@ export function CollectionCatalog({
                             </span>
                             <input
                                 className="w-full rounded-lg bg-slate-100 py-2 pr-4 pl-10 text-sm outline-none"
-                                onChange={(event) => setSearch(event.target.value)}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
                                 placeholder="Buscar cremes..."
                                 value={search}
                             />
                         </div>
                         <div className="flex gap-2">
-                            <Link className="rounded-lg bg-slate-100 p-2" href="/carrinho">
+                            <Link
+                                className="rounded-lg bg-slate-100 p-2"
+                                href="/carrinho"
+                            >
                                 <span className="material-symbols-outlined text-slate-700">
                                     shopping_bag
                                 </span>
                             </Link>
-                            <Link className="rounded-lg bg-slate-100 p-2" href="/admin">
+                            <Link
+                                className="rounded-lg bg-slate-100 p-2"
+                                href="/admin"
+                            >
                                 <span className="material-symbols-outlined text-slate-700">
                                     person
                                 </span>
@@ -299,9 +350,13 @@ export function CollectionCatalog({
             <main className="mx-auto w-full max-w-7xl px-6 py-8 md:px-10">
                 <nav className="mb-8 flex items-center gap-2 text-sm text-slate-500">
                     <Link href="/">Home</Link>
-                    <span className="material-symbols-outlined text-xs">chevron_right</span>
+                    <span className="material-symbols-outlined text-xs">
+                        chevron_right
+                    </span>
                     <Link href="/beleza-natural">Beleza Natural</Link>
-                    <span className="material-symbols-outlined text-xs">chevron_right</span>
+                    <span className="material-symbols-outlined text-xs">
+                        chevron_right
+                    </span>
                     <span className="font-medium text-slate-900">Cremes</span>
                 </nav>
 
@@ -324,7 +379,8 @@ export function CollectionCatalog({
                                     Crie seu Creme Personalizado
                                 </h3>
                                 <p className="mt-2 text-sm text-white/80">
-                                    Escolha os óleos e a textura ideal para você.
+                                    Escolha os óleos e a textura ideal para
+                                    você.
                                 </p>
                                 <Link
                                     className="mt-4 block w-full rounded-lg bg-white py-3 text-center font-bold text-primary"
@@ -351,7 +407,10 @@ export function CollectionCatalog({
                                     "Bergamota",
                                     "Sem Perfume",
                                 ].map((label) => (
-                                    <label className="flex items-center gap-3 text-sm" key={label}>
+                                    <label
+                                        className="flex items-center gap-3 text-sm"
+                                        key={label}
+                                    >
                                         <input type="checkbox" />
                                         {label}
                                     </label>
@@ -369,7 +428,10 @@ export function CollectionCatalog({
                                     "Hidratação Intensa",
                                     "Pele Sensível",
                                 ].map((label) => (
-                                    <label className="flex items-center gap-3 text-sm" key={label}>
+                                    <label
+                                        className="flex items-center gap-3 text-sm"
+                                        key={label}
+                                    >
                                         <input type="checkbox" />
                                         {label}
                                     </label>
@@ -381,8 +443,8 @@ export function CollectionCatalog({
                                 Dica Pro
                             </p>
                             <p className="text-sm leading-relaxed text-slate-600">
-                                Cremes com base de Karité são ideais para as áreas
-                                mais secas como cotovelos e pés.
+                                Cremes com base de Karité são ideais para as
+                                áreas mais secas como cotovelos e pés.
                             </p>
                         </div>
                     </aside>
@@ -397,15 +459,23 @@ export function CollectionCatalog({
                                 produtos
                             </p>
                             <div className="flex items-center gap-2">
-                                <span className="text-sm text-slate-500">Ordenar por:</span>
+                                <span className="text-sm text-slate-500">
+                                    Ordenar por:
+                                </span>
                                 <select
                                     className="cursor-pointer border-none bg-transparent text-sm font-bold outline-none"
-                                    onChange={(event) => setLineUuid(event.target.value)}
+                                    onChange={(event) =>
+                                        setLineUuid(event.target.value)
+                                    }
                                     value={lineUuid}
                                 >
                                     <option value="">Mais populares</option>
-                                    <option value="lancamentos">Lançamentos</option>
-                                    <option value="menor-preco">Menor preço</option>
+                                    <option value="lancamentos">
+                                        Lançamentos
+                                    </option>
+                                    <option value="menor-preco">
+                                        Menor preço
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -419,7 +489,10 @@ export function CollectionCatalog({
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             src={
                                                 product.imageUrl ||
-                                                beautyFallbacks[index % beautyFallbacks.length]
+                                                beautyFallbacks[
+                                                    index %
+                                                        beautyFallbacks.length
+                                                ]
                                             }
                                         />
                                         <button className="absolute top-3 right-3 rounded-full bg-white/80 p-2 backdrop-blur">
@@ -441,7 +514,9 @@ export function CollectionCatalog({
                                     </p>
                                     <div className="flex items-center justify-between">
                                         <span className="text-lg font-bold">
-                                            {getPriceLabel(product.priceOptions)}
+                                            {getPriceLabel(
+                                                product.priceOptions,
+                                            )}
                                         </span>
                                         <Link
                                             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"

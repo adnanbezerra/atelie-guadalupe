@@ -12,7 +12,9 @@ function HeaderSkeleton({ crafts = false }: { crafts?: boolean }) {
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
                 <div className="flex items-center gap-4 sm:gap-8">
                     <Skeleton
-                        className={crafts ? "h-8 w-44 rounded-full" : "h-10 w-52"}
+                        className={
+                            crafts ? "h-8 w-44 rounded-full" : "h-10 w-52"
+                        }
                     />
                     <div className="hidden gap-4 md:flex">
                         <Skeleton className="h-4 w-28 rounded-full" />
@@ -198,9 +200,25 @@ export function CatalogPageSkeleton({
                     )}
                 </section>
 
-                <div className={crafts ? "flex flex-col gap-12 lg:flex-row" : "flex flex-col gap-10 md:flex-row"}>
-                    <aside className={crafts ? "w-full lg:w-64 lg:flex-shrink-0" : "w-full space-y-8 md:w-64 md:flex-shrink-0"}>
-                        <div className={crafts ? "sticky top-28 space-y-8" : "space-y-8"}>
+                <div
+                    className={
+                        crafts
+                            ? "flex flex-col gap-12 lg:flex-row"
+                            : "flex flex-col gap-10 md:flex-row"
+                    }
+                >
+                    <aside
+                        className={
+                            crafts
+                                ? "w-full lg:w-64 lg:flex-shrink-0"
+                                : "w-full space-y-8 md:w-64 md:flex-shrink-0"
+                        }
+                    >
+                        <div
+                            className={
+                                crafts ? "sticky top-28 space-y-8" : "space-y-8"
+                            }
+                        >
                             {Array.from({ length: 3 }).map((_, index) => (
                                 <div key={index}>
                                     <Skeleton className="mb-4 h-5 w-32" />

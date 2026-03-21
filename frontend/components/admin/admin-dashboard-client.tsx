@@ -45,11 +45,13 @@ export function AdminDashboardClient({
         };
     }, [initialProducts, orders.data]);
 
-    const chartOrders = (metrics.currentOrders.length
-        ? metrics.currentOrders
-        : orders.data
+    const chartOrders = (
+        metrics.currentOrders.length ? metrics.currentOrders : orders.data
     ).slice(0, 12);
-    const maxOrder = Math.max(...chartOrders.map((item) => item.totalInCents), 1);
+    const maxOrder = Math.max(
+        ...chartOrders.map((item) => item.totalInCents),
+        1,
+    );
 
     return (
         <div className="min-h-screen bg-[#f6f6f8] text-slate-900">
@@ -73,26 +75,54 @@ export function AdminDashboardClient({
                         </div>
                     </div>
                     <nav className="flex-1 space-y-1 px-4">
-                        <Link className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white" href="/admin">
-                            <span className="material-symbols-outlined">dashboard</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white"
+                            href="/admin"
+                        >
+                            <span className="material-symbols-outlined">
+                                dashboard
+                            </span>
                             <span className="text-sm font-medium">Painel</span>
                         </Link>
-                        <Link className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600" href="/admin/produtos">
-                            <span className="material-symbols-outlined">inventory_2</span>
-                            <span className="text-sm font-medium">Produtos</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
+                            href="/admin/produtos"
+                        >
+                            <span className="material-symbols-outlined">
+                                inventory_2
+                            </span>
+                            <span className="text-sm font-medium">
+                                Produtos
+                            </span>
                         </Link>
-                        <Link className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600" href="/admin/cobranca">
-                            <span className="material-symbols-outlined">shopping_cart</span>
-                            <span className="text-sm font-medium">Vendas/Links</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
+                            href="/admin/cobranca"
+                        >
+                            <span className="material-symbols-outlined">
+                                shopping_cart
+                            </span>
+                            <span className="text-sm font-medium">
+                                Vendas/Links
+                            </span>
                         </Link>
-                        <Link className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600" href="/admin/usuarios">
-                            <span className="material-symbols-outlined">group</span>
-                            <span className="text-sm font-medium">Usuários</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
+                            href="/admin/usuarios"
+                        >
+                            <span className="material-symbols-outlined">
+                                group
+                            </span>
+                            <span className="text-sm font-medium">
+                                Usuários
+                            </span>
                         </Link>
                     </nav>
                     <div className="border-t border-slate-200 p-4">
                         <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-red-600">
-                            <span className="material-symbols-outlined">logout</span>
+                            <span className="material-symbols-outlined">
+                                logout
+                            </span>
                             <span className="text-sm font-medium">Sair</span>
                         </button>
                     </div>
@@ -139,7 +169,8 @@ export function AdminDashboardClient({
                                     icon: "payments",
                                     iconClass: "bg-primary/10 text-primary",
                                     badge: "+12.5%",
-                                    badgeClass: "bg-emerald-50 text-emerald-600",
+                                    badgeClass:
+                                        "bg-emerald-50 text-emerald-600",
                                     label: "Vendas Totais (Mês)",
                                     value: formatCurrency(metrics.totalSales),
                                 },
@@ -147,7 +178,8 @@ export function AdminDashboardClient({
                                     icon: "shopping_bag",
                                     iconClass: "bg-amber-100 text-amber-600",
                                     badge: "+5.2%",
-                                    badgeClass: "bg-emerald-50 text-emerald-600",
+                                    badgeClass:
+                                        "bg-emerald-50 text-emerald-600",
                                     label: "Pedidos este Mês",
                                     value: `${metrics.currentOrders.length}`,
                                 },
@@ -157,7 +189,9 @@ export function AdminDashboardClient({
                                     badge: "Estável",
                                     badgeClass: "text-slate-400",
                                     label: "Ticket Médio",
-                                    value: formatCurrency(Math.round(metrics.averageTicket)),
+                                    value: formatCurrency(
+                                        Math.round(metrics.averageTicket),
+                                    ),
                                 },
                             ].map((item) => (
                                 <div
@@ -165,7 +199,9 @@ export function AdminDashboardClient({
                                     key={item.label}
                                 >
                                     <div className="mb-4 flex items-start justify-between">
-                                        <div className={`rounded-lg p-2 ${item.iconClass}`}>
+                                        <div
+                                            className={`rounded-lg p-2 ${item.iconClass}`}
+                                        >
                                             <span className="material-symbols-outlined">
                                                 {item.icon}
                                             </span>
@@ -179,7 +215,9 @@ export function AdminDashboardClient({
                                     <p className="text-sm font-medium text-slate-500">
                                         {item.label}
                                     </p>
-                                    <p className="mt-1 text-2xl font-bold">{item.value}</p>
+                                    <p className="mt-1 text-2xl font-bold">
+                                        {item.value}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -187,7 +225,9 @@ export function AdminDashboardClient({
                         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
                                 <div className="mb-6 flex items-center justify-between">
-                                    <h3 className="text-lg font-bold">Histórico de Vendas</h3>
+                                    <h3 className="text-lg font-bold">
+                                        Histórico de Vendas
+                                    </h3>
                                     <select className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-sm">
                                         <option>Últimos 30 dias</option>
                                     </select>
@@ -202,11 +242,15 @@ export function AdminDashboardClient({
                                                     height: `${Math.max(
                                                         30,
                                                         Math.round(
-                                                            (order.totalInCents / maxOrder) * 100,
+                                                            (order.totalInCents /
+                                                                maxOrder) *
+                                                                100,
                                                         ),
                                                     )}%`,
                                                 }}
-                                                title={formatCurrency(order.totalInCents)}
+                                                title={formatCurrency(
+                                                    order.totalInCents,
+                                                )}
                                             />
                                         ))}
                                     </div>
@@ -220,7 +264,9 @@ export function AdminDashboardClient({
                             </div>
 
                             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                                <h3 className="mb-6 text-lg font-bold">Alertas de Estoque</h3>
+                                <h3 className="mb-6 text-lg font-bold">
+                                    Alertas de Estoque
+                                </h3>
                                 <div className="space-y-4">
                                     {metrics.lowStock.map((product, index) => (
                                         <div
@@ -238,14 +284,17 @@ export function AdminDashboardClient({
                                                         : "text-amber-600"
                                                 }`}
                                             >
-                                                {index === 0 ? "error" : "warning"}
+                                                {index === 0
+                                                    ? "error"
+                                                    : "warning"}
                                             </span>
                                             <div className="flex-1">
                                                 <p className="text-sm font-bold text-slate-900">
                                                     {product.name}
                                                 </p>
                                                 <p className="text-xs text-slate-600">
-                                                    Estoque baixo: {product.stock} unidades
+                                                    Estoque baixo:{" "}
+                                                    {product.stock} unidades
                                                 </p>
                                             </div>
                                         </div>
@@ -259,7 +308,9 @@ export function AdminDashboardClient({
 
                         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div className="flex items-center justify-between border-b border-slate-200 p-6">
-                                <h3 className="text-lg font-bold">Pedidos Recentes</h3>
+                                <h3 className="text-lg font-bold">
+                                    Pedidos Recentes
+                                </h3>
                                 <button className="text-sm font-bold text-primary">
                                     Ver todos
                                 </button>
@@ -268,15 +319,24 @@ export function AdminDashboardClient({
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
-                                            <th className="px-6 py-4">ID Pedido</th>
-                                            <th className="px-6 py-4">Cliente</th>
+                                            <th className="px-6 py-4">
+                                                ID Pedido
+                                            </th>
+                                            <th className="px-6 py-4">
+                                                Cliente
+                                            </th>
                                             <th className="px-6 py-4">Data</th>
-                                            <th className="px-6 py-4">Status</th>
+                                            <th className="px-6 py-4">
+                                                Status
+                                            </th>
                                             <th className="px-6 py-4">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {(orders.data.length ? orders.data : initialOrders)
+                                        {(orders.data.length
+                                            ? orders.data
+                                            : initialOrders
+                                        )
                                             .slice(0, 6)
                                             .map((order) => (
                                                 <tr
@@ -284,13 +344,16 @@ export function AdminDashboardClient({
                                                     key={order.uuid}
                                                 >
                                                     <td className="px-6 py-4 text-sm font-bold">
-                                                        #{order.uuid.slice(0, 8)}
+                                                        #
+                                                        {order.uuid.slice(0, 8)}
                                                     </td>
                                                     <td className="px-6 py-4 text-sm">
                                                         Cliente
                                                     </td>
                                                     <td className="px-6 py-4 text-sm text-slate-500">
-                                                        {formatDate(order.placedAt)}
+                                                        {formatDate(
+                                                            order.placedAt,
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className="rounded bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase text-blue-700">
@@ -298,7 +361,9 @@ export function AdminDashboardClient({
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-sm font-bold">
-                                                        {formatCurrency(order.totalInCents)}
+                                                        {formatCurrency(
+                                                            order.totalInCents,
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}

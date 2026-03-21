@@ -15,10 +15,14 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
     const cart = useCart(initialCart);
     const [zipCode, setZipCode] = useState("");
     const shippingEstimate = zipCode.length >= 8 ? 1250 : 0;
-    const taxes = Math.round((cart.data?.summary.subtotalInCents ?? 0) * 0.0563);
+    const taxes = Math.round(
+        (cart.data?.summary.subtotalInCents ?? 0) * 0.0563,
+    );
 
     const total = useMemo(() => {
-        return (cart.data?.summary.subtotalInCents ?? 0) + shippingEstimate + taxes;
+        return (
+            (cart.data?.summary.subtotalInCents ?? 0) + shippingEstimate + taxes
+        );
     }, [cart.data?.summary.subtotalInCents, shippingEstimate, taxes]);
 
     const midpoint = Math.ceil((cart.data?.items.length ?? 0) / 2);
@@ -40,7 +44,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     <span className="material-symbols-outlined text-primary">
                         {icon}
                     </span>
-                    <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+                    <h3 className="text-lg font-bold text-slate-900">
+                        {title}
+                    </h3>
                 </div>
                 <div className="space-y-4">
                     {items.map((item) => (
@@ -68,7 +74,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                             <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-1">
                                 <button
                                     className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-white"
-                                    disabled={cart.isPending || item.quantity <= 1}
+                                    disabled={
+                                        cart.isPending || item.quantity <= 1
+                                    }
                                     onClick={() =>
                                         cart.updateItem(
                                             item.uuid,
@@ -123,13 +131,22 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-8">
                         <nav className="hidden items-center gap-9 md:flex">
-                            <Link className="text-sm font-medium text-slate-600" href="/">
+                            <Link
+                                className="text-sm font-medium text-slate-600"
+                                href="/"
+                            >
                                 Loja
                             </Link>
-                            <Link className="text-sm font-medium text-slate-600" href="/artesanato">
+                            <Link
+                                className="text-sm font-medium text-slate-600"
+                                href="/artesanato"
+                            >
                                 Artesãos
                             </Link>
-                            <Link className="text-sm font-medium text-slate-600" href="/admin">
+                            <Link
+                                className="text-sm font-medium text-slate-600"
+                                href="/admin"
+                            >
                                 Sobre
                             </Link>
                         </nav>
@@ -152,7 +169,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     </div>
 
                     {cart.error ? (
-                        <p className="mb-6 text-sm text-red-600">{cart.error}</p>
+                        <p className="mb-6 text-sm text-red-600">
+                            {cart.error}
+                        </p>
                     ) : null}
 
                     <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
@@ -175,7 +194,11 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                   ))
                                 : null}
 
-                            {renderSection("Botica & Cremes", "spa", beautyItems)}
+                            {renderSection(
+                                "Botica & Cremes",
+                                "spa",
+                                beautyItems,
+                            )}
                             {renderSection(
                                 "Artesanato Feito à Mão",
                                 "brush",
@@ -188,8 +211,8 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         Seu carrinho está vazio
                                     </h2>
                                     <p className="mt-3 text-sm text-slate-500">
-                                        O backend cria o carrinho automaticamente no
-                                        primeiro acesso.
+                                        O backend cria o carrinho
+                                        automaticamente no primeiro acesso.
                                     </p>
                                     <Link
                                         href="/beleza-natural"
@@ -222,7 +245,8 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                                 <span className="font-medium">
                                                     {formatCurrency(
                                                         cart.data?.summary
-                                                            .subtotalInCents ?? 0,
+                                                            .subtotalInCents ??
+                                                            0,
                                                     )}
                                                 </span>
                                             </div>
@@ -242,7 +266,8 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                                         className="w-full rounded-lg border-none bg-slate-50 px-3 py-2 text-xs"
                                                         onChange={(event) =>
                                                             setZipCode(
-                                                                event.target.value,
+                                                                event.target
+                                                                    .value,
                                                             )
                                                         }
                                                         placeholder="CEP"
@@ -287,7 +312,8 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         <button
                                             className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700"
                                             disabled={
-                                                cart.isPending || !cart.data?.items.length
+                                                cart.isPending ||
+                                                !cart.data?.items.length
                                             }
                                             onClick={() => cart.clearCart()}
                                             type="button"
@@ -304,9 +330,10 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         eco
                                     </span>
                                     <p className="text-[11px] italic leading-relaxed text-slate-500">
-                                        Nota: Nossos produtos são feitos à mão em
-                                        pequenos lotes. Pequenas variações de textura
-                                        e cor são prova de sua origem artesanal.
+                                        Nota: Nossos produtos são feitos à mão
+                                        em pequenos lotes. Pequenas variações de
+                                        textura e cor são prova de sua origem
+                                        artesanal.
                                     </p>
                                 </div>
                             </div>

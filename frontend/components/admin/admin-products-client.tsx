@@ -39,13 +39,15 @@ export function AdminProductsClient({
         const items = products.data?.items ?? [];
         return {
             total: items.length,
-            lowStock: items.filter((product) => product.stock <= LOW_STOCK_THRESHOLD)
-                .length,
+            lowStock: items.filter(
+                (product) => product.stock <= LOW_STOCK_THRESHOLD,
+            ).length,
             beauty: items.filter((product) =>
                 product.line.name.toLowerCase().includes("beleza"),
             ).length,
             crafts: items.filter(
-                (product) => !product.line.name.toLowerCase().includes("beleza"),
+                (product) =>
+                    !product.line.name.toLowerCase().includes("beleza"),
             ).length,
         };
     }, [products.data?.items]);
@@ -56,27 +58,49 @@ export function AdminProductsClient({
                 <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
                     <div className="flex items-center gap-3 p-6">
                         <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white">
-                            <span className="material-symbols-outlined">auto_awesome</span>
+                            <span className="material-symbols-outlined">
+                                auto_awesome
+                            </span>
                         </div>
                         <h2 className="font-display text-xl font-bold text-primary">
                             Guadalupe
                         </h2>
                     </div>
                     <nav className="flex-1 space-y-2 px-4 py-4">
-                        <Link className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600" href="/admin">
-                            <span className="material-symbols-outlined">dashboard</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
+                            href="/admin"
+                        >
+                            <span className="material-symbols-outlined">
+                                dashboard
+                            </span>
                             <span className="font-medium">Dashboard</span>
                         </Link>
-                        <Link className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2 text-white shadow-md shadow-primary/20" href="/admin/produtos">
-                            <span className="material-symbols-outlined">inventory_2</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg bg-primary px-3 py-2 text-white shadow-md shadow-primary/20"
+                            href="/admin/produtos"
+                        >
+                            <span className="material-symbols-outlined">
+                                inventory_2
+                            </span>
                             <span className="font-medium">Produtos</span>
                         </Link>
-                        <Link className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600" href="/admin/cobranca">
-                            <span className="material-symbols-outlined">shopping_cart</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
+                            href="/admin/cobranca"
+                        >
+                            <span className="material-symbols-outlined">
+                                shopping_cart
+                            </span>
                             <span className="font-medium">Vendas</span>
                         </Link>
-                        <Link className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600" href="/admin/usuarios">
-                            <span className="material-symbols-outlined">group</span>
+                        <Link
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
+                            href="/admin/usuarios"
+                        >
+                            <span className="material-symbols-outlined">
+                                group
+                            </span>
                             <span className="font-medium">Clientes</span>
                         </Link>
                     </nav>
@@ -91,7 +115,9 @@ export function AdminProductsClient({
                                 </span>
                                 <input
                                     className="w-full rounded-lg bg-slate-100 py-2 pr-4 pl-10 text-sm outline-none"
-                                    onChange={(event) => setSearch(event.target.value)}
+                                    onChange={(event) =>
+                                        setSearch(event.target.value)
+                                    }
                                     placeholder="Buscar produtos, categorias ou SKU..."
                                     value={search}
                                 />
@@ -114,11 +140,14 @@ export function AdminProductsClient({
                                     Gestão de Produtos
                                 </h1>
                                 <p className="mt-1 text-slate-500">
-                                    Gerencie seu inventário de cosméticos naturais e artesanato.
+                                    Gerencie seu inventário de cosméticos
+                                    naturais e artesanato.
                                 </p>
                             </div>
                             <button className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white">
-                                <span className="material-symbols-outlined">add</span>
+                                <span className="material-symbols-outlined">
+                                    add
+                                </span>
                                 Adicionar Novo Produto
                             </button>
                         </div>
@@ -154,14 +183,20 @@ export function AdminProductsClient({
                                     className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
                                     key={item.label}
                                 >
-                                    <div className={`flex size-12 items-center justify-center rounded-lg ${item.tone}`}>
-                                        <span className="material-symbols-outlined">{item.icon}</span>
+                                    <div
+                                        className={`flex size-12 items-center justify-center rounded-lg ${item.tone}`}
+                                    >
+                                        <span className="material-symbols-outlined">
+                                            {item.icon}
+                                        </span>
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
                                             {item.label}
                                         </p>
-                                        <p className="text-xl font-bold">{item.value}</p>
+                                        <p className="text-xl font-bold">
+                                            {item.value}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
@@ -181,7 +216,11 @@ export function AdminProductsClient({
                                     </button>
                                     <button
                                         className="flex items-center gap-1 rounded-lg bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-600"
-                                        onClick={() => setOnlyLowStock((current) => !current)}
+                                        onClick={() =>
+                                            setOnlyLowStock(
+                                                (current) => !current,
+                                            )
+                                        }
                                         type="button"
                                     >
                                         <span className="material-symbols-outlined text-sm">
@@ -196,12 +235,17 @@ export function AdminProductsClient({
                                     </label>
                                     <select
                                         className="rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-sm"
-                                        onChange={(event) => setLineUuid(event.target.value)}
+                                        onChange={(event) =>
+                                            setLineUuid(event.target.value)
+                                        }
                                         value={lineUuid}
                                     >
                                         <option value="">Mais Recentes</option>
                                         {lines.data.map((line) => (
-                                            <option key={line.uuid} value={line.uuid}>
+                                            <option
+                                                key={line.uuid}
+                                                value={line.uuid}
+                                            >
                                                 {line.name}
                                             </option>
                                         ))}
@@ -213,12 +257,22 @@ export function AdminProductsClient({
                                 <table className="w-full text-left">
                                     <thead className="bg-slate-50 text-xs font-bold tracking-wider text-slate-500 uppercase">
                                         <tr>
-                                            <th className="px-6 py-4">Produto</th>
-                                            <th className="px-6 py-4">Categoria</th>
-                                            <th className="px-6 py-4">Status Estoque</th>
-                                            <th className="px-6 py-4 text-center">Quantidade</th>
+                                            <th className="px-6 py-4">
+                                                Produto
+                                            </th>
+                                            <th className="px-6 py-4">
+                                                Categoria
+                                            </th>
+                                            <th className="px-6 py-4">
+                                                Status Estoque
+                                            </th>
+                                            <th className="px-6 py-4 text-center">
+                                                Quantidade
+                                            </th>
                                             <th className="px-6 py-4">Preço</th>
-                                            <th className="px-6 py-4 text-right">Ações</th>
+                                            <th className="px-6 py-4 text-right">
+                                                Ações
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -232,9 +286,13 @@ export function AdminProductsClient({
                                                         <div className="size-12 overflow-hidden rounded-lg bg-slate-200 shadow-inner">
                                                             {product.imageUrl ? (
                                                                 <img
-                                                                    alt={product.name}
+                                                                    alt={
+                                                                        product.name
+                                                                    }
                                                                     className="h-full w-full object-cover"
-                                                                    src={product.imageUrl}
+                                                                    src={
+                                                                        product.imageUrl
+                                                                    }
                                                                 />
                                                             ) : null}
                                                         </div>
@@ -243,7 +301,8 @@ export function AdminProductsClient({
                                                                 {product.name}
                                                             </p>
                                                             <p className="text-xs text-slate-500">
-                                                                SKU: {product.slug}
+                                                                SKU:{" "}
+                                                                {product.slug}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -258,7 +317,8 @@ export function AdminProductsClient({
                                                         <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
                                                             <div
                                                                 className={`h-full ${
-                                                                    product.stock <= LOW_STOCK_THRESHOLD
+                                                                    product.stock <=
+                                                                    LOW_STOCK_THRESHOLD
                                                                         ? "bg-amber-500"
                                                                         : "bg-emerald-500"
                                                                 }`}
@@ -267,14 +327,16 @@ export function AdminProductsClient({
                                                                         100,
                                                                         Math.max(
                                                                             12,
-                                                                            product.stock * 3,
+                                                                            product.stock *
+                                                                                3,
                                                                         ),
                                                                     )}%`,
                                                                 }}
                                                             />
                                                         </div>
                                                         <span className="text-xs font-medium text-slate-600">
-                                                            {product.stock <= LOW_STOCK_THRESHOLD
+                                                            {product.stock <=
+                                                            LOW_STOCK_THRESHOLD
                                                                 ? "Baixo"
                                                                 : "Disponível"}
                                                         </span>
