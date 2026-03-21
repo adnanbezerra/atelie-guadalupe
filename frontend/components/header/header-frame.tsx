@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import logo from "public/logo-empty.png";
 
 type HeaderFrameProps = {
     activeCollection?: "beauty" | "crafts";
@@ -24,9 +26,11 @@ export function HeaderFrame({
             <div className="mx-auto flex max-w-7xl items-center justify-between">
                 <div className="flex items-center gap-8">
                     <Link className="flex items-center gap-3" href="/">
-                        <span className="material-symbols-outlined text-3xl text-primary">
-                            spa
-                        </span>
+                        <Image
+                            src={logo}
+                            alt="Logo do Guadalupe Ateliê"
+                            className="h-[50px] w-auto"
+                        />
                         <h2 className="font-display text-xl font-bold tracking-tight">
                             Ateliê Guadalupe
                         </h2>
@@ -52,14 +56,6 @@ export function HeaderFrame({
                         >
                             <span className="material-symbols-outlined text-slate-700">
                                 shopping_bag
-                            </span>
-                        </Link>
-                        <Link
-                            className="rounded-lg bg-slate-100 p-2"
-                            href="/admin"
-                        >
-                            <span className="material-symbols-outlined text-slate-700">
-                                person
                             </span>
                         </Link>
                     </div>

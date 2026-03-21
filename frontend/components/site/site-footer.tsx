@@ -1,4 +1,6 @@
 import Link from "next/link";
+import logo from "public/logo-empty.png";
+import Image from "next/image";
 
 export function SiteFooter() {
     return (
@@ -7,9 +9,11 @@ export function SiteFooter() {
                 <div className="mb-12 grid gap-12 md:grid-cols-4">
                     <div>
                         <div className="mb-6 flex items-center gap-3">
-                            <span className="material-symbols-outlined text-3xl text-primary">
-                                auto_awesome
-                            </span>
+                            <Image
+                                src={logo}
+                                alt="Logo do Guadalupe Ateliê"
+                                className="h-[30px] w-auto"
+                            />
                             <span className="font-display text-xl font-bold text-white">
                                 Ateliê Guadalupe
                             </span>
@@ -70,27 +74,12 @@ export function SiteFooter() {
                         </div>
                     </div>
                     <div>
-                        <h4 className="mb-6 font-bold text-white">Admin</h4>
-                        <div className="space-y-4 text-sm">
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/admin"
-                            >
-                                Dashboard
-                            </Link>
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/admin/produtos"
-                            >
-                                Produtos
-                            </Link>
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/admin/usuarios"
-                            >
-                                Usuários
-                            </Link>
-                        </div>
+                        <Link
+                            href="/admin"
+                            className="block transition-colors hover:text-primary"
+                        >
+                            Tela de Admin
+                        </Link>
                     </div>
                 </div>
                 <div className="flex flex-col gap-6 border-t border-white/5 pt-8 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">

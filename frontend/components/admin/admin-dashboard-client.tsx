@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import logo from "public/logo-empty.png";
 import { useMemo } from "react";
 import { useOrders } from "@/hooks/use-orders";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { Order, Product } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import Image from "next/image";
 
 type AdminDashboardClientProps = {
     initialOrders: Order[];
@@ -59,11 +61,11 @@ export function AdminDashboardClient({
                 <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
                     <div className="p-6">
                         <div className="flex items-center gap-3">
-                            <div className="rounded-full bg-primary/10 p-2">
-                                <span className="material-symbols-outlined text-primary">
-                                    auto_awesome
-                                </span>
-                            </div>
+                            <Image
+                                src={logo}
+                                alt="Logo do Ateliê Guadalupe"
+                                className="w-auto h-[50px]"
+                            />
                             <div>
                                 <h1 className="text-lg font-bold leading-tight text-primary">
                                     Ateliê Guadalupe
@@ -119,6 +121,12 @@ export function AdminDashboardClient({
                         </Link>
                     </nav>
                     <div className="border-t border-slate-200 p-4">
+                        <Link
+                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
+                            href="/"
+                        >
+                            Visão de usuário
+                        </Link>
                         <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-red-600">
                             <span className="material-symbols-outlined">
                                 logout
