@@ -113,6 +113,13 @@ export function useProducts(
     const queryRef = useRef(query);
     queryRef.current = query;
 
+    useEffect(() => {
+        if (initialData) {
+            setData(initialData);
+            setIsLoading(false);
+        }
+    }, [initialData]);
+
     const refresh = useCallback(async () => {
         try {
             setIsLoading(true);

@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
 import { CollectionKey, ProductLine, ProductsPayload } from "@/lib/types";
 import { getPriceLabel } from "@/lib/utils";
+import Header from "../header";
 
 type CollectionCatalogProps = {
     collectionKey: CollectionKey;
@@ -15,6 +17,7 @@ type CollectionCatalogProps = {
         heroAccent: string;
     };
     initialCatalog?: ProductsPayload;
+    initialSearch?: string;
     lines: ProductLine[];
 };
 
@@ -34,12 +37,17 @@ export function CollectionCatalog({
     collectionKey,
     config,
     initialCatalog,
+    initialSearch = "",
     lines: initialLines,
 }: CollectionCatalogProps) {
     void config;
-    const [search, setSearch] = useState("");
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const [search, setSearch] = useState(initialSearch);
     const [lineUuid, setLineUuid] = useState("");
     const [inStockOnly, setInStockOnly] = useState(false);
+    const [, startTransition] = useTransition();
     const linesResource = useProductLines(initialLines);
     const productsResource = useProducts(initialCatalog, {
         page: 1,
@@ -54,71 +62,48 @@ export function CollectionCatalog({
         return filterProductsByCollection(items, collectionKey);
     }, [collectionKey, productsResource.data?.items]);
 
+    useEffect(() => {
+        setSearch(initialSearch);
+    }, [initialSearch]);
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            const nextParams = new URLSearchParams(searchParams.toString());
+
+            if (search.trim()) {
+                nextParams.set("search", search.trim());
+            } else {
+                nextParams.delete("search");
+            }
+
+            const query = nextParams.toString();
+            const href = query ? `${pathname}?${query}` : pathname;
+            const currentHref = searchParams.toString()
+                ? `${pathname}?${searchParams.toString()}`
+                : pathname;
+
+            if (href === currentHref) {
+                return;
+            }
+
+            startTransition(() => {
+                router.replace(href, { scroll: false });
+            });
+        }, 250);
+
+        return () => {
+            window.clearTimeout(timeout);
+        };
+    }, [pathname, router, search, searchParams, startTransition]);
+
     if (collectionKey === "crafts") {
         return (
             <div className="min-h-screen bg-neutral-50 text-neutral-900">
-                <nav className="sticky top-0 z-50 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
-                    <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center gap-8">
-                            <Link
-                                className="font-public text-2xl font-bold tracking-tight text-[#4A3728]"
-                                href="/"
-                            >
-                                Ateliê Guadalupe
-                            </Link>
-                            <div className="hidden space-x-6 md:flex">
-                                <Link
-                                    className="font-public text-sm font-medium"
-                                    href="/beleza-natural"
-                                >
-                                    Beleza Natural
-                                </Link>
-                                <Link
-                                    className="border-b-2 border-[#D4AF37] font-public text-sm font-medium text-[#4A3728]"
-                                    href="/artesanato"
-                                >
-                                    Artesanato
-                                </Link>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                            <div className="hidden w-64 items-center rounded-full border border-neutral-200 bg-neutral-100 px-4 py-2 lg:flex">
-                                <span className="material-symbols-outlined text-sm text-neutral-400">
-                                    search
-                                </span>
-                                <input
-                                    className="w-full border-none bg-transparent text-sm outline-none"
-                                    onChange={(event) =>
-                                        setSearch(event.target.value)
-                                    }
-                                    placeholder="Buscar arte sacra..."
-                                    value={search}
-                                />
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <Link
-                                    className="relative rounded-full p-2 hover:bg-neutral-100"
-                                    href="/carrinho"
-                                >
-                                    <span className="material-symbols-outlined">
-                                        shopping_cart
-                                    </span>
-                                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[10px] text-white">
-                                        0
-                                    </span>
-                                </Link>
-                                <Link
-                                    className="rounded-full p-2 hover:bg-neutral-100"
-                                    href="/admin"
-                                >
-                                    <span className="material-symbols-outlined">
-                                        person
-                                    </span>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </nav>
+                <Header
+                    activeCollection="crafts"
+                    search={search}
+                    setSearch={setSearch}
+                />
 
                 <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                     <nav className="mb-8 flex items-center gap-2 text-sm text-neutral-500">
@@ -282,71 +267,11 @@ export function CollectionCatalog({
 
     return (
         <div className="min-h-screen bg-[#f6f6f8] text-slate-900">
-            <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-[#f6f6f8]/80 px-6 py-4 backdrop-blur-md md:px-10">
-                <div className="mx-auto flex max-w-7xl items-center justify-between">
-                    <div className="flex items-center gap-8">
-                        <Link className="flex items-center gap-3" href="/">
-                            <span className="material-symbols-outlined text-3xl text-primary">
-                                spa
-                            </span>
-                            <h2 className="font-display text-xl font-bold tracking-tight">
-                                Ateliê Guadalupe
-                            </h2>
-                        </Link>
-                        <nav className="hidden items-center gap-6 md:flex">
-                            <Link
-                                className="border-b-2 border-primary text-sm font-medium"
-                                href="/beleza-natural"
-                            >
-                                Beleza Natural
-                            </Link>
-                            <Link
-                                className="text-sm font-medium"
-                                href="/artesanato"
-                            >
-                                Aromaterapia
-                            </Link>
-                            <Link className="text-sm font-medium" href="/">
-                                Home
-                            </Link>
-                        </nav>
-                    </div>
-                    <div className="flex flex-1 items-center justify-end gap-4">
-                        <div className="relative hidden w-full max-w-xs sm:flex">
-                            <span className="material-symbols-outlined absolute top-1/2 left-3 -translate-y-1/2 text-lg text-slate-400">
-                                search
-                            </span>
-                            <input
-                                className="w-full rounded-lg bg-slate-100 py-2 pr-4 pl-10 text-sm outline-none"
-                                onChange={(event) =>
-                                    setSearch(event.target.value)
-                                }
-                                placeholder="Buscar cremes..."
-                                value={search}
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Link
-                                className="rounded-lg bg-slate-100 p-2"
-                                href="/carrinho"
-                            >
-                                <span className="material-symbols-outlined text-slate-700">
-                                    shopping_bag
-                                </span>
-                            </Link>
-                            <Link
-                                className="rounded-lg bg-slate-100 p-2"
-                                href="/admin"
-                            >
-                                <span className="material-symbols-outlined text-slate-700">
-                                    person
-                                </span>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
+            <Header
+                activeCollection="beauty"
+                search={search}
+                setSearch={setSearch}
+            />
             <main className="mx-auto w-full max-w-7xl px-6 py-8 md:px-10">
                 <nav className="mb-8 flex items-center gap-2 text-sm text-slate-500">
                     <Link href="/">Home</Link>

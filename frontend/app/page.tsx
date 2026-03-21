@@ -1,17 +1,26 @@
 import Link from "next/link";
 import { SiteFooter } from "@/components/site/site-footer";
-import { SiteHeader } from "@/components/site/site-header";
 import { getFeaturedCollections } from "@/lib/catalog";
-import { fetchProductLines, fetchProducts } from "@/lib/server-api";
+import { fetchProducts } from "@/lib/server-api";
+import { ServerHeader } from "@/components/header/server";
 
-export default async function HomePage() {
-    const [linesResult, productsResult] = await Promise.allSettled([
-        fetchProductLines(),
-        fetchProducts({ page: 1, pageSize: 18 }),
+type HomePageProps = {
+    searchParams?: Promise<{
+        search?: string | string[];
+    }>;
+};
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+    const resolvedSearchParams = searchParams
+        ? await searchParams
+        : undefined;
+    const search = Array.isArray(resolvedSearchParams?.search)
+        ? resolvedSearchParams.search[0] ?? ""
+        : resolvedSearchParams?.search ?? "";
+
+    const [productsResult] = await Promise.allSettled([
+        fetchProducts({ page: 1, pageSize: 18, search: search || undefined }),
     ]);
-
-    const lines =
-        linesResult.status === "fulfilled" ? linesResult.value.lines : [];
     const products =
         productsResult.status === "fulfilled" ? productsResult.value.items : [];
     const collections = getFeaturedCollections(products);
@@ -47,7 +56,8 @@ export default async function HomePage() {
 
     return (
         <div className="min-h-screen bg-[#f6f6f8]">
-            <SiteHeader lines={lines} />
+            <ServerHeader search={search} />
+
             <main>
                 <section className="relative flex min-h-[80vh] items-center overflow-hidden">
                     <div className="absolute inset-0 grid grid-cols-2">

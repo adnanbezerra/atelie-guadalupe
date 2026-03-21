@@ -2,10 +2,25 @@ import { CollectionCatalog } from "@/components/collections/collection-catalog";
 import { COLLECTION_CONFIG } from "@/lib/catalog";
 import { fetchProductLines, fetchProducts } from "@/lib/server-api";
 
-export default async function CraftsCollectionPage() {
+type CraftsCollectionPageProps = {
+    searchParams?: Promise<{
+        search?: string | string[];
+    }>;
+};
+
+export default async function CraftsCollectionPage({
+    searchParams,
+}: CraftsCollectionPageProps) {
+    const resolvedSearchParams = searchParams
+        ? await searchParams
+        : undefined;
+    const search = Array.isArray(resolvedSearchParams?.search)
+        ? resolvedSearchParams.search[0] ?? ""
+        : resolvedSearchParams?.search ?? "";
+
     const [linesResult, productsResult] = await Promise.allSettled([
         fetchProductLines(),
-        fetchProducts({ page: 1, pageSize: 24 }),
+        fetchProducts({ page: 1, pageSize: 24, search: search || undefined }),
     ]);
 
     const lines =
@@ -20,6 +35,7 @@ export default async function CraftsCollectionPage() {
             collectionKey="crafts"
             config={COLLECTION_CONFIG.crafts}
             initialCatalog={products}
+            initialSearch={search}
             lines={lines}
         />
     );
