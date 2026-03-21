@@ -1,10 +1,5 @@
-import { LoadingPage } from "@/components/shared/loading-page";
-import { PageShell } from "@/components/shared/page-shell";
+import { CartPageSkeleton } from "@/components/shared/page-loading-skeletons";
 
 export default function Loading() {
-    return (
-        <PageShell eyebrow="Meu Carrinho" title="Meu Carrinho">
-            <LoadingPage title="Meu Carrinho" />
-        </PageShell>
-    );
+    return <CartPageSkeleton />;
 }
