@@ -1,125 +1,243 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { cn, getInitials } from "@/lib/utils";
 import { User } from "@/lib/types";
+import { getInitials } from "@/lib/utils";
 
 type AdminShellProps = {
     children: React.ReactNode;
     currentUser: User | null;
 };
 
-const navItems = [
-    { href: "/admin", label: "Painel" },
-    { href: "/admin/produtos", label: "Produtos" },
-    { href: "/admin/cobranca", label: "Cobranca" },
-    { href: "/admin/usuarios", label: "Usuarios" },
-];
-
 export function AdminShell({ children, currentUser }: AdminShellProps) {
     const pathname = usePathname();
-    const [open, setOpen] = useState(false);
+
+    if (pathname !== "/admin/cobranca" && pathname !== "/admin/usuarios") {
+        return <>{children}</>;
+    }
+
+    const billingShell = pathname === "/admin/cobranca";
 
     return (
-        <div className="admin-grid min-h-screen bg-[#f6f6f8]">
-            <div className="mx-auto flex min-h-screen max-w-[1600px]">
-                <aside
-                    className={cn(
-                        "fixed inset-y-0 left-0 z-40 w-72 border-r border-slate-200 bg-white px-6 py-8 shadow-xl transition-transform lg:static lg:translate-x-0",
-                        open ? "translate-x-0" : "-translate-x-full",
-                    )}
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-display text-2xl font-bold text-primary">
-                                Guadalupe
-                            </p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.3em] text-slate-500">
-                                Administracao
-                            </p>
-                        </div>
-                        <button
-                            className="rounded-full p-2 text-slate-500 lg:hidden"
-                            onClick={() => setOpen(false)}
-                            type="button"
-                        >
-                            Fechar
-                        </button>
-                    </div>
-                    <nav className="mt-8 space-y-2">
-                        {navItems.map((item) => {
-                            const active = pathname === item.href;
-
-                            return (
-                                <a
-                                    key={item.href}
-                                    className={cn(
-                                        "flex items-center rounded-2xl px-4 py-3 text-sm font-semibold",
-                                        active
-                                            ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                            : "text-slate-600 hover:bg-slate-100 hover:text-primary",
-                                    )}
-                                    href={item.href}
-                                    onClick={() => setOpen(false)}
-                                >
-                                    {item.label}
-                                </a>
-                            );
-                        })}
-                    </nav>
-                    <div className="mt-10 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
-                            Sessao
-                        </p>
-                        <div className="mt-4 flex items-center gap-3">
-                            <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 font-semibold text-primary">
-                                {currentUser
-                                    ? getInitials(currentUser.name)
-                                    : "AG"}
+        <div className="min-h-screen bg-[#f6f6f8] text-slate-900">
+            <div className="flex h-screen overflow-hidden">
+                <aside className="flex w-64 flex-col border-r border-slate-200 bg-white">
+                    <div className="p-6">
+                        <div className="flex items-center gap-3">
+                            <div
+                                className={
+                                    billingShell
+                                        ? "size-8 text-primary"
+                                        : "flex size-8 items-center justify-center rounded-lg bg-primary text-white"
+                                }
+                            >
+                                {billingShell ? (
+                                    <svg
+                                        fill="currentColor"
+                                        viewBox="0 0 48 48"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" />
+                                    </svg>
+                                ) : (
+                                    <span className="material-symbols-outlined">
+                                        brush
+                                    </span>
+                                )}
                             </div>
                             <div>
-                                <p className="font-semibold text-slate-900">
-                                    {currentUser?.name ?? "Administrador"}
-                                </p>
-                                <p className="text-sm text-slate-500">
-                                    {currentUser?.email ??
-                                        "Sem sessao autenticada"}
-                                </p>
+                                <h2 className="font-display text-lg font-bold text-primary">
+                                    {billingShell ? "Guadalupe" : "Ateliê Guadalupe"}
+                                </h2>
+                                {billingShell ? null : (
+                                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                                        Administração
+                                    </p>
+                                )}
                             </div>
                         </div>
+                    </div>
+                    <nav className="flex-1 space-y-1 px-4">
+                        {billingShell ? (
+                            <>
+                                <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    Menu Principal
+                                </p>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
+                                    href="/admin"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        dashboard
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Dashboard
+                                    </span>
+                                </Link>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary"
+                                    href="/admin/cobranca"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        payments
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Vendas & Checkout
+                                    </span>
+                                </Link>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
+                                    href="/admin/produtos"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        inventory_2
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Produtos
+                                    </span>
+                                </Link>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
+                                    href="/admin/usuarios"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        group
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Clientes
+                                    </span>
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 transition-colors hover:bg-primary/10 hover:text-primary"
+                                    href="/admin"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        dashboard
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Dashboard
+                                    </span>
+                                </Link>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-3 text-primary"
+                                    href="/admin/usuarios"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        group
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Administradores
+                                    </span>
+                                </Link>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 transition-colors hover:bg-primary/10 hover:text-primary"
+                                    href="/admin/cobranca"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        shopping_bag
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Vendas
+                                    </span>
+                                </Link>
+                                <Link
+                                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 transition-colors hover:bg-primary/10 hover:text-primary"
+                                    href="/admin/produtos"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        inventory_2
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Produtos
+                                    </span>
+                                </Link>
+                            </>
+                        )}
+                    </nav>
+                    <div className="border-t border-slate-200 p-4">
+                        {billingShell ? (
+                            <Link
+                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"
+                                href="/admin"
+                            >
+                                <span className="material-symbols-outlined">
+                                    settings
+                                </span>
+                                <span className="text-sm font-medium">
+                                    Configurações
+                                </span>
+                            </Link>
+                        ) : (
+                            <div className="flex items-center gap-3 p-2">
+                                <div className="flex size-10 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
+                                    {currentUser ? getInitials(currentUser.name) : "AG"}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold">
+                                        {currentUser?.name ?? "Admin Master"}
+                                    </p>
+                                    <p className="text-[10px] text-slate-500">
+                                        Sair da conta
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </aside>
-                <div className="min-w-0 flex-1">
-                    <header className="sticky top-0 z-30 border-b border-white/80 bg-white/85 px-4 py-4 backdrop-blur sm:px-8">
-                        <div className="flex items-center justify-between gap-4">
-                            <div>
-                                <p className="text-xs uppercase tracking-[0.35em] text-slate-500">
-                                    Painel do Atelie
-                                </p>
-                                <h1 className="mt-1 font-display text-2xl font-bold text-slate-900">
-                                    Operacao administrativa
-                                </h1>
+
+                <main className="flex-1 overflow-y-auto">
+                    <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
+                        {billingShell ? (
+                            <h2 className="font-display text-lg font-semibold">
+                                Painel Administrativo
+                            </h2>
+                        ) : (
+                            <div className="flex items-center gap-2 text-slate-500">
+                                <span className="text-sm">Painel de Controle</span>
+                                <span className="material-symbols-outlined text-sm">
+                                    chevron_right
+                                </span>
+                                <span className="text-sm font-bold text-slate-900">
+                                    Administradores
+                                </span>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Button
-                                    className="lg:hidden"
-                                    onClick={() =>
-                                        setOpen((current) => !current)
-                                    }
-                                    variant="outline"
-                                >
-                                    Menu
-                                </Button>
-                                <Button variant="outline">
-                                    {currentUser?.role ?? "Sem token"}
-                                </Button>
-                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <button className="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100">
+                                <span className="material-symbols-outlined">
+                                    notifications
+                                </span>
+                                <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
+                            </button>
+                            {billingShell ? (
+                                <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold">
+                                            {currentUser?.name ?? "Admin Guadalupe"}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                            {currentUser?.role ?? "Gestor"}
+                                        </p>
+                                    </div>
+                                    <div className="flex size-10 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
+                                        {currentUser ? getInitials(currentUser.name) : "AG"}
+                                    </div>
+                                </div>
+                            ) : (
+                                <button className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100">
+                                    <span className="material-symbols-outlined">
+                                        search
+                                    </span>
+                                </button>
+                            )}
                         </div>
                     </header>
-                    <div className="p-4 sm:p-8">{children}</div>
-                </div>
+                    <div className="p-8">{children}</div>
+                </main>
             </div>
         </div>
     );

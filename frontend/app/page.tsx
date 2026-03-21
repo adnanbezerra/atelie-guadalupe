@@ -1,12 +1,7 @@
 import Link from "next/link";
-import { HomeCollections } from "@/components/site/home-collections";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
-import {
-    getCollectionCopy,
-    getFeaturedCollections,
-    getHeroHighlights,
-} from "@/lib/catalog";
+import { getFeaturedCollections } from "@/lib/catalog";
 import { fetchProductLines, fetchProducts } from "@/lib/server-api";
 
 export default async function HomePage() {
@@ -20,177 +15,210 @@ export default async function HomePage() {
     const products =
         productsResult.status === "fulfilled" ? productsResult.value.items : [];
     const collections = getFeaturedCollections(products);
-    const highlights = getHeroHighlights(products);
-    const beautyCopy = getCollectionCopy("beauty");
-    const craftCopy = getCollectionCopy("crafts");
+    const featuredCards = [
+        {
+            title: "Cuidados Faciais",
+            description:
+                "Séruns e tônicos produzidos com paciência e reverência à criação.",
+            href: "/beleza-natural",
+            image:
+                collections.beauty[0]?.imageUrl ??
+                "https://lh3.googleusercontent.com/aida-public/AB6AXuCepVaRudtCLchGkhLvWlK-EJWvW2kkUuTxKEB5f7W0FWV0Aofz2phETGaFJo_zXitNUtNNQIMaYjyBbnN-6iorAdBe87IY-HMm_ODEsdpLo8PHE9oYas4EERQ9LC4Ghkb6PpCz8aGNaOH0VhgcJQjISLLju0G-mkJJr_-K5oOqwfYYTvb07ok3zdEgTfqVFHsdEeQCaMWaiObpgYk5qoLb7a22DQ1FSiDA4TRyp-3IQAcgvD-VyaEsYfSuETwI59zTjHrJi5kOxlpN",
+        },
+        {
+            title: "Cerâmica Manual",
+            description:
+                "Peças modeladas à mão que refletem o trabalho digno e artesanal.",
+            href: "/artesanato",
+            image:
+                collections.crafts[0]?.imageUrl ??
+                "https://lh3.googleusercontent.com/aida-public/AB6AXuCl7cjYe96CRQ6vvjKIG8USTJp1JOuqj_iDo3NBoL6UiD0t7P-AsTYRNbWftmVQj04w4upQkivTh2A0vx_kpakY0r-xeFraoTqPPLx9BTUCK-910pcGlG0Sd-ddgpkcdM_RCbOV7qWq7L9CTNj5vmKuPEIj8Y5mF6glR2RTZL4T2Mth84jzLKeBRx2mrv3RBVA5U0blqNJa8Sph9lj2EkjUGSOvtcknuZWihgDuOqwC8NYt0gAo7KtmcdTBCjGyb07uF4fWnDwp6v94",
+        },
+        {
+            title: "Tear e Fibras",
+            description:
+                "Fibras naturais tecidas com a simplicidade e beleza das tradições.",
+            href: "/artesanato",
+            image:
+                collections.crafts[1]?.imageUrl ??
+                "https://lh3.googleusercontent.com/aida-public/AB6AXuCtMb-HIi96so-OrMaso_mOTkdRsQAxyC6f4DPBk12glSM_me6qD991y3Zl88NSvQAgGWgsyg0d9QU8GUKGWdwOwcA9NymhZ0muGaV_Ox1nXKoP-W3IjprJxR6gkvl9odwQZ-xC1ZcTWKzMkyTcrELwXoKWlqPe_8Oi7ptMdn00__5eHxCag3BPo62S26uEFB9uEZ7vuBfiNb1BFcdJxXAUuncdzCn5XBj9zJy-o59--sESf-m1QlXTLHn6KS8uD_dNQgyhafE3Xm07",
+        },
+    ];
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-[#f6f6f8]">
             <SiteHeader lines={lines} />
             <main>
-                <section className="px-4 pt-8 sm:px-6 lg:px-8">
-                    <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                        <div className="relative overflow-hidden rounded-[2rem] border border-white/60 bg-[linear-gradient(135deg,rgba(25,64,179,0.96),rgba(10,23,74,0.96))] p-8 text-white shadow-2xl shadow-primary/15 md:p-12">
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.2),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(209,160,84,0.24),transparent_28%)]" />
-                            <div className="relative max-w-2xl">
-                                <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-white/80">
-                                    Tradicao e Criacao
-                                </span>
-                                <h1 className="mt-6 font-display text-4xl font-bold leading-tight md:text-6xl">
-                                    Beleza botânica e arte sacra feitas com
-                                    intenção.
-                                </h1>
-                                <p className="mt-6 max-w-xl text-base leading-8 text-white/80 md:text-lg">
-                                    O Ateliê Guadalupe une cuidado pessoal,
-                                    ofício manual e um catálogo sensível para
-                                    casa, presentes e devoção.
-                                </p>
-                                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                                    <Link
-                                        href="/beleza-natural"
-                                        className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-primary shadow-lg"
-                                    >
-                                        Explorar beleza natural
-                                    </Link>
-                                    <Link
-                                        href="/artesanato"
-                                        className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-white"
-                                    >
-                                        Conhecer o artesanato
-                                    </Link>
-                                </div>
+                <section className="relative flex min-h-[80vh] items-center overflow-hidden">
+                    <div className="absolute inset-0 grid grid-cols-2">
+                        {[
+                            "https://lh3.googleusercontent.com/aida-public/AB6AXuAivgAEmKgpjW-wT8pfHxE1eiEQxhZaT3EPrRTHf96grXE05DQEDfOXC8Pt-2IwNT3207NdubuzDD4XmSUlWxIfTmbaM0BkMvHMqvWGyxRcjzXn2cnM8JliEfCgo4CacbjPb_akkkfGty3a78SSFYehVSUUK_g7n32E7EMJYKsdS6-po5gXNpSWMJT8_grJOMlTRiByZQHtIdYFJv-3_8H9-_LQU0uKwU7L8O3HxgZvHIXzy-_92nx8wrolsQ_ytwOVYyWG6s051Xee",
+                            "https://lh3.googleusercontent.com/aida-public/AB6AXuAA7OuOGNrTthlijfwKWCNTjrKcGBfOCwbGVphviKgQOxho_GDdHTD1thjyOiv4c_izz8e0xaXQ-limWOPlU2vXLh7KGTmpSHC_9EcxX2CDFj3E7neX5umsdnhH62AQtr2E6jgSAlW7a6lr4K2xfExu4Pb_7L95bsP5ZsSB2FmhXcFulEIjT-CRp-33jK-UOxqYi_XFibKUG3mY2H3INCkXPFidU_qztLQjnq5lHmA44jcTCpgu5Nvm0Jia3Wfv40AV85eOtNf9h7Kv",
+                        ].map((image, index) => (
+                            <div key={image} className="relative overflow-hidden">
+                                <div className="absolute inset-0 z-10 bg-primary/20" />
+                                <div
+                                    className={index === 1 ? "h-full w-full border-l border-white/20 bg-cover bg-center" : "h-full w-full bg-cover bg-center"}
+                                    style={{ backgroundImage: `url(${image})` }}
+                                />
                             </div>
-                        </div>
-                        <div className="grid gap-6">
-                            <div className="glass-panel relative overflow-hidden rounded-[2rem] border border-white/70 p-6 shadow-xl">
-                                <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#d1a054,#1940b3)]" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
-                                    Creme Personalizado
-                                </p>
-                                <h2 className="mt-4 font-display text-3xl font-bold text-slate-900">
-                                    Formula feita para a sua rotina.
-                                </h2>
-                                <p className="mt-4 text-sm leading-7 text-slate-600">
-                                    A tela do Stitch pede um fluxo de cuidado
-                                    autoral. Enquanto o endpoint de customizacao
-                                    nao chega, destacamos os produtos com maior
-                                    aderencia para inspirar o pedido especial.
-                                </p>
-                                <div className="mt-6 space-y-3">
-                                    {highlights.map((item) => (
-                                        <div
-                                            key={item.uuid}
-                                            className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-3"
-                                        >
-                                            <div className="size-14 overflow-hidden rounded-2xl bg-slate-100">
-                                                {item.imageUrl ? (
-                                                    <img
-                                                        alt={item.name}
-                                                        className="h-full w-full object-cover"
-                                                        src={item.imageUrl}
-                                                    />
-                                                ) : null}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-semibold text-slate-900">
-                                                    {item.name}
-                                                </p>
-                                                <p className="truncate text-xs text-slate-500">
-                                                    {item.shortDescription}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="rounded-[2rem] border border-primary/10 bg-[linear-gradient(145deg,#fffdf9,#efe7da)] p-6 shadow-lg">
-                                <div className="grid gap-4 sm:grid-cols-3">
-                                    {[
-                                        {
-                                            label: "Colecao",
-                                            value: beautyCopy.title,
-                                            tone: "bg-primary/10 text-primary",
-                                        },
-                                        {
-                                            label: "Colecao",
-                                            value: craftCopy.title,
-                                            tone: "bg-secondary/20 text-amber-800",
-                                        },
-                                        {
-                                            label: "Linhas",
-                                            value: `${lines.length || 0} ativas`,
-                                            tone: "bg-slate-100 text-slate-700",
-                                        },
-                                    ].map((stat) => (
-                                        <div
-                                            key={stat.label + stat.value}
-                                            className="rounded-2xl border border-white/70 bg-white/80 p-4"
-                                        >
-                                            <span
-                                                className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] ${stat.tone}`}
-                                            >
-                                                {stat.label}
-                                            </span>
-                                            <p className="mt-4 font-display text-xl font-bold text-slate-900">
-                                                {stat.value}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
-                </section>
-
-                <section className="px-4 py-16 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl rounded-[2rem] border border-white/70 bg-white/75 p-8 shadow-xl">
-                        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                            <div className="max-w-2xl">
-                                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-primary/70">
-                                    Nossos Universos
-                                </span>
-                                <h2 className="mt-3 font-display text-3xl font-bold text-slate-900 md:text-4xl">
-                                    Dois caminhos de descoberta, a mesma
-                                    assinatura artesanal.
-                                </h2>
-                                <p className="mt-4 text-sm leading-7 text-slate-600">
-                                    A vitrine puxa dados reais do backend e
-                                    encaixa cada produto nas colecoes publicas
-                                    para aproximar a experiencia do Stitch do
-                                    contrato atual da API.
-                                </p>
-                            </div>
-                            <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="relative z-20 mx-auto w-full max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+                        <div className="mx-auto max-w-2xl rounded-xl border border-primary/10 bg-white/90 p-8 shadow-2xl backdrop-blur-md md:p-12">
+                            <span className="mb-4 block text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                                Tradição e Oração
+                            </span>
+                            <h1 className="font-display text-4xl font-bold text-slate-900 md:text-6xl">
+                                A Harmonia da Criação como Dom de Deus
+                            </h1>
+                            <p className="mt-6 text-lg leading-relaxed text-slate-600">
+                                Cosméticos botânicos e artesanato autoral que
+                                celebram a beleza da alma e o cuidado com o
+                                templo do Espírito.
+                            </p>
+                            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
                                 <Link
                                     href="/beleza-natural"
-                                    className="rounded-[1.75rem] border border-primary/10 bg-[linear-gradient(180deg,rgba(25,64,179,0.07),rgba(255,255,255,0.95))] p-6 shadow-sm"
+                                    className="rounded-lg bg-primary px-8 py-4 font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
                                 >
-                                    <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">
-                                        Beleza Natural
-                                    </p>
-                                    <p className="mt-4 font-display text-2xl font-bold text-slate-900">
-                                        Sabonetes, seruns, oleos e formulas
-                                        botânicas.
-                                    </p>
+                                    Beleza da Criação
                                 </Link>
                                 <Link
                                     href="/artesanato"
-                                    className="rounded-[1.75rem] border border-secondary/30 bg-[linear-gradient(180deg,rgba(209,160,84,0.14),rgba(255,255,255,0.95))] p-6 shadow-sm"
+                                    className="rounded-lg border-2 border-primary bg-white px-8 py-4 font-bold text-primary transition hover:bg-primary/5"
                                 >
-                                    <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-800">
-                                        Artesanato e Artes Sacras
-                                    </p>
-                                    <p className="mt-4 font-display text-2xl font-bold text-slate-900">
-                                        Cerâmica, presentes de fe e pecas para o
-                                        lar.
-                                    </p>
+                                    Explorar Artesanato
                                 </Link>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <HomeCollections initialCollections={collections} />
+                <section className="bg-white py-24">
+                    <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+                        <div className="relative">
+                            <div className="absolute -left-4 -top-4 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
+                            <div className="relative aspect-square overflow-hidden rounded-2xl shadow-2xl">
+                                <div
+                                    className="h-full w-full bg-cover bg-center"
+                                    style={{
+                                        backgroundImage:
+                                            "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCVTRf9ZTFuVLnLr5PbOvlfcpn7zNt8ky36c8ZT3uHUUgJ7SZKGsMXU76rKMyktMHS-GIAwHLJ90S-_w-XEJ3M4bZdtlGxxs2tXa_RbK2EF9g-ZGHBK9gZ3qpOnijul-MfvCY56-thEruYxnyf9sV6X4dGrgQzYbXrxaknZ-9AJM53xaRnZTD-DCOBk8zUyKyfK1n1b0whKgHXoL1M2duVZY3YGoim3WvD1Wo_FoPc7G5IZU4pLYH_Ikxc4WOZ-4GW8fnSSRxuZnmns')",
+                                    }}
+                                />
+                            </div>
+                            <div className="absolute -bottom-6 -right-6 hidden rounded-xl bg-primary p-6 text-white shadow-xl md:block">
+                                <p className="font-display text-2xl font-bold">
+                                    100%
+                                </p>
+                                <p className="text-xs font-bold uppercase tracking-wider">
+                                    Natural e Puro
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-8">
+                            <div>
+                                <span className="mb-4 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                                    CUIDADO COMO TEMPLO
+                                </span>
+                                <h2 className="font-display text-4xl font-bold leading-tight text-slate-900 md:text-5xl">
+                                    Creme Personalizado: Unicidade de Cada
+                                    Criatura
+                                </h2>
+                            </div>
+                            <p className="text-lg leading-relaxed text-slate-600">
+                                Reconhecemos que cada pessoa é uma obra singular
+                                do Criador. Nossos especialistas preparam
+                                fórmulas botânicas exclusivas que respeitam a
+                                identidade de sua pele.
+                            </p>
+                            <ul className="space-y-4">
+                                {[
+                                    "Óleos essenciais que honram a natureza",
+                                    "Extratos botânicos frescos e puros",
+                                    "Embalagem artesanal feita por mãos cristãs",
+                                ].map((item) => (
+                                    <li
+                                        key={item}
+                                        className="flex items-center gap-3 text-slate-700"
+                                    >
+                                        <span className="material-symbols-outlined text-primary">
+                                            check_circle
+                                        </span>
+                                        <span>{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <Link
+                                href="/admin/cobranca"
+                                className="flex w-fit items-center gap-4 rounded-xl bg-primary px-10 py-5 font-bold text-white shadow-xl shadow-primary/30 transition hover:scale-[1.02]"
+                            >
+                                Iniciar Diagnóstico Pessoal
+                                <span className="material-symbols-outlined">
+                                    arrow_forward
+                                </span>
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="bg-primary/5 py-24">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="mb-12 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                            <div className="max-w-xl">
+                                <h2 className="font-display text-3xl font-bold text-slate-900">
+                                    Nossos Universos
+                                </h2>
+                                <p className="mt-4 text-slate-600">
+                                    Curadoria especial de produtos que unem o
+                                    cuidado pessoal à dignidade do lar católico.
+                                </p>
+                            </div>
+                            <Link
+                                href="/beleza-natural"
+                                className="flex items-center gap-2 font-bold text-primary hover:underline"
+                            >
+                                Ver catálogo completo
+                                <span className="material-symbols-outlined">
+                                    north_east
+                                </span>
+                            </Link>
+                        </div>
+                        <div className="grid gap-8 md:grid-cols-3">
+                            {featuredCards.map((card) => (
+                                <div
+                                    key={card.title}
+                                    className="overflow-hidden rounded-2xl border border-primary/5 bg-white shadow-lg"
+                                >
+                                    <div className="h-64 overflow-hidden">
+                                        <div
+                                            className="h-full w-full bg-cover bg-center transition-transform duration-500 hover:scale-110"
+                                            style={{
+                                                backgroundImage: `url(${card.image})`,
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="p-6">
+                                        <h3 className="font-display text-xl font-bold text-slate-900">
+                                            {card.title}
+                                        </h3>
+                                        <p className="mb-4 mt-2 text-sm text-slate-600">
+                                            {card.description}
+                                        </p>
+                                        <Link
+                                            href={card.href}
+                                            className="text-sm font-bold uppercase tracking-wider text-primary"
+                                        >
+                                            Explorar →
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
             </main>
             <SiteFooter />
         </div>

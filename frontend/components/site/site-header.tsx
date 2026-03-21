@@ -6,55 +6,67 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ lines = [] }: SiteHeaderProps) {
-    const showcaseLines = lines.slice(0, 3);
+    void lines;
 
     return (
-        <header className="sticky top-0 z-50 border-b border-white/70 bg-white/75 backdrop-blur-xl">
-            <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-50 border-b border-primary/10 bg-white/80 backdrop-blur-md">
+            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center gap-3">
                     <Link href="/" className="flex items-center gap-3">
-                        <div className="flex size-11 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-white shadow-lg shadow-primary/20">
-                            AG
+                        <div className="text-primary">
+                            <span className="material-symbols-outlined text-4xl [font-variation-settings:'FILL'_1]">
+                                auto_awesome
+                            </span>
                         </div>
-                        <div>
-                            <p className="font-display text-xl font-bold text-primary">
-                                Atelie Guadalupe
-                            </p>
-                            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                                Cuidado e arte
-                            </p>
-                        </div>
+                        <span className="font-display text-2xl font-bold tracking-tight text-primary">
+                            Ateliê Guadalupe
+                        </span>
                     </Link>
-                    <nav className="hidden items-center gap-6 text-sm font-semibold text-slate-600 md:flex">
+                    <nav className="hidden items-center gap-8 md:flex">
                         <Link
                             href="/beleza-natural"
-                            className="hover:text-primary"
+                            className="text-sm font-bold uppercase tracking-[0.2em] text-primary"
                         >
                             Beleza Natural
                         </Link>
-                        <Link href="/artesanato" className="hover:text-primary">
+                        <Link
+                            href="/artesanato"
+                            className="text-sm font-bold uppercase tracking-[0.2em] text-primary"
+                        >
                             Artesanato
-                        </Link>
-                        <Link href="/carrinho" className="hover:text-primary">
-                            Meu Carrinho
-                        </Link>
-                        <Link href="/admin" className="hover:text-primary">
-                            Admin
                         </Link>
                     </nav>
                 </div>
-                {showcaseLines.length ? (
-                    <div className="flex flex-wrap gap-2">
-                        {showcaseLines.map((line) => (
-                            <span
-                                key={line.uuid}
-                                className="rounded-full border border-primary/10 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary/80"
-                            >
-                                {line.name}
-                            </span>
-                        ))}
+                <div className="flex items-center gap-4">
+                    <div className="relative hidden sm:block">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            search
+                        </span>
+                        <input
+                            className="w-48 rounded-full border-none bg-primary/5 py-2 pl-10 pr-4 text-sm outline-none"
+                            placeholder="Buscar..."
+                            type="text"
+                        />
                     </div>
-                ) : null}
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href="/carrinho"
+                            className="rounded-full p-2 text-slate-600 transition-colors hover:text-primary"
+                        >
+                            <span className="material-symbols-outlined">
+                                shopping_bag
+                            </span>
+                        </Link>
+                        <Link
+                            href="/admin"
+                            className="rounded-full p-2 text-slate-600 transition-colors hover:text-primary"
+                        >
+                            <span className="material-symbols-outlined">
+                                person
+                            </span>
+                        </Link>
+                    </div>
+                </div>
             </div>
         </header>
     );

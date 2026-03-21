@@ -1,6 +1,21 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
+import { Noto_Sans, Noto_Serif, Public_Sans } from "next/font/google";
 import "./globals.css";
+
+const notoSans = Noto_Sans({
+    subsets: ["latin"],
+    variable: "--font-noto-sans",
+});
+
+const notoSerif = Noto_Serif({
+    subsets: ["latin"],
+    variable: "--font-noto-serif",
+});
+
+const publicSans = Public_Sans({
+    subsets: ["latin"],
+    variable: "--font-public-sans",
+});
 
 export const metadata: Metadata = {
     title: "Atelie Guadalupe",
@@ -15,16 +30,14 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="pt-BR">
+            <head>
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+                    rel="stylesheet"
+                />
+            </head>
             <body
-                className="antialiased"
-                style={
-                    {
-                        "--font-sans":
-                            '"Segoe UI", "Helvetica Neue", sans-serif',
-                        "--font-display":
-                            '"Iowan Old Style", "Times New Roman", serif',
-                    } as CSSProperties
-                }
+                className={`${notoSans.variable} ${notoSerif.variable} ${publicSans.variable} antialiased`}
             >
                 {children}
             </body>

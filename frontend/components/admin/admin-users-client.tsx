@@ -1,9 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useAdminUsers } from "@/hooks/use-admin-users";
 import { User, UserRole } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
@@ -21,7 +18,6 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
         password: "",
         role: "SUBADMIN" as UserRole,
     });
-    const [manualUuid, setManualUuid] = useState(initialUser?.uuid ?? "");
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
     async function handleCreate(event: FormEvent<HTMLFormElement>) {
@@ -29,8 +25,8 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
         setStatusMessage(null);
 
         try {
-            const result = await users.createUser(formState);
-            setStatusMessage(`Usuario criado: ${result.user.name}`);
+            await users.createUser(formState);
+            setStatusMessage("Usuário criado com sucesso.");
             setFormState({
                 name: "",
                 email: "",
@@ -45,203 +41,319 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
         }
     }
 
-    async function deactivateUser() {
-        setStatusMessage(null);
-
-        try {
-            await users.updateUser(manualUuid, { isActive: false });
-            setStatusMessage("Usuario atualizado com sucesso.");
-        } catch (reason) {
-            setStatusMessage(
-                reason instanceof Error
-                    ? reason.message
-                    : "Falha ao atualizar.",
-            );
-        }
-    }
-
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <p className="text-sm uppercase tracking-[0.35em] text-primary/70">
-                        Administradores
-                    </p>
-                    <h2 className="mt-2 font-display text-4xl font-bold text-slate-900">
-                        Gestao de Usuarios
+        <div className="flex min-h-screen overflow-hidden bg-[#f6f6f8] font-sans text-slate-900">
+            <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
+                <div className="flex items-center gap-3 p-6">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
+                        <span className="material-symbols-outlined">brush</span>
+                    </div>
+                    <h2 className="font-display text-lg font-bold text-primary">
+                        Ateliê Guadalupe
                     </h2>
-                    <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                        O contrato atual documenta `POST /users`, `PATCH
-                        /users/:uuid` e o proprio `GET /users/me`, mas ainda nao
-                        traz a listagem administrativa completa. A tela deixa
-                        esse gap explicito e continua util para cadastro e
-                        manutencao manual.
-                    </p>
                 </div>
-            </div>
+                <nav className="mt-4 flex-1 space-y-2 px-4">
+                    <AdminLinkShell
+                        href="/admin"
+                        icon="dashboard"
+                        label="Dashboard"
+                    />
+                    <AdminLinkShell
+                        href="/admin/usuarios"
+                        icon="group"
+                        label="Administradores"
+                        active
+                    />
+                    <AdminLinkShell
+                        href="/admin/cobranca"
+                        icon="shopping_bag"
+                        label="Vendas"
+                    />
+                    <AdminLinkShell
+                        href="/admin/produtos"
+                        icon="inventory_2"
+                        label="Produtos"
+                    />
+                    <AdminLinkShell
+                        href="/admin"
+                        icon="settings"
+                        label="Configurações"
+                    />
+                </nav>
+            </aside>
 
-            <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                <Card className="overflow-hidden">
-                    <div className="border-b border-slate-200 px-6 py-5">
-                        <h3 className="font-display text-2xl font-bold text-slate-900">
-                            Quadro atual
-                        </h3>
+            <main className="flex-1 overflow-hidden">
+                <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
+                    <div className="flex items-center gap-2 text-slate-500">
+                        <span className="text-sm">Painel de Controle</span>
+                        <span className="material-symbols-outlined text-sm">
+                            chevron_right
+                        </span>
+                        <span className="text-sm font-bold text-slate-900">
+                            Administradores
+                        </span>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-left">
-                            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                                <tr>
-                                    <th className="px-6 py-4">
-                                        Nome do Usuario
-                                    </th>
-                                    <th className="px-6 py-4">Cargo</th>
-                                    <th className="px-6 py-4">E-mail</th>
-                                    <th className="px-6 py-4">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white">
-                                {users.data.map((user) => (
-                                    <tr key={user.uuid}>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 font-semibold text-primary">
-                                                    {getInitials(user.name)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-900">
-                                                        {user.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {user.uuid}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-semibold text-slate-700">
-                                            {user.role}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                            {user.email}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
-                                                    user.isActive
-                                                        ? "bg-emerald-100 text-emerald-700"
-                                                        : "bg-slate-100 text-slate-600"
-                                                }`}
-                                            >
-                                                {user.isActive
-                                                    ? "Ativo"
-                                                    : "Inativo"}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="flex items-center gap-4">
+                        <button className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100">
+                            <span className="material-symbols-outlined">
+                                notifications
+                            </span>
+                            <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
+                        </button>
+                        <button className="rounded-full p-2 text-slate-500 hover:bg-slate-100">
+                            <span className="material-symbols-outlined">
+                                search
+                            </span>
+                        </button>
                     </div>
-                </Card>
+                </header>
 
-                <div className="space-y-6">
-                    <Card className="p-6">
-                        <h3 className="font-display text-2xl font-bold text-slate-900">
-                            Convidar Novo Administrador
-                        </h3>
-                        <form
-                            className="mt-6 space-y-4"
-                            onSubmit={handleCreate}
-                        >
-                            <Input
-                                onChange={(event) =>
-                                    setFormState((current) => ({
-                                        ...current,
-                                        name: event.target.value,
-                                    }))
-                                }
-                                placeholder="Nome"
-                                value={formState.name}
-                            />
-                            <Input
-                                onChange={(event) =>
-                                    setFormState((current) => ({
-                                        ...current,
-                                        email: event.target.value,
-                                    }))
-                                }
-                                placeholder="E-mail"
-                                value={formState.email}
-                            />
-                            <Input
-                                onChange={(event) =>
-                                    setFormState((current) => ({
-                                        ...current,
-                                        document: event.target.value,
-                                    }))
-                                }
-                                placeholder="Documento"
-                                value={formState.document}
-                            />
-                            <Input
-                                onChange={(event) =>
-                                    setFormState((current) => ({
-                                        ...current,
-                                        password: event.target.value,
-                                    }))
-                                }
-                                placeholder="Senha temporaria"
-                                type="password"
-                                value={formState.password}
-                            />
-                            <select
-                                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none"
-                                onChange={(event) =>
-                                    setFormState((current) => ({
-                                        ...current,
-                                        role: event.target.value as UserRole,
-                                    }))
-                                }
-                                value={formState.role}
-                            >
-                                <option value="SUBADMIN">SUBADMIN</option>
-                                <option value="USER">USER</option>
-                                <option value="ADMIN">ADMIN</option>
-                            </select>
-                            <Button className="w-full" type="submit">
-                                Criar via POST /users
-                            </Button>
-                        </form>
-                    </Card>
-
-                    <Card className="p-6">
-                        <h3 className="font-display text-2xl font-bold text-slate-900">
-                            Atualizacao manual
-                        </h3>
-                        <div className="mt-6 space-y-4">
-                            <Input
-                                onChange={(event) =>
-                                    setManualUuid(event.target.value)
-                                }
-                                placeholder="UUID do usuario"
-                                value={manualUuid}
-                            />
-                            <Button
-                                className="w-full"
-                                onClick={deactivateUser}
-                                type="button"
-                                variant="outline"
-                            >
-                                Desativar via PATCH /users/:uuid
-                            </Button>
-                            {statusMessage ? (
-                                <p className="text-sm text-slate-600">
-                                    {statusMessage}
+                <div className="h-[calc(100vh-4rem)] overflow-y-auto p-8">
+                    <div className="mx-auto max-w-6xl">
+                        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h1 className="font-display text-3xl font-bold text-slate-900">
+                                    Gestão de Administradores
+                                </h1>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Visualize e gerencie as permissões e acessos
+                                    da sua equipe interna.
                                 </p>
-                            ) : null}
+                            </div>
+                            <button className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90">
+                                <span className="material-symbols-outlined text-xl">
+                                    person_add
+                                </span>
+                                <span>Convidar Novo Administrador</span>
+                            </button>
                         </div>
-                    </Card>
+
+                        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+                            <div className="relative flex-1">
+                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    search
+                                </span>
+                                <input
+                                    className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm"
+                                    placeholder="Pesquisar por nome, cargo ou e-mail..."
+                                />
+                            </div>
+                            <button className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium">
+                                <span className="material-symbols-outlined">
+                                    filter_list
+                                </span>
+                                <span>Filtros</span>
+                            </button>
+                        </div>
+
+                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-left">
+                                    <thead>
+                                        <tr className="border-b border-slate-200 bg-slate-50">
+                                            <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                Nome do Usuário
+                                            </th>
+                                            <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                Cargo / Função
+                                            </th>
+                                            <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                E-mail
+                                            </th>
+                                            <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                Status
+                                            </th>
+                                            <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                Ações
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200">
+                                        {users.data.map((user) => (
+                                            <tr
+                                                key={user.uuid}
+                                                className="transition-colors hover:bg-slate-50"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                                                            {getInitials(
+                                                                user.name,
+                                                            )}
+                                                        </div>
+                                                        <span className="text-sm font-medium text-slate-900">
+                                                            {user.name}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                                        {user.role}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-500">
+                                                    {user.email}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`flex items-center gap-1.5 text-xs font-bold ${
+                                                            user.isActive
+                                                                ? "text-emerald-600"
+                                                                : "text-slate-400"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`size-1.5 rounded-full ${
+                                                                user.isActive
+                                                                    ? "bg-emerald-500"
+                                                                    : "bg-slate-400"
+                                                            }`}
+                                                        />
+                                                        {user.isActive
+                                                            ? "Ativo"
+                                                            : "Pendente"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button className="text-slate-400 transition-colors hover:text-primary">
+                                                        <span className="material-symbols-outlined">
+                                                            more_vert
+                                                        </span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+                            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <h3 className="font-display text-2xl font-bold text-slate-900">
+                                    Convidar Novo Administrador
+                                </h3>
+                                <form
+                                    className="mt-6 space-y-4"
+                                    onSubmit={handleCreate}
+                                >
+                                    <input
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                name: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="Nome"
+                                        value={formState.name}
+                                    />
+                                    <input
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                email: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="E-mail"
+                                        value={formState.email}
+                                    />
+                                    <input
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                document: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="Documento"
+                                        value={formState.document}
+                                    />
+                                    <input
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                password: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="Senha temporária"
+                                        type="password"
+                                        value={formState.password}
+                                    />
+                                    <select
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                role: event.target.value as UserRole,
+                                            }))
+                                        }
+                                        value={formState.role}
+                                    >
+                                        <option value="SUBADMIN">
+                                            SUBADMIN
+                                        </option>
+                                        <option value="USER">USER</option>
+                                        <option value="ADMIN">ADMIN</option>
+                                    </select>
+                                    <button
+                                        className="w-full rounded-lg bg-primary py-3 font-bold text-white"
+                                        type="submit"
+                                    >
+                                        Criar via POST /users
+                                    </button>
+                                    {statusMessage ? (
+                                        <p className="text-sm text-slate-600">
+                                            {statusMessage}
+                                        </p>
+                                    ) : null}
+                                </form>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <h3 className="font-display text-2xl font-bold text-slate-900">
+                                    Estado do contrato
+                                </h3>
+                                <p className="mt-4 text-sm leading-7 text-slate-600">
+                                    O frontend mantém o visual da listagem do
+                                    Stitch, mas a API atual ainda não documenta
+                                    um `GET /users` completo para administração.
+                                    Por isso, a criação segue funcional e a
+                                    tabela usa o contexto disponível.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
+    );
+}
+
+function AdminLinkShell({
+    href,
+    icon,
+    label,
+    active = false,
+}: {
+    href: string;
+    icon: string;
+    label: string;
+    active?: boolean;
+}) {
+    return (
+        <a
+            className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                active
+                    ? "bg-primary/10 text-primary"
+                    : "text-slate-600 hover:bg-primary/10 hover:text-primary"
+            }`}
+            href={href}
+        >
+            <span className="material-symbols-outlined">{icon}</span>
+            <span className="font-medium">{label}</span>
+        </a>
     );
 }
