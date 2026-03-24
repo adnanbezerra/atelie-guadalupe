@@ -347,9 +347,6 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                             <span className="material-symbols-outlined text-sm">
                                 auto_awesome
                             </span>
-                            <span className="text-xs font-medium uppercase tracking-[0.2em]">
-                                Produzido com carinho em Guadalupe
-                            </span>
                         </div>
                         <div className="flex gap-8">
                             <Link className="text-xs text-slate-500" href="/">

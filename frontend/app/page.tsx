@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
 import { SiteFooter } from "@/components/site/site-footer";
 import { getFeaturedCollections } from "@/lib/catalog";
 import { fetchProducts } from "@/lib/server-api";
@@ -97,7 +98,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                     href="/beleza-natural"
                                     className="rounded-lg bg-primary px-8 py-4 font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
                                 >
-                                    Beleza da Criação
+                                    Beleza Natural
                                 </Link>
                                 <Link
                                     href="/artesanato"
@@ -165,15 +166,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                     </li>
                                 ))}
                             </ul>
-                            <Link
-                                href="/admin/cobranca"
-                                className="flex w-fit items-center gap-4 rounded-xl bg-primary px-10 py-5 font-bold text-white shadow-xl shadow-primary/30 transition hover:scale-[1.02]"
-                            >
-                                Iniciar Diagnóstico Pessoal
-                                <span className="material-symbols-outlined">
-                                    arrow_forward
-                                </span>
-                            </Link>
+                            <PersonalDiagnosisDialog />
                         </div>
                     </div>
                 </section>

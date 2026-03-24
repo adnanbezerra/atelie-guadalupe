@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
 import { CollectionKey, ProductLine, ProductsPayload } from "@/lib/types";
@@ -304,15 +305,20 @@ export function CollectionCatalog({
                                     Crie seu Creme Personalizado
                                 </h3>
                                 <p className="mt-2 text-sm text-white/80">
-                                    Escolha os óleos e a textura ideal para
-                                    você.
+                                    Receba atendimento personalizado para os
+                                    ativos e o cuidado ideal para a sua
+                                    necessidade.
                                 </p>
-                                <Link
-                                    className="mt-4 block w-full rounded-lg bg-white py-3 text-center font-bold text-primary"
-                                    href="/admin/cobranca"
-                                >
-                                    Começar agora
-                                </Link>
+                                <PersonalDiagnosisDialog
+                                    trigger={
+                                        <button
+                                            className="mt-4 block w-full rounded-lg bg-white py-3 text-center font-bold text-primary transition hover:bg-white/90"
+                                            type="button"
+                                        >
+                                            Falar com atendimento
+                                        </button>
+                                    }
+                                />
                             </div>
                         </div>
                     </div>
