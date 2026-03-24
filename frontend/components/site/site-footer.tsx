@@ -83,7 +83,6 @@ export function SiteFooter() {
                     </div>
                 </div>
                 <div className="flex flex-col gap-6 border-t border-white/5 pt-8 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
-                    <p>Produzido com carinho em Guadalupe.</p>
                     <div className="flex gap-8">
                         <Link href="/" className="hover:text-primary">
                             Contato
