@@ -6,6 +6,33 @@ import { RoleName } from "../src/generated/prisma/enums";
 import { slugify } from "../src/core/utils/slug";
 import { createUuid } from "../src/core/utils/uuid";
 
+const productDescriptionsBySlug: Record<string, string> = {
+    "hidrapele-adulto":
+        "Creme a base de sebo bovino clarificado e oleos essenciais. Pode ser usado da testa aos pes. Trata sintomas de pele, promove saude e hidratacao profunda.",
+    "hidrapele-adulto-com-acao-repelente":
+        "Alem de hidratacao, reparacao e protecao, protege contra picadas de insetos por ate 8 horas.",
+    "hidrapele-especial-para-dermatite":
+        "Creme com sebo bovino clarificado e oleo de coco. Indicado para dermatite, eczema, psoriase e irritacoes. Hidratacao profunda sem oleos essenciais.",
+    "creme-para-dores-articulares":
+        "Pomada com acao relaxante natural. Alivia dores musculares, articulares e de tecidos moles.",
+    "desodorante-adulto-masculino-e-feminino":
+        "Desodoriza a pele e combate odores, inclusive CC cronico.",
+    "hidrapele-gestante-lactante":
+        "Promove restauracao, prevencao de sintomas de pele e hidratacao profunda, adequado para esse periodo.",
+    "hidrapele-com-acao-repelente-gestante-lactante":
+        "Hidrata e protege contra picadas de mosquitos. Formula segura para gestacao e amamentacao.",
+    "desodorante-gestante-lactante":
+        "Produto seguro para uso durante gestacao e amamentacao.",
+    "hidrapele-rn":
+        "Extremamente seguro para bebes. Promove protecao, hidratacao e previne assaduras.",
+    "hidrapele-infantil-com-acao-de-prevencao-e-tratamento-de-assaduras":
+        "Trata a pele da crianca de forma eficaz, promovendo hidratacao profunda e prevencao de assaduras.",
+    "hidrapele-infantil-com-acao-repelente":
+        "Protege contra picadas de insetos e hidrata profundamente a pele da crianca.",
+    "desodorante-infantil":
+        "Uso a partir de 6 anos. Combate odores fortes nas axilas com formulacao natural e segura."
+};
+
 const productSeed = [
     {
         lineName: "Linha RN",
@@ -207,6 +234,7 @@ async function main() {
                     update: {
                         lineId: line.id,
                         name: productSeedItem.name,
+                        description: productDescriptionsBySlug[productSlug] ?? null,
                         shortDescription: productSeedItem.shortDescription,
                         longDescription: productSeedItem.longDescription,
                         imageUrl: `/media/products/${productSlug}.webp`,
@@ -220,6 +248,7 @@ async function main() {
                         slug: productSlug,
                         imageUrl: `/media/products/${productSlug}.webp`,
                         stock: 0,
+                        description: productDescriptionsBySlug[productSlug] ?? null,
                         shortDescription: productSeedItem.shortDescription,
                         longDescription: productSeedItem.longDescription,
                         isActive: true
