@@ -22,6 +22,7 @@ type CreateProductInput = {
     lineUuid: string;
     image: UploadImageInput;
     stock?: number;
+    description?: string;
     shortDescription: string;
     longDescription: string;
 };
@@ -162,6 +163,7 @@ export class ProductService {
             name: input.name.trim(),
             imageUrl,
             stock: input.category === "ARTISANAL" ? (input.stock ?? 0) : null,
+            description: input.description?.trim(),
             shortDescription: input.shortDescription.trim(),
             longDescription: input.longDescription.trim()
         });
@@ -188,11 +190,15 @@ export class ProductService {
             category?: ProductCategory;
             lineId?: number;
             stock?: number | null;
+            description?: string | null;
             shortDescription?: string;
             longDescription?: string;
         } = {
             ...restInput,
             ...(input.name ? { name: input.name.trim(), slug: slugify(input.name) } : {}),
+            ...(typeof input.description === "string"
+                ? { description: input.description.trim() }
+                : {}),
             ...(input.shortDescription ? { shortDescription: input.shortDescription.trim() } : {}),
             ...(input.longDescription ? { longDescription: input.longDescription.trim() } : {})
         };

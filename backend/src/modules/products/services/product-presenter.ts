@@ -8,6 +8,7 @@ type ProductEntity = {
     imageUrl: string;
     category: ProductCategory;
     stock: number | null;
+    description?: string | null;
     shortDescription: string;
     longDescription: string;
     isActive: boolean;
@@ -35,6 +36,7 @@ export function presentProduct(product: ProductEntity) {
         priceOptions: listProductSizePrices(product.line.pricePerGramInCents),
         imageUrl: product.imageUrl,
         stock: product.stock,
+        description: product.description,
         shortDescription: product.shortDescription,
         longDescription: product.longDescription,
         isActive: product.isActive,
