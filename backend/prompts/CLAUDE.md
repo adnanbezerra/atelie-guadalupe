@@ -251,6 +251,7 @@ Definido em `prisma/schema.prisma`.
 - `RoleName`: `ADMIN`, `SUBADMIN`, `USER`
 - `OrderStatus`: `PENDING`, `AWAITING_PAYMENT`, `PAID`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`
 - `CartItemStatus`: `ACTIVE`, `REMOVED`
+- `ProductCategory`: `SELFCARE`, `ARTISANAL`
 
 ### Entidades principais
 
@@ -267,12 +268,16 @@ Definido em `prisma/schema.prisma`.
 ## Regra atual de produtos e precificacao
 
 - todo produto pertence a uma linha
+- todo produto possui uma categoria: `SELFCARE` ou `ARTISANAL`
 - a linha concentra o campo `pricePerGramInCents`
 - o produto nao possui mais preco proprio salvo no banco
 - os tamanhos disponiveis sao fixos: `70g` e `100g`
 - o backend calcula o preco final a partir de `pricePerGramInCents * gramas`
 - o carrinho e o pedido armazenam o tamanho escolhido e o `unitPriceInCents` calculado no momento da operacao
 - a API publica de produtos deve expor os precos calculados por tamanho, nao um preco unico fixo
+- `ARTISANAL` usa controle de estoque
+- `SELFCARE` nao usa controle de estoque
+- produto possui `description` opcional para texto longo
 
 ### Convenções de modelagem
 
@@ -310,13 +315,20 @@ Definido em `prisma/schema.prisma`.
 - `slug` não pode colidir
 - imagem do produto é armazenada via `imageStorage`
 - ao trocar imagem, a antiga é removida do storage
+- criação de produto exige `category`
+- produto `ARTISANAL` deve receber `stock`
+- produto `SELFCARE` nao deve receber `stock`
+- ao mudar um produto para `SELFCARE`, o estoque deve ser limpo
+- ao mudar um produto de `SELFCARE` para `ARTISANAL`, deve ser informado estoque
+- `description` do produto é opcional e pode ser texto longo
 
 ### Carrinho
 
 - cada usuário tem um carrinho
 - o carrinho é criado sob demanda na primeira leitura/operação
 - só produtos ativos podem entrar no carrinho
-- quantidade não pode exceder estoque
+- quantidade não pode exceder estoque apenas para produtos `ARTISANAL`
+- produtos `SELFCARE` são tratados como disponíveis sem validação de estoque
 - se o produto já existe no carrinho, a quantidade é incrementada
 - limpar carrinho remove itens
 
@@ -324,7 +336,7 @@ Definido em `prisma/schema.prisma`.
 
 - pedido nasce a partir do carrinho
 - não pode criar pedido com carrinho vazio
-- pedido falha se houver item inativo ou estoque insuficiente
+- pedido falha se houver item inativo ou estoque insuficiente em produto `ARTISANAL`
 - o pedido salva snapshot de nome, imagem e preço
 - após criar pedido, os itens do carrinho são removidos
 - usuário comum só enxerga os próprios pedidos

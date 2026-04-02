@@ -545,6 +545,7 @@ Resposta `200`:
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
     "slug": "sabonete-artesanal-de-lavanda",
     "name": "Sabonete Artesanal de Lavanda",
+    "category": "ARTISANAL",
     "line": {
         "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
         "slug": "linha-rn",
@@ -564,6 +565,7 @@ Resposta `200`:
     ],
     "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
     "stock": 8,
+    "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
     "shortDescription": "Sabonete natural com lavanda",
     "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
     "isActive": true,
@@ -574,7 +576,11 @@ Resposta `200`:
 
 Observacoes:
 
-- a precificacao e orientada pela categoria do produto (representada por `line`)
+- `category` define a regra de estoque do produto
+- `ARTISANAL` usa controle de estoque e retorna `stock` numerico
+- `SELFCARE` nao usa controle de estoque e retorna `stock` como `null`
+- `description` e opcional e aceita texto longo
+- a precificacao e orientada pela linha do produto, retornada em `line`
 - `priceOptions` contem os precos calculados por tamanho
 - tamanhos atuais: `GRAMS_70` e `GRAMS_100`
 
@@ -663,6 +669,7 @@ GET /products?page=1&pageSize=12&search=lavanda&lineUuid=0195f4aa-7f18-7db5-9f32
 Observacao:
 
 - para usar `minPriceInCents` e/ou `maxPriceInCents`, e obrigatorio informar `size`
+- `inStock=true` considera produtos `ARTISANAL` com `stock > 0` e todos os produtos `SELFCARE`
 
 Resposta `200`:
 
@@ -675,6 +682,7 @@ Resposta `200`:
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
                 "slug": "sabonete-artesanal-de-lavanda",
                 "name": "Sabonete Artesanal de Lavanda",
+                "category": "ARTISANAL",
                 "line": {
                     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                     "slug": "linha-rn",
@@ -694,6 +702,7 @@ Resposta `200`:
                 ],
                 "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
                 "stock": 8,
+                "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
                 "shortDescription": "Sabonete natural com lavanda",
                 "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
                 "isActive": true,
@@ -727,6 +736,7 @@ Resposta `200`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
             "slug": "sabonete-artesanal-de-lavanda",
             "name": "Sabonete Artesanal de Lavanda",
+            "category": "ARTISANAL",
             "line": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                 "slug": "linha-rn",
@@ -746,6 +756,7 @@ Resposta `200`:
             ],
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
+            "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
             "shortDescription": "Sabonete natural com lavanda",
             "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
             "isActive": true,
@@ -823,6 +834,7 @@ Request:
 ```json
 {
     "name": "Sabonete Artesanal de Lavanda",
+    "category": "ARTISANAL",
     "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
     "image": {
         "filename": "lavanda.jpg",
@@ -830,10 +842,18 @@ Request:
         "base64": "<base64>"
     },
     "stock": 8,
+    "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
     "shortDescription": "Sabonete natural com lavanda",
     "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal."
 }
 ```
+
+Observacoes:
+
+- `category` aceita `SELFCARE` ou `ARTISANAL`
+- para `ARTISANAL`, `stock` e obrigatorio
+- para `SELFCARE`, nao envie `stock`
+- `description` e opcional
 
 Resposta `201`:
 
@@ -845,6 +865,7 @@ Resposta `201`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
             "slug": "sabonete-artesanal-de-lavanda",
             "name": "Sabonete Artesanal de Lavanda",
+            "category": "ARTISANAL",
             "line": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                 "slug": "linha-rn",
@@ -864,6 +885,7 @@ Resposta `201`:
             ],
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
+            "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
             "shortDescription": "Sabonete natural com lavanda",
             "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
             "isActive": true,
@@ -886,6 +908,7 @@ Campos permitidos:
 ```json
 {
     "name": "Novo nome",
+    "category": "ARTISANAL",
     "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
     "image": {
         "filename": "novo.jpg",
@@ -893,6 +916,7 @@ Campos permitidos:
         "base64": "<base64>"
     },
     "stock": 4,
+    "description": "Descricao longa opcional atualizada",
     "shortDescription": "Descricao curta atualizada",
     "longDescription": "Descricao longa atualizada"
 }
@@ -902,6 +926,10 @@ Observacoes:
 
 - qualquer campo e opcional
 - se enviar `image`, o backend substitui a imagem anterior no storage
+- `category` aceita `SELFCARE` ou `ARTISANAL`
+- para `ARTISANAL`, informe `stock`
+- para `SELFCARE`, nao envie `stock`
+- `description` e opcional
 
 ## 11.11 `DELETE /products/:uuid`
 
@@ -992,6 +1020,7 @@ Observacoes:
 
 - o carrinho e criado automaticamente no primeiro acesso, se nao existir
 - `isAvailable` ajuda o frontend a alertar item inativo ou sem estoque suficiente
+- para produtos `SELFCARE`, `isAvailable` nao depende de estoque
 
 ## 13.2 `POST /cart/items`
 
@@ -1043,7 +1072,7 @@ Resposta `201`:
 Possiveis erros:
 
 - `404` produto nao encontrado
-- `400` estoque insuficiente
+- `400` estoque insuficiente para produto `ARTISANAL`
 
 ## 13.3 `PATCH /cart/items/:uuid`
 
@@ -1206,7 +1235,7 @@ Possiveis erros:
 
 - `400` carrinho vazio
 - `400` item indisponivel
-- `400` estoque insuficiente
+- `400` estoque insuficiente em produto `ARTISANAL`
 - `404` endereco nao encontrado
 
 ## 14.3 `GET /orders`
