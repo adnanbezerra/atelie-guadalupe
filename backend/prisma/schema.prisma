@@ -37,6 +37,11 @@ enum ProductSize {
     GRAMS_100
 }
 
+enum ProductCategory {
+    SELFCARE
+    ARTISANAL
+}
+
 model Role {
     id        Int      @id @default(autoincrement())
     name      RoleName @unique
@@ -96,10 +101,11 @@ model Product {
     uuid             String      @unique @db.Uuid
     lineId           Int
     line             ProductLine @relation(fields: [lineId], references: [id])
+    category         ProductCategory @default(ARTISANAL)
     name             String
     slug             String      @unique
     imageUrl         String
-    stock            Int
+    stock            Int?
     shortDescription String
     longDescription  String
     isActive         Boolean     @default(true)
@@ -112,6 +118,7 @@ model Product {
     @@index([slug])
     @@index([uuid])
     @@index([isActive])
+    @@index([category])
 }
 
 model ProductLine {

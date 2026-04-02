@@ -13,7 +13,8 @@ const productSeed = [
         products: [
             {
                 name: "Hidrapele RN",
-                shortDescription: "Hidrapele RN para cuidados delicados e protecao da pele do recem-nascido.",
+                shortDescription:
+                    "Hidrapele RN para cuidados delicados e protecao da pele do recem-nascido.",
                 longDescription:
                     "Formula pensada para a rotina de cuidado do recem-nascido, ajudando a proteger a pele com toque suave e uso diario."
             }
@@ -45,7 +46,8 @@ const productSeed = [
         products: [
             {
                 name: "Hidrapele adulto",
-                shortDescription: "Hidrapele adulto para hidratar e proteger a pele na rotina diaria.",
+                shortDescription:
+                    "Hidrapele adulto para hidratar e proteger a pele na rotina diaria.",
                 longDescription:
                     "Produto voltado ao cuidado da pele adulta, com aplicacao pratica para manutencao da hidratacao e da protecao cotidiana."
             },
