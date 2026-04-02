@@ -7,6 +7,7 @@ import { createUuid } from "../../../core/utils/uuid";
 import { ProductRepository } from "../repositories/product-repository";
 import { presentProductLine } from "./product-line-presenter";
 import { presentProduct } from "./product-presenter";
+import { ProductCategory } from "./product-stock";
 
 type CreateProductLineInput = {
     name: string;
@@ -17,9 +18,10 @@ type UpdateProductLineInput = Partial<CreateProductLineInput>;
 
 type CreateProductInput = {
     name: string;
+    category: ProductCategory;
     lineUuid: string;
     image: UploadImageInput;
-    stock: number;
+    stock?: number;
     shortDescription: string;
     longDescription: string;
 };
@@ -155,10 +157,11 @@ export class ProductService {
         const product = await this.productRepository.create({
             uuid: createUuid(),
             lineId: line.id,
+            category: input.category,
             slug,
             name: input.name.trim(),
             imageUrl,
-            stock: input.stock,
+            stock: input.category === "ARTISANAL" ? (input.stock ?? 0) : null,
             shortDescription: input.shortDescription.trim(),
             longDescription: input.longDescription.trim()
         });
@@ -178,21 +181,38 @@ export class ProductService {
         }
 
         const { image, lineUuid, ...restInput } = input;
+        const nextCategory = input.category ?? existingProduct.category;
         const data: {
             name?: string;
             slug?: string;
+            category?: ProductCategory;
             lineId?: number;
-            stock?: number;
+            stock?: number | null;
             shortDescription?: string;
             longDescription?: string;
         } = {
             ...restInput,
             ...(input.name ? { name: input.name.trim(), slug: slugify(input.name) } : {}),
-            ...(input.shortDescription
-                ? { shortDescription: input.shortDescription.trim() }
-                : {}),
+            ...(input.shortDescription ? { shortDescription: input.shortDescription.trim() } : {}),
             ...(input.longDescription ? { longDescription: input.longDescription.trim() } : {})
         };
+
+        if (
+            nextCategory === "ARTISANAL" &&
+            existingProduct.category === "SELFCARE" &&
+            typeof input.stock !== "number" &&
+            typeof existingProduct.stock !== "number"
+        ) {
+            return left(AppError.business("Informe o estoque ao mudar um produto para ARTISANAL"));
+        }
+
+        if (nextCategory === "SELFCARE" && typeof input.stock === "number") {
+            return left(AppError.business("Produtos SELFCARE nao devem receber estoque"));
+        }
+
+        if (nextCategory === "SELFCARE") {
+            data.stock = null;
+        }
 
         if (data.slug && data.slug !== existingProduct.slug) {
             const slugConflict = await this.productRepository.findBySlug(data.slug);
@@ -208,6 +228,10 @@ export class ProductService {
             }
 
             data.lineId = line.id;
+        }
+
+        if (nextCategory === "ARTISANAL" && typeof input.stock === "number") {
+            data.stock = input.stock;
         }
 
         let imageUrl: string | undefined;

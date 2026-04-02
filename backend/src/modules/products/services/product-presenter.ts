@@ -1,11 +1,13 @@
 import { listProductSizePrices } from "./product-pricing";
+import { ProductCategory } from "./product-stock";
 
 type ProductEntity = {
     uuid: string;
     slug: string;
     name: string;
     imageUrl: string;
-    stock: number;
+    category: ProductCategory;
+    stock: number | null;
     shortDescription: string;
     longDescription: string;
     isActive: boolean;
@@ -24,6 +26,7 @@ export function presentProduct(product: ProductEntity) {
         uuid: product.uuid,
         slug: product.slug,
         name: product.name,
+        category: product.category,
         line: {
             uuid: product.line.uuid,
             slug: product.line.slug,

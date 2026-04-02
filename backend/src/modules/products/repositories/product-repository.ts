@@ -1,6 +1,7 @@
-import { PrismaClient } from "../../../generated/prisma/client";
+import { Prisma, PrismaClient, Product, ProductLine } from "../../../generated/prisma/client";
 import { ProductSize } from "../../../generated/prisma/enums";
 import { calculateProductPriceInCents } from "../services/product-pricing";
+import { ProductCategory } from "../services/product-stock";
 
 type CreateProductLineInput = {
     uuid: string;
@@ -14,15 +15,16 @@ type UpdateProductLineInput = Partial<CreateProductLineInput>;
 type CreateProductInput = {
     uuid: string;
     lineId: number;
+    category: ProductCategory;
     slug: string;
     name: string;
     imageUrl: string;
-    stock: number;
+    stock: number | null;
     shortDescription: string;
     longDescription: string;
 };
 
-type UpdateProductInput = Partial<CreateProductInput> & {
+type UpdateProductInput = Prisma.ProductUncheckedUpdateInput & {
     isActive?: boolean;
 };
 
@@ -40,6 +42,10 @@ type ProductListQuery = {
 const productWithLineInclude = {
     line: true
 } as const;
+
+type ProductWithLine = Product & {
+    line: ProductLine;
+};
 
 export class ProductRepository {
     public constructor(private readonly prisma: PrismaClient) {}
@@ -98,16 +104,30 @@ export class ProductRepository {
                       }
                   }
                 : {}),
-            ...(query.inStock ? { stock: { gt: 0 } } : {})
+            ...(query.inStock
+                ? {
+                      OR: [
+                          {
+                              category: "SELFCARE" as const
+                          },
+                          {
+                              category: "ARTISANAL" as const,
+                              stock: {
+                                  gt: 0
+                              }
+                          }
+                      ]
+                  }
+                : {})
         };
 
-        const items = await this.prisma.product.findMany({
+        const items = (await this.prisma.product.findMany({
             where,
             include: productWithLineInclude,
             orderBy: {
                 createdAt: "desc"
             }
-        });
+        })) as ProductWithLine[];
 
         const filteredItems = items.filter((item) => {
             if (!query.size) {
@@ -119,17 +139,11 @@ export class ProductRepository {
                 query.size
             );
 
-            if (
-                typeof query.minPriceInCents === "number" &&
-                priceInCents < query.minPriceInCents
-            ) {
+            if (typeof query.minPriceInCents === "number" && priceInCents < query.minPriceInCents) {
                 return false;
             }
 
-            if (
-                typeof query.maxPriceInCents === "number" &&
-                priceInCents > query.maxPriceInCents
-            ) {
+            if (typeof query.maxPriceInCents === "number" && priceInCents > query.maxPriceInCents) {
                 return false;
             }
 
@@ -151,7 +165,7 @@ export class ProductRepository {
                 uuid
             },
             include: productWithLineInclude
-        });
+        }) as Promise<ProductWithLine | null>;
     }
 
     public findBySlug(slug: string) {
@@ -160,14 +174,14 @@ export class ProductRepository {
                 slug
             },
             include: productWithLineInclude
-        });
+        }) as Promise<ProductWithLine | null>;
     }
 
     public create(input: CreateProductInput) {
         return this.prisma.product.create({
             data: input,
             include: productWithLineInclude
-        });
+        }) as Promise<ProductWithLine>;
     }
 
     public updateByUuid(uuid: string, input: UpdateProductInput) {
@@ -177,6 +191,6 @@ export class ProductRepository {
             },
             data: input,
             include: productWithLineInclude
-        });
+        }) as Promise<ProductWithLine>;
     }
 }

@@ -4,6 +4,7 @@ import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import { ProductRepository } from "../../products/repositories/product-repository";
 import { calculateProductPriceInCents } from "../../products/services/product-pricing";
+import { hasAvailableStock } from "../../products/services/product-stock";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { CartRepository } from "../repositories/cart-repository";
 import { presentCart } from "./cart-presenter";
@@ -55,7 +56,7 @@ export class CartService {
             return left(AppError.notFound("Produto nao encontrado"));
         }
 
-        if (product.stock < input.quantity) {
+        if (!hasAvailableStock(product.category, product.stock, input.quantity)) {
             return left(AppError.business("Quantidade solicitada maior que o estoque disponivel"));
         }
 
@@ -73,7 +74,7 @@ export class CartService {
 
         if (existingItem) {
             const nextQuantity = existingItem.quantity + input.quantity;
-            if (product.stock < nextQuantity) {
+            if (!hasAvailableStock(product.category, product.stock, nextQuantity)) {
                 return left(
                     AppError.business("Quantidade solicitada maior que o estoque disponivel")
                 );
@@ -125,7 +126,7 @@ export class CartService {
             return left(AppError.business("Produto indisponivel"));
         }
 
-        if (item.product.stock < input.quantity) {
+        if (!hasAvailableStock(item.product.category, item.product.stock, input.quantity)) {
             return left(AppError.business("Quantidade solicitada maior que o estoque disponivel"));
         }
 
@@ -144,7 +145,7 @@ export class CartService {
 
             if (conflictingItem && conflictingItem.uuid !== item.uuid) {
                 const nextQuantity = conflictingItem.quantity + input.quantity;
-                if (item.product.stock < nextQuantity) {
+                if (!hasAvailableStock(item.product.category, item.product.stock, nextQuantity)) {
                     return left(
                         AppError.business("Quantidade solicitada maior que o estoque disponivel")
                     );

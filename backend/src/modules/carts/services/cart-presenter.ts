@@ -1,5 +1,6 @@
 import { ProductSize } from "../../../generated/prisma/enums";
 import { getProductSizeInGrams } from "../../products/services/product-pricing";
+import { hasAvailableStock, ProductCategory } from "../../products/services/product-stock";
 
 type CartItemEntity = {
     uuid: string;
@@ -9,8 +10,9 @@ type CartItemEntity = {
     productNameSnapshot: string;
     product: {
         uuid: string;
+        category: ProductCategory;
         imageUrl: string;
-        stock: number;
+        stock: number | null;
         isActive: boolean;
     };
 };
@@ -21,7 +23,9 @@ type CartEntity = {
 };
 
 export function presentCartItem(item: CartItemEntity) {
-    const isAvailable = item.product.isActive && item.product.stock >= item.quantity;
+    const isAvailable =
+        item.product.isActive &&
+        hasAvailableStock(item.product.category, item.product.stock, item.quantity);
 
     return {
         uuid: item.uuid,

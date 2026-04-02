@@ -1,4 +1,10 @@
-import { PrismaClient } from "../../../generated/prisma/client";
+import {
+    Cart,
+    CartItem,
+    PrismaClient,
+    Product,
+    ProductLine
+} from "../../../generated/prisma/client";
 import { ProductSize } from "../../../generated/prisma/enums";
 
 type CreateCartInput = {
@@ -26,46 +32,67 @@ type UpdateCartItemInput = {
 export class CartRepository {
     public constructor(private readonly prisma: PrismaClient) {}
 
+    private cartWithItemsAndProductsInclude = {
+        items: {
+            where: {
+                status: "ACTIVE" as const
+            },
+            include: {
+                product: {
+                    include: {
+                        line: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: "asc" as const
+            }
+        }
+    };
+
+    private productWithLineInclude = {
+        product: {
+            include: {
+                line: true
+            }
+        }
+    };
+
     public findByUserId(userId: number) {
         return this.prisma.cart.findUnique({
             where: {
                 userId
             },
-            include: {
-                items: {
-                    where: {
-                        status: "ACTIVE"
-                    },
-                    include: {
-                        product: {
-                            include: {
-                                line: true
-                            }
-                        }
-                    },
-                    orderBy: {
-                        createdAt: "asc"
-                    }
-                }
-            }
-        });
+            include: this.cartWithItemsAndProductsInclude
+        }) as Promise<
+            | (Cart & {
+                  items: Array<
+                      CartItem & {
+                          product: Product & {
+                              line: ProductLine;
+                          };
+                      }
+                  >;
+              })
+            | null
+        >;
     }
 
     public create(input: CreateCartInput) {
         return this.prisma.cart.create({
             data: input,
-            include: {
-                items: {
-                    include: {
-                        product: {
-                            include: {
-                                line: true
-                            }
-                        }
+            include: this.cartWithItemsAndProductsInclude
+        }) as Promise<
+            Cart & {
+                items: Array<
+                    CartItem & {
+                        product: Product & {
+                            line: ProductLine;
+                        };
                     }
-                }
+                >;
             }
-        });
+        >;
     }
 
     public findItemByUuid(uuid: string) {
@@ -74,14 +101,18 @@ export class CartRepository {
                 uuid
             },
             include: {
-                product: {
-                    include: {
-                        line: true
-                    }
-                },
+                ...this.productWithLineInclude,
                 cart: true
             }
-        });
+        }) as Promise<
+            | (CartItem & {
+                  product: Product & {
+                      line: ProductLine;
+                  };
+                  cart: Cart;
+              })
+            | null
+        >;
     }
 
     public findItemByCartAndProduct(cartId: number, productId: number, productSize: ProductSize) {
@@ -92,27 +123,28 @@ export class CartRepository {
                 productSize,
                 status: "ACTIVE"
             },
-            include: {
-                product: {
-                    include: {
-                        line: true
-                    }
-                }
-            }
-        });
+            include: this.productWithLineInclude
+        }) as Promise<
+            | (CartItem & {
+                  product: Product & {
+                      line: ProductLine;
+                  };
+              })
+            | null
+        >;
     }
 
     public createItem(input: CreateCartItemInput) {
         return this.prisma.cartItem.create({
             data: input,
-            include: {
-                product: {
-                    include: {
-                        line: true
-                    }
-                }
+            include: this.productWithLineInclude
+        }) as Promise<
+            CartItem & {
+                product: Product & {
+                    line: ProductLine;
+                };
             }
-        });
+        >;
     }
 
     public updateItemByUuid(uuid: string, input: UpdateCartItemInput) {
@@ -122,14 +154,17 @@ export class CartRepository {
             },
             data: input,
             include: {
-                product: {
-                    include: {
-                        line: true
-                    }
-                },
+                ...this.productWithLineInclude,
                 cart: true
             }
-        });
+        }) as Promise<
+            CartItem & {
+                product: Product & {
+                    line: ProductLine;
+                };
+                cart: Cart;
+            }
+        >;
     }
 
     public async deleteItemByUuid(uuid: string) {

@@ -4,6 +4,7 @@ import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import { AddressRepository } from "../../addresses/repositories/address-repository";
 import { CartRepository } from "../../carts/repositories/cart-repository";
+import { hasAvailableStock } from "../../products/services/product-stock";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { OrderRepository } from "../repositories/order-repository";
 import { presentOrder } from "./order-presenter";
@@ -70,7 +71,7 @@ export class OrderService {
                 return left(AppError.business("O carrinho possui produtos indisponiveis"));
             }
 
-            if (item.product.stock < item.quantity) {
+            if (!hasAvailableStock(item.product.category, item.product.stock, item.quantity)) {
                 return left(AppError.business("O carrinho possui itens com estoque insuficiente"));
             }
         }
