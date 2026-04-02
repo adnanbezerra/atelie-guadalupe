@@ -106,6 +106,7 @@ model Product {
     slug             String      @unique
     imageUrl         String
     stock            Int?
+    description      String?      @db.Text
     shortDescription String
     longDescription  String
     isActive         Boolean     @default(true)
