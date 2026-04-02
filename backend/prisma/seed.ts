@@ -21,8 +21,7 @@ const productDescriptionsBySlug: Record<string, string> = {
         "Promove restauracao, prevencao de sintomas de pele e hidratacao profunda, adequado para esse periodo.",
     "hidrapele-com-acao-repelente-gestante-lactante":
         "Hidrata e protege contra picadas de mosquitos. Formula segura para gestacao e amamentacao.",
-    "desodorante-gestante-lactante":
-        "Produto seguro para uso durante gestacao e amamentacao.",
+    "desodorante-gestante-lactante": "Produto seguro para uso durante gestacao e amamentacao.",
     "hidrapele-rn":
         "Extremamente seguro para bebes. Promove protecao, hidratacao e previne assaduras.",
     "hidrapele-infantil-com-acao-de-prevencao-e-tratamento-de-assaduras":
