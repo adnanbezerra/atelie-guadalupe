@@ -33,6 +33,7 @@ O projeto já possui base funcional para:
 - CRUD de produtos
 - carrinho
 - pedidos
+- frete e empacotamento com integracao SuperFrete
 - storage de imagens de produtos em MongoDB/GridFS
 - tratamento padronizado de erros e validações
 - testes unitários e alguns testes de rota
@@ -71,6 +72,11 @@ Baseadas em `.env.example`:
 - `SEED_ADMIN_PASSWORD`
 - `SEED_ADMIN_DOCUMENT`
 - `SEED_ADMIN_NAME`
+- `SUPERFRETE_BASE_URL`
+- `SUPERFRETE_TOKEN`
+- `SUPERFRETE_USER_AGENT`
+- `SUPERFRETE_SERVICE_CODES`
+- `SUPERFRETE_TIMEOUT_MS`
 
 ## Bootstrap da aplicação
 
@@ -97,6 +103,8 @@ Os agregadores em `src/routes` expõem:
 - `/products`
 - `/cart`
 - `/orders`
+- `/shipping`
+- `/platforms`
 - `/media`
 - `/example`
 
@@ -188,6 +196,29 @@ Os services retornam `Either`, e os controllers usam `sendEither` para transform
 - schemas ficam em `src/modules/<dominio>/schemas/*`
 
 Não pular validação por conveniência. Se a rota recebe `body`, `params` ou `query`, o schema deve existir.
+
+## Regras novas de frete
+
+- `Address` passou a servir a dois donos possiveis:
+    - usuario, via `userId`
+    - plataforma, via `platformId`
+- `Platform` e uma entidade administrativa no banco com dados institucionais e endereco proprio.
+- O remetente usado no SuperFrete nao vem mais do `.env`; ele e carregado da `Platform` padrao ativa.
+- O `OrderShipment` guarda `senderSnapshot` para preservar historico do remetente usado na cotacao/checkout.
+- O backend agora possui `ShippingBox` no Prisma para configurar caixas por categoria de produto.
+- Existem tres caixas seeded por padrao:
+    - `SELFCARE` pequena `11.5 x 6.5 x 6.5` com capacidade `2`
+    - `SELFCARE` grande `21 x 12.5 x 12.5` com capacidade `4`
+    - `ARTISANAL` exclusiva `95 x 50 x 17` com capacidade `1`
+- `SELFCARE` calcula peso logistico como `gramas do tamanho + 28g` de tara por unidade.
+- `ARTISANAL` depende de `shippingWeightGrams` configurado no produto.
+- O seed agora inclui o produto `Crucifixo` como `ARTISANAL` com peso logistico de `5000g`.
+- O fluxo de frete ficou separado em:
+    - cotacao e confirmacao do servico via `/shipping/orders/:orderUuid/quote`
+    - checkout/geracao da etiqueta via `/shipping/orders/:orderUuid/checkout`
+    - cancelamento via `/shipping/orders/:orderUuid/cancel`
+- O CRUD administrativo de plataforma fica em `/platforms`.
+- Depois que um frete fica `CONFIRMED`, o servico escolhido fica congelado para evitar recotacao ou duplicidade acidental.
 
 ## Plugins importantes
 

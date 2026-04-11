@@ -1,63 +1,54 @@
-You are a senior software engineer working on Fastify.
-
-Project context:
-We are creating the backend for an ecommerce that will sell natural cosmetic products and also Catholic religious imagery and Rosaries
+You are a senior software engineer working on backend development with Fastify.
 
 Task:
-We should create a plan for the development of the backend. This plan should be as detailed as possible, with feature, constraints, database schemas, acceptation criteria, how the endpoints should work, and if possible expected responses to be used on the frontend
+Vamos implementar as rotas relacionadas a cálculo de frete e integração com o [SuperFrete](https://superfrete.com/). Não tenho certeza de quantos endpoints vamos precisar, mas creio que no mínimo um GET /frete, que vai receber dados de destino, quais produtos foram selecionados, e solicita a API deles. Depois, quando o pagamento for confirmado, vamos dar chamar a API do SuperFrete para confirmar o frete e gerar a entrega no sistema deles
+Devemos receber um pedido, calcular quais e quantas caixas ele vai usar, e com isso enviar para a API do SuperFrete
 
 Constraints:
-
-- Make no mistakes
-- Always use Zod for input validation
-- Always use the left/right monad
-- Indentations with four spaces
-- Always follow Fastify's development concepts, using plugins and such
-- Use layered architecture: route, controller, service, and database connection on repositories only
+Devemos prestar sempre atenção a idempotência e garantir que, uma vez que um frete e valor forem confirmados, esse dado fique salvo no banco de dados para evitar recobrança ou qualquer coisa do tipo para o cliente
 
 Input:
-We are going to use Prisma with Postgres as ORM/BD solutions.
-
-- First of all, we must create the user-related routes: login, register, edit
-  model User
-  id Int
-  uuid uuidv7
-  name string
-  email string unique
-  document string unique
-  role Role
-  password string
-  isActive bool
-  roleId int
-  createdAt, updatedAt
-
-model Role -> there will be four roles: Admin, Subadmin, User
-id int
-name string
-
-model Address
-id Int
-uuid uuidv7
-userId int
-{data related to address, such as city, country and whatnot}
-createdAt, updatedAt
-
-Only an Admin can create other Admin/Subadmin, of course. The register route should default to role user, and refuse to create and admin if the user isn't admin
-We should have jwt authentication and encrypted passwords
-
-- Second, we must create the CRUD for products. only admins and subadmins can do the CUD part
-  model Product
-  id, uuid
-  name string
-  price (in cents) int
-  image string
-  stock int
-  shortDescription str
-  longDescription str
-  createdAt, updatedAt
-
-- Third, we must create the CRUD for a products cart. Model's obvious, you can create it
-- 4th, we will set the basis for the Order, creating the CRUD for it and preparing for checkout integration. I think it's a bit obvious as well, and don't worry that much about checkout yet. We will deal with it later
+Para pedidos de produtos de beleza:
+- Temos dois formatos de caixa: 11,5cm x 6,5cm x 6,5cm que cabe até 2 potes de creme, e outro que é 21cm x 12,5cm x 12,5cm que cabe 4 potes de creme.
+- A tara de um pote de creme é de 28g
+- POST na API do SuperFrete para solicitar cotação de creme (https://superfrete.readme.io/reference/cotacao-de-frete):
+```bash
+curl --request POST \
+     --url https://sandbox.superfrete.com/api/v0/calculator \
+     --header 'User-Agent: Nome e versão da aplicação (email para contato técnico)' \
+     --header 'accept: application/json' \
+     --header 'content-type: application/json' \
+     --data '
+{
+  "from": {
+    "postal_code": "01153000"
+  },
+  "to": {
+    "postal_code": 20020050
+  },
+  "services": "1,2,17",
+  "options": {
+    "own_hand": false,
+    "receipt": false,
+    "insurance_value": 0,
+    "use_insurance_value": false
+  },
+  "package": {
+    "height": 2,
+    "width": 11,
+    "length": 16,
+    "weight": 0.3
+  }
+}
+'
+```
+- POST para pedir etiqueta de frete: https://superfrete.readme.io/reference/adicionar-frete-carrinho
+- POST para finalizar pedido e gerar etiqueta: https://superfrete.readme.io/reference/apiintegrationv1checkout
+- Lista para impressão de etiqueta: https://superfrete.readme.io/reference/tag-link
+- Cancelar pedido: https://superfrete.readme.io/reference/cancelar-pedido
+- Listar etiquetas: https://superfrete.readme.io/reference/listar-etiquetas-na-superfrete
 
 Requirements:
-It should follow Brazilian LGPD, respect back-frontend separation, validate business rules to only accept appropriate data, implement a rate limit to prevent spam and DDOS
+Crie no mínimo mais um subagent para validação de qualidade de código e de funcionalidades, verificando se está tudo logicamente correto
+Após terminar a task, anotar o que foi feito no CLAUDE.md e de docs/API.md
+Precisaremos criar uma model para a caixa no banco de dados, então crie isso no Prisma e crie um CRUD para poder configurar posteriormente via frontend. Cada modelo de caixa deve ter uma entrada no BD, e já temos dois modelos de caixa que eu defini acima, então adicione isso ao seed do Prisma para vir por padrão

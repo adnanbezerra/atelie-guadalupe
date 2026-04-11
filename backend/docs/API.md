@@ -1344,7 +1344,283 @@ Resposta:
 
 - retorna `order` atualizado
 
-## 15. Observacoes para frontend
+## 15. Platforms
+
+Os dados institucionais e o endereco de expedicao da loja ficam na model `Platform`.
+
+Regras:
+
+- CRUD administrativo
+- o remetente do SuperFrete e lido da `Platform` padrao ativa
+- o endereco da plataforma fica salvo em `Address`, mas com ownership da plataforma
+
+### `GET /platforms`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+### `GET /platforms/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+### `POST /platforms`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Request:
+
+```json
+{
+    "name": "Atelie Guadalupe",
+    "email": "contato@atelieguadalupe.com",
+    "phone": "11999999999",
+    "document": "12345678000199",
+    "websiteUrl": "https://atelieguadalupe.com",
+    "isActive": true,
+    "isDefault": true,
+    "address": {
+        "label": "Plataforma",
+        "recipient": "Atelie Guadalupe",
+        "document": "12345678000199",
+        "zipCode": "01153000",
+        "street": "Rua da Origem",
+        "number": "123",
+        "complement": "Sala 1",
+        "neighborhood": "Centro",
+        "city": "Sao Paulo",
+        "state": "SP",
+        "country": "Brasil",
+        "reference": "Porta azul"
+    }
+}
+```
+
+### `PATCH /platforms/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- atualiza parcialmente a plataforma e seu endereco
+
+### `DELETE /platforms/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- remove a plataforma e seu endereco vinculado
+
+## 16. Shipping
+
+## 16.1 Configuracao de caixas
+
+As caixas sao configuradas no banco e usadas pelo modulo de frete para decidir o empacotamento antes de consultar o SuperFrete.
+
+Caixas seeded por padrao:
+
+- `SELFCARE`: `11.5 x 6.5 x 6.5` com capacidade ate `2` itens
+- `SELFCARE`: `21 x 12.5 x 12.5` com capacidade ate `4` itens
+- `ARTISANAL`: `95 x 50 x 17` com capacidade ate `1` item
+
+### `GET /shipping/boxes`
+
+Uso:
+
+- listar caixas cadastradas
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "boxes": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b777",
+                "name": "Caixa Pequena",
+                "slug": "caixa-pequena",
+                "category": "SELFCARE",
+                "dimensionsCm": {
+                    "height": 11.5,
+                    "width": 6.5,
+                    "length": 6.5
+                },
+                "emptyWeightGrams": 0,
+                "maxItems": 2,
+                "isActive": true
+            }
+        ]
+    }
+}
+```
+
+### `POST /shipping/boxes`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Request:
+
+```json
+{
+    "name": "Caixa Artesanato",
+    "category": "ARTISANAL",
+    "outerHeightCm": 95,
+    "outerWidthCm": 50,
+    "outerLengthCm": 17,
+    "emptyWeightGrams": 0,
+    "maxItems": 1,
+    "isActive": true
+}
+```
+
+### `PATCH /shipping/boxes/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- atualiza parcialmente a caixa
+
+### `DELETE /shipping/boxes/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- remove a caixa configurada
+
+## 16.2 Frete por pedido
+
+Fluxo esperado:
+
+1. criar pedido com endereco
+2. cotar frete
+3. confirmar o servico de frete escolhido
+4. apos confirmacao do pagamento, chamar o checkout do frete para gerar a etiqueta
+
+### `GET /shipping/orders/:orderUuid`
+
+Autenticacao:
+
+- obrigatoria
+
+Comportamento:
+
+- retorna o resumo do pedido e o snapshot de frete salvo no banco
+
+### `POST /shipping/orders/:orderUuid/quote`
+
+Autenticacao:
+
+- obrigatoria
+
+Uso:
+
+- calcula frete no SuperFrete
+- salva o snapshot das opcoes retornadas
+- salva tambem o snapshot do remetente/plataforma usado na cotacao
+- se `serviceCode` for enviado, confirma a opcao escolhida e atualiza `shippingInCents` e `totalInCents` do pedido
+
+Request:
+
+```json
+{
+    "serviceCode": 1,
+    "ownHand": false,
+    "receipt": false,
+    "useInsuranceValue": false,
+    "insuranceValueInCents": 0,
+    "refresh": false
+}
+```
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "order": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b999",
+            "status": "PENDING",
+            "subtotalInCents": 34000,
+            "shippingInCents": 1590,
+            "discountInCents": 0,
+            "totalInCents": 35590
+        },
+        "shipment": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b998",
+            "status": "CONFIRMED",
+            "selectedServiceCode": 1,
+            "selectedServiceName": "PAC",
+            "shippingPriceInCents": 1590,
+            "quotedServices": [],
+            "packaging": {
+                "selectedBoxes": []
+            }
+        }
+    }
+}
+```
+
+Regras:
+
+- depois que o frete fica `CONFIRMED`, a mesma cotacao fica congelada no pedido para evitar recobranca ou duplicidade
+- a expedicao usa sempre a `Platform` padrao ativa cadastrada no banco
+- pedidos `SELFCARE` usam as caixas de cosmeticos
+- pedidos `ARTISANAL` usam exclusivamente caixas da categoria `ARTISANAL`
+- produtos `ARTISANAL` precisam ter `shippingWeightGrams` configurado
+
+### `POST /shipping/orders/:orderUuid/checkout`
+
+Autenticacao:
+
+- obrigatoria
+
+Comportamento:
+
+- cria o frete no carrinho do SuperFrete
+- executa o checkout da etiqueta
+- salva `superfreteOrderId`, protocolo, tracking e link de etiqueta no banco
+- reaproveita o `senderSnapshot` salvo no pedido para nao mudar o remetente historico se a `Platform` for editada depois
+- se a etiqueta ja tiver sido comprada, retorna o snapshot persistido
+
+### `POST /shipping/orders/:orderUuid/cancel`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- solicita cancelamento do frete no SuperFrete e salva o retorno
+
+## 17. Observacoes para frontend
 
 - Todos os valores monetarios estao em centavos.
 - Todas as datas estao em formato ISO.
@@ -1353,3 +1629,5 @@ Resposta:
 - Para imagem de produto, o frontend precisa converter o arquivo para base64 antes do envio.
 - Para exibir imagem de produto, basta usar o valor de `imageUrl` retornado pelo backend.
 - `GET /media/images/:id` responde com stream binario, entao `imageUrl` pode ser usado direto em `<img src="...">`.
+- Para produtos `ARTISANAL`, envie tambem `shippingWeightGrams` em gramas no create/update.
+- O `.env` nao carrega mais endereco de expedicao; esses dados ficam na `Platform` padrao cadastrada no banco.
