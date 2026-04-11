@@ -36,6 +36,7 @@ const productSeed = [
     {
         lineName: "Linha RN",
         pricePerGramInCents: 170,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Hidrapele RN",
@@ -49,6 +50,7 @@ const productSeed = [
     {
         lineName: "Linha Infantil",
         pricePerGramInCents: 170,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Hidrapele infantil com acao de prevencao e tratamento de assaduras",
@@ -69,6 +71,7 @@ const productSeed = [
     {
         lineName: "Linha Adulto",
         pricePerGramInCents: 170,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Hidrapele adulto",
@@ -89,6 +92,7 @@ const productSeed = [
     {
         lineName: "Dores Articulares",
         pricePerGramInCents: 200,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Creme para dores articulares",
@@ -102,6 +106,7 @@ const productSeed = [
     {
         lineName: "Especial",
         pricePerGramInCents: 130,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Hidrapele especial para dermatite",
@@ -115,6 +120,7 @@ const productSeed = [
     {
         lineName: "Linha Gestante/Lactante",
         pricePerGramInCents: 170,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Hidrapele gestante lactante",
@@ -135,6 +141,7 @@ const productSeed = [
     {
         lineName: "Desodorante Infantil",
         pricePerGramInCents: 200,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Desodorante infantil",
@@ -148,6 +155,7 @@ const productSeed = [
     {
         lineName: "Desodorante Adulto",
         pricePerGramInCents: 200,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Desodorante adulto masculino e feminino",
@@ -161,6 +169,7 @@ const productSeed = [
     {
         lineName: "Desodorante Gestante/Lactante",
         pricePerGramInCents: 200,
+        category: "SELFCARE" as const,
         products: [
             {
                 name: "Desodorante gestante lactante",
@@ -170,6 +179,55 @@ const productSeed = [
                     "Produto pensado para o periodo de gestacao e lactacao, com foco em frescor e praticidade para a rotina de cuidado pessoal."
             }
         ]
+    },
+    {
+        lineName: "Artesanato",
+        pricePerGramInCents: 0,
+        category: "ARTISANAL" as const,
+        products: [
+            {
+                name: "Crucifixo",
+                stock: 0,
+                shippingWeightGrams: 5000,
+                shortDescription:
+                    "Crucifixo artesanal para devocao e decoracao de ambientes.",
+                longDescription:
+                    "Peca artesanal exclusiva enviada em caixa dedicada para proteger o item durante o transporte."
+            }
+        ]
+    }
+] as const;
+
+const shippingBoxesSeed = [
+    {
+        name: "Caixa Pequena",
+        slug: "caixa-pequena",
+        category: "SELFCARE" as const,
+        outerHeightCm: "11.50",
+        outerWidthCm: "6.50",
+        outerLengthCm: "6.50",
+        emptyWeightGrams: 0,
+        maxItems: 2
+    },
+    {
+        name: "Caixa Grande",
+        slug: "caixa-grande",
+        category: "SELFCARE" as const,
+        outerHeightCm: "21.00",
+        outerWidthCm: "12.50",
+        outerLengthCm: "12.50",
+        emptyWeightGrams: 0,
+        maxItems: 4
+    },
+    {
+        name: "Caixa Artesanato",
+        slug: "caixa-artesanato",
+        category: "ARTISANAL" as const,
+        outerHeightCm: "95.00",
+        outerWidthCm: "50.00",
+        outerLengthCm: "17.00",
+        emptyWeightGrams: 0,
+        maxItems: 1
     }
 ] as const;
 
@@ -225,6 +283,11 @@ async function main() {
 
             for (const productSeedItem of lineSeed.products) {
                 const productSlug = slugify(productSeedItem.name);
+                const stock = "stock" in productSeedItem ? productSeedItem.stock : 0;
+                const shippingWeightGrams =
+                    "shippingWeightGrams" in productSeedItem
+                        ? productSeedItem.shippingWeightGrams
+                        : null;
 
                 await prisma.product.upsert({
                     where: {
@@ -232,21 +295,27 @@ async function main() {
                     },
                     update: {
                         lineId: line.id,
+                        category: lineSeed.category,
                         name: productSeedItem.name,
                         description: productDescriptionsBySlug[productSlug] ?? null,
                         shortDescription: productSeedItem.shortDescription,
                         longDescription: productSeedItem.longDescription,
                         imageUrl: `/media/products/${productSlug}.webp`,
-                        stock: 0,
+                        stock:
+                            lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
+                        shippingWeightGrams,
                         isActive: true
                     },
                     create: {
                         uuid: createUuid(),
                         lineId: line.id,
+                        category: lineSeed.category,
                         name: productSeedItem.name,
                         slug: productSlug,
                         imageUrl: `/media/products/${productSlug}.webp`,
-                        stock: 0,
+                        stock:
+                            lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
+                        shippingWeightGrams,
                         description: productDescriptionsBySlug[productSlug] ?? null,
                         shortDescription: productSeedItem.shortDescription,
                         longDescription: productSeedItem.longDescription,
@@ -254,6 +323,36 @@ async function main() {
                     }
                 });
             }
+        }
+
+        for (const boxSeed of shippingBoxesSeed) {
+            await prisma.shippingBox.upsert({
+                where: {
+                    slug: boxSeed.slug
+                },
+                update: {
+                    name: boxSeed.name,
+                    category: boxSeed.category,
+                    outerHeightCm: boxSeed.outerHeightCm,
+                    outerWidthCm: boxSeed.outerWidthCm,
+                    outerLengthCm: boxSeed.outerLengthCm,
+                    emptyWeightGrams: boxSeed.emptyWeightGrams,
+                    maxItems: boxSeed.maxItems,
+                    isActive: true
+                },
+                create: {
+                    uuid: createUuid(),
+                    name: boxSeed.name,
+                    slug: boxSeed.slug,
+                    category: boxSeed.category,
+                    outerHeightCm: boxSeed.outerHeightCm,
+                    outerWidthCm: boxSeed.outerWidthCm,
+                    outerLengthCm: boxSeed.outerLengthCm,
+                    emptyWeightGrams: boxSeed.emptyWeightGrams,
+                    maxItems: boxSeed.maxItems,
+                    isActive: true
+                }
+            });
         }
 
         if (adminEmail && adminPassword) {

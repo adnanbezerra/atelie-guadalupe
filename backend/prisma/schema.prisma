@@ -42,6 +42,15 @@ enum ProductCategory {
     ARTISANAL
 }
 
+enum ShippingStatus {
+    DRAFT
+    QUOTED
+    CONFIRMED
+    CHECKOUT_REQUESTED
+    LABEL_PURCHASED
+    CANCELLED
+}
+
 model Role {
     id        Int      @id @default(autoincrement())
     name      RoleName @unique
@@ -106,6 +115,7 @@ model Product {
     slug             String      @unique
     imageUrl         String
     stock            Int?
+    shippingWeightGrams Int?
     description      String?      @db.Text
     shortDescription String
     longDescription  String
@@ -186,6 +196,7 @@ model Order {
     user              User        @relation(fields: [userId], references: [id])
     address           Address?    @relation(fields: [addressId], references: [id])
     items             OrderItem[]
+    shipment          OrderShipment?
     createdAt         DateTime    @default(now())
     updatedAt         DateTime    @updatedAt
 
@@ -214,4 +225,59 @@ model OrderItem {
     @@index([orderId])
     @@index([productId])
     @@index([uuid])
+}
+
+model ShippingBox {
+    id               Int      @id @default(autoincrement())
+    uuid             String   @unique @db.Uuid
+    name             String   @unique
+    slug             String   @unique
+    category         ProductCategory
+    outerHeightCm    Decimal  @db.Decimal(6, 2)
+    outerWidthCm     Decimal  @db.Decimal(6, 2)
+    outerLengthCm    Decimal  @db.Decimal(6, 2)
+    emptyWeightGrams Int      @default(0)
+    maxItems         Int
+    isActive         Boolean  @default(true)
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
+
+    @@index([uuid])
+    @@index([slug])
+    @@index([isActive])
+    @@index([category])
+}
+
+model OrderShipment {
+    id                  Int            @id @default(autoincrement())
+    uuid                String         @unique @db.Uuid
+    orderId             Int            @unique
+    status              ShippingStatus @default(DRAFT)
+    quoteFingerprint    String?
+    selectedServiceCode Int?
+    selectedServiceName String?
+    shippingPriceInCents Int?
+    superfreteOrderId   String?        @unique
+    superfreteProtocol  String?
+    trackingCode        String?
+    labelUrl            String?
+    calculatorPayload   Json?
+    calculatorResponse  Json?
+    quotedServices      Json?
+    packagingSnapshot   Json?
+    cartPayload         Json?
+    cartResponse        Json?
+    checkoutResponse    Json?
+    cancellationResponse Json?
+    quotedAt            DateTime?
+    confirmedAt         DateTime?
+    checkoutRequestedAt DateTime?
+    purchasedAt         DateTime?
+    cancelledAt         DateTime?
+    order               Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    createdAt           DateTime       @default(now())
+    updatedAt           DateTime       @updatedAt
+
+    @@index([uuid])
+    @@index([status])
 }
