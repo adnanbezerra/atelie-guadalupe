@@ -62,7 +62,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <div className="absolute inset-0 grid grid-cols-2">
                         {[
                             "https://lh3.googleusercontent.com/aida-public/AB6AXuAivgAEmKgpjW-wT8pfHxE1eiEQxhZaT3EPrRTHf96grXE05DQEDfOXC8Pt-2IwNT3207NdubuzDD4XmSUlWxIfTmbaM0BkMvHMqvWGyxRcjzXn2cnM8JliEfCgo4CacbjPb_akkkfGty3a78SSFYehVSUUK_g7n32E7EMJYKsdS6-po5gXNpSWMJT8_grJOMlTRiByZQHtIdYFJv-3_8H9-_LQU0uKwU7L8O3HxgZvHIXzy-_92nx8wrolsQ_ytwOVYyWG6s051Xee",
-                            "https://lh3.googleusercontent.com/aida-public/AB6AXuAA7OuOGNrTthlijfwKWCNTjrKcGBfOCwbGVphviKgQOxho_GDdHTD1thjyOiv4c_izz8e0xaXQ-limWOPlU2vXLh7KGTmpSHC_9EcxX2CDFj3E7neX5umsdnhH62AQtr2E6jgSAlW7a6lr4K2xfExu4Pb_7L95bsP5ZsSB2FmhXcFulEIjT-CRp-33jK-UOxqYi_XFibKUG3mY2H3INCkXPFidU_qztLQjnq5lHmA44jcTCpgu5Nvm0Jia3Wfv40AV85eOtNf9h7Kv",
+                            "/crucifixo.png",
                         ].map((image, index) => (
                             <div
                                 key={image}
@@ -72,10 +72,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                 <div
                                     className={
                                         index === 1
-                                            ? "h-full w-full border-l border-white/20 bg-cover bg-center"
+                                            ? "h-full w-full border-l border-white/20 bg-cover"
                                             : "h-full w-full bg-cover bg-center"
                                     }
-                                    style={{ backgroundImage: `url(${image})` }}
+                                    style={
+                                        index === 1
+                                            ? {
+                                                  backgroundImage: `url(${image})`,
+                                                  backgroundPosition:
+                                                      "22% center",
+                                              }
+                                            : {
+                                                  backgroundImage: `url(${image})`,
+                                              }
+                                    }
                                 />
                             </div>
                         ))}
