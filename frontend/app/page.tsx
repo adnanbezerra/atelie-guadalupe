@@ -236,6 +236,89 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         </div>
                     </div>
                 </section>
+
+                <section className="bg-[#fdfaf6] py-24">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="grid items-center gap-12 lg:grid-cols-12">
+                            <div className="relative lg:col-span-5">
+                                <div className="aspect-[4/5] overflow-hidden rounded-2xl shadow-2xl">
+                                    <img
+                                        alt="Ambiente familiar acolhedor"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzxA4l5o3xuESk9knRAj7aRT0ZrWPCDRA2vDN4dGK8-PEieFWb4_ogkeWMnPUPo4JGC-ICWHAh2Fcjkai4DFU48wPyBo9_pGV6lzc1DfCyNmS5iOTxRNNalJIhDqM09rqzePtTlTMHwtaVDZC3XHek3rWmxGUbxA2Zmz0zrB47ZKyGKu-QPv1Fm7JK944geZvhWnJmIXy20l_ZXTQXsxP-09Cjauz8uJcxHL51zsjpss-9uUf3LVggLNlan99ASa8Mm-9kttZTN0rI"
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                                <div className="absolute -bottom-8 -left-8 hidden rounded-xl border border-primary/5 bg-white p-8 shadow-xl md:block">
+                                    <span
+                                        className="material-symbols-outlined mb-2 block text-5xl text-primary"
+                                        style={{
+                                            fontVariationSettings:
+                                                '"FILL" 1, "wght" 400, "GRAD" 0, "opsz" 48',
+                                        }}
+                                    >
+                                        family_restroom
+                                    </span>
+                                    <p className="text-sm font-bold uppercase tracking-widest text-primary">
+                                        Legado de Fé
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-7 lg:pl-12">
+                                <span className="mb-4 block text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                                    Nossa Essência
+                                </span>
+                                <h2 className="mb-8 font-display text-4xl font-bold leading-tight text-slate-900 md:text-5xl">
+                                    Nossa História: Uma Vocação de Amor
+                                </h2>
+
+                                <div className="space-y-6">
+                                    <p className="border-l-4 border-primary/20 py-2 pl-6 text-xl font-medium italic text-slate-700">
+                                        "Somos uma família católica que, sob o
+                                        olhar da Providência Divina e inspirada
+                                        pela beleza da Criação, decidiu
+                                        transformar dons em serviço."
+                                    </p>
+                                    <p className="text-lg leading-relaxed text-slate-600">
+                                        Com o coração em nossos oito filhos —
+                                        cinco que caminham conosco e três que
+                                        intercedem por nós no Céu — o Ateliê
+                                        Guadalupe nasceu do desejo de partilhar
+                                        talentos confiados por Deus para o bem
+                                        das famílias.
+                                    </p>
+                                    <p className="text-lg leading-relaxed text-slate-600">
+                                        Cada produto que você encontra aqui é
+                                        fruto desse abandono e gratidão.
+                                        Resolvemos utilizar ao nosso favor e em
+                                        favor das famílias, todos os dons e
+                                        talentos confiados a nós por nosso Bom
+                                        Deus, colocando à disposição o que há de
+                                        mais puro em nosso trabalho manual e em
+                                        nossa oração.
+                                    </p>
+                                </div>
+
+                                <div className="mt-10 flex items-center gap-6">
+                                    <div className="flex -space-x-3 overflow-hidden">
+                                        <span className="material-symbols-outlined text-4xl text-primary/40">
+                                            favorite
+                                        </span>
+                                        <span className="material-symbols-outlined text-4xl text-primary/60">
+                                            favorite
+                                        </span>
+                                        <span className="material-symbols-outlined text-4xl text-primary/80">
+                                            favorite
+                                        </span>
+                                    </div>
+                                    <p className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                                        Trabalho • Família • Oração
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
             <SiteFooter />
         </div>
