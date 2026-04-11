@@ -79,10 +79,32 @@ model User {
     @@index([uuid])
 }
 
+model Platform {
+    id          Int      @id @default(autoincrement())
+    uuid        String   @unique @db.Uuid
+    name        String
+    slug        String   @unique
+    email       String?
+    phone       String?
+    document    String?
+    websiteUrl  String?
+    isActive    Boolean  @default(true)
+    isDefault   Boolean  @default(true)
+    address     Address?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([uuid])
+    @@index([slug])
+    @@index([isActive])
+    @@index([isDefault])
+}
+
 model Address {
     id           Int      @id @default(autoincrement())
     uuid         String   @unique @db.Uuid
-    userId       Int
+    userId       Int?
+    platformId   Int?     @unique
     label        String?
     recipient    String
     document     String?
@@ -96,12 +118,14 @@ model Address {
     country      String
     reference    String?
     isDefault    Boolean  @default(false)
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    platform     Platform? @relation(fields: [platformId], references: [id], onDelete: Cascade)
     orders       Order[]
     createdAt    DateTime @default(now())
     updatedAt    DateTime @updatedAt
 
     @@index([userId])
+    @@index([platformId])
     @@index([uuid])
 }
 
@@ -261,6 +285,7 @@ model OrderShipment {
     superfreteProtocol  String?
     trackingCode        String?
     labelUrl            String?
+    senderSnapshot      Json?
     calculatorPayload   Json?
     calculatorResponse  Json?
     quotedServices      Json?

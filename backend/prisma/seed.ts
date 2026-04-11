@@ -231,6 +231,30 @@ const shippingBoxesSeed = [
     }
 ] as const;
 
+const platformSeed = {
+    name: "Atelie Guadalupe",
+    slug: "atelie-guadalupe",
+    email: "contato@atelieguadalupe.com",
+    phone: null,
+    document: null,
+    websiteUrl: "http://localhost:3000",
+    isActive: true,
+    isDefault: true,
+    address: {
+        recipient: "Atelie Guadalupe",
+        document: null,
+        zipCode: "01153000",
+        street: "Rua de Origem",
+        number: "123",
+        complement: null,
+        neighborhood: "Centro",
+        city: "Sao Paulo",
+        state: "SP",
+        country: "Brasil",
+        reference: null
+    }
+} as const;
+
 async function main() {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
@@ -261,6 +285,71 @@ async function main() {
                 }
             });
         }
+
+        const platform = await prisma.platform.upsert({
+            where: {
+                slug: platformSeed.slug
+            },
+            update: {
+                name: platformSeed.name,
+                email: platformSeed.email,
+                phone: platformSeed.phone,
+                document: platformSeed.document,
+                websiteUrl: platformSeed.websiteUrl,
+                isActive: platformSeed.isActive,
+                isDefault: platformSeed.isDefault
+            },
+            create: {
+                uuid: createUuid(),
+                name: platformSeed.name,
+                slug: platformSeed.slug,
+                email: platformSeed.email,
+                phone: platformSeed.phone,
+                document: platformSeed.document,
+                websiteUrl: platformSeed.websiteUrl,
+                isActive: platformSeed.isActive,
+                isDefault: platformSeed.isDefault
+            }
+        });
+
+        await prisma.address.upsert({
+            where: {
+                platformId: platform.id
+            },
+            update: {
+                label: "Plataforma",
+                recipient: platformSeed.address.recipient,
+                document: platformSeed.address.document,
+                zipCode: platformSeed.address.zipCode,
+                street: platformSeed.address.street,
+                number: platformSeed.address.number,
+                complement: platformSeed.address.complement,
+                neighborhood: platformSeed.address.neighborhood,
+                city: platformSeed.address.city,
+                state: platformSeed.address.state,
+                country: platformSeed.address.country,
+                reference: platformSeed.address.reference,
+                isDefault: false,
+                userId: null
+            },
+            create: {
+                uuid: createUuid(),
+                platformId: platform.id,
+                label: "Plataforma",
+                recipient: platformSeed.address.recipient,
+                document: platformSeed.address.document,
+                zipCode: platformSeed.address.zipCode,
+                street: platformSeed.address.street,
+                number: platformSeed.address.number,
+                complement: platformSeed.address.complement,
+                neighborhood: platformSeed.address.neighborhood,
+                city: platformSeed.address.city,
+                state: platformSeed.address.state,
+                country: platformSeed.address.country,
+                reference: platformSeed.address.reference,
+                isDefault: false
+            }
+        });
 
         for (const lineSeed of productSeed) {
             const lineSlug = slugify(lineSeed.lineName);
