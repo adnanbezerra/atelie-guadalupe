@@ -189,8 +189,7 @@ const productSeed = [
                 name: "Crucifixo",
                 stock: 0,
                 shippingWeightGrams: 5000,
-                shortDescription:
-                    "Crucifixo artesanal para devocao e decoracao de ambientes.",
+                shortDescription: "Crucifixo artesanal para devocao e decoracao de ambientes.",
                 longDescription:
                     "Peca artesanal exclusiva enviada em caixa dedicada para proteger o item durante o transporte."
             }
@@ -390,8 +389,7 @@ async function main() {
                         shortDescription: productSeedItem.shortDescription,
                         longDescription: productSeedItem.longDescription,
                         imageUrl: `/media/products/${productSlug}.webp`,
-                        stock:
-                            lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
+                        stock: lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
                         shippingWeightGrams,
                         isActive: true
                     },
@@ -402,8 +400,7 @@ async function main() {
                         name: productSeedItem.name,
                         slug: productSlug,
                         imageUrl: `/media/products/${productSlug}.webp`,
-                        stock:
-                            lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
+                        stock: lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
                         shippingWeightGrams,
                         description: productDescriptionsBySlug[productSlug] ?? null,
                         shortDescription: productSeedItem.shortDescription,

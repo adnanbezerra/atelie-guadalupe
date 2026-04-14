@@ -48,6 +48,7 @@ test("cart service blocks quantity above stock", async () => {
             id: 2,
             uuid: "product-1",
             name: "Sabonete",
+            category: "ARTISANAL",
             imageUrl: "https://cdn.exemplo.com/lavanda.jpg",
             stock: 1,
             isActive: true,
@@ -96,6 +97,7 @@ test("cart service increments quantity when product already exists in cart", asy
             id: 2,
             uuid: "product-1",
             name: "Sabonete",
+            category: "ARTISANAL",
             imageUrl: "https://cdn.exemplo.com/lavanda.jpg",
             stock: 10,
             isActive: true,
@@ -144,6 +146,7 @@ test("cart service increments quantity when product already exists in cart", asy
             uuid: "item-1",
             quantity: 1,
             product: {
+                category: "ARTISANAL",
                 stock: 10
             }
         }),

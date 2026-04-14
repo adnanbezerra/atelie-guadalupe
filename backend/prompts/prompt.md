@@ -9,9 +9,11 @@ Devemos prestar sempre atenção a idempotência e garantir que, uma vez que um 
 
 Input:
 Para pedidos de produtos de beleza:
+
 - Temos dois formatos de caixa: 11,5cm x 6,5cm x 6,5cm que cabe até 2 potes de creme, e outro que é 21cm x 12,5cm x 12,5cm que cabe 4 potes de creme.
 - A tara de um pote de creme é de 28g
 - POST na API do SuperFrete para solicitar cotação de creme (https://superfrete.readme.io/reference/cotacao-de-frete):
+
 ```bash
 curl --request POST \
      --url https://sandbox.superfrete.com/api/v0/calculator \
@@ -42,6 +44,7 @@ curl --request POST \
 }
 '
 ```
+
 - POST para pedir etiqueta de frete: https://superfrete.readme.io/reference/adicionar-frete-carrinho
 - POST para finalizar pedido e gerar etiqueta: https://superfrete.readme.io/reference/apiintegrationv1checkout
 - Lista para impressão de etiqueta: https://superfrete.readme.io/reference/tag-link

@@ -36,6 +36,7 @@ test("product service creates slug from product name", async () => {
     const service = new ProductService(repository as never, imageStorage as never);
     const result = await service.create({
         name: "Sabonete Artesanal de Lavanda",
+        category: "ARTISANAL",
         lineUuid: "line-1",
         image: {
             filename: "lavanda.jpg",
@@ -43,6 +44,7 @@ test("product service creates slug from product name", async () => {
             base64: "aGVsbG8="
         },
         stock: 8,
+        shippingWeightGrams: 250,
         shortDescription: "Sabonete natural com lavanda",
         longDescription: "Sabonete natural com oleo essencial de lavanda e processo artesanal."
     });
