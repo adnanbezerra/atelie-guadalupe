@@ -20,6 +20,7 @@ type CreateProductInput = {
     name: string;
     imageUrl: string;
     stock: number | null;
+    shippingWeightGrams?: number | null;
     description?: string | null;
     shortDescription: string;
     longDescription: string;

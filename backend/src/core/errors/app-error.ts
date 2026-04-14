@@ -40,4 +40,8 @@ export class AppError extends Error {
     public static business(message: string, details?: AppErrorDetails): AppError {
         return new AppError("BUSINESS_RULE_ERROR", 400, message, details);
     }
+
+    public static serviceUnavailable(message: string, details?: AppErrorDetails): AppError {
+        return new AppError("SERVICE_UNAVAILABLE", 503, message, details);
+    }
 }

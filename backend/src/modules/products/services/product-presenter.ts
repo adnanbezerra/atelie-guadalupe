@@ -8,6 +8,7 @@ type ProductEntity = {
     imageUrl: string;
     category: ProductCategory;
     stock: number | null;
+    shippingWeightGrams?: number | null;
     description?: string | null;
     shortDescription: string;
     longDescription: string;
@@ -36,6 +37,7 @@ export function presentProduct(product: ProductEntity) {
         priceOptions: listProductSizePrices(product.line.pricePerGramInCents),
         imageUrl: product.imageUrl,
         stock: product.stock,
+        shippingWeightGrams: product.shippingWeightGrams,
         description: product.description,
         shortDescription: product.shortDescription,
         longDescription: product.longDescription,

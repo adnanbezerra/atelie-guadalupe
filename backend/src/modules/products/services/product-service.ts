@@ -22,6 +22,7 @@ type CreateProductInput = {
     lineUuid: string;
     image: UploadImageInput;
     stock?: number;
+    shippingWeightGrams?: number;
     description?: string;
     shortDescription: string;
     longDescription: string;
@@ -163,6 +164,8 @@ export class ProductService {
             name: input.name.trim(),
             imageUrl,
             stock: input.category === "ARTISANAL" ? (input.stock ?? 0) : null,
+            shippingWeightGrams:
+                input.category === "ARTISANAL" ? (input.shippingWeightGrams ?? null) : null,
             description: input.description?.trim(),
             shortDescription: input.shortDescription.trim(),
             longDescription: input.longDescription.trim()
@@ -190,6 +193,7 @@ export class ProductService {
             category?: ProductCategory;
             lineId?: number;
             stock?: number | null;
+            shippingWeightGrams?: number | null;
             description?: string | null;
             shortDescription?: string;
             longDescription?: string;
@@ -212,12 +216,24 @@ export class ProductService {
             return left(AppError.business("Informe o estoque ao mudar um produto para ARTISANAL"));
         }
 
+        if (
+            nextCategory === "ARTISANAL" &&
+            existingProduct.category === "SELFCARE" &&
+            typeof input.shippingWeightGrams !== "number" &&
+            typeof existingProduct.shippingWeightGrams !== "number"
+        ) {
+            return left(
+                AppError.business("Informe o peso logistico ao mudar um produto para ARTISANAL")
+            );
+        }
+
         if (nextCategory === "SELFCARE" && typeof input.stock === "number") {
             return left(AppError.business("Produtos SELFCARE nao devem receber estoque"));
         }
 
         if (nextCategory === "SELFCARE") {
             data.stock = null;
+            data.shippingWeightGrams = null;
         }
 
         if (data.slug && data.slug !== existingProduct.slug) {
@@ -238,6 +254,10 @@ export class ProductService {
 
         if (nextCategory === "ARTISANAL" && typeof input.stock === "number") {
             data.stock = input.stock;
+        }
+
+        if (nextCategory === "ARTISANAL" && typeof input.shippingWeightGrams === "number") {
+            data.shippingWeightGrams = input.shippingWeightGrams;
         }
 
         let imageUrl: string | undefined;

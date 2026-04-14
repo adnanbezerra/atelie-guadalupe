@@ -30,6 +30,7 @@ export const createProductSchema = z
         lineUuid: z.uuid(),
         image: imageUploadSchema,
         stock: z.int().min(0).optional(),
+        shippingWeightGrams: z.int().positive().optional(),
         description: z.string().trim().min(1).max(20000).optional(),
         shortDescription: z.string().trim().min(10).max(255),
         longDescription: z.string().trim().min(20).max(5000)
@@ -43,11 +44,27 @@ export const createProductSchema = z
             });
         }
 
+        if (data.category === "ARTISANAL" && typeof data.shippingWeightGrams !== "number") {
+            ctx.addIssue({
+                code: "custom",
+                message: "Informe o peso logistico para produtos ARTISANAL",
+                path: ["shippingWeightGrams"]
+            });
+        }
+
         if (data.category === "SELFCARE" && typeof data.stock !== "undefined") {
             ctx.addIssue({
                 code: "custom",
                 message: "Produtos SELFCARE nao devem receber estoque",
                 path: ["stock"]
+            });
+        }
+
+        if (data.category === "SELFCARE" && typeof data.shippingWeightGrams !== "undefined") {
+            ctx.addIssue({
+                code: "custom",
+                message: "Produtos SELFCARE nao devem receber peso logistico dedicado",
+                path: ["shippingWeightGrams"]
             });
         }
     });
@@ -59,6 +76,7 @@ export const updateProductSchema = z
         lineUuid: z.uuid().optional(),
         image: imageUploadSchema.optional(),
         stock: z.int().min(0).optional(),
+        shippingWeightGrams: z.int().positive().optional(),
         description: z.string().trim().min(1).max(20000).optional(),
         shortDescription: z.string().trim().min(10).max(255).optional(),
         longDescription: z.string().trim().min(20).max(5000).optional()
