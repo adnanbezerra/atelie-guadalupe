@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const baseAddressSchema = z.object({
+export const baseAddressSchema = z.object({
     label: z.string().trim().min(2).max(60).optional(),
     recipient: z.string().trim().min(3).max(120),
     document: z.string().trim().min(11).max(18).optional(),
