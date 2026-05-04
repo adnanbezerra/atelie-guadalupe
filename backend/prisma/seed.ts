@@ -13,7 +13,9 @@ const productDescriptionsBySlug: Record<string, string> = {
         "Alem de hidratacao, reparacao e protecao, protege contra picadas de insetos por ate 8 horas.",
     "hidrapele-especial-para-dermatite":
         "Creme com sebo bovino clarificado e oleo de coco. Indicado para dermatite, eczema, psoriase e irritacoes. Hidratacao profunda sem oleos essenciais.",
-    "creme-para-dores-articulares":
+    "hidrapele-especial-para-lupus-psoriase":
+        "Creme especial para rotinas de cuidado de peles com Lupus e psoriase.",
+    "hidrapele-para-dores-articulares":
         "Pomada com acao relaxante natural. Alivia dores musculares, articulares e de tecidos moles.",
     "desodorante-adulto-masculino-e-feminino":
         "Desodoriza a pele e combate odores, inclusive CC cronico.",
@@ -35,7 +37,8 @@ const productDescriptionsBySlug: Record<string, string> = {
 const productSeed = [
     {
         lineName: "Linha RN",
-        pricePerGramInCents: 170,
+        price70gInCents: 11900,
+        price100gInCents: 17000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -49,7 +52,8 @@ const productSeed = [
     },
     {
         lineName: "Linha Infantil",
-        pricePerGramInCents: 170,
+        price70gInCents: 11900,
+        price100gInCents: 17000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -70,7 +74,8 @@ const productSeed = [
     },
     {
         lineName: "Linha Adulto",
-        pricePerGramInCents: 170,
+        price70gInCents: 11900,
+        price100gInCents: 17000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -91,13 +96,15 @@ const productSeed = [
     },
     {
         lineName: "Dores Articulares",
-        pricePerGramInCents: 200,
+        price70gInCents: 14000,
+        price100gInCents: 20000,
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Creme para dores articulares",
+                name: "Hidrapele para dores articulares",
+                legacySlugs: ["creme-para-dores-articulares"],
                 shortDescription:
-                    "Creme pensado para uso localizado em regioes de desconforto articular.",
+                    "Hidrapele pensado para uso localizado em regioes de desconforto articular.",
                 longDescription:
                     "Produto da linha de dores articulares com aplicacao localizada, voltado ao cuidado complementar em momentos de desconforto."
             }
@@ -105,7 +112,8 @@ const productSeed = [
     },
     {
         lineName: "Especial",
-        pricePerGramInCents: 130,
+        price70gInCents: 9100,
+        price100gInCents: 13000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -118,8 +126,24 @@ const productSeed = [
         ]
     },
     {
+        lineName: "Especial Lupus Psoriase",
+        price70gInCents: 11900,
+        price100gInCents: 17000,
+        category: "SELFCARE" as const,
+        products: [
+            {
+                name: "Hidrapele especial para Lupus, psoriase",
+                shortDescription:
+                    "Hidrapele especial desenvolvido para cuidados de peles com Lupus e psoriase.",
+                longDescription:
+                    "Versao especial do Hidrapele para rotinas de cuidado especificas, com foco em peles que exigem atencao constante."
+            }
+        ]
+    },
+    {
         lineName: "Linha Gestante/Lactante",
-        pricePerGramInCents: 170,
+        price70gInCents: 11900,
+        price100gInCents: 17000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -140,7 +164,8 @@ const productSeed = [
     },
     {
         lineName: "Desodorante Infantil",
-        pricePerGramInCents: 200,
+        price70gInCents: 14000,
+        price100gInCents: 20000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -154,7 +179,8 @@ const productSeed = [
     },
     {
         lineName: "Desodorante Adulto",
-        pricePerGramInCents: 200,
+        price70gInCents: 14000,
+        price100gInCents: 20000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -168,7 +194,8 @@ const productSeed = [
     },
     {
         lineName: "Desodorante Gestante/Lactante",
-        pricePerGramInCents: 200,
+        price70gInCents: 14000,
+        price100gInCents: 20000,
         category: "SELFCARE" as const,
         products: [
             {
@@ -182,7 +209,8 @@ const productSeed = [
     },
     {
         lineName: "Artesanato",
-        pricePerGramInCents: 0,
+        price70gInCents: 0,
+        price100gInCents: 0,
         category: "ARTISANAL" as const,
         products: [
             {
@@ -359,23 +387,62 @@ async function main() {
                 },
                 update: {
                     name: lineSeed.lineName,
-                    pricePerGramInCents: lineSeed.pricePerGramInCents
+                    price70gInCents: lineSeed.price70gInCents,
+                    price100gInCents: lineSeed.price100gInCents
                 },
                 create: {
                     uuid: createUuid(),
                     name: lineSeed.lineName,
                     slug: lineSlug,
-                    pricePerGramInCents: lineSeed.pricePerGramInCents
+                    price70gInCents: lineSeed.price70gInCents,
+                    price100gInCents: lineSeed.price100gInCents
                 }
             });
 
             for (const productSeedItem of lineSeed.products) {
                 const productSlug = slugify(productSeedItem.name);
+                const legacySlugs =
+                    "legacySlugs" in productSeedItem ? productSeedItem.legacySlugs : [];
                 const stock = "stock" in productSeedItem ? productSeedItem.stock : 0;
                 const shippingWeightGrams =
                     "shippingWeightGrams" in productSeedItem
                         ? productSeedItem.shippingWeightGrams
                         : null;
+
+                if (legacySlugs.length > 0) {
+                    const existingProduct = await prisma.product.findUnique({
+                        where: {
+                            slug: productSlug
+                        },
+                        select: {
+                            id: true
+                        }
+                    });
+
+                    if (!existingProduct) {
+                        const legacyProduct = await prisma.product.findFirst({
+                            where: {
+                                slug: {
+                                    in: [...legacySlugs]
+                                }
+                            },
+                            select: {
+                                id: true
+                            }
+                        });
+
+                        if (legacyProduct) {
+                            await prisma.product.update({
+                                where: {
+                                    id: legacyProduct.id
+                                },
+                                data: {
+                                    slug: productSlug
+                                }
+                            });
+                        }
+                    }
+                }
 
                 await prisma.product.upsert({
                     where: {

@@ -11,7 +11,8 @@ import { ProductCategory } from "./product-stock";
 
 type CreateProductLineInput = {
     name: string;
-    pricePerGramInCents: number;
+    price70gInCents: number;
+    price100gInCents: number;
 };
 
 type UpdateProductLineInput = Partial<CreateProductLineInput>;
@@ -70,7 +71,8 @@ export class ProductService {
             uuid: createUuid(),
             name: input.name.trim(),
             slug,
-            pricePerGramInCents: input.pricePerGramInCents
+            price70gInCents: input.price70gInCents,
+            price100gInCents: input.price100gInCents
         });
 
         return right({

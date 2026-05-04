@@ -7,7 +7,8 @@ type CreateProductLineInput = {
     uuid: string;
     name: string;
     slug: string;
-    pricePerGramInCents: number;
+    price70gInCents: number;
+    price100gInCents: number;
 };
 
 type UpdateProductLineInput = Partial<CreateProductLineInput>;
@@ -136,10 +137,7 @@ export class ProductRepository {
                 return true;
             }
 
-            const priceInCents = calculateProductPriceInCents(
-                item.line.pricePerGramInCents,
-                query.size
-            );
+            const priceInCents = calculateProductPriceInCents(item.line, query.size);
 
             if (typeof query.minPriceInCents === "number" && priceInCents < query.minPriceInCents) {
                 return false;

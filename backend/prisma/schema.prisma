@@ -1,308 +1,405 @@
 generator client {
-    provider                = "prisma-client"
-    output                  = "../src/generated/prisma"
-    engineType              = "client"
-    moduleFormat            = "cjs"
-    generatedFileExtension  = "ts"
-    importFileExtension     = ""
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  engineType             = "client"
+  moduleFormat           = "cjs"
+  generatedFileExtension = "ts"
+  importFileExtension    = ""
 }
 
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
 }
 
 enum RoleName {
-    ADMIN
-    SUBADMIN
-    USER
+  ADMIN
+  SUBADMIN
+  USER
 }
 
 enum OrderStatus {
-    PENDING
-    AWAITING_PAYMENT
-    PAID
-    PROCESSING
-    SHIPPED
-    DELIVERED
-    CANCELLED
+  PENDING
+  AWAITING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }
 
 enum CartItemStatus {
-    ACTIVE
-    REMOVED
+  ACTIVE
+  REMOVED
 }
 
 enum ProductSize {
-    GRAMS_70
-    GRAMS_100
+  GRAMS_70
+  GRAMS_100
 }
 
 enum ProductCategory {
-    SELFCARE
-    ARTISANAL
+  SELFCARE
+  ARTISANAL
 }
 
 enum ShippingStatus {
-    DRAFT
-    QUOTED
-    CONFIRMED
-    CHECKOUT_REQUESTED
-    LABEL_PURCHASED
-    CANCELLED
+  DRAFT
+  QUOTED
+  CONFIRMED
+  CHECKOUT_REQUESTED
+  LABEL_PURCHASED
+  CANCELLED
+}
+
+enum PromotionScope {
+  ALL_PRODUCTS
+  CATEGORY
 }
 
 model Role {
-    id        Int      @id @default(autoincrement())
-    name      RoleName @unique
-    users     User[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      RoleName @unique
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {
-    id           Int       @id @default(autoincrement())
-    uuid         String    @unique @db.Uuid
-    name         String
-    email        String    @unique
-    document     String    @unique
-    passwordHash String
-    isActive     Boolean   @default(true)
-    roleId       Int
-    role         Role      @relation(fields: [roleId], references: [id])
-    addresses    Address[]
-    cart         Cart?
-    orders       Order[]
-    createdAt    DateTime  @default(now())
-    updatedAt    DateTime  @updatedAt
+  id           Int       @id @default(autoincrement())
+  uuid         String    @unique @db.Uuid
+  name         String
+  email        String    @unique
+  document     String    @unique
+  passwordHash String
+  isActive     Boolean   @default(true)
+  roleId       Int
+  role         Role      @relation(fields: [roleId], references: [id])
+  addresses    Address[]
+  cart         Cart?
+  orders       Order[]
+  couponUses   CouponRedemption[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-    @@index([roleId])
-    @@index([uuid])
+  @@index([roleId])
+  @@index([uuid])
 }
 
 model Platform {
-    id          Int      @id @default(autoincrement())
-    uuid        String   @unique @db.Uuid
-    name        String
-    slug        String   @unique
-    email       String?
-    phone       String?
-    document    String?
-    websiteUrl  String?
-    isActive    Boolean  @default(true)
-    isDefault   Boolean  @default(true)
-    address     Address?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  uuid       String   @unique @db.Uuid
+  name       String
+  slug       String   @unique
+  email      String?
+  phone      String?
+  document   String?
+  websiteUrl String?
+  isActive   Boolean  @default(true)
+  isDefault  Boolean  @default(true)
+  address    Address?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-    @@index([uuid])
-    @@index([slug])
-    @@index([isActive])
-    @@index([isDefault])
+  @@index([uuid])
+  @@index([slug])
+  @@index([isActive])
+  @@index([isDefault])
 }
 
 model Address {
-    id           Int      @id @default(autoincrement())
-    uuid         String   @unique @db.Uuid
-    userId       Int?
-    platformId   Int?     @unique
-    label        String?
-    recipient    String
-    document     String?
-    zipCode      String
-    street       String
-    number       String
-    complement   String?
-    neighborhood String
-    city         String
-    state        String
-    country      String
-    reference    String?
-    isDefault    Boolean  @default(false)
-    user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    platform     Platform? @relation(fields: [platformId], references: [id], onDelete: Cascade)
-    orders       Order[]
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+  id           Int       @id @default(autoincrement())
+  uuid         String    @unique @db.Uuid
+  userId       Int?
+  platformId   Int?      @unique
+  label        String?
+  recipient    String
+  document     String?
+  zipCode      String
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String
+  country      String
+  reference    String?
+  isDefault    Boolean   @default(false)
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     Platform? @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-    @@index([userId])
-    @@index([platformId])
-    @@index([uuid])
+  @@index([userId])
+  @@index([platformId])
+  @@index([uuid])
 }
 
 model Product {
-    id               Int         @id @default(autoincrement())
-    uuid             String      @unique @db.Uuid
-    lineId           Int
-    line             ProductLine @relation(fields: [lineId], references: [id])
-    category         ProductCategory @default(ARTISANAL)
-    name             String
-    slug             String      @unique
-    imageUrl         String
-    stock            Int?
-    shippingWeightGrams Int?
-    description      String?      @db.Text
-    shortDescription String
-    longDescription  String
-    isActive         Boolean     @default(true)
-    cartItems        CartItem[]
-    orderItems       OrderItem[]
-    createdAt        DateTime    @default(now())
-    updatedAt        DateTime    @updatedAt
+  id                  Int             @id @default(autoincrement())
+  uuid                String          @unique @db.Uuid
+  lineId              Int
+  line                ProductLine     @relation(fields: [lineId], references: [id])
+  category            ProductCategory @default(ARTISANAL)
+  name                String
+  slug                String          @unique
+  imageUrl            String
+  stock               Int?
+  shippingWeightGrams Int?
+  description         String?         @db.Text
+  shortDescription    String
+  longDescription     String
+  isActive            Boolean         @default(true)
+  cartItems           CartItem[]
+  orderItems          OrderItem[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
-    @@index([lineId])
-    @@index([slug])
-    @@index([uuid])
-    @@index([isActive])
-    @@index([category])
+  @@index([lineId])
+  @@index([slug])
+  @@index([uuid])
+  @@index([isActive])
+  @@index([category])
 }
 
 model ProductLine {
-    id                  Int       @id @default(autoincrement())
-    uuid                String    @unique @db.Uuid
-    name                String    @unique
-    slug                String    @unique
-    pricePerGramInCents Int
-    products            Product[]
-    createdAt           DateTime  @default(now())
-    updatedAt           DateTime  @updatedAt
+  id               Int       @id @default(autoincrement())
+  uuid             String    @unique @db.Uuid
+  name             String    @unique
+  slug             String    @unique
+  price70gInCents  Int
+  price100gInCents Int
+  products         Product[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-    @@index([slug])
-    @@index([uuid])
+  @@index([slug])
+  @@index([uuid])
 }
 
 model Cart {
-    id        Int        @id @default(autoincrement())
-    uuid      String     @unique @db.Uuid
-    userId    Int        @unique
-    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-    items     CartItem[]
-    createdAt DateTime   @default(now())
-    updatedAt DateTime   @updatedAt
+  id        Int        @id @default(autoincrement())
+  uuid      String     @unique @db.Uuid
+  userId    Int        @unique
+  couponId  Int?
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon    Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-    @@index([uuid])
+  @@index([uuid])
+  @@index([couponId])
 }
 
 model CartItem {
-    id                  Int            @id @default(autoincrement())
-    uuid                String         @unique @db.Uuid
-    cartId              Int
-    productId           Int
-    productSize         ProductSize
-    quantity            Int
-    unitPriceInCents    Int
-    productNameSnapshot String
-    status              CartItemStatus @default(ACTIVE)
-    cart                Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-    product             Product        @relation(fields: [productId], references: [id])
-    createdAt           DateTime       @default(now())
-    updatedAt           DateTime       @updatedAt
+  id                  Int            @id @default(autoincrement())
+  uuid                String         @unique @db.Uuid
+  cartId              Int
+  productId           Int
+  productSize         ProductSize
+  quantity            Int
+  unitPriceInCents    Int
+  productNameSnapshot String
+  status              CartItemStatus @default(ACTIVE)
+  cart                Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product             Product        @relation(fields: [productId], references: [id])
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
-    @@unique([cartId, productId, productSize])
-    @@index([cartId])
-    @@index([productId])
-    @@index([uuid])
+  @@unique([cartId, productId, productSize])
+  @@index([cartId])
+  @@index([productId])
+  @@index([uuid])
 }
 
 model Order {
-    id                Int         @id @default(autoincrement())
-    uuid              String      @unique @db.Uuid
-    userId            Int
-    addressId         Int?
-    status            OrderStatus @default(PENDING)
-    subtotalInCents   Int
-    shippingInCents   Int         @default(0)
-    discountInCents   Int         @default(0)
-    totalInCents      Int
-    notes             String?
-    checkoutProvider  String?
-    checkoutReference String?
-    placedAt          DateTime?
-    user              User        @relation(fields: [userId], references: [id])
-    address           Address?    @relation(fields: [addressId], references: [id])
-    items             OrderItem[]
-    shipment          OrderShipment?
-    createdAt         DateTime    @default(now())
-    updatedAt         DateTime    @updatedAt
+  id                Int            @id @default(autoincrement())
+  uuid              String         @unique @db.Uuid
+  userId            Int
+  addressId         Int?
+  status            OrderStatus    @default(PENDING)
+  subtotalInCents   Int
+  shippingInCents   Int            @default(0)
+  discountInCents   Int            @default(0)
+  totalInCents      Int
+  notes             String?
+  checkoutProvider  String?
+  checkoutReference String?
+  placedAt          DateTime?
+  user              User           @relation(fields: [userId], references: [id])
+  address           Address?       @relation(fields: [addressId], references: [id])
+  couponId          Int?
+  coupon            Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponCodeSnapshot String?
+  promotionDiscountInCents Int     @default(0)
+  couponDiscountInCents Int        @default(0)
+  items             OrderItem[]
+  shipment          OrderShipment?
+  couponRedemption  CouponRedemption?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-    @@index([userId])
-    @@index([addressId])
-    @@index([status])
-    @@index([uuid])
+  @@index([userId])
+  @@index([addressId])
+  @@index([status])
+  @@index([uuid])
+  @@index([couponId])
 }
 
 model OrderItem {
-    id                  Int      @id @default(autoincrement())
-    uuid                String   @unique @db.Uuid
-    orderId             Int
-    productId           Int?
-    productSize         ProductSize
-    productNameSnapshot String
-    imageUrlSnapshot    String?
-    quantity            Int
-    unitPriceInCents    Int
-    totalPriceInCents   Int
-    order               Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-    product             Product? @relation(fields: [productId], references: [id])
-    createdAt           DateTime @default(now())
-    updatedAt           DateTime @updatedAt
+  id                  Int         @id @default(autoincrement())
+  uuid                String      @unique @db.Uuid
+  orderId             Int
+  productId           Int?
+  productSize         ProductSize
+  productNameSnapshot String
+  imageUrlSnapshot    String?
+  quantity            Int
+  unitPriceInCents    Int
+  totalPriceInCents   Int
+  order               Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product             Product?    @relation(fields: [productId], references: [id])
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
-    @@index([orderId])
-    @@index([productId])
-    @@index([uuid])
+  @@index([orderId])
+  @@index([productId])
+  @@index([uuid])
 }
 
 model ShippingBox {
-    id               Int      @id @default(autoincrement())
-    uuid             String   @unique @db.Uuid
-    name             String   @unique
-    slug             String   @unique
-    category         ProductCategory
-    outerHeightCm    Decimal  @db.Decimal(6, 2)
-    outerWidthCm     Decimal  @db.Decimal(6, 2)
-    outerLengthCm    Decimal  @db.Decimal(6, 2)
-    emptyWeightGrams Int      @default(0)
-    maxItems         Int
-    isActive         Boolean  @default(true)
-    createdAt        DateTime @default(now())
-    updatedAt        DateTime @updatedAt
+  id               Int             @id @default(autoincrement())
+  uuid             String          @unique @db.Uuid
+  name             String          @unique
+  slug             String          @unique
+  category         ProductCategory
+  outerHeightCm    Decimal         @db.Decimal(6, 2)
+  outerWidthCm     Decimal         @db.Decimal(6, 2)
+  outerLengthCm    Decimal         @db.Decimal(6, 2)
+  emptyWeightGrams Int             @default(0)
+  maxItems         Int
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-    @@index([uuid])
-    @@index([slug])
-    @@index([isActive])
-    @@index([category])
+  @@index([uuid])
+  @@index([slug])
+  @@index([isActive])
+  @@index([category])
+}
+
+model Coupon {
+  id                        Int                  @id @default(autoincrement())
+  uuid                      String               @unique @db.Uuid
+  code                      String               @unique
+  discountPercent           Int
+  validUntil                DateTime?
+  maxUses                   Int
+  stackableWithPromotions   Boolean              @default(false)
+  isActive                  Boolean              @default(true)
+  cancelledAt               DateTime?
+  carts                     Cart[]
+  orders                    Order[]
+  emailSegments             CouponEmailSegment[]
+  redemptions               CouponRedemption[]
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+
+  @@index([uuid])
+  @@index([code])
+  @@index([isActive])
+  @@index([validUntil])
+}
+
+model CouponEmailSegment {
+  id        Int      @id @default(autoincrement())
+  couponId  Int
+  email     String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([couponId, email])
+  @@index([couponId])
+  @@index([email])
+}
+
+model CouponRedemption {
+  id                      Int      @id @default(autoincrement())
+  uuid                    String   @unique @db.Uuid
+  couponId                Int
+  userId                  Int
+  orderId                 Int      @unique
+  discountInCents         Int
+  codeSnapshot            String
+  discountPercentSnapshot Int
+  coupon                  Coupon   @relation(fields: [couponId], references: [id])
+  user                    User     @relation(fields: [userId], references: [id])
+  order                   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([couponId, userId])
+  @@index([couponId])
+  @@index([userId])
+  @@index([uuid])
+}
+
+model Promotion {
+  id              Int             @id @default(autoincrement())
+  uuid            String          @unique @db.Uuid
+  name            String
+  slug            String          @unique
+  scope           PromotionScope
+  category        ProductCategory?
+  discountPercent Int
+  startsAt        DateTime
+  endsAt          DateTime?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([uuid])
+  @@index([slug])
+  @@index([isActive])
+  @@index([scope])
+  @@index([category])
+  @@index([startsAt])
+  @@index([endsAt])
 }
 
 model OrderShipment {
-    id                  Int            @id @default(autoincrement())
-    uuid                String         @unique @db.Uuid
-    orderId             Int            @unique
-    status              ShippingStatus @default(DRAFT)
-    quoteFingerprint    String?
-    selectedServiceCode Int?
-    selectedServiceName String?
-    shippingPriceInCents Int?
-    superfreteOrderId   String?        @unique
-    superfreteProtocol  String?
-    trackingCode        String?
-    labelUrl            String?
-    senderSnapshot      Json?
-    calculatorPayload   Json?
-    calculatorResponse  Json?
-    quotedServices      Json?
-    packagingSnapshot   Json?
-    cartPayload         Json?
-    cartResponse        Json?
-    checkoutResponse    Json?
-    cancellationResponse Json?
-    quotedAt            DateTime?
-    confirmedAt         DateTime?
-    checkoutRequestedAt DateTime?
-    purchasedAt         DateTime?
-    cancelledAt         DateTime?
-    order               Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-    createdAt           DateTime       @default(now())
-    updatedAt           DateTime       @updatedAt
+  id                   Int            @id @default(autoincrement())
+  uuid                 String         @unique @db.Uuid
+  orderId              Int            @unique
+  status               ShippingStatus @default(DRAFT)
+  quoteFingerprint     String?
+  selectedServiceCode  Int?
+  selectedServiceName  String?
+  shippingPriceInCents Int?
+  superfreteOrderId    String?        @unique
+  superfreteProtocol   String?
+  trackingCode         String?
+  labelUrl             String?
+  senderSnapshot       Json?
+  calculatorPayload    Json?
+  calculatorResponse   Json?
+  quotedServices       Json?
+  packagingSnapshot    Json?
+  cartPayload          Json?
+  cartResponse         Json?
+  checkoutResponse     Json?
+  cancellationResponse Json?
+  quotedAt             DateTime?
+  confirmedAt          DateTime?
+  checkoutRequestedAt  DateTime?
+  purchasedAt          DateTime?
+  cancelledAt          DateTime?
+  order                Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
-    @@index([uuid])
-    @@index([status])
+  @@index([uuid])
+  @@index([status])
 }

@@ -53,7 +53,8 @@ test("cart service blocks quantity above stock", async () => {
             stock: 1,
             isActive: true,
             line: {
-                pricePerGramInCents: 37
+                price70gInCents: 2590,
+                price100gInCents: 3700
             }
         })
     };
@@ -102,7 +103,8 @@ test("cart service increments quantity when product already exists in cart", asy
             stock: 10,
             isActive: true,
             line: {
-                pricePerGramInCents: 37
+                price70gInCents: 2590,
+                price100gInCents: 3700
             }
         })
     };

@@ -17,7 +17,8 @@ type ProductEntity = {
         uuid: string;
         slug: string;
         name: string;
-        pricePerGramInCents: number;
+        price70gInCents: number;
+        price100gInCents: number;
     };
     createdAt: Date;
     updatedAt: Date;
@@ -34,7 +35,7 @@ export function presentProduct(product: ProductEntity) {
             slug: product.line.slug,
             name: product.line.name
         },
-        priceOptions: listProductSizePrices(product.line.pricePerGramInCents),
+        priceOptions: listProductSizePrices(product.line),
         imageUrl: product.imageUrl,
         stock: product.stock,
         shippingWeightGrams: product.shippingWeightGrams,

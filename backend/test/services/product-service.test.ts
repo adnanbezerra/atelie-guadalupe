@@ -10,7 +10,8 @@ test("product service creates slug from product name", async () => {
             uuid: "line-1",
             slug: "linha-sabonetes",
             name: "Linha Sabonetes",
-            pricePerGramInCents: 37
+            price70gInCents: 2590,
+            price100gInCents: 3700
         }),
         create: async (input: Record<string, unknown>) => ({
             ...input,
@@ -18,7 +19,8 @@ test("product service creates slug from product name", async () => {
                 uuid: "line-1",
                 slug: "linha-sabonetes",
                 name: "Linha Sabonetes",
-                pricePerGramInCents: 37
+                price70gInCents: 2590,
+                price100gInCents: 3700
             },
             isActive: true,
             createdAt: new Date(),

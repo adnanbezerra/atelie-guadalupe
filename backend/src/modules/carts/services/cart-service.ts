@@ -67,10 +67,7 @@ export class CartService {
             input.productSize
         );
 
-        const unitPriceInCents = calculateProductPriceInCents(
-            product.line.pricePerGramInCents,
-            input.productSize
-        );
+        const unitPriceInCents = calculateProductPriceInCents(product.line, input.productSize);
 
         if (existingItem) {
             const nextQuantity = existingItem.quantity + input.quantity;
@@ -132,7 +129,7 @@ export class CartService {
 
         const nextProductSize = input.productSize ?? item.productSize;
         const nextUnitPriceInCents = calculateProductPriceInCents(
-            item.product.line.pricePerGramInCents,
+            item.product.line,
             nextProductSize
         );
 

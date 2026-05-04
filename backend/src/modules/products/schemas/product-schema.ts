@@ -11,13 +11,15 @@ const imageUploadSchema = z.object({
 
 export const createProductLineSchema = z.object({
     name: z.string().trim().min(2).max(120),
-    pricePerGramInCents: z.int().positive()
+    price70gInCents: z.int().positive(),
+    price100gInCents: z.int().positive()
 });
 
 export const updateProductLineSchema = z
     .object({
         name: z.string().trim().min(2).max(120).optional(),
-        pricePerGramInCents: z.int().positive().optional()
+        price70gInCents: z.int().positive().optional(),
+        price100gInCents: z.int().positive().optional()
     })
     .refine((data) => Object.keys(data).length > 0, {
         message: "Informe ao menos um campo para atualizacao"

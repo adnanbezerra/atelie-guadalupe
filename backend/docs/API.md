@@ -581,7 +581,7 @@ Observacoes:
 - `SELFCARE` nao usa controle de estoque e retorna `stock` como `null`
 - `description` e opcional e aceita texto longo
 - a precificacao e orientada pela linha do produto, retornada em `line`
-- `priceOptions` contem os precos calculados por tamanho
+- `priceOptions` contem os precos cadastrados por tamanho
 - tamanhos atuais: `GRAMS_70` e `GRAMS_100`
 
 ## 11.2 Modelo de linha/categoria
@@ -591,7 +591,8 @@ Observacoes:
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
     "slug": "linha-rn",
     "name": "Linha RN",
-    "pricePerGramInCents": 37,
+    "price70gInCents": 11900,
+    "price100gInCents": 17000,
     "createdAt": "2026-03-12T12:00:00.000Z",
     "updatedAt": "2026-03-12T12:00:00.000Z"
 }
@@ -634,7 +635,8 @@ Resposta `200`:
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                 "slug": "linha-rn",
                 "name": "Linha RN",
-                "pricePerGramInCents": 37,
+                "price70gInCents": 11900,
+                "price100gInCents": 17000,
                 "createdAt": "2026-03-12T12:00:00.000Z",
                 "updatedAt": "2026-03-12T12:00:00.000Z"
             }
@@ -779,7 +781,8 @@ Request:
 ```json
 {
     "name": "Linha RN",
-    "pricePerGramInCents": 37
+    "price70gInCents": 11900,
+    "price100gInCents": 17000
 }
 ```
 
@@ -793,7 +796,8 @@ Resposta `201`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
             "slug": "linha-rn",
             "name": "Linha RN",
-            "pricePerGramInCents": 37,
+            "price70gInCents": 11900,
+            "price100gInCents": 17000,
             "createdAt": "2026-03-12T12:00:00.000Z",
             "updatedAt": "2026-03-12T12:00:00.000Z"
         }
@@ -813,7 +817,8 @@ Campos permitidos:
 ```json
 {
     "name": "Linha RN Atualizada",
-    "pricePerGramInCents": 39
+    "price70gInCents": 11900,
+    "price100gInCents": 17000
 }
 ```
 

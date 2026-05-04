@@ -10,18 +10,23 @@ export function getProductSizeInGrams(size: ProductSize): number {
 }
 
 export function calculateProductPriceInCents(
-    pricePerGramInCents: number,
+    prices: ProductSizePrices,
     size: ProductSize
 ): number {
-    return pricePerGramInCents * getProductSizeInGrams(size);
+    return size === "GRAMS_70" ? prices.price70gInCents : prices.price100gInCents;
 }
 
-export function listProductSizePrices(pricePerGramInCents: number) {
+export type ProductSizePrices = {
+    price70gInCents: number;
+    price100gInCents: number;
+};
+
+export function listProductSizePrices(prices: ProductSizePrices) {
     return (Object.entries(PRODUCT_SIZE_GRAMS) as Array<[ProductSize, number]>).map(
         ([size, grams]) => ({
             size,
             grams,
-            priceInCents: pricePerGramInCents * grams
+            priceInCents: calculateProductPriceInCents(prices, size)
         })
     );
 }
