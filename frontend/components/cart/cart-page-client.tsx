@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
 import { Cart } from "@/lib/types";
@@ -13,17 +12,8 @@ type CartPageClientProps = {
 
 export function CartPageClient({ initialCart }: CartPageClientProps) {
     const cart = useCart(initialCart);
-    const [zipCode, setZipCode] = useState("");
-    const shippingEstimate = zipCode.length >= 8 ? 1250 : 0;
-    const taxes = Math.round(
-        (cart.data?.summary.subtotalInCents ?? 0) * 0.0563,
-    );
-
-    const total = useMemo(() => {
-        return (
-            (cart.data?.summary.subtotalInCents ?? 0) + shippingEstimate + taxes
-        );
-    }, [cart.data?.summary.subtotalInCents, shippingEstimate, taxes]);
+    const total = cart.data?.summary.totalInCents ?? 0;
+    const couponDiscount = cart.data?.summary.couponDiscountInCents ?? 0;
 
     const midpoint = Math.ceil((cart.data?.items.length ?? 0) / 2);
     const beautyItems = cart.data?.items.slice(0, midpoint) ?? [];
@@ -65,7 +55,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     {item.name}
                                 </p>
                                 <p className="text-xs text-slate-500">
-                                    {item.grams}ml • {item.productSize}
+                                    {item.grams}g • {item.productSize}
                                 </p>
                                 <p className="mt-1 font-bold text-primary">
                                     {formatCurrency(item.totalPriceInCents)}
@@ -197,44 +187,18 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                             )}
                                         </span>
                                     </div>
-                                    <div className="space-y-2">
+                                    {couponDiscount > 0 ? (
                                         <div className="flex justify-between text-sm">
                                             <span className="text-slate-500">
-                                                Estimativa de Frete
+                                                Cupom
                                             </span>
                                             <span className="font-medium">
                                                 {formatCurrency(
-                                                    shippingEstimate,
+                                                    -couponDiscount,
                                                 )}
                                             </span>
                                         </div>
-                                        <div className="relative">
-                                            <input
-                                                className="w-full rounded-lg border-none bg-slate-50 px-3 py-2 text-xs"
-                                                onChange={(event) =>
-                                                    setZipCode(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                placeholder="CEP"
-                                                value={zipCode}
-                                            />
-                                            <button
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-primary"
-                                                type="button"
-                                            >
-                                                Calcular
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">
-                                            Impostos
-                                        </span>
-                                        <span className="font-medium">
-                                            {formatCurrency(taxes)}
-                                        </span>
-                                    </div>
+                                    ) : null}
                                 </div>
                                 <div className="mb-8 border-t border-slate-100 pt-4">
                                     <div className="flex items-baseline justify-between">

@@ -1,6 +1,8 @@
 "use client";
 
 import { useApiResource } from "@/hooks/use-api-resource";
+import { useApiToken } from "@/hooks/use-api-token";
+import { createAdminUser, getCurrentUser } from "@/lib/api";
 import { User, UserRole } from "@/lib/types";
 
 async function readJson<T>(input: RequestInfo, init?: RequestInit) {
@@ -18,9 +20,17 @@ async function readJson<T>(input: RequestInfo, init?: RequestInit) {
 }
 
 export function useAdminUsers(initialUser: User | null) {
+    const token = useApiToken();
+    const authHeaders: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
     const initialUsers = initialUser ? [initialUser] : [];
     const resource = useApiResource<User[]>(initialUsers, async () => {
-        const payload = await readJson<{ user: User }>("/api/users/me");
+        if (!token) {
+            throw new Error("Faça login para consultar usuários.");
+        }
+
+        const payload = await getCurrentUser(token);
         return payload.user ? [payload.user] : [];
     });
 
@@ -34,12 +44,13 @@ export function useAdminUsers(initialUser: User | null) {
             role: UserRole;
         }) => {
             return resource.runMutation(
-                async () =>
-                    readJson<{ user: User }>("/api/users", {
-                        method: "POST",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify(payload),
-                    }),
+                async () => {
+                    if (!token) {
+                        throw new Error("Faça login para criar usuários.");
+                    }
+
+                    return createAdminUser(token, payload);
+                },
                 (result) => {
                     resource.refresh();
                     return result.user;
@@ -54,7 +65,10 @@ export function useAdminUsers(initialUser: User | null) {
                 async () =>
                     readJson<{ user: User }>(`/api/users/${uuid}`, {
                         method: "PATCH",
-                        headers: { "content-type": "application/json" },
+                        headers: {
+                            "content-type": "application/json",
+                            ...authHeaders,
+                        },
                         body: JSON.stringify(payload),
                     }),
                 () => {

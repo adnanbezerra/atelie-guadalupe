@@ -19,6 +19,7 @@ export type PriceOption = {
 };
 
 export type ProductSize = PriceOption["size"];
+export type ProductCategory = "SELFCARE" | "ARTISANAL";
 export type OrderStatus =
     | "PENDING"
     | "AWAITING_PAYMENT"
@@ -33,7 +34,8 @@ export type ProductLine = {
     uuid: string;
     slug: string;
     name: string;
-    pricePerGramInCents: number;
+    price70gInCents: number;
+    price100gInCents: number;
     createdAt?: string;
     updatedAt?: string;
 };
@@ -42,10 +44,13 @@ export type Product = {
     uuid: string;
     slug: string;
     name: string;
+    category: ProductCategory;
     line: ProductLine;
     priceOptions: PriceOption[];
     imageUrl: string;
-    stock: number;
+    stock: number | null;
+    shippingWeightGrams: number | null;
+    description?: string | null;
     shortDescription: string;
     longDescription: string;
     isActive: boolean;
@@ -88,9 +93,17 @@ export type CartItem = {
 export type Cart = {
     uuid: string;
     items: CartItem[];
+    coupon: {
+        uuid: string;
+        code: string;
+        discountPercent: number;
+        discountInCents: number;
+    } | null;
     summary: {
         itemsCount: number;
         subtotalInCents: number;
+        couponDiscountInCents: number;
+        totalInCents: number;
     };
 };
 
@@ -98,6 +111,7 @@ export type Address = {
     uuid: string;
     label?: string;
     recipient: string;
+    document?: string;
     zipCode: string;
     street: string;
     number: string;
@@ -107,6 +121,9 @@ export type Address = {
     state: string;
     country: string;
     reference?: string | null;
+    isDefault?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 };
 
 export type User = {
@@ -137,6 +154,9 @@ export type Order = {
     subtotalInCents: number;
     shippingInCents: number;
     discountInCents: number;
+    promotionDiscountInCents: number;
+    couponDiscountInCents: number;
+    couponCode: string | null;
     totalInCents: number;
     notes?: string | null;
     placedAt: string;
@@ -160,3 +180,27 @@ export type ProductQuery = {
     maxPriceInCents?: number;
     inStock?: boolean;
 };
+
+export type ProductImageInput = {
+    filename: string;
+    contentType: "image/jpeg" | "image/png" | "image/webp";
+    base64: string;
+};
+
+export type CreateProductInput = {
+    name: string;
+    category: ProductCategory;
+    lineUuid: string;
+    image: ProductImageInput;
+    stock?: number;
+    shippingWeightGrams?: number;
+    description?: string;
+    shortDescription: string;
+    longDescription: string;
+};
+
+export type UpdateProductInput = Partial<
+    Omit<CreateProductInput, "image"> & {
+        image: ProductImageInput;
+    }
+>;

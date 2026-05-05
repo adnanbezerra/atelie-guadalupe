@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createAdminUser, getCurrentUser } from "@/lib/api";
+import { createAdminUser, getCurrentUser, updateCurrentUser } from "@/lib/api";
 import type { User } from "@/lib/types";
 import { useApiToken } from "@/hooks/use-api-token";
 
@@ -78,6 +78,29 @@ export function useProfile() {
                     err instanceof Error
                         ? err.message
                         : "Falha ao criar usuário.",
+                );
+                return null;
+            } finally {
+                setIsSubmitting(false);
+            }
+        },
+        updateProfile: async (input: { name?: string; password?: string }) => {
+            if (!token) {
+                setError("Faça login para atualizar o perfil.");
+                return null;
+            }
+
+            try {
+                setIsSubmitting(true);
+                setError(null);
+                const response = await updateCurrentUser(token, input);
+                setUser(response.user);
+                return response.user;
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "Falha ao atualizar usuário.",
                 );
                 return null;
             } finally {

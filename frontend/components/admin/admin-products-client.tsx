@@ -11,6 +11,10 @@ type AdminProductsClientProps = {
     initialLines: ProductLine[];
 };
 
+function getStock(product: { stock?: number | null }) {
+    return product.stock ?? null;
+}
+
 export function AdminProductsClient({
     initialCatalog,
     initialLines,
@@ -29,7 +33,10 @@ export function AdminProductsClient({
     const filteredItems = useMemo(() => {
         const items = products.data?.items ?? [];
         const filteredByStock = onlyLowStock
-            ? items.filter((product) => product.stock <= LOW_STOCK_THRESHOLD)
+            ? items.filter((product) => {
+                  const stock = getStock(product);
+                  return stock !== null && stock <= LOW_STOCK_THRESHOLD;
+              })
             : items;
         return filteredByStock;
     }, [onlyLowStock, products.data?.items]);
@@ -38,9 +45,10 @@ export function AdminProductsClient({
         const items = products.data?.items ?? [];
         return {
             total: items.length,
-            lowStock: items.filter(
-                (product) => product.stock <= LOW_STOCK_THRESHOLD,
-            ).length,
+            lowStock: items.filter((product) => {
+                const stock = getStock(product);
+                return stock !== null && stock <= LOW_STOCK_THRESHOLD;
+            }).length,
             beauty: items.filter((product) =>
                 product.line.name.toLowerCase().includes("beleza"),
             ).length,
@@ -209,96 +217,107 @@ export function AdminProductsClient({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredItems.map((product) => (
-                                    <tr
-                                        className="group transition-colors hover:bg-slate-50"
-                                        key={product.uuid}
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="size-12 overflow-hidden rounded-lg bg-slate-200 shadow-inner">
-                                                    {product.imageUrl ? (
-                                                        <img
-                                                            alt={product.name}
-                                                            className="h-full w-full object-cover"
-                                                            src={
-                                                                product.imageUrl
-                                                            }
-                                                        />
-                                                    ) : null}
+                                {filteredItems.map((product) => {
+                                    const stock = getStock(product);
+                                    return (
+                                        <tr
+                                            className="group transition-colors hover:bg-slate-50"
+                                            key={product.uuid}
+                                        >
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="size-12 overflow-hidden rounded-lg bg-slate-200 shadow-inner">
+                                                        {product.imageUrl ? (
+                                                            <img
+                                                                alt={
+                                                                    product.name
+                                                                }
+                                                                className="h-full w-full object-cover"
+                                                                src={
+                                                                    product.imageUrl
+                                                                }
+                                                            />
+                                                        ) : null}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-900">
+                                                            {product.name}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500">
+                                                            SKU: {product.slug}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-900">
-                                                        {product.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        SKU: {product.slug}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                                                {product.line.name}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-                                                    <div
-                                                        className={`h-full ${
-                                                            product.stock <=
-                                                            LOW_STOCK_THRESHOLD
-                                                                ? "bg-amber-500"
-                                                                : "bg-emerald-500"
-                                                        }`}
-                                                        style={{
-                                                            width: `${Math.min(
-                                                                100,
-                                                                Math.max(
-                                                                    12,
-                                                                    product.stock *
-                                                                        3,
-                                                                ),
-                                                            )}%`,
-                                                        }}
-                                                    />
-                                                </div>
-                                                <span className="text-xs font-medium text-slate-600">
-                                                    {product.stock <=
-                                                    LOW_STOCK_THRESHOLD
-                                                        ? "Baixo"
-                                                        : "Disponível"}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                                                    {product.line.name}
                                                 </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="text-sm font-medium">
-                                                {product.stock} un.
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold text-primary">
-                                            {formatCurrency(
-                                                product.priceOptions[0]
-                                                    ?.priceInCents ?? 0,
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button className="rounded-lg p-2 transition-colors hover:bg-primary/10 hover:text-primary">
-                                                    <span className="material-symbols-outlined text-lg">
-                                                        edit
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                                                        <div
+                                                            className={`h-full ${
+                                                                stock !==
+                                                                    null &&
+                                                                stock <=
+                                                                    LOW_STOCK_THRESHOLD
+                                                                    ? "bg-amber-500"
+                                                                    : "bg-emerald-500"
+                                                            }`}
+                                                            style={{
+                                                                width: `${Math.min(
+                                                                    100,
+                                                                    Math.max(
+                                                                        12,
+                                                                        (stock ??
+                                                                            30) *
+                                                                            3,
+                                                                    ),
+                                                                )}%`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs font-medium text-slate-600">
+                                                        {stock !== null &&
+                                                        stock <=
+                                                            LOW_STOCK_THRESHOLD
+                                                            ? "Baixo"
+                                                            : "Disponível"}
                                                     </span>
-                                                </button>
-                                                <button className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600">
-                                                    <span className="material-symbols-outlined text-lg">
-                                                        delete
-                                                    </span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="text-sm font-medium">
+                                                    {stock === null
+                                                        ? "sem controle"
+                                                        : `${stock} un.`}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold text-primary">
+                                                {formatCurrency(
+                                                    product.priceOptions[0]
+                                                        ?.priceInCents ?? 0,
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button className="rounded-lg p-2 transition-colors hover:bg-primary/10 hover:text-primary">
+                                                        <span className="material-symbols-outlined text-lg">
+                                                            edit
+                                                        </span>
+                                                    </button>
+                                                    <button className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600">
+                                                        <span className="material-symbols-outlined text-lg">
+                                                            delete
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

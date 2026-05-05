@@ -1,15 +1,16 @@
 import type {
     ApiEnvelope,
     Cart,
+    CreateProductInput,
     OrdersResponse,
+    Order,
     Product,
     ProductLine,
     ProductListResponse,
     ProductQuery,
+    UpdateProductInput,
     User,
 } from "@/lib/types";
-
-const API_BASE_PATH = "/api";
 
 export class ApiError extends Error {
     status: number;
@@ -35,7 +36,10 @@ function buildUrl(
     query?: Record<string, string | number | boolean | undefined>,
 ) {
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-    const url = new URL(`${API_BASE_PATH}${normalizedPath}`, "http://local");
+    const clientPath = normalizedPath.startsWith("/api/")
+        ? normalizedPath
+        : `/api${normalizedPath}`;
+    const url = new URL(clientPath, "http://local");
 
     if (query) {
         for (const [key, value] of Object.entries(query)) {
@@ -112,6 +116,21 @@ export function clearCart(token: string) {
     });
 }
 
+export function applyCartCoupon(token: string, code: string) {
+    return request<{ cart: Cart }>("/cart/coupon", {
+        method: "POST",
+        token,
+        body: { code },
+    });
+}
+
+export function removeCartCoupon(token: string) {
+    return request<{ cart: Cart }>("/cart/coupon", {
+        method: "DELETE",
+        token,
+    });
+}
+
 export function createCartItem(
     token: string,
     body: { productUuid: string; productSize: string; quantity: number },
@@ -131,6 +150,17 @@ export function getCurrentUser(token: string) {
     return request<{ user: User }>("/users/me", { token });
 }
 
+export function updateCurrentUser(
+    token: string,
+    body: { name?: string; password?: string },
+) {
+    return request<{ user: User }>("/users/me", {
+        method: "PATCH",
+        token,
+        body,
+    });
+}
+
 export function createAdminUser(
     token: string,
     body: {
@@ -148,7 +178,18 @@ export function createAdminUser(
     });
 }
 
-export function createProduct(token: string, body: unknown) {
+export function createOrder(
+    token: string,
+    body: { addressUuid?: string; notes?: string },
+) {
+    return request<{ order: Order }>("/orders", {
+        method: "POST",
+        token,
+        body,
+    });
+}
+
+export function createProduct(token: string, body: CreateProductInput) {
     return request<{ product: Product }>("/products", {
         method: "POST",
         token,
@@ -159,7 +200,7 @@ export function createProduct(token: string, body: unknown) {
 export function updateProduct(
     token: string,
     productUuid: string,
-    body: unknown,
+    body: UpdateProductInput,
 ) {
     return request<{ product: Product }>(`/products/${productUuid}`, {
         method: "PATCH",
@@ -169,7 +210,7 @@ export function updateProduct(
 }
 
 export function deleteProduct(token: string, productUuid: string) {
-    return request<{ product: Product }>(`/products/${productUuid}`, {
+    return request<{ deleted: boolean }>(`/products/${productUuid}`, {
         method: "DELETE",
         token,
     });

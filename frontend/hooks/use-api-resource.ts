@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 type ResourceState<T> = {
     data: T;
@@ -22,13 +22,15 @@ export function useApiResource<T>(
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(initialData == null);
     const [isPending, startTransition] = useTransition();
+    const loaderRef = useRef(loader);
+    loaderRef.current = loader;
 
     const refresh = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const next = await loader();
+            const next = await loaderRef.current();
             setData(next);
         } catch (reason) {
             setError(
@@ -37,7 +39,7 @@ export function useApiResource<T>(
         } finally {
             setIsLoading(false);
         }
-    }, [loader]);
+    }, []);
 
     async function runMutation<TResult>(
         action: () => Promise<TResult>,

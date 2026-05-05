@@ -26,23 +26,43 @@ async function proxyRequest(request: NextRequest, path: string[]) {
         request.method === "GET" || request.method === "HEAD"
             ? undefined
             : await request.text();
+    let response: Response;
 
-    const response = await fetch(target, {
-        method: request.method,
-        headers: {
-            ...(accept ? { accept } : {}),
-            ...(contentType ? { "content-type": contentType } : {}),
-            ...(token
-                ? {
-                      authorization: token.startsWith("Bearer ")
-                          ? token
-                          : `Bearer ${token}`,
-                  }
-                : {}),
-        },
-        body: bodyText,
-        cache: "no-store",
-    });
+    try {
+        response = await fetch(target, {
+            method: request.method,
+            headers: {
+                ...(accept ? { accept } : {}),
+                ...(contentType ? { "content-type": contentType } : {}),
+                ...(token
+                    ? {
+                          authorization: token.startsWith("Bearer ")
+                              ? token
+                              : `Bearer ${token}`,
+                      }
+                    : {}),
+            },
+            body: bodyText,
+            cache: "no-store",
+        });
+    } catch (error) {
+        const cause =
+            error instanceof Error && "cause" in error
+                ? String(error.cause)
+                : undefined;
+
+        return NextResponse.json(
+            {
+                success: false,
+                error: {
+                    code: "API_UNREACHABLE",
+                    message: `Nao foi possivel conectar ao backend em ${env.API_BASE_URL}. Verifique se a API esta rodando e se API_BASE_URL esta correta.`,
+                    details: cause ? [{ message: cause }] : [],
+                },
+            },
+            { status: 502 },
+        );
+    }
 
     const responseText = await response.text();
 

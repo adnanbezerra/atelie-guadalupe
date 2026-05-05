@@ -49,14 +49,22 @@ export function CollectionCatalog({
     const [lineUuid, setLineUuid] = useState("");
     const [inStockOnly, setInStockOnly] = useState(false);
     const [, startTransition] = useTransition();
-    const linesResource = useProductLines(initialLines);
-    const productsResource = useProducts(initialCatalog, {
-        page: 1,
-        pageSize: 24,
-        search,
-        lineUuid: lineUuid || undefined,
-        inStock: inStockOnly || undefined,
+    const linesResource = useProductLines(initialLines, {
+        skipClientFetch: true,
     });
+    const productsResource = useProducts(
+        initialCatalog,
+        {
+            page: 1,
+            pageSize: 24,
+            search,
+            lineUuid: lineUuid || undefined,
+            inStock: inStockOnly || undefined,
+        },
+        {
+            skipClientFetch: true,
+        },
+    );
 
     const filteredProducts = useMemo(() => {
         const items = productsResource.data?.items ?? [];

@@ -1,4 +1,3 @@
-import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { CollectionKey, Product, ProductLine } from "@/lib/types";
 
 export type CollectionSlug = "beleza-natural" | "artesanato";
@@ -47,6 +46,14 @@ function includesKeyword(value: string, keywords: string[]) {
 }
 
 export function inferCollection(product: Product): CollectionKey {
+    if (product.category === "SELFCARE") {
+        return "beauty";
+    }
+
+    if (product.category === "ARTISANAL") {
+        return "crafts";
+    }
+
     const searchable = [
         product.name,
         product.shortDescription,
@@ -63,7 +70,7 @@ export function inferCollection(product: Product): CollectionKey {
         return "beauty";
     }
 
-    return product.stock <= LOW_STOCK_THRESHOLD ? "crafts" : "beauty";
+    return product.stock == null ? "beauty" : "crafts";
 }
 
 export function getCollectionCopy(collection: CollectionKey) {
@@ -117,6 +124,6 @@ export function filterLinesByCollection(
 
 export function getHeroHighlights(products: Product[]) {
     return [...products]
-        .sort((left, right) => right.stock - left.stock)
+        .sort((left, right) => (right.stock ?? 0) - (left.stock ?? 0))
         .slice(0, 3);
 }

@@ -6,6 +6,7 @@ import type { Product } from "@/lib/types";
 
 export function ProductCard({ product }: { product: Product }) {
     const firstPrice = product.priceOptions[0];
+    const stock = product.stock ?? null;
 
     return (
         <Card className="group overflow-hidden">
@@ -20,9 +21,11 @@ export function ProductCard({ product }: { product: Product }) {
                 <div className="flex items-center justify-between gap-3">
                     <Badge>{product.line.name}</Badge>
                     <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        {product.stock > 0
-                            ? `${product.stock} em estoque`
-                            : "Indisponível"}
+                        {stock === null
+                            ? "Sempre disponível"
+                            : stock > 0
+                              ? `${stock} em estoque`
+                              : "Indisponível"}
                     </span>
                 </div>
                 <div>

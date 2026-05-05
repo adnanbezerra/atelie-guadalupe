@@ -1,7 +1,21 @@
 "use client";
 
 import { useApiResource } from "./use-api-resource";
-import type { Pagination, Product, ProductLine } from "@/lib/types";
+import { useApiToken } from "@/hooks/use-api-token";
+import type {
+    CreateProductInput,
+    Pagination,
+    Product,
+    ProductLine,
+    UpdateProductInput,
+} from "@/lib/types";
+import {
+    createProduct as createProductRequest,
+    deleteProduct as deleteProductRequest,
+    getProductLines,
+    getProducts,
+    updateProduct as updateProductRequest,
+} from "@/lib/api";
 
 export interface AdminProductsPayload {
     items: Product[];
@@ -9,67 +23,64 @@ export interface AdminProductsPayload {
     lines: ProductLine[];
 }
 
-async function parseResponse(response: Response) {
-    const payload = await response.json();
+function cleanProductPayload<T extends CreateProductInput | UpdateProductInput>(
+    payload: T,
+) {
+    const next = { ...payload };
 
-    if (!response.ok || !payload.success) {
-        throw new Error(payload.error?.message ?? "Falha na operação.");
+    if (next.category === "SELFCARE") {
+        delete next.stock;
+        delete next.shippingWeightGrams;
     }
 
-    return payload.data;
+    return next;
 }
 
 export function useAdminProducts(initialData: AdminProductsPayload) {
+    const token = useApiToken();
     const resource = useApiResource(initialData, async () => {
         const [productsResponse, linesResponse] = await Promise.all([
-            fetch("/api/products?page=1&pageSize=24", {
-                cache: "no-store",
-            }).then((response) => response.json()),
-            fetch("/api/products/lines", { cache: "no-store" }).then(
-                (response) => response.json(),
-            ),
+            getProducts({ page: 1, pageSize: 24 }),
+            getProductLines(),
         ]);
 
         return {
-            items: productsResponse.data.items,
-            pagination: productsResponse.data.pagination,
-            lines: linesResponse.data.lines,
+            items: productsResponse.items,
+            pagination: productsResponse.pagination,
+            lines: linesResponse.lines,
         } as AdminProductsPayload;
     });
 
     return {
         ...resource,
-        async createProduct(payload: Record<string, unknown>) {
-            await parseResponse(
-                await fetch("/api/products", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                }),
-            );
+        async createProduct(payload: CreateProductInput) {
+            if (!token) {
+                throw new Error("Faça login para criar produtos.");
+            }
+
+            await createProductRequest(token, cleanProductPayload(payload));
 
             await resource.refresh();
         },
-        async updateProduct(
-            productUuid: string,
-            payload: Record<string, unknown>,
-        ) {
-            await parseResponse(
-                await fetch(`/api/products/${productUuid}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                }),
+        async updateProduct(productUuid: string, payload: UpdateProductInput) {
+            if (!token) {
+                throw new Error("Faça login para editar produtos.");
+            }
+
+            await updateProductRequest(
+                token,
+                productUuid,
+                cleanProductPayload(payload),
             );
 
             await resource.refresh();
         },
         async deleteProduct(productUuid: string) {
-            await parseResponse(
-                await fetch(`/api/products/${productUuid}`, {
-                    method: "DELETE",
-                }),
-            );
+            if (!token) {
+                throw new Error("Faça login para remover produtos.");
+            }
+
+            await deleteProductRequest(token, productUuid);
 
             await resource.refresh();
         },

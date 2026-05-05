@@ -12,7 +12,48 @@ import {
     type AdminProductsPayload,
 } from "@/hooks/use-admin-products";
 import { formatCurrency } from "@/lib/format";
-import type { Product } from "@/lib/types";
+import type {
+    CreateProductInput,
+    Product,
+    ProductCategory,
+    ProductImageInput,
+    UpdateProductInput,
+} from "@/lib/types";
+
+type ProductFormPayload = CreateProductInput | UpdateProductInput;
+
+function getStockLabel(product: Product) {
+    return product.stock == null ? "sem controle" : product.stock;
+}
+
+function parseImageInput(value: string): ProductImageInput {
+    const match = value.match(/^data:([^;]+);base64,(.*)$/);
+    const contentType = match?.[1] ?? "image/png";
+
+    return {
+        filename: "upload.png",
+        contentType:
+            contentType === "image/jpeg" ||
+            contentType === "image/png" ||
+            contentType === "image/webp"
+                ? contentType
+                : "image/png",
+        base64: match?.[2] ?? value,
+    };
+}
+
+function isCreateProductPayload(
+    payload: ProductFormPayload,
+): payload is CreateProductInput {
+    return Boolean(
+        payload.name &&
+        payload.category &&
+        payload.lineUuid &&
+        payload.image &&
+        payload.shortDescription &&
+        payload.longDescription,
+    );
+}
 
 export function AdminProductsPageClient({
     initialData,
@@ -127,7 +168,7 @@ export function AdminProductsPageClient({
                                                 : "n/d"}
                                         </td>
                                         <td className="px-6 py-4">
-                                            {product.stock}
+                                            {getStockLabel(product)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <Badge
@@ -177,9 +218,14 @@ export function AdminProductsPageClient({
                                 payload,
                             );
                             setFeedback("Produto atualizado.");
-                        } else {
+                        } else if (isCreateProductPayload(payload)) {
                             await products.createProduct(payload);
                             setFeedback("Produto criado.");
+                        } else {
+                            setFeedback(
+                                "Informe imagem e campos obrigatórios para criar o produto.",
+                            );
+                            return;
                         }
                         await products.refresh();
                     }}
@@ -203,12 +249,15 @@ function ProductForm({
 }: {
     product: Product | null;
     lines: AdminProductsPayload["lines"];
-    onSubmit: (payload: Record<string, unknown>) => Promise<void>;
+    onSubmit: (payload: ProductFormPayload) => Promise<void>;
     onDelete?: () => Promise<void>;
 }) {
     const [name, setName] = useState(product?.name ?? "");
     const [lineUuid, setLineUuid] = useState(
         product?.line.uuid ?? lines[0]?.uuid ?? "",
+    );
+    const [category, setCategory] = useState<ProductCategory>(
+        product?.category ?? "ARTISANAL",
     );
     const [shortDescription, setShortDescription] = useState(
         product?.shortDescription ?? "",
@@ -217,29 +266,44 @@ function ProductForm({
         product?.longDescription ?? "",
     );
     const [stock, setStock] = useState(String(product?.stock ?? 0));
+    const [shippingWeightGrams, setShippingWeightGrams] = useState(
+        String(product?.shippingWeightGrams ?? 0),
+    );
     const [imageBase64, setImageBase64] = useState("");
+    const [formError, setFormError] = useState<string | null>(null);
 
     return (
         <form
             className="mt-6 space-y-4"
             onSubmit={(event) => {
                 event.preventDefault();
-                void onSubmit({
+                const image: ProductImageInput | undefined = imageBase64.trim()
+                    ? parseImageInput(imageBase64.trim())
+                    : undefined;
+
+                if (!product && !image) {
+                    setFormError("Informe a imagem em base64 para cadastrar.");
+                    return;
+                }
+
+                setFormError(null);
+
+                const payload: ProductFormPayload = {
                     name,
+                    category,
                     lineUuid,
-                    stock: Number(stock),
                     shortDescription,
                     longDescription,
-                    ...(imageBase64
-                        ? {
-                              image: {
-                                  filename: "upload.png",
-                                  contentType: "image/png",
-                                  base64: imageBase64,
-                              },
-                          }
-                        : {}),
-                });
+                    description: longDescription || shortDescription,
+                    ...(image ? { image } : {}),
+                };
+
+                if (category === "ARTISANAL") {
+                    payload.stock = Number(stock);
+                    payload.shippingWeightGrams = Number(shippingWeightGrams);
+                }
+
+                void onSubmit(payload);
             }}
         >
             <Input
@@ -257,13 +321,31 @@ function ProductForm({
                     </option>
                 ))}
             </Select>
+            <Select
+                value={category}
+                onChange={(event) =>
+                    setCategory(event.target.value as ProductCategory)
+                }
+            >
+                <option value="ARTISANAL">Artesanal</option>
+                <option value="SELFCARE">Selfcare</option>
+            </Select>
             <Input
                 placeholder="Estoque"
+                disabled={category !== "ARTISANAL"}
                 value={stock}
                 onChange={(event) => setStock(event.target.value)}
             />
             <Input
-                placeholder="Base64 da imagem"
+                placeholder="Peso para frete (gramas)"
+                disabled={category !== "ARTISANAL"}
+                value={shippingWeightGrams}
+                onChange={(event) =>
+                    setShippingWeightGrams(event.target.value)
+                }
+            />
+            <Input
+                placeholder="Base64 da imagem ou data URL"
                 value={imageBase64}
                 onChange={(event) => setImageBase64(event.target.value)}
             />
@@ -277,6 +359,9 @@ function ProductForm({
                 value={longDescription}
                 onChange={(event) => setLongDescription(event.target.value)}
             />
+            {formError ? (
+                <p className="text-sm text-red-600">{formError}</p>
+            ) : null}
             <div className="flex gap-3">
                 <Button type="submit">
                     {product ? "Salvar alterações" : "Cadastrar produto"}

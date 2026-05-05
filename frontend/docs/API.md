@@ -565,6 +565,7 @@ Resposta `200`:
     ],
     "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
     "stock": 8,
+    "shippingWeightGrams": 120,
     "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
     "shortDescription": "Sabonete natural com lavanda",
     "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
@@ -579,6 +580,8 @@ Observacoes:
 - `category` define a regra de estoque do produto
 - `ARTISANAL` usa controle de estoque e retorna `stock` numerico
 - `SELFCARE` nao usa controle de estoque e retorna `stock` como `null`
+- `ARTISANAL` usa `shippingWeightGrams` para cotacao de frete
+- `SELFCARE` retorna `shippingWeightGrams` como `null`
 - `description` e opcional e aceita texto longo
 - a precificacao e orientada pela linha do produto, retornada em `line`
 - `priceOptions` contem os precos cadastrados por tamanho
@@ -704,6 +707,7 @@ Resposta `200`:
                 ],
                 "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
                 "stock": 8,
+                "shippingWeightGrams": 120,
                 "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
                 "shortDescription": "Sabonete natural com lavanda",
                 "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
@@ -758,6 +762,7 @@ Resposta `200`:
             ],
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
+            "shippingWeightGrams": 120,
             "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
             "shortDescription": "Sabonete natural com lavanda",
             "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
@@ -827,6 +832,25 @@ Observacoes:
 - qualquer campo e opcional
 - precisa enviar ao menos um campo
 
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "line": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
+            "slug": "linha-rn-atualizada",
+            "name": "Linha RN Atualizada",
+            "price70gInCents": 11900,
+            "price100gInCents": 17000,
+            "createdAt": "2026-03-12T12:00:00.000Z",
+            "updatedAt": "2026-03-12T12:05:00.000Z"
+        }
+    }
+}
+```
+
 ## 11.9 `POST /products`
 
 Autenticacao:
@@ -847,6 +871,7 @@ Request:
         "base64": "<base64>"
     },
     "stock": 8,
+    "shippingWeightGrams": 120,
     "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
     "shortDescription": "Sabonete natural com lavanda",
     "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal."
@@ -857,7 +882,8 @@ Observacoes:
 
 - `category` aceita `SELFCARE` ou `ARTISANAL`
 - para `ARTISANAL`, `stock` e obrigatorio
-- para `SELFCARE`, nao envie `stock`
+- para `ARTISANAL`, `shippingWeightGrams` e obrigatorio
+- para `SELFCARE`, nao envie `stock` nem `shippingWeightGrams`
 - `description` e opcional
 
 Resposta `201`:
@@ -890,6 +916,7 @@ Resposta `201`:
             ],
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
+            "shippingWeightGrams": 120,
             "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
             "shortDescription": "Sabonete natural com lavanda",
             "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
@@ -921,6 +948,7 @@ Campos permitidos:
         "base64": "<base64>"
     },
     "stock": 4,
+    "shippingWeightGrams": 120,
     "description": "Descricao longa opcional atualizada",
     "shortDescription": "Descricao curta atualizada",
     "longDescription": "Descricao longa atualizada"
@@ -932,9 +960,51 @@ Observacoes:
 - qualquer campo e opcional
 - se enviar `image`, o backend substitui a imagem anterior no storage
 - `category` aceita `SELFCARE` ou `ARTISANAL`
-- para `ARTISANAL`, informe `stock`
-- para `SELFCARE`, nao envie `stock`
+- para mudar `SELFCARE` para `ARTISANAL`, informe `stock` e `shippingWeightGrams`
+- para `SELFCARE`, nao envie `stock` nem `shippingWeightGrams`
 - `description` e opcional
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "product": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
+            "slug": "novo-nome",
+            "name": "Novo nome",
+            "category": "ARTISANAL",
+            "line": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
+                "slug": "linha-rn",
+                "name": "Linha RN"
+            },
+            "priceOptions": [
+                {
+                    "size": "GRAMS_70",
+                    "grams": 70,
+                    "priceInCents": 2590
+                },
+                {
+                    "size": "GRAMS_100",
+                    "grams": 100,
+                    "priceInCents": 3700
+                }
+            ],
+            "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
+            "stock": 4,
+            "shippingWeightGrams": 120,
+            "description": "Descricao longa opcional atualizada",
+            "shortDescription": "Descricao curta atualizada",
+            "longDescription": "Descricao longa atualizada",
+            "isActive": true,
+            "createdAt": "2026-03-12T12:00:00.000Z",
+            "updatedAt": "2026-03-12T12:05:00.000Z"
+        }
+    }
+}
+```
 
 ## 11.11 `DELETE /products/:uuid`
 
@@ -1106,6 +1176,11 @@ Request:
     "productSize": "GRAMS_100"
 }
 ```
+
+Observacoes:
+
+- `quantity` e obrigatorio
+- `productSize` e opcional
 
 Resposta:
 
@@ -1388,6 +1463,10 @@ Erro comum:
 
 - `400` transicao de status invalida
 
+Resposta `200`:
+
+- retorna `order` atualizado
+
 ## 14.6 `PATCH /orders/:uuid/cancel`
 
 Autenticacao:
@@ -1448,7 +1527,9 @@ Resposta:
                 "emails": ["maria@email.com"],
                 "stackableWithPromotions": false,
                 "isActive": true,
-                "cancelledAt": null
+                "cancelledAt": null,
+                "createdAt": "2026-03-12T12:00:00.000Z",
+                "updatedAt": "2026-03-12T12:00:00.000Z"
             }
         ]
     }
@@ -1471,6 +1552,10 @@ Request:
 }
 ```
 
+Resposta `201`:
+
+- retorna `{ "coupon": { ... } }` no mesmo modelo de `GET /marketing/coupons`
+
 ### `PATCH /marketing/coupons/:uuid`
 
 Comportamento:
@@ -1479,12 +1564,20 @@ Comportamento:
 - `validUntil: null` remove expiracao
 - `emails: []` remove segmentacao por email
 
+Resposta `200`:
+
+- retorna `{ "coupon": { ... } }` atualizado
+
 ### `POST /marketing/coupons/:uuid/cancel`
 
 Comportamento:
 
 - marca `isActive = false`
 - preenche `cancelledAt`
+
+Resposta `200`:
+
+- retorna `{ "coupon": { ... } }` atualizado
 
 ## 15.2 Promocoes
 
@@ -1499,6 +1592,31 @@ Regras:
 - seed cadastra `Promocao inicial 5%`, todos os produtos, inicio `2026-05-04T00:00:00.000Z`, sem fim
 
 ### `GET /marketing/promotions`
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "promotions": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                "name": "Promocao Maio",
+                "slug": "promocao-maio",
+                "scope": "ALL_PRODUCTS",
+                "category": null,
+                "discountPercent": 5,
+                "startsAt": "2026-05-04T00:00:00.000Z",
+                "endsAt": null,
+                "isActive": true,
+                "createdAt": "2026-03-12T12:00:00.000Z",
+                "updatedAt": "2026-03-12T12:00:00.000Z"
+            }
+        ]
+    }
+}
+```
 
 ### `POST /marketing/promotions`
 
@@ -1529,12 +1647,20 @@ Para categoria especifica:
 }
 ```
 
+Resposta `201`:
+
+- retorna `{ "promotion": { ... } }` no mesmo modelo de `GET /marketing/promotions`
+
 ### `PATCH /marketing/promotions/:uuid`
 
 Comportamento:
 
 - atualiza parcialmente
 - `endsAt: null` remove expiracao
+
+Resposta `200`:
+
+- retorna `{ "promotion": { ... } }` atualizado
 
 ## 16. Platforms
 
@@ -1553,12 +1679,58 @@ Autenticacao:
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
 
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "platforms": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b801",
+                "name": "Atelie Guadalupe",
+                "slug": "atelie-guadalupe",
+                "email": "contato@atelieguadalupe.com",
+                "phone": "11999999999",
+                "document": "12345678000199",
+                "websiteUrl": "https://atelieguadalupe.com",
+                "isActive": true,
+                "isDefault": true,
+                "address": {
+                    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b802",
+                    "label": "Plataforma",
+                    "recipient": "Atelie Guadalupe",
+                    "zipCode": "01153000",
+                    "street": "Rua da Origem",
+                    "number": "123",
+                    "complement": "Sala 1",
+                    "neighborhood": "Centro",
+                    "city": "Sao Paulo",
+                    "state": "SP",
+                    "country": "Brasil",
+                    "reference": "Porta azul",
+                    "isDefault": false,
+                    "createdAt": "2026-03-12T12:00:00.000Z",
+                    "updatedAt": "2026-03-12T12:00:00.000Z"
+                },
+                "createdAt": "2026-03-12T12:00:00.000Z",
+                "updatedAt": "2026-03-12T12:00:00.000Z"
+            }
+        ]
+    }
+}
+```
+
 ### `GET /platforms/:uuid`
 
 Autenticacao:
 
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
+
+Resposta `200`:
+
+- retorna `{ "platform": { ... } }` no mesmo modelo de `GET /platforms`
 
 ### `POST /platforms`
 
@@ -1595,6 +1767,15 @@ Request:
 }
 ```
 
+Observacoes:
+
+- `address.isDefault` nao existe no request de plataforma
+- `email`, `phone`, `document`, `websiteUrl`, `isActive` e `isDefault` sao opcionais
+
+Resposta `201`:
+
+- retorna `{ "platform": { ... } }` no mesmo modelo de `GET /platforms`
+
 ### `PATCH /platforms/:uuid`
 
 Autenticacao:
@@ -1605,6 +1786,11 @@ Autenticacao:
 Comportamento:
 
 - atualiza parcialmente a plataforma e seu endereco
+- `email`, `phone`, `document` e `websiteUrl` aceitam `null`
+
+Resposta `200`:
+
+- retorna `{ "platform": { ... } }` atualizado
 
 ### `DELETE /platforms/:uuid`
 
@@ -1616,6 +1802,17 @@ Autenticacao:
 Comportamento:
 
 - remove a plataforma e seu endereco vinculado
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "deleted": true
+    }
+}
+```
 
 ## 17. Shipping
 
@@ -1654,7 +1851,9 @@ Resposta `200`:
                 },
                 "emptyWeightGrams": 0,
                 "maxItems": 2,
-                "isActive": true
+                "isActive": true,
+                "createdAt": "2026-03-12T12:00:00.000Z",
+                "updatedAt": "2026-03-12T12:00:00.000Z"
             }
         ]
     }
@@ -1683,6 +1882,10 @@ Request:
 }
 ```
 
+Resposta `201`:
+
+- retorna `{ "box": { ... } }` no mesmo modelo de `GET /shipping/boxes`
+
 ### `PATCH /shipping/boxes/:uuid`
 
 Autenticacao:
@@ -1694,6 +1897,10 @@ Comportamento:
 
 - atualiza parcialmente a caixa
 
+Resposta `200`:
+
+- retorna `{ "box": { ... } }` atualizado
+
 ### `DELETE /shipping/boxes/:uuid`
 
 Autenticacao:
@@ -1704,6 +1911,17 @@ Autenticacao:
 Comportamento:
 
 - remove a caixa configurada
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "deleted": true
+    }
+}
+```
 
 ## 17.2 Frete por pedido
 
@@ -1723,6 +1941,25 @@ Autenticacao:
 Comportamento:
 
 - retorna o resumo do pedido e o snapshot de frete salvo no banco
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "order": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b999",
+            "status": "PENDING",
+            "subtotalInCents": 34000,
+            "shippingInCents": 0,
+            "discountInCents": 0,
+            "totalInCents": 34000
+        },
+        "shipment": null
+    }
+}
+```
 
 ### `POST /shipping/orders/:orderUuid/quote`
 
@@ -1760,9 +1997,9 @@ Resposta `200`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b999",
             "status": "PENDING",
             "subtotalInCents": 34000,
-            "shippingInCents": 1590,
+            "shippingInCents": 0,
             "discountInCents": 0,
-            "totalInCents": 35590
+            "totalInCents": 34000
         },
         "shipment": {
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b998",
@@ -1770,10 +2007,28 @@ Resposta `200`:
             "selectedServiceCode": 1,
             "selectedServiceName": "PAC",
             "shippingPriceInCents": 1590,
+            "superfreteOrderId": null,
+            "superfreteProtocol": null,
+            "trackingCode": null,
+            "labelUrl": null,
+            "senderSnapshot": {},
             "quotedServices": [],
             "packaging": {
                 "selectedBoxes": []
-            }
+            },
+            "quotedAt": "2026-03-12T12:00:00.000Z",
+            "confirmedAt": "2026-03-12T12:00:00.000Z",
+            "checkoutRequestedAt": null,
+            "purchasedAt": null,
+            "cancelledAt": null,
+            "createdAt": "2026-03-12T12:00:00.000Z",
+            "updatedAt": "2026-03-12T12:00:00.000Z"
+        },
+        "orderTotals": {
+            "subtotalInCents": 34000,
+            "shippingInCents": 1590,
+            "discountInCents": 0,
+            "totalInCents": 35590
         }
     }
 }
@@ -1786,6 +2041,11 @@ Regras:
 - pedidos `SELFCARE` usam as caixas de cosmeticos
 - pedidos `ARTISANAL` usam exclusivamente caixas da categoria `ARTISANAL`
 - produtos `ARTISANAL` precisam ter `shippingWeightGrams` configurado
+
+Observacoes:
+
+- sem `serviceCode`, resposta traz `shipment.status = "QUOTED"` e nao traz `orderTotals`
+- com `serviceCode`, resposta confirma frete e inclui `orderTotals`
 
 ### `POST /shipping/orders/:orderUuid/checkout`
 
@@ -1801,6 +2061,10 @@ Comportamento:
 - reaproveita o `senderSnapshot` salvo no pedido para nao mudar o remetente historico se a `Platform` for editada depois
 - se a etiqueta ja tiver sido comprada, retorna o snapshot persistido
 
+Resposta `200`:
+
+- retorna `order` e `shipment` atualizados
+
 ### `POST /shipping/orders/:orderUuid/cancel`
 
 Autenticacao:
@@ -1811,6 +2075,10 @@ Autenticacao:
 Comportamento:
 
 - solicita cancelamento do frete no SuperFrete e salva o retorno
+
+Resposta `200`:
+
+- retorna `order` e `shipment` atualizados
 
 ## 18. Observacoes para frontend
 

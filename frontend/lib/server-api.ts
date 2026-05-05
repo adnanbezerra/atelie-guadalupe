@@ -21,9 +21,13 @@ async function readServerToken() {
     return getAuthTokenFromCookies();
 }
 
+function buildServerApiUrl(path: string) {
+    return new URL(path, `${env.API_BASE_URL}/`).toString();
+}
+
 async function serverApi<T>(path: string, options: RequestOptions = {}) {
     const token = await readServerToken();
-    const response = await fetch(`${env.API_BASE_URL}${path}`, {
+    const response = await fetch(buildServerApiUrl(path), {
         method: options.method ?? "GET",
         body: options.body,
         headers: {

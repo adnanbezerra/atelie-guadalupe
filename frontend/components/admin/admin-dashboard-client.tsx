@@ -16,6 +16,10 @@ function monthKey(date: string) {
     return `${current.getUTCFullYear()}-${current.getUTCMonth()}`;
 }
 
+function hasLowStock(product: Product) {
+    return product.stock != null && product.stock <= LOW_STOCK_THRESHOLD;
+}
+
 export function AdminDashboardClient({
     initialOrders,
     initialProducts,
@@ -38,9 +42,7 @@ export function AdminDashboardClient({
             totalSales,
             currentOrders,
             averageTicket,
-            lowStock: initialProducts
-                .filter((product) => product.stock <= LOW_STOCK_THRESHOLD)
-                .slice(0, 3),
+            lowStock: initialProducts.filter(hasLowStock).slice(0, 3),
         };
     }, [initialProducts, orders.data]);
 

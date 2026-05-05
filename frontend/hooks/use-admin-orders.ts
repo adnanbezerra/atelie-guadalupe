@@ -1,13 +1,22 @@
 "use client";
 
 import { useApiResource } from "./use-api-resource";
+import { getOrders } from "@/lib/api";
 import type { Order, OrderStatus } from "@/lib/types";
+import { useApiToken } from "@/hooks/use-api-token";
 
 export function useAdminOrders(initialOrders: Order[]) {
+    const token = useApiToken();
+    const authHeaders: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
     const resource = useApiResource(initialOrders, async () => {
-        const response = await fetch("/api/orders", { cache: "no-store" });
-        const payload = await response.json();
-        return payload.data.orders as Order[];
+        if (!token) {
+            throw new Error("Faça login para consultar pedidos.");
+        }
+
+        const payload = await getOrders(token);
+        return payload.orders;
     });
 
     return {
@@ -15,7 +24,10 @@ export function useAdminOrders(initialOrders: Order[]) {
         async updateOrderStatus(orderUuid: string, status: OrderStatus) {
             const response = await fetch(`/api/orders/${orderUuid}/status`, {
                 method: "PATCH",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    ...authHeaders,
+                },
                 body: JSON.stringify({ status }),
             });
 

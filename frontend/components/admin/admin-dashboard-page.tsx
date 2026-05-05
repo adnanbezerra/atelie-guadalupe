@@ -18,7 +18,8 @@ export function AdminDashboardPage({
         ? Math.round(totalSales / orders.length)
         : 0;
     const lowStock = products.filter(
-        (product) => product.stock > 0 && product.stock <= 5,
+        (product) =>
+            product.stock != null && product.stock > 0 && product.stock <= 5,
     );
 
     return (

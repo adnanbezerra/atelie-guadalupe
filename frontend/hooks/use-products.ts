@@ -9,6 +9,10 @@ import type {
     ProductQuery,
 } from "@/lib/types";
 
+type HydrationOptions = {
+    skipClientFetch?: boolean;
+};
+
 export function useProductCatalog(query: ProductQuery) {
     const [data, setData] = useState<ProductListResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +77,7 @@ export function useProductCatalog(query: ProductQuery) {
 export function useProducts(
     initialData: ProductsPayload | null | undefined,
     query: ProductQuery,
+    options?: HydrationOptions,
 ): {
     data: ProductsPayload | null;
     isLoading: boolean;
@@ -83,6 +88,7 @@ export function useProducts(
 export function useProducts(
     query: ProductQuery,
     initialData?: ProductsPayload | null,
+    options?: HydrationOptions,
 ): {
     data: ProductsPayload | null;
     isLoading: boolean;
@@ -93,6 +99,7 @@ export function useProducts(
 export function useProducts(
     first: ProductsPayload | ProductQuery | null | undefined,
     second?: ProductQuery | ProductsPayload | null,
+    options: HydrationOptions = {},
 ) {
     const initialData =
         first && "items" in first
@@ -111,6 +118,7 @@ export function useProducts(
     const [error, setError] = useState<string | null>(null);
     const queryKey = JSON.stringify(query);
     const queryRef = useRef(query);
+    const skipClientFetch = Boolean(options.skipClientFetch && initialData);
     queryRef.current = query;
 
     useEffect(() => {
@@ -138,6 +146,10 @@ export function useProducts(
     }, []);
 
     useEffect(() => {
+        if (skipClientFetch) {
+            return;
+        }
+
         let cancelled = false;
 
         async function run() {
@@ -168,17 +180,25 @@ export function useProducts(
         return () => {
             cancelled = true;
         };
-    }, [queryKey]);
+    }, [skipClientFetch, queryKey]);
 
     return { data, isLoading, error, refresh, isPending: isLoading };
 }
 
-export function useProductLines(initialLines: ProductLine[] = []) {
+export function useProductLines(
+    initialLines: ProductLine[] = [],
+    options: HydrationOptions = {},
+) {
     const [data, setData] = useState<ProductLine[]>(initialLines);
     const [isLoading, setIsLoading] = useState(initialLines.length === 0);
     const [error, setError] = useState<string | null>(null);
+    const skipClientFetch = Boolean(options.skipClientFetch);
 
     useEffect(() => {
+        if (skipClientFetch) {
+            return;
+        }
+
         let cancelled = false;
 
         async function run() {
@@ -209,7 +229,7 @@ export function useProductLines(initialLines: ProductLine[] = []) {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [skipClientFetch]);
 
     return { data, lines: data, isLoading, error };
 }

@@ -3,9 +3,12 @@
 import { startTransition, useCallback, useEffect, useState } from "react";
 import {
     ApiError,
+    applyCartCoupon,
     clearCart,
     createCartItem,
+    createOrder,
     getCart,
+    removeCartCoupon,
     removeCartItem,
     updateCartItem,
 } from "@/lib/api";
@@ -118,21 +121,29 @@ export function useCart(initialCart: Cart | null = null) {
             }
             await runMutation(() => clearCart(token));
         },
+        applyCoupon: async (code: string) => {
+            if (!token) {
+                setError("Faça login para aplicar cupom.");
+                return;
+            }
+            await runMutation(() => applyCartCoupon(token, code));
+        },
+        removeCoupon: async () => {
+            if (!token) {
+                setError("Faça login para remover cupom.");
+                return;
+            }
+            await runMutation(() => removeCartCoupon(token));
+        },
         checkout: async (addressUuid?: string, notes?: string) => {
-            const response = await fetch("/api/orders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ addressUuid, notes }),
-            });
-            const payload = await response.json();
-
-            if (!response.ok || !payload.success) {
-                throw new Error(
-                    payload.error?.message ?? "Falha ao finalizar pedido.",
-                );
+            if (!token) {
+                setError("Faça login para finalizar o pedido.");
+                throw new Error("Faça login para finalizar o pedido.");
             }
 
-            return payload.data.order;
+            const payload = await createOrder(token, { addressUuid, notes });
+            setCart(null);
+            return payload.order;
         },
     };
 }
