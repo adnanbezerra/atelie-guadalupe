@@ -1,4 +1,5 @@
 import { CollectionCatalog } from "@/components/collections/collection-catalog";
+import { SiteFooter } from "@/components/site/site-footer";
 import { COLLECTION_CONFIG } from "@/lib/catalog";
 import { fetchProductLines, fetchProducts } from "@/lib/server-api";
 
@@ -29,12 +30,15 @@ export default async function CraftsCollectionPage({
             : undefined;
 
     return (
-        <CollectionCatalog
-            collectionKey="crafts"
-            config={COLLECTION_CONFIG.crafts}
-            initialCatalog={products}
-            initialSearch={search}
-            lines={lines}
-        />
+        <>
+            <CollectionCatalog
+                collectionKey="crafts"
+                config={COLLECTION_CONFIG.crafts}
+                initialCatalog={products}
+                initialSearch={search}
+                lines={lines}
+            />
+            <SiteFooter />
+        </>
     );
 }

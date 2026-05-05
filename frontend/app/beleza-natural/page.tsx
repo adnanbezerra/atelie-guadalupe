@@ -1,4 +1,5 @@
 import { CollectionCatalog } from "@/components/collections/collection-catalog";
+import { SiteFooter } from "@/components/site/site-footer";
 import { COLLECTION_CONFIG } from "@/lib/catalog";
 import { fetchProductLines, fetchProducts } from "@/lib/server-api";
 
@@ -29,12 +30,15 @@ export default async function BeautyCollectionPage({
             : undefined;
 
     return (
-        <CollectionCatalog
-            collectionKey="beauty"
-            config={COLLECTION_CONFIG.beauty}
-            initialCatalog={products}
-            initialSearch={search}
-            lines={lines}
-        />
+        <>
+            <CollectionCatalog
+                collectionKey="beauty"
+                config={COLLECTION_CONFIG.beauty}
+                initialCatalog={products}
+                initialSearch={search}
+                lines={lines}
+            />
+            <SiteFooter />
+        </>
     );
 }
