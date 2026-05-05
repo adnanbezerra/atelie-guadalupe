@@ -1012,9 +1012,17 @@ Resposta `200`:
                     "isAvailable": true
                 }
             ],
+            "coupon": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b601",
+                "code": "BEMVINDA",
+                "discountPercent": 10,
+                "discountInCents": 518
+            },
             "summary": {
                 "itemsCount": 2,
-                "subtotalInCents": 5180
+                "subtotalInCents": 5180,
+                "couponDiscountInCents": 518,
+                "totalInCents": 4662
             }
         }
     }
@@ -1026,6 +1034,8 @@ Observacoes:
 - o carrinho e criado automaticamente no primeiro acesso, se nao existir
 - `isAvailable` ajuda o frontend a alertar item inativo ou sem estoque suficiente
 - para produtos `SELFCARE`, `isAvailable` nao depende de estoque
+- `unitPriceInCents` ja considera promocao vigente quando o item e adicionado ou atualizado
+- `coupon` sera `null` quando nenhum cupom estiver aplicado
 
 ## 13.2 `POST /cart/items`
 
@@ -1065,9 +1075,12 @@ Resposta `201`:
                     "isAvailable": true
                 }
             ],
+            "coupon": null,
             "summary": {
                 "itemsCount": 2,
-                "subtotalInCents": 5180
+                "subtotalInCents": 5180,
+                "couponDiscountInCents": 0,
+                "totalInCents": 5180
             }
         }
     }
@@ -1122,6 +1135,44 @@ Resposta:
 
 - retorna o carrinho atualizado no mesmo formato de `GET /cart`
 
+## 13.6 `POST /cart/coupon`
+
+Autenticacao:
+
+- obrigatoria
+
+Request:
+
+```json
+{
+    "code": "BEMVINDA"
+}
+```
+
+Comportamento:
+
+- aplica cupom no carrinho atual
+- valida validade, cancelamento, limite total de uso, segmentacao por email e uso unico por cliente
+- se o cupom nao for acumulavel, rejeita quando existir promocao vigente nos itens do carrinho
+
+Resposta:
+
+- retorna o carrinho atualizado no mesmo formato de `GET /cart`
+
+## 13.7 `DELETE /cart/coupon`
+
+Autenticacao:
+
+- obrigatoria
+
+Comportamento:
+
+- remove o cupom aplicado no carrinho
+
+Resposta:
+
+- retorna o carrinho atualizado no mesmo formato de `GET /cart`
+
 ## 14. Orders
 
 ## 14.1 Modelo retornado ao frontend
@@ -1132,8 +1183,11 @@ Resposta:
     "status": "PENDING",
     "subtotalInCents": 5180,
     "shippingInCents": 0,
-    "discountInCents": 0,
-    "totalInCents": 5180,
+    "discountInCents": 777,
+    "promotionDiscountInCents": 259,
+    "couponDiscountInCents": 518,
+    "couponCode": "BEMVINDA",
+    "totalInCents": 4403,
     "notes": "Entregar em horario comercial",
     "placedAt": "2026-03-12T12:00:00.000Z",
     "createdAt": "2026-03-12T12:00:00.000Z",
@@ -1189,6 +1243,8 @@ Observacoes:
 - `addressUuid` e opcional
 - o carrinho e esvaziado apos a criacao do pedido
 - os itens sao congelados como snapshot
+- cupom aplicado gera registro de uso e impede novo uso pelo mesmo cliente
+- promocoes vigentes sao recalculadas no fechamento do pedido
 
 Resposta `201`:
 
@@ -1201,8 +1257,11 @@ Resposta `201`:
             "status": "PENDING",
             "subtotalInCents": 5180,
             "shippingInCents": 0,
-            "discountInCents": 0,
-            "totalInCents": 5180,
+            "discountInCents": 777,
+            "promotionDiscountInCents": 259,
+            "couponDiscountInCents": 518,
+            "couponCode": "BEMVINDA",
+            "totalInCents": 4403,
             "notes": "Entregar em horario comercial",
             "placedAt": "2026-03-12T12:00:00.000Z",
             "createdAt": "2026-03-12T12:00:00.000Z",
@@ -1241,6 +1300,7 @@ Possiveis erros:
 - `400` carrinho vazio
 - `400` item indisponivel
 - `400` estoque insuficiente em produto `ARTISANAL`
+- `400` cupom expirado, cancelado, sem usos disponiveis, ja usado pelo usuario ou nao acumulavel com promocao vigente
 - `404` endereco nao encontrado
 
 ## 14.3 `GET /orders`
@@ -1267,6 +1327,9 @@ Resposta `200`:
                 "subtotalInCents": 5180,
                 "shippingInCents": 0,
                 "discountInCents": 0,
+                "promotionDiscountInCents": 0,
+                "couponDiscountInCents": 0,
+                "couponCode": null,
                 "totalInCents": 5180,
                 "notes": "Entregar em horario comercial",
                 "placedAt": "2026-03-12T12:00:00.000Z",
@@ -1349,7 +1412,131 @@ Resposta:
 
 - retorna `order` atualizado
 
-## 15. Platforms
+## 15. Marketing
+
+## 15.1 Cupons
+
+Regras:
+
+- cadastro, listagem, atualizacao e cancelamento administrativo em `/marketing/coupons`
+- autenticacao obrigatoria com `ADMIN` ou `SUBADMIN`
+- `code` e salvo em uppercase e deve ser unico
+- `discountPercent` aceita `1` a `100`
+- `validUntil` e opcional; `null` significa sem data de expiracao
+- `maxUses` limita o total de usos entre todos os clientes
+- `emails` vazio deixa o cupom publico; com emails, so esses emails podem usar
+- cliente nao pode usar o mesmo cupom mais de uma vez
+- `stackableWithPromotions` controla se cupom acumula com promocao vigente
+- `POST /marketing/coupons/:uuid/cancel` desativa manualmente cupom vigente
+
+### `GET /marketing/coupons`
+
+Resposta:
+
+```json
+{
+    "success": true,
+    "data": {
+        "coupons": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b601",
+                "code": "BEMVINDA",
+                "discountPercent": 10,
+                "validUntil": "2026-06-01T23:59:59.000Z",
+                "maxUses": 100,
+                "usedCount": 0,
+                "emails": ["maria@email.com"],
+                "stackableWithPromotions": false,
+                "isActive": true,
+                "cancelledAt": null
+            }
+        ]
+    }
+}
+```
+
+### `POST /marketing/coupons`
+
+Request:
+
+```json
+{
+    "code": "BEMVINDA",
+    "discountPercent": 10,
+    "validUntil": "2026-06-01T23:59:59.000Z",
+    "maxUses": 100,
+    "emails": ["maria@email.com"],
+    "stackableWithPromotions": false,
+    "isActive": true
+}
+```
+
+### `PATCH /marketing/coupons/:uuid`
+
+Comportamento:
+
+- atualiza parcialmente
+- `validUntil: null` remove expiracao
+- `emails: []` remove segmentacao por email
+
+### `POST /marketing/coupons/:uuid/cancel`
+
+Comportamento:
+
+- marca `isActive = false`
+- preenche `cancelledAt`
+
+## 15.2 Promocoes
+
+Regras:
+
+- cadastro, listagem e atualizacao administrativa em `/marketing/promotions`
+- autenticacao obrigatoria com `ADMIN` ou `SUBADMIN`
+- `scope = ALL_PRODUCTS` aplica em todos os produtos e nao aceita `category`
+- `scope = CATEGORY` exige `category`
+- `startsAt` e obrigatorio e inclui data/hora
+- `endsAt` e opcional; `null` significa sem data de expiracao
+- seed cadastra `Promocao inicial 5%`, todos os produtos, inicio `2026-05-04T00:00:00.000Z`, sem fim
+
+### `GET /marketing/promotions`
+
+### `POST /marketing/promotions`
+
+Request:
+
+```json
+{
+    "name": "Promocao Maio",
+    "scope": "ALL_PRODUCTS",
+    "discountPercent": 5,
+    "startsAt": "2026-05-04T00:00:00.000Z",
+    "endsAt": null,
+    "isActive": true
+}
+```
+
+Para categoria especifica:
+
+```json
+{
+    "name": "Selfcare Maio",
+    "scope": "CATEGORY",
+    "category": "SELFCARE",
+    "discountPercent": 10,
+    "startsAt": "2026-05-04T09:00:00.000Z",
+    "endsAt": "2026-05-31T23:59:59.000Z",
+    "isActive": true
+}
+```
+
+### `PATCH /marketing/promotions/:uuid`
+
+Comportamento:
+
+- atualiza parcialmente
+- `endsAt: null` remove expiracao
+
+## 16. Platforms
 
 Os dados institucionais e o endereco de expedicao da loja ficam na model `Platform`.
 
@@ -1430,9 +1617,9 @@ Comportamento:
 
 - remove a plataforma e seu endereco vinculado
 
-## 16. Shipping
+## 17. Shipping
 
-## 16.1 Configuracao de caixas
+## 17.1 Configuracao de caixas
 
 As caixas sao configuradas no banco e usadas pelo modulo de frete para decidir o empacotamento antes de consultar o SuperFrete.
 
@@ -1518,7 +1705,7 @@ Comportamento:
 
 - remove a caixa configurada
 
-## 16.2 Frete por pedido
+## 17.2 Frete por pedido
 
 Fluxo esperado:
 
@@ -1625,10 +1812,11 @@ Comportamento:
 
 - solicita cancelamento do frete no SuperFrete e salva o retorno
 
-## 17. Observacoes para frontend
+## 18. Observacoes para frontend
 
 - Todos os valores monetarios estao em centavos.
 - Todas as datas estao em formato ISO.
+- Datas de promocao e cupom devem incluir horario quando enviadas.
 - Sempre use `uuid` nas rotas e no estado do frontend. Nao use IDs internos.
 - O frontend deve guardar o JWT e reenviar em `Authorization`.
 - Para imagem de produto, o frontend precisa converter o arquivo para base64 antes do envio.

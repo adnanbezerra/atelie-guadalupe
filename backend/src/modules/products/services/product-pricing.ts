@@ -9,10 +9,7 @@ export function getProductSizeInGrams(size: ProductSize): number {
     return PRODUCT_SIZE_GRAMS[size];
 }
 
-export function calculateProductPriceInCents(
-    prices: ProductSizePrices,
-    size: ProductSize
-): number {
+export function calculateProductPriceInCents(prices: ProductSizePrices, size: ProductSize): number {
     return size === "GRAMS_70" ? prices.price70gInCents : prices.price100gInCents;
 }
 

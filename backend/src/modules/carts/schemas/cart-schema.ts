@@ -14,3 +14,7 @@ export const updateCartItemSchema = z.object({
 export const cartItemUuidParamSchema = z.object({
     uuid: z.uuid()
 });
+
+export const applyCartCouponSchema = z.object({
+    code: z.string().trim().min(2).max(80)
+});

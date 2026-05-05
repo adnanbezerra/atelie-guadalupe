@@ -24,12 +24,14 @@ test("order service blocks order creation with empty cart", async () => {
     };
 
     const orderRepository = {};
+    const marketingRepository = {};
 
     const service = new OrderService(
         userRepository as never,
         addressRepository as never,
         cartRepository as never,
-        orderRepository as never
+        orderRepository as never,
+        marketingRepository as never
     );
 
     const result = await service.createFromCart("user-1", {});
@@ -59,6 +61,7 @@ test("order service creates order from cart snapshot", async () => {
         findByUserId: async () => ({
             id: 10,
             userId: 1,
+            coupon: null,
             items: [
                 {
                     uuid: "item-1",
@@ -69,60 +72,77 @@ test("order service creates order from cart snapshot", async () => {
                         id: 99,
                         name: "Sabonete",
                         imageUrl: "https://cdn.exemplo.com/sabonete.jpg",
+                        category: "ARTISANAL",
                         stock: 5,
-                        isActive: true
+                        isActive: true,
+                        line: {
+                            price70gInCents: 2590,
+                            price100gInCents: 3700
+                        }
                     }
                 }
             ]
         }),
         deleteItemByUuid: async (uuid: string) => {
             deletedItems.push(uuid);
+        },
+        updateCoupon: async () => {
+            return null;
         }
+    };
+    const marketingRepository = {
+        findBestActivePromotionForCategory: async () => null
     };
 
     const orderRepository = {
-        create: async (input: Record<string, unknown>) => ({
-            uuid: input.uuid,
-            status: input.status,
-            subtotalInCents: input.subtotalInCents,
-            shippingInCents: input.shippingInCents,
-            discountInCents: input.discountInCents,
-            totalInCents: input.totalInCents,
-            notes: input.notes,
-            placedAt: input.placedAt,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            address: {
-                uuid: "address-1",
-                recipient: "Maria",
-                zipCode: "01001000",
-                street: "Praca da Se",
-                number: "100",
-                complement: null,
-                neighborhood: "Se",
-                city: "Sao Paulo",
-                state: "SP",
-                country: "Brasil"
-            },
-            items: [
-                {
-                    uuid: "order-item-1",
-                    productSize: "GRAMS_70",
-                    productNameSnapshot: "Sabonete",
-                    imageUrlSnapshot: "https://cdn.exemplo.com/sabonete.jpg",
-                    quantity: 2,
-                    unitPriceInCents: 2590,
-                    totalPriceInCents: 5180
-                }
-            ]
-        })
+        createFromCart: async (input: Record<string, unknown>, cart: { itemUuids: string[] }) => {
+            deletedItems.push(...cart.itemUuids);
+
+            return {
+                uuid: input.uuid,
+                id: 20,
+                status: input.status,
+                subtotalInCents: input.subtotalInCents,
+                shippingInCents: input.shippingInCents,
+                discountInCents: input.discountInCents,
+                totalInCents: input.totalInCents,
+                notes: input.notes,
+                placedAt: input.placedAt,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                address: {
+                    uuid: "address-1",
+                    recipient: "Maria",
+                    zipCode: "01001000",
+                    street: "Praca da Se",
+                    number: "100",
+                    complement: null,
+                    neighborhood: "Se",
+                    city: "Sao Paulo",
+                    state: "SP",
+                    country: "Brasil"
+                },
+                items: [
+                    {
+                        uuid: "order-item-1",
+                        productSize: "GRAMS_70",
+                        productNameSnapshot: "Sabonete",
+                        imageUrlSnapshot: "https://cdn.exemplo.com/sabonete.jpg",
+                        quantity: 2,
+                        unitPriceInCents: 2590,
+                        totalPriceInCents: 5180
+                    }
+                ]
+            };
+        }
     };
 
     const service = new OrderService(
         userRepository as never,
         addressRepository as never,
         cartRepository as never,
-        orderRepository as never
+        orderRepository as never,
+        marketingRepository as never
     );
 
     const result = await service.createFromCart("user-1", {
@@ -152,7 +172,8 @@ test("order service prevents invalid status transition", async () => {
                 userId: 1,
                 status: OrderStatus.DELIVERED
             })
-        } as never
+        } as never,
+        {} as never
     );
 
     const result = await service.updateStatus("order-1", OrderStatus.PAID);
@@ -176,7 +197,8 @@ test("order service restricts detail to order owner for USER role", async () => 
                 userId: 2,
                 status: OrderStatus.PENDING
             })
-        } as never
+        } as never,
+        {} as never
     );
 
     const result = await service.detail(

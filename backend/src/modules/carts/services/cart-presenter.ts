@@ -19,8 +19,17 @@ type CartItemEntity = {
 
 type CartEntity = {
     uuid: string;
+    coupon?: {
+        uuid: string;
+        code: string;
+        discountPercent: number;
+    } | null;
     items: CartItemEntity[];
 };
+
+function calculateCouponDiscountInCents(subtotalInCents: number, discountPercent: number) {
+    return Math.floor((subtotalInCents * discountPercent) / 100);
+}
 
 export function presentCartItem(item: CartItemEntity) {
     const isAvailable =
@@ -43,13 +52,27 @@ export function presentCartItem(item: CartItemEntity) {
 
 export function presentCart(cart: CartEntity) {
     const items = cart.items.map((item) => presentCartItem(item));
+    const subtotalInCents = items.reduce((total, item) => total + item.totalPriceInCents, 0);
+    const couponDiscountInCents = cart.coupon
+        ? calculateCouponDiscountInCents(subtotalInCents, cart.coupon.discountPercent)
+        : 0;
 
     return {
         uuid: cart.uuid,
         items,
+        coupon: cart.coupon
+            ? {
+                  uuid: cart.coupon.uuid,
+                  code: cart.coupon.code,
+                  discountPercent: cart.coupon.discountPercent,
+                  discountInCents: couponDiscountInCents
+              }
+            : null,
         summary: {
             itemsCount: items.reduce((total, item) => total + item.quantity, 0),
-            subtotalInCents: items.reduce((total, item) => total + item.totalPriceInCents, 0)
+            subtotalInCents,
+            couponDiscountInCents,
+            totalInCents: subtotalInCents - couponDiscountInCents
         }
     };
 }

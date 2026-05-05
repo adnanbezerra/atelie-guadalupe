@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { AddressRepository } from "../../addresses/repositories/address-repository";
 import { CartRepository } from "../../carts/repositories/cart-repository";
+import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { OrderController } from "../controllers/order-controller";
 import { OrderRepository } from "../repositories/order-repository";
@@ -10,12 +11,14 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
     const userRepository = new UserRepository(fastify.prisma);
     const addressRepository = new AddressRepository(fastify.prisma);
     const cartRepository = new CartRepository(fastify.prisma);
+    const marketingRepository = new MarketingRepository(fastify.prisma);
     const orderRepository = new OrderRepository(fastify.prisma);
     const orderService = new OrderService(
         userRepository,
         addressRepository,
         cartRepository,
-        orderRepository
+        orderRepository,
+        marketingRepository
     );
     const controller = new OrderController(fastify, orderService);
 

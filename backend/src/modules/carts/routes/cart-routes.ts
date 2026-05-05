@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from "fastify";
+import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
 import { ProductRepository } from "../../products/repositories/product-repository";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { CartController } from "../controllers/cart-controller";
@@ -8,8 +9,14 @@ import { CartService } from "../services/cart-service";
 const cartRoutes: FastifyPluginAsync = async (fastify) => {
     const userRepository = new UserRepository(fastify.prisma);
     const productRepository = new ProductRepository(fastify.prisma);
+    const marketingRepository = new MarketingRepository(fastify.prisma);
     const cartRepository = new CartRepository(fastify.prisma);
-    const cartService = new CartService(userRepository, productRepository, cartRepository);
+    const cartService = new CartService(
+        userRepository,
+        productRepository,
+        cartRepository,
+        marketingRepository
+    );
     const controller = new CartController(fastify, cartService);
 
     fastify.get(
@@ -50,6 +57,22 @@ const cartRoutes: FastifyPluginAsync = async (fastify) => {
             preHandler: [fastify.authenticate]
         },
         controller.clear
+    );
+
+    fastify.post(
+        "/coupon",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        controller.applyCoupon
+    );
+
+    fastify.delete(
+        "/coupon",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        controller.removeCoupon
     );
 };
 

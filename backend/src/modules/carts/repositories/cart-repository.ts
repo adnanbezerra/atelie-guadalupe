@@ -1,6 +1,8 @@
 import {
     Cart,
     CartItem,
+    Coupon,
+    CouponEmailSegment,
     PrismaClient,
     Product,
     ProductLine
@@ -29,10 +31,30 @@ type UpdateCartItemInput = {
     productNameSnapshot?: string;
 };
 
+type CartWithItems = Cart & {
+    coupon:
+        | (Coupon & {
+              emailSegments: CouponEmailSegment[];
+          })
+        | null;
+    items: Array<
+        CartItem & {
+            product: Product & {
+                line: ProductLine;
+            };
+        }
+    >;
+};
+
 export class CartRepository {
     public constructor(private readonly prisma: PrismaClient) {}
 
     private cartWithItemsAndProductsInclude = {
+        coupon: {
+            include: {
+                emailSegments: true
+            }
+        },
         items: {
             where: {
                 status: "ACTIVE" as const
@@ -64,35 +86,26 @@ export class CartRepository {
                 userId
             },
             include: this.cartWithItemsAndProductsInclude
-        }) as Promise<
-            | (Cart & {
-                  items: Array<
-                      CartItem & {
-                          product: Product & {
-                              line: ProductLine;
-                          };
-                      }
-                  >;
-              })
-            | null
-        >;
+        }) as Promise<CartWithItems | null>;
     }
 
     public create(input: CreateCartInput) {
         return this.prisma.cart.create({
             data: input,
             include: this.cartWithItemsAndProductsInclude
-        }) as Promise<
-            Cart & {
-                items: Array<
-                    CartItem & {
-                        product: Product & {
-                            line: ProductLine;
-                        };
-                    }
-                >;
-            }
-        >;
+        }) as Promise<CartWithItems>;
+    }
+
+    public updateCoupon(cartId: number, couponId: number | null) {
+        return this.prisma.cart.update({
+            where: {
+                id: cartId
+            },
+            data: {
+                couponId
+            },
+            include: this.cartWithItemsAndProductsInclude
+        }) as Promise<CartWithItems>;
     }
 
     public findItemByUuid(uuid: string) {

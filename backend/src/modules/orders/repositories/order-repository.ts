@@ -1,4 +1,5 @@
-import { PrismaClient } from "../../../generated/prisma/client";
+import { Prisma, PrismaClient } from "../../../generated/prisma/client";
+import { AppError } from "../../../core/errors/app-error";
 import { OrderStatus, ProductSize } from "../../../generated/prisma/enums";
 
 type CreateOrderInput = {
@@ -9,6 +10,10 @@ type CreateOrderInput = {
     subtotalInCents: number;
     shippingInCents: number;
     discountInCents: number;
+    promotionDiscountInCents?: number;
+    couponDiscountInCents?: number;
+    couponId?: number;
+    couponCodeSnapshot?: string;
     totalInCents: number;
     notes?: string;
     placedAt: Date;
@@ -24,6 +29,13 @@ type CreateOrderInput = {
     }>;
 };
 
+type CouponRedemptionInput = Omit<Prisma.CouponRedemptionUncheckedCreateInput, "orderId">;
+type CouponRedemptionGuard = {
+    couponId: number;
+    userId: number;
+    maxUses: number;
+};
+
 export class OrderRepository {
     public constructor(private readonly prisma: PrismaClient) {}
 
@@ -37,6 +49,10 @@ export class OrderRepository {
                 subtotalInCents: input.subtotalInCents,
                 shippingInCents: input.shippingInCents,
                 discountInCents: input.discountInCents,
+                promotionDiscountInCents: input.promotionDiscountInCents,
+                couponDiscountInCents: input.couponDiscountInCents,
+                couponId: input.couponId,
+                couponCodeSnapshot: input.couponCodeSnapshot,
                 totalInCents: input.totalInCents,
                 notes: input.notes,
                 placedAt: input.placedAt,
@@ -49,6 +65,103 @@ export class OrderRepository {
                 address: true
             }
         });
+    }
+
+    public createFromCart(
+        input: CreateOrderInput,
+        cart: {
+            id: number;
+            itemUuids: string[];
+        },
+        couponRedemption?: CouponRedemptionInput,
+        couponGuard?: CouponRedemptionGuard
+    ) {
+        return this.prisma.$transaction(
+            async (tx) => {
+                if (couponGuard) {
+                    const [usedCount, existingUse] = await Promise.all([
+                        tx.couponRedemption.count({
+                            where: {
+                                couponId: couponGuard.couponId
+                            }
+                        }),
+                        tx.couponRedemption.findUnique({
+                            where: {
+                                couponId_userId: {
+                                    couponId: couponGuard.couponId,
+                                    userId: couponGuard.userId
+                                }
+                            }
+                        })
+                    ]);
+
+                    if (usedCount >= couponGuard.maxUses) {
+                        throw AppError.business("Cupom atingiu o limite de usos");
+                    }
+
+                    if (existingUse) {
+                        throw AppError.business("Usuario ja utilizou este cupom");
+                    }
+                }
+
+                const order = await tx.order.create({
+                    data: {
+                        uuid: input.uuid,
+                        userId: input.userId,
+                        addressId: input.addressId,
+                        status: input.status,
+                        subtotalInCents: input.subtotalInCents,
+                        shippingInCents: input.shippingInCents,
+                        discountInCents: input.discountInCents,
+                        promotionDiscountInCents: input.promotionDiscountInCents,
+                        couponDiscountInCents: input.couponDiscountInCents,
+                        couponId: input.couponId,
+                        couponCodeSnapshot: input.couponCodeSnapshot,
+                        totalInCents: input.totalInCents,
+                        notes: input.notes,
+                        placedAt: input.placedAt,
+                        items: {
+                            create: input.items
+                        }
+                    },
+                    include: {
+                        items: true,
+                        address: true
+                    }
+                });
+
+                if (couponRedemption) {
+                    await tx.couponRedemption.create({
+                        data: {
+                            ...couponRedemption,
+                            orderId: order.id
+                        }
+                    });
+                }
+
+                await tx.cartItem.deleteMany({
+                    where: {
+                        uuid: {
+                            in: cart.itemUuids
+                        }
+                    }
+                });
+
+                await tx.cart.update({
+                    where: {
+                        id: cart.id
+                    },
+                    data: {
+                        couponId: null
+                    }
+                });
+
+                return order;
+            },
+            {
+                isolationLevel: "Serializable"
+            }
+        );
     }
 
     public listByUserId(userId: number) {

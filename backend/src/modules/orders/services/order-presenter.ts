@@ -30,6 +30,9 @@ type OrderEntity = {
     subtotalInCents: number;
     shippingInCents: number;
     discountInCents: number;
+    promotionDiscountInCents?: number;
+    couponDiscountInCents?: number;
+    couponCodeSnapshot?: string | null;
     totalInCents: number;
     notes: string | null;
     placedAt: Date | null;
@@ -78,6 +81,9 @@ export function presentOrder(order: OrderEntity) {
         subtotalInCents: order.subtotalInCents,
         shippingInCents: order.shippingInCents,
         discountInCents: order.discountInCents,
+        promotionDiscountInCents: order.promotionDiscountInCents ?? 0,
+        couponDiscountInCents: order.couponDiscountInCents ?? 0,
+        couponCode: order.couponCodeSnapshot ?? null,
         totalInCents: order.totalInCents,
         notes: order.notes,
         placedAt: order.placedAt,

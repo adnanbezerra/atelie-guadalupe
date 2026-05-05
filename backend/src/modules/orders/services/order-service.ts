@@ -4,6 +4,12 @@ import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import { AddressRepository } from "../../addresses/repositories/address-repository";
 import { CartRepository } from "../../carts/repositories/cart-repository";
+import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
+import {
+    applyPercentDiscount,
+    calculatePercentDiscountInCents
+} from "../../marketing/services/discounts";
+import { calculateProductPriceInCents } from "../../products/services/product-pricing";
 import { hasAvailableStock } from "../../products/services/product-stock";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { OrderRepository } from "../repositories/order-repository";
@@ -40,7 +46,8 @@ export class OrderService {
         private readonly userRepository: UserRepository,
         private readonly addressRepository: AddressRepository,
         private readonly cartRepository: CartRepository,
-        private readonly orderRepository: OrderRepository
+        private readonly orderRepository: OrderRepository,
+        private readonly marketingRepository: MarketingRepository
     ) {}
 
     public async createFromCart(
@@ -76,15 +83,58 @@ export class OrderService {
             }
         }
 
-        const subtotalInCents = cart.items.reduce(
-            (total, item) => total + item.unitPriceInCents * item.quantity,
+        const pricedItems = [];
+        for (const item of cart.items) {
+            const baseUnitPriceInCents = calculateProductPriceInCents(
+                item.product.line,
+                item.productSize
+            );
+            const promotion = await this.marketingRepository.findBestActivePromotionForCategory(
+                item.product.category
+            );
+            const unitPriceInCents = promotion
+                ? applyPercentDiscount(baseUnitPriceInCents, promotion.discountPercent)
+                : baseUnitPriceInCents;
+
+            pricedItems.push({
+                item,
+                baseUnitPriceInCents,
+                unitPriceInCents,
+                promotionDiscountInCents: (baseUnitPriceInCents - unitPriceInCents) * item.quantity
+            });
+        }
+
+        const baseSubtotalInCents = pricedItems.reduce(
+            (total, pricedItem) =>
+                total + pricedItem.baseUnitPriceInCents * pricedItem.item.quantity,
             0
         );
+        const promotedSubtotalInCents = pricedItems.reduce(
+            (total, pricedItem) => total + pricedItem.unitPriceInCents * pricedItem.item.quantity,
+            0
+        );
+        const subtotalInCents = baseSubtotalInCents;
+        const promotionDiscountInCents = baseSubtotalInCents - promotedSubtotalInCents;
+        const couponValidation = cart.coupon
+            ? await this.validateCouponForOrder(
+                  user,
+                  cart.coupon,
+                  cart.items,
+                  promotionDiscountInCents
+              )
+            : right(true as const);
+        if (!couponValidation.success) {
+            return couponValidation;
+        }
+
+        const couponDiscountInCents = cart.coupon
+            ? calculatePercentDiscountInCents(promotedSubtotalInCents, cart.coupon.discountPercent)
+            : 0;
         const shippingInCents = 0;
-        const discountInCents = 0;
+        const discountInCents = promotionDiscountInCents + couponDiscountInCents;
         const totalInCents = subtotalInCents + shippingInCents - discountInCents;
 
-        const order = await this.orderRepository.create({
+        const orderInput = {
             uuid: createUuid(),
             userId: user.id,
             addressId,
@@ -92,10 +142,15 @@ export class OrderService {
             subtotalInCents,
             shippingInCents,
             discountInCents,
+            promotionDiscountInCents,
+            couponDiscountInCents,
+            couponId: cart.coupon?.id,
+            couponCodeSnapshot: cart.coupon?.code,
             totalInCents,
             notes: input.notes?.trim(),
             placedAt: new Date(),
-            items: cart.items.map((item) => {
+            items: pricedItems.map((pricedItem) => {
+                const item = pricedItem.item;
                 return {
                     uuid: createUuid(),
                     productId: item.product.id,
@@ -103,14 +158,50 @@ export class OrderService {
                     productNameSnapshot: item.product.name,
                     imageUrlSnapshot: item.product.imageUrl,
                     quantity: item.quantity,
-                    unitPriceInCents: item.unitPriceInCents,
-                    totalPriceInCents: item.unitPriceInCents * item.quantity
+                    unitPriceInCents: pricedItem.unitPriceInCents,
+                    totalPriceInCents: pricedItem.unitPriceInCents * item.quantity
                 };
             })
-        });
+        };
 
-        for (const item of cart.items) {
-            await this.cartRepository.deleteItemByUuid(item.uuid);
+        let order: Awaited<ReturnType<OrderRepository["createFromCart"]>>;
+        try {
+            order = await this.orderRepository.createFromCart(
+                orderInput,
+                {
+                    id: cart.id,
+                    itemUuids: cart.items.map((item) => item.uuid)
+                },
+                cart.coupon
+                    ? {
+                          uuid: createUuid(),
+                          couponId: cart.coupon.id,
+                          userId: user.id,
+                          discountInCents: couponDiscountInCents,
+                          codeSnapshot: cart.coupon.code,
+                          discountPercentSnapshot: cart.coupon.discountPercent
+                      }
+                    : undefined,
+                cart.coupon
+                    ? {
+                          couponId: cart.coupon.id,
+                          userId: user.id,
+                          maxUses: cart.coupon.maxUses
+                      }
+                    : undefined
+            );
+        } catch (error) {
+            if (error instanceof AppError) {
+                return left(error);
+            }
+
+            const errorCode =
+                error && typeof error === "object" && "code" in error ? error.code : null;
+            if (errorCode === "P2002" || errorCode === "P2034") {
+                return left(AppError.business("Cupom nao pode ser resgatado neste momento"));
+            }
+
+            throw error;
         }
 
         return right({
@@ -206,5 +297,54 @@ export class OrderService {
         return right({
             order: presentOrder(updatedOrder)
         });
+    }
+
+    private async validateCouponForOrder(
+        user: {
+            id: number;
+            email: string;
+        },
+        coupon: {
+            id: number;
+            isActive: boolean;
+            cancelledAt: Date | null;
+            validUntil: Date | null;
+            maxUses: number;
+            stackableWithPromotions: boolean;
+            emailSegments: Array<{
+                email: string;
+            }>;
+        },
+        _items: unknown[],
+        promotionDiscountInCents: number
+    ): Promise<Either<AppError, true>> {
+        if (!coupon.isActive || coupon.cancelledAt) {
+            return left(AppError.business("Cupom cancelado ou inativo"));
+        }
+
+        if (coupon.validUntil && coupon.validUntil <= new Date()) {
+            return left(AppError.business("Cupom expirado"));
+        }
+
+        const usedCount = await this.marketingRepository.countCouponRedemptions(coupon.id);
+        if (usedCount >= coupon.maxUses) {
+            return left(AppError.business("Cupom atingiu o limite de usos"));
+        }
+
+        const existingUse = await this.marketingRepository.findCouponRedemption(coupon.id, user.id);
+        if (existingUse) {
+            return left(AppError.business("Usuario ja utilizou este cupom"));
+        }
+
+        const segmentedEmails = coupon.emailSegments.map((segment) => segment.email);
+        if (segmentedEmails.length > 0 && !segmentedEmails.includes(user.email.toLowerCase())) {
+            return left(AppError.business("Cupom indisponivel para este email"));
+        }
+
+        if (!coupon.stackableWithPromotions && promotionDiscountInCents > 0) {
+            return left(AppError.business("Cupom nao acumulavel com promocao vigente"));
+        }
+
+        return right(true as const);
     }
 }

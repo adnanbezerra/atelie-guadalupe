@@ -2,7 +2,7 @@ import "dotenv/config";
 import * as bcrypt from "bcrypt";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { RoleName } from "../src/generated/prisma/enums";
+import { PromotionScope, RoleName } from "../src/generated/prisma/enums";
 import { slugify } from "../src/core/utils/slug";
 import { createUuid } from "../src/core/utils/uuid";
 
@@ -258,6 +258,19 @@ const shippingBoxesSeed = [
     }
 ] as const;
 
+const promotionsSeed = [
+    {
+        name: "Promocao inicial 5%",
+        slug: "promocao-inicial-5",
+        scope: PromotionScope.ALL_PRODUCTS,
+        category: null,
+        discountPercent: 5,
+        startsAt: new Date("2026-05-04T00:00:00.000Z"),
+        endsAt: null,
+        isActive: true
+    }
+] as const;
+
 const platformSeed = {
     name: "Atelie Guadalupe",
     slug: "atelie-guadalupe",
@@ -504,6 +517,34 @@ async function main() {
                     emptyWeightGrams: boxSeed.emptyWeightGrams,
                     maxItems: boxSeed.maxItems,
                     isActive: true
+                }
+            });
+        }
+
+        for (const promotionSeed of promotionsSeed) {
+            await prisma.promotion.upsert({
+                where: {
+                    slug: promotionSeed.slug
+                },
+                update: {
+                    name: promotionSeed.name,
+                    scope: promotionSeed.scope,
+                    category: promotionSeed.category,
+                    discountPercent: promotionSeed.discountPercent,
+                    startsAt: promotionSeed.startsAt,
+                    endsAt: promotionSeed.endsAt,
+                    isActive: promotionSeed.isActive
+                },
+                create: {
+                    uuid: createUuid(),
+                    name: promotionSeed.name,
+                    slug: promotionSeed.slug,
+                    scope: promotionSeed.scope,
+                    category: promotionSeed.category,
+                    discountPercent: promotionSeed.discountPercent,
+                    startsAt: promotionSeed.startsAt,
+                    endsAt: promotionSeed.endsAt,
+                    isActive: promotionSeed.isActive
                 }
             });
         }

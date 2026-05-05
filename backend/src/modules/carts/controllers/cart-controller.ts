@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { sendEither } from "../../../core/http/send-either";
 import {
     addCartItemSchema,
+    applyCartCouponSchema,
     cartItemUuidParamSchema,
     updateCartItemSchema
 } from "../schemas/cart-schema";
@@ -43,6 +44,17 @@ export class CartController {
 
     public clear = async (request: FastifyRequest, reply: FastifyReply) => {
         const result = await this.cartService.clear(request.currentUser!.sub);
+        return sendEither(reply, result);
+    };
+
+    public applyCoupon = async (request: FastifyRequest, reply: FastifyReply) => {
+        const input = this.fastify.validateSchema(applyCartCouponSchema, request.body);
+        const result = await this.cartService.applyCoupon(request.currentUser!.sub, input);
+        return sendEither(reply, result);
+    };
+
+    public removeCoupon = async (request: FastifyRequest, reply: FastifyReply) => {
+        const result = await this.cartService.removeCoupon(request.currentUser!.sub);
         return sendEither(reply, result);
     };
 }

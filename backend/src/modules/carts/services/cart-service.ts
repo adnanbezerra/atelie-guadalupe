@@ -2,9 +2,11 @@ import { ProductSize } from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
+import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
+import { applyPercentDiscount } from "../../marketing/services/discounts";
 import { ProductRepository } from "../../products/repositories/product-repository";
 import { calculateProductPriceInCents } from "../../products/services/product-pricing";
-import { hasAvailableStock } from "../../products/services/product-stock";
+import { hasAvailableStock, ProductCategory } from "../../products/services/product-stock";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { CartRepository } from "../repositories/cart-repository";
 import { presentCart } from "./cart-presenter";
@@ -20,11 +22,18 @@ type UpdateCartItemInput = {
     productSize?: ProductSize;
 };
 
+type ApplyCouponInput = {
+    code: string;
+};
+
+type CartWithItemsAndCoupon = NonNullable<Awaited<ReturnType<CartRepository["findByUserId"]>>>;
+
 export class CartService {
     public constructor(
         private readonly userRepository: UserRepository,
         private readonly productRepository: ProductRepository,
-        private readonly cartRepository: CartRepository
+        private readonly cartRepository: CartRepository,
+        private readonly marketingRepository: MarketingRepository
     ) {}
 
     public async getMyCart(
@@ -38,7 +47,7 @@ export class CartService {
         const cart = await this.getOrCreateCart(user.id);
 
         return right({
-            cart: presentCart(cart)
+            cart: presentCart(await this.sanitizeCartCoupon(user, cart))
         });
     }
 
@@ -67,7 +76,11 @@ export class CartService {
             input.productSize
         );
 
-        const unitPriceInCents = calculateProductPriceInCents(product.line, input.productSize);
+        const unitPriceInCents = await this.calculateCurrentUnitPrice(
+            product.line,
+            input.productSize,
+            product.category
+        );
 
         if (existingItem) {
             const nextQuantity = existingItem.quantity + input.quantity;
@@ -98,7 +111,7 @@ export class CartService {
         const updatedCart = await this.getOrCreateCart(user.id);
 
         return right({
-            cart: presentCart(updatedCart)
+            cart: presentCart(await this.sanitizeCartCoupon(user, updatedCart))
         });
     }
 
@@ -128,9 +141,10 @@ export class CartService {
         }
 
         const nextProductSize = input.productSize ?? item.productSize;
-        const nextUnitPriceInCents = calculateProductPriceInCents(
+        const nextUnitPriceInCents = await this.calculateCurrentUnitPrice(
             item.product.line,
-            nextProductSize
+            nextProductSize,
+            item.product.category
         );
 
         if (nextProductSize !== item.productSize) {
@@ -158,7 +172,7 @@ export class CartService {
                 const mergedCart = await this.getOrCreateCart(cart.userId);
 
                 return right({
-                    cart: presentCart(mergedCart)
+                    cart: presentCart(await this.sanitizeCartCoupon(user, mergedCart))
                 });
             }
         }
@@ -173,7 +187,7 @@ export class CartService {
         const updatedCart = await this.getOrCreateCart(cart.userId);
 
         return right({
-            cart: presentCart(updatedCart)
+            cart: presentCart(await this.sanitizeCartCoupon(user, updatedCart))
         });
     }
 
@@ -198,7 +212,7 @@ export class CartService {
         const updatedCart = await this.getOrCreateCart(cart.userId);
 
         return right({
-            cart: presentCart(updatedCart)
+            cart: presentCart(await this.sanitizeCartCoupon(user, updatedCart))
         });
     }
 
@@ -212,8 +226,58 @@ export class CartService {
 
         const cart = await this.getOrCreateCart(user.id);
         await this.cartRepository.clearCart(cart.id);
+        await this.cartRepository.updateCoupon(cart.id, null);
 
         const updatedCart = await this.getOrCreateCart(cart.userId);
+
+        return right({
+            cart: presentCart(updatedCart)
+        });
+    }
+
+    public async applyCoupon(
+        userUuid: string,
+        input: ApplyCouponInput
+    ): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
+        const user = await this.userRepository.findByUuid(userUuid);
+        if (!user) {
+            return left(AppError.notFound("Usuario nao encontrado"));
+        }
+
+        const cart = await this.getOrCreateCart(user.id);
+        if (cart.items.length === 0) {
+            return left(AppError.business("Nao e possivel aplicar cupom em carrinho vazio"));
+        }
+
+        const coupon = await this.marketingRepository.findCouponByCode(
+            input.code.trim().toUpperCase()
+        );
+        if (!coupon) {
+            return left(AppError.notFound("Cupom nao encontrado"));
+        }
+
+        const validation = await this.validateCouponForCart(user, coupon, cart.items);
+        if (!validation.success) {
+            return validation;
+        }
+
+        const updatedCart = await this.cartRepository.updateCoupon(cart.id, coupon.id);
+
+        return right({
+            cart: presentCart(updatedCart)
+        });
+    }
+
+    public async removeCoupon(
+        userUuid: string
+    ): Promise<Either<AppError, { cart: ReturnType<typeof presentCart> }>> {
+        const user = await this.userRepository.findByUuid(userUuid);
+        if (!user) {
+            return left(AppError.notFound("Usuario nao encontrado"));
+        }
+
+        const cart = await this.getOrCreateCart(user.id);
+        const updatedCart = await this.cartRepository.updateCoupon(cart.id, null);
 
         return right({
             cart: presentCart(updatedCart)
@@ -230,5 +294,108 @@ export class CartService {
             uuid: createUuid(),
             userId
         });
+    }
+
+    private async sanitizeCartCoupon(
+        user: {
+            id: number;
+            email: string;
+        },
+        cart: CartWithItemsAndCoupon
+    ) {
+        if (!cart.coupon) {
+            return cart;
+        }
+
+        if (cart.items.length === 0) {
+            return this.cartRepository.updateCoupon(cart.id, null);
+        }
+
+        const validation = await this.validateCouponForCart(
+            user,
+            cart.coupon as Parameters<CartService["validateCouponForCart"]>[1],
+            cart.items as Parameters<CartService["validateCouponForCart"]>[2]
+        );
+
+        if (validation.success) {
+            return cart;
+        }
+
+        return this.cartRepository.updateCoupon(cart.id, null);
+    }
+
+    private async calculateCurrentUnitPrice(
+        line: Parameters<typeof calculateProductPriceInCents>[0],
+        productSize: ProductSize,
+        category: ProductCategory
+    ) {
+        const basePriceInCents = calculateProductPriceInCents(line, productSize);
+        const promotion =
+            await this.marketingRepository.findBestActivePromotionForCategory(category);
+
+        if (!promotion) {
+            return basePriceInCents;
+        }
+
+        return applyPercentDiscount(basePriceInCents, promotion.discountPercent);
+    }
+
+    private async validateCouponForCart(
+        user: {
+            id: number;
+            email: string;
+        },
+        coupon: {
+            id: number;
+            isActive: boolean;
+            cancelledAt: Date | null;
+            validUntil: Date | null;
+            maxUses: number;
+            stackableWithPromotions: boolean;
+            emailSegments: Array<{
+                email: string;
+            }>;
+        },
+        items: Array<{
+            product: {
+                category: ProductCategory;
+            };
+        }>
+    ): Promise<Either<AppError, true>> {
+        if (!coupon.isActive || coupon.cancelledAt) {
+            return left(AppError.business("Cupom cancelado ou inativo"));
+        }
+
+        if (coupon.validUntil && coupon.validUntil <= new Date()) {
+            return left(AppError.business("Cupom expirado"));
+        }
+
+        const usedCount = await this.marketingRepository.countCouponRedemptions(coupon.id);
+        if (usedCount >= coupon.maxUses) {
+            return left(AppError.business("Cupom atingiu o limite de usos"));
+        }
+
+        const existingUse = await this.marketingRepository.findCouponRedemption(coupon.id, user.id);
+        if (existingUse) {
+            return left(AppError.business("Usuario ja utilizou este cupom"));
+        }
+
+        const segmentedEmails = coupon.emailSegments.map((segment) => segment.email);
+        if (segmentedEmails.length > 0 && !segmentedEmails.includes(user.email.toLowerCase())) {
+            return left(AppError.business("Cupom indisponivel para este email"));
+        }
+
+        if (!coupon.stackableWithPromotions) {
+            for (const item of items) {
+                const promotion = await this.marketingRepository.findBestActivePromotionForCategory(
+                    item.product.category
+                );
+                if (promotion) {
+                    return left(AppError.business("Cupom nao acumulavel com promocao vigente"));
+                }
+            }
+        }
+
+        return right(true as const);
     }
 }

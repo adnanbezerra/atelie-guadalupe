@@ -65,21 +65,21 @@ model Role {
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  uuid         String    @unique @db.Uuid
+  id           Int                @id @default(autoincrement())
+  uuid         String             @unique @db.Uuid
   name         String
-  email        String    @unique
-  document     String    @unique
+  email        String             @unique
+  document     String             @unique
   passwordHash String
-  isActive     Boolean   @default(true)
+  isActive     Boolean            @default(true)
   roleId       Int
-  role         Role      @relation(fields: [roleId], references: [id])
+  role         Role               @relation(fields: [roleId], references: [id])
   addresses    Address[]
   cart         Cart?
   orders       Order[]
   couponUses   CouponRedemption[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
   @@index([roleId])
   @@index([uuid])
@@ -214,31 +214,31 @@ model CartItem {
 }
 
 model Order {
-  id                Int            @id @default(autoincrement())
-  uuid              String         @unique @db.Uuid
-  userId            Int
-  addressId         Int?
-  status            OrderStatus    @default(PENDING)
-  subtotalInCents   Int
-  shippingInCents   Int            @default(0)
-  discountInCents   Int            @default(0)
-  totalInCents      Int
-  notes             String?
-  checkoutProvider  String?
-  checkoutReference String?
-  placedAt          DateTime?
-  user              User           @relation(fields: [userId], references: [id])
-  address           Address?       @relation(fields: [addressId], references: [id])
-  couponId          Int?
-  coupon            Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  couponCodeSnapshot String?
-  promotionDiscountInCents Int     @default(0)
-  couponDiscountInCents Int        @default(0)
-  items             OrderItem[]
-  shipment          OrderShipment?
-  couponRedemption  CouponRedemption?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id                       Int               @id @default(autoincrement())
+  uuid                     String            @unique @db.Uuid
+  userId                   Int
+  addressId                Int?
+  status                   OrderStatus       @default(PENDING)
+  subtotalInCents          Int
+  shippingInCents          Int               @default(0)
+  discountInCents          Int               @default(0)
+  totalInCents             Int
+  notes                    String?
+  checkoutProvider         String?
+  checkoutReference        String?
+  placedAt                 DateTime?
+  user                     User              @relation(fields: [userId], references: [id])
+  address                  Address?          @relation(fields: [addressId], references: [id])
+  couponId                 Int?
+  coupon                   Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponCodeSnapshot       String?
+  promotionDiscountInCents Int               @default(0)
+  couponDiscountInCents    Int               @default(0)
+  items                    OrderItem[]
+  shipment                 OrderShipment?
+  couponRedemption         CouponRedemption?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
 
   @@index([userId])
   @@index([addressId])
@@ -290,21 +290,21 @@ model ShippingBox {
 }
 
 model Coupon {
-  id                        Int                  @id @default(autoincrement())
-  uuid                      String               @unique @db.Uuid
-  code                      String               @unique
-  discountPercent           Int
-  validUntil                DateTime?
-  maxUses                   Int
-  stackableWithPromotions   Boolean              @default(false)
-  isActive                  Boolean              @default(true)
-  cancelledAt               DateTime?
-  carts                     Cart[]
-  orders                    Order[]
-  emailSegments             CouponEmailSegment[]
-  redemptions               CouponRedemption[]
-  createdAt                 DateTime             @default(now())
-  updatedAt                 DateTime             @updatedAt
+  id                      Int                  @id @default(autoincrement())
+  uuid                    String               @unique @db.Uuid
+  code                    String               @unique
+  discountPercent         Int
+  validUntil              DateTime?
+  maxUses                 Int
+  stackableWithPromotions Boolean              @default(false)
+  isActive                Boolean              @default(true)
+  cancelledAt             DateTime?
+  carts                   Cart[]
+  orders                  Order[]
+  emailSegments           CouponEmailSegment[]
+  redemptions             CouponRedemption[]
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
 
   @@index([uuid])
   @@index([code])
@@ -347,18 +347,18 @@ model CouponRedemption {
 }
 
 model Promotion {
-  id              Int             @id @default(autoincrement())
-  uuid            String          @unique @db.Uuid
+  id              Int              @id @default(autoincrement())
+  uuid            String           @unique @db.Uuid
   name            String
-  slug            String          @unique
+  slug            String           @unique
   scope           PromotionScope
   category        ProductCategory?
   discountPercent Int
   startsAt        DateTime
   endsAt          DateTime?
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([uuid])
   @@index([slug])
