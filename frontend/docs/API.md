@@ -545,6 +545,7 @@ Resposta `200`:
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
     "slug": "sabonete-artesanal-de-lavanda",
     "name": "Sabonete Artesanal de Lavanda",
+    "category": "ARTISANAL",
     "line": {
         "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
         "slug": "linha-rn",
@@ -564,6 +565,7 @@ Resposta `200`:
     ],
     "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
     "stock": 8,
+    "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
     "shortDescription": "Sabonete natural com lavanda",
     "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
     "isActive": true,
@@ -574,8 +576,12 @@ Resposta `200`:
 
 Observacoes:
 
-- a precificacao e orientada pela categoria do produto (representada por `line`)
-- `priceOptions` contem os precos calculados por tamanho
+- `category` define a regra de estoque do produto
+- `ARTISANAL` usa controle de estoque e retorna `stock` numerico
+- `SELFCARE` nao usa controle de estoque e retorna `stock` como `null`
+- `description` e opcional e aceita texto longo
+- a precificacao e orientada pela linha do produto, retornada em `line`
+- `priceOptions` contem os precos cadastrados por tamanho
 - tamanhos atuais: `GRAMS_70` e `GRAMS_100`
 
 ## 11.2 Modelo de linha/categoria
@@ -585,7 +591,8 @@ Observacoes:
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
     "slug": "linha-rn",
     "name": "Linha RN",
-    "pricePerGramInCents": 37,
+    "price70gInCents": 11900,
+    "price100gInCents": 17000,
     "createdAt": "2026-03-12T12:00:00.000Z",
     "updatedAt": "2026-03-12T12:00:00.000Z"
 }
@@ -628,7 +635,8 @@ Resposta `200`:
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                 "slug": "linha-rn",
                 "name": "Linha RN",
-                "pricePerGramInCents": 37,
+                "price70gInCents": 11900,
+                "price100gInCents": 17000,
                 "createdAt": "2026-03-12T12:00:00.000Z",
                 "updatedAt": "2026-03-12T12:00:00.000Z"
             }
@@ -663,6 +671,7 @@ GET /products?page=1&pageSize=12&search=lavanda&lineUuid=0195f4aa-7f18-7db5-9f32
 Observacao:
 
 - para usar `minPriceInCents` e/ou `maxPriceInCents`, e obrigatorio informar `size`
+- `inStock=true` considera produtos `ARTISANAL` com `stock > 0` e todos os produtos `SELFCARE`
 
 Resposta `200`:
 
@@ -675,6 +684,7 @@ Resposta `200`:
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
                 "slug": "sabonete-artesanal-de-lavanda",
                 "name": "Sabonete Artesanal de Lavanda",
+                "category": "ARTISANAL",
                 "line": {
                     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                     "slug": "linha-rn",
@@ -694,6 +704,7 @@ Resposta `200`:
                 ],
                 "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
                 "stock": 8,
+                "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
                 "shortDescription": "Sabonete natural com lavanda",
                 "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
                 "isActive": true,
@@ -727,6 +738,7 @@ Resposta `200`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
             "slug": "sabonete-artesanal-de-lavanda",
             "name": "Sabonete Artesanal de Lavanda",
+            "category": "ARTISANAL",
             "line": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                 "slug": "linha-rn",
@@ -746,6 +758,7 @@ Resposta `200`:
             ],
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
+            "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
             "shortDescription": "Sabonete natural com lavanda",
             "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
             "isActive": true,
@@ -768,7 +781,8 @@ Request:
 ```json
 {
     "name": "Linha RN",
-    "pricePerGramInCents": 37
+    "price70gInCents": 11900,
+    "price100gInCents": 17000
 }
 ```
 
@@ -782,7 +796,8 @@ Resposta `201`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
             "slug": "linha-rn",
             "name": "Linha RN",
-            "pricePerGramInCents": 37,
+            "price70gInCents": 11900,
+            "price100gInCents": 17000,
             "createdAt": "2026-03-12T12:00:00.000Z",
             "updatedAt": "2026-03-12T12:00:00.000Z"
         }
@@ -802,7 +817,8 @@ Campos permitidos:
 ```json
 {
     "name": "Linha RN Atualizada",
-    "pricePerGramInCents": 39
+    "price70gInCents": 11900,
+    "price100gInCents": 17000
 }
 ```
 
@@ -823,6 +839,7 @@ Request:
 ```json
 {
     "name": "Sabonete Artesanal de Lavanda",
+    "category": "ARTISANAL",
     "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
     "image": {
         "filename": "lavanda.jpg",
@@ -830,10 +847,18 @@ Request:
         "base64": "<base64>"
     },
     "stock": 8,
+    "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
     "shortDescription": "Sabonete natural com lavanda",
     "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal."
 }
 ```
+
+Observacoes:
+
+- `category` aceita `SELFCARE` ou `ARTISANAL`
+- para `ARTISANAL`, `stock` e obrigatorio
+- para `SELFCARE`, nao envie `stock`
+- `description` e opcional
 
 Resposta `201`:
 
@@ -845,6 +870,7 @@ Resposta `201`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
             "slug": "sabonete-artesanal-de-lavanda",
             "name": "Sabonete Artesanal de Lavanda",
+            "category": "ARTISANAL",
             "line": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
                 "slug": "linha-rn",
@@ -864,6 +890,7 @@ Resposta `201`:
             ],
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
+            "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
             "shortDescription": "Sabonete natural com lavanda",
             "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
             "isActive": true,
@@ -886,6 +913,7 @@ Campos permitidos:
 ```json
 {
     "name": "Novo nome",
+    "category": "ARTISANAL",
     "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
     "image": {
         "filename": "novo.jpg",
@@ -893,6 +921,7 @@ Campos permitidos:
         "base64": "<base64>"
     },
     "stock": 4,
+    "description": "Descricao longa opcional atualizada",
     "shortDescription": "Descricao curta atualizada",
     "longDescription": "Descricao longa atualizada"
 }
@@ -902,6 +931,10 @@ Observacoes:
 
 - qualquer campo e opcional
 - se enviar `image`, o backend substitui a imagem anterior no storage
+- `category` aceita `SELFCARE` ou `ARTISANAL`
+- para `ARTISANAL`, informe `stock`
+- para `SELFCARE`, nao envie `stock`
+- `description` e opcional
 
 ## 11.11 `DELETE /products/:uuid`
 
@@ -979,9 +1012,17 @@ Resposta `200`:
                     "isAvailable": true
                 }
             ],
+            "coupon": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b601",
+                "code": "BEMVINDA",
+                "discountPercent": 10,
+                "discountInCents": 518
+            },
             "summary": {
                 "itemsCount": 2,
-                "subtotalInCents": 5180
+                "subtotalInCents": 5180,
+                "couponDiscountInCents": 518,
+                "totalInCents": 4662
             }
         }
     }
@@ -992,6 +1033,9 @@ Observacoes:
 
 - o carrinho e criado automaticamente no primeiro acesso, se nao existir
 - `isAvailable` ajuda o frontend a alertar item inativo ou sem estoque suficiente
+- para produtos `SELFCARE`, `isAvailable` nao depende de estoque
+- `unitPriceInCents` ja considera promocao vigente quando o item e adicionado ou atualizado
+- `coupon` sera `null` quando nenhum cupom estiver aplicado
 
 ## 13.2 `POST /cart/items`
 
@@ -1031,9 +1075,12 @@ Resposta `201`:
                     "isAvailable": true
                 }
             ],
+            "coupon": null,
             "summary": {
                 "itemsCount": 2,
-                "subtotalInCents": 5180
+                "subtotalInCents": 5180,
+                "couponDiscountInCents": 0,
+                "totalInCents": 5180
             }
         }
     }
@@ -1043,7 +1090,7 @@ Resposta `201`:
 Possiveis erros:
 
 - `404` produto nao encontrado
-- `400` estoque insuficiente
+- `400` estoque insuficiente para produto `ARTISANAL`
 
 ## 13.3 `PATCH /cart/items/:uuid`
 
@@ -1088,6 +1135,44 @@ Resposta:
 
 - retorna o carrinho atualizado no mesmo formato de `GET /cart`
 
+## 13.6 `POST /cart/coupon`
+
+Autenticacao:
+
+- obrigatoria
+
+Request:
+
+```json
+{
+    "code": "BEMVINDA"
+}
+```
+
+Comportamento:
+
+- aplica cupom no carrinho atual
+- valida validade, cancelamento, limite total de uso, segmentacao por email e uso unico por cliente
+- se o cupom nao for acumulavel, rejeita quando existir promocao vigente nos itens do carrinho
+
+Resposta:
+
+- retorna o carrinho atualizado no mesmo formato de `GET /cart`
+
+## 13.7 `DELETE /cart/coupon`
+
+Autenticacao:
+
+- obrigatoria
+
+Comportamento:
+
+- remove o cupom aplicado no carrinho
+
+Resposta:
+
+- retorna o carrinho atualizado no mesmo formato de `GET /cart`
+
 ## 14. Orders
 
 ## 14.1 Modelo retornado ao frontend
@@ -1098,8 +1183,11 @@ Resposta:
     "status": "PENDING",
     "subtotalInCents": 5180,
     "shippingInCents": 0,
-    "discountInCents": 0,
-    "totalInCents": 5180,
+    "discountInCents": 777,
+    "promotionDiscountInCents": 259,
+    "couponDiscountInCents": 518,
+    "couponCode": "BEMVINDA",
+    "totalInCents": 4403,
     "notes": "Entregar em horario comercial",
     "placedAt": "2026-03-12T12:00:00.000Z",
     "createdAt": "2026-03-12T12:00:00.000Z",
@@ -1155,6 +1243,8 @@ Observacoes:
 - `addressUuid` e opcional
 - o carrinho e esvaziado apos a criacao do pedido
 - os itens sao congelados como snapshot
+- cupom aplicado gera registro de uso e impede novo uso pelo mesmo cliente
+- promocoes vigentes sao recalculadas no fechamento do pedido
 
 Resposta `201`:
 
@@ -1167,8 +1257,11 @@ Resposta `201`:
             "status": "PENDING",
             "subtotalInCents": 5180,
             "shippingInCents": 0,
-            "discountInCents": 0,
-            "totalInCents": 5180,
+            "discountInCents": 777,
+            "promotionDiscountInCents": 259,
+            "couponDiscountInCents": 518,
+            "couponCode": "BEMVINDA",
+            "totalInCents": 4403,
             "notes": "Entregar em horario comercial",
             "placedAt": "2026-03-12T12:00:00.000Z",
             "createdAt": "2026-03-12T12:00:00.000Z",
@@ -1206,7 +1299,8 @@ Possiveis erros:
 
 - `400` carrinho vazio
 - `400` item indisponivel
-- `400` estoque insuficiente
+- `400` estoque insuficiente em produto `ARTISANAL`
+- `400` cupom expirado, cancelado, sem usos disponiveis, ja usado pelo usuario ou nao acumulavel com promocao vigente
 - `404` endereco nao encontrado
 
 ## 14.3 `GET /orders`
@@ -1233,6 +1327,9 @@ Resposta `200`:
                 "subtotalInCents": 5180,
                 "shippingInCents": 0,
                 "discountInCents": 0,
+                "promotionDiscountInCents": 0,
+                "couponDiscountInCents": 0,
+                "couponCode": null,
                 "totalInCents": 5180,
                 "notes": "Entregar em horario comercial",
                 "placedAt": "2026-03-12T12:00:00.000Z",
@@ -1315,12 +1412,415 @@ Resposta:
 
 - retorna `order` atualizado
 
-## 15. Observacoes para frontend
+## 15. Marketing
+
+## 15.1 Cupons
+
+Regras:
+
+- cadastro, listagem, atualizacao e cancelamento administrativo em `/marketing/coupons`
+- autenticacao obrigatoria com `ADMIN` ou `SUBADMIN`
+- `code` e salvo em uppercase e deve ser unico
+- `discountPercent` aceita `1` a `100`
+- `validUntil` e opcional; `null` significa sem data de expiracao
+- `maxUses` limita o total de usos entre todos os clientes
+- `emails` vazio deixa o cupom publico; com emails, so esses emails podem usar
+- cliente nao pode usar o mesmo cupom mais de uma vez
+- `stackableWithPromotions` controla se cupom acumula com promocao vigente
+- `POST /marketing/coupons/:uuid/cancel` desativa manualmente cupom vigente
+
+### `GET /marketing/coupons`
+
+Resposta:
+
+```json
+{
+    "success": true,
+    "data": {
+        "coupons": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b601",
+                "code": "BEMVINDA",
+                "discountPercent": 10,
+                "validUntil": "2026-06-01T23:59:59.000Z",
+                "maxUses": 100,
+                "usedCount": 0,
+                "emails": ["maria@email.com"],
+                "stackableWithPromotions": false,
+                "isActive": true,
+                "cancelledAt": null
+            }
+        ]
+    }
+}
+```
+
+### `POST /marketing/coupons`
+
+Request:
+
+```json
+{
+    "code": "BEMVINDA",
+    "discountPercent": 10,
+    "validUntil": "2026-06-01T23:59:59.000Z",
+    "maxUses": 100,
+    "emails": ["maria@email.com"],
+    "stackableWithPromotions": false,
+    "isActive": true
+}
+```
+
+### `PATCH /marketing/coupons/:uuid`
+
+Comportamento:
+
+- atualiza parcialmente
+- `validUntil: null` remove expiracao
+- `emails: []` remove segmentacao por email
+
+### `POST /marketing/coupons/:uuid/cancel`
+
+Comportamento:
+
+- marca `isActive = false`
+- preenche `cancelledAt`
+
+## 15.2 Promocoes
+
+Regras:
+
+- cadastro, listagem e atualizacao administrativa em `/marketing/promotions`
+- autenticacao obrigatoria com `ADMIN` ou `SUBADMIN`
+- `scope = ALL_PRODUCTS` aplica em todos os produtos e nao aceita `category`
+- `scope = CATEGORY` exige `category`
+- `startsAt` e obrigatorio e inclui data/hora
+- `endsAt` e opcional; `null` significa sem data de expiracao
+- seed cadastra `Promocao inicial 5%`, todos os produtos, inicio `2026-05-04T00:00:00.000Z`, sem fim
+
+### `GET /marketing/promotions`
+
+### `POST /marketing/promotions`
+
+Request:
+
+```json
+{
+    "name": "Promocao Maio",
+    "scope": "ALL_PRODUCTS",
+    "discountPercent": 5,
+    "startsAt": "2026-05-04T00:00:00.000Z",
+    "endsAt": null,
+    "isActive": true
+}
+```
+
+Para categoria especifica:
+
+```json
+{
+    "name": "Selfcare Maio",
+    "scope": "CATEGORY",
+    "category": "SELFCARE",
+    "discountPercent": 10,
+    "startsAt": "2026-05-04T09:00:00.000Z",
+    "endsAt": "2026-05-31T23:59:59.000Z",
+    "isActive": true
+}
+```
+
+### `PATCH /marketing/promotions/:uuid`
+
+Comportamento:
+
+- atualiza parcialmente
+- `endsAt: null` remove expiracao
+
+## 16. Platforms
+
+Os dados institucionais e o endereco de expedicao da loja ficam na model `Platform`.
+
+Regras:
+
+- CRUD administrativo
+- o remetente do SuperFrete e lido da `Platform` padrao ativa
+- o endereco da plataforma fica salvo em `Address`, mas com ownership da plataforma
+
+### `GET /platforms`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+### `GET /platforms/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+### `POST /platforms`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Request:
+
+```json
+{
+    "name": "Atelie Guadalupe",
+    "email": "contato@atelieguadalupe.com",
+    "phone": "11999999999",
+    "document": "12345678000199",
+    "websiteUrl": "https://atelieguadalupe.com",
+    "isActive": true,
+    "isDefault": true,
+    "address": {
+        "label": "Plataforma",
+        "recipient": "Atelie Guadalupe",
+        "document": "12345678000199",
+        "zipCode": "01153000",
+        "street": "Rua da Origem",
+        "number": "123",
+        "complement": "Sala 1",
+        "neighborhood": "Centro",
+        "city": "Sao Paulo",
+        "state": "SP",
+        "country": "Brasil",
+        "reference": "Porta azul"
+    }
+}
+```
+
+### `PATCH /platforms/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- atualiza parcialmente a plataforma e seu endereco
+
+### `DELETE /platforms/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- remove a plataforma e seu endereco vinculado
+
+## 17. Shipping
+
+## 17.1 Configuracao de caixas
+
+As caixas sao configuradas no banco e usadas pelo modulo de frete para decidir o empacotamento antes de consultar o SuperFrete.
+
+Caixas seeded por padrao:
+
+- `SELFCARE`: `11.5 x 6.5 x 6.5` com capacidade ate `2` itens
+- `SELFCARE`: `21 x 12.5 x 12.5` com capacidade ate `4` itens
+- `ARTISANAL`: `95 x 50 x 17` com capacidade ate `1` item
+
+### `GET /shipping/boxes`
+
+Uso:
+
+- listar caixas cadastradas
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "boxes": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b777",
+                "name": "Caixa Pequena",
+                "slug": "caixa-pequena",
+                "category": "SELFCARE",
+                "dimensionsCm": {
+                    "height": 11.5,
+                    "width": 6.5,
+                    "length": 6.5
+                },
+                "emptyWeightGrams": 0,
+                "maxItems": 2,
+                "isActive": true
+            }
+        ]
+    }
+}
+```
+
+### `POST /shipping/boxes`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Request:
+
+```json
+{
+    "name": "Caixa Artesanato",
+    "category": "ARTISANAL",
+    "outerHeightCm": 95,
+    "outerWidthCm": 50,
+    "outerLengthCm": 17,
+    "emptyWeightGrams": 0,
+    "maxItems": 1,
+    "isActive": true
+}
+```
+
+### `PATCH /shipping/boxes/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- atualiza parcialmente a caixa
+
+### `DELETE /shipping/boxes/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- remove a caixa configurada
+
+## 17.2 Frete por pedido
+
+Fluxo esperado:
+
+1. criar pedido com endereco
+2. cotar frete
+3. confirmar o servico de frete escolhido
+4. apos confirmacao do pagamento, chamar o checkout do frete para gerar a etiqueta
+
+### `GET /shipping/orders/:orderUuid`
+
+Autenticacao:
+
+- obrigatoria
+
+Comportamento:
+
+- retorna o resumo do pedido e o snapshot de frete salvo no banco
+
+### `POST /shipping/orders/:orderUuid/quote`
+
+Autenticacao:
+
+- obrigatoria
+
+Uso:
+
+- calcula frete no SuperFrete
+- salva o snapshot das opcoes retornadas
+- salva tambem o snapshot do remetente/plataforma usado na cotacao
+- se `serviceCode` for enviado, confirma a opcao escolhida e atualiza `shippingInCents` e `totalInCents` do pedido
+
+Request:
+
+```json
+{
+    "serviceCode": 1,
+    "ownHand": false,
+    "receipt": false,
+    "useInsuranceValue": false,
+    "insuranceValueInCents": 0,
+    "refresh": false
+}
+```
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "order": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b999",
+            "status": "PENDING",
+            "subtotalInCents": 34000,
+            "shippingInCents": 1590,
+            "discountInCents": 0,
+            "totalInCents": 35590
+        },
+        "shipment": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b998",
+            "status": "CONFIRMED",
+            "selectedServiceCode": 1,
+            "selectedServiceName": "PAC",
+            "shippingPriceInCents": 1590,
+            "quotedServices": [],
+            "packaging": {
+                "selectedBoxes": []
+            }
+        }
+    }
+}
+```
+
+Regras:
+
+- depois que o frete fica `CONFIRMED`, a mesma cotacao fica congelada no pedido para evitar recobranca ou duplicidade
+- a expedicao usa sempre a `Platform` padrao ativa cadastrada no banco
+- pedidos `SELFCARE` usam as caixas de cosmeticos
+- pedidos `ARTISANAL` usam exclusivamente caixas da categoria `ARTISANAL`
+- produtos `ARTISANAL` precisam ter `shippingWeightGrams` configurado
+
+### `POST /shipping/orders/:orderUuid/checkout`
+
+Autenticacao:
+
+- obrigatoria
+
+Comportamento:
+
+- cria o frete no carrinho do SuperFrete
+- executa o checkout da etiqueta
+- salva `superfreteOrderId`, protocolo, tracking e link de etiqueta no banco
+- reaproveita o `senderSnapshot` salvo no pedido para nao mudar o remetente historico se a `Platform` for editada depois
+- se a etiqueta ja tiver sido comprada, retorna o snapshot persistido
+
+### `POST /shipping/orders/:orderUuid/cancel`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- solicita cancelamento do frete no SuperFrete e salva o retorno
+
+## 18. Observacoes para frontend
 
 - Todos os valores monetarios estao em centavos.
 - Todas as datas estao em formato ISO.
+- Datas de promocao e cupom devem incluir horario quando enviadas.
 - Sempre use `uuid` nas rotas e no estado do frontend. Nao use IDs internos.
 - O frontend deve guardar o JWT e reenviar em `Authorization`.
 - Para imagem de produto, o frontend precisa converter o arquivo para base64 antes do envio.
 - Para exibir imagem de produto, basta usar o valor de `imageUrl` retornado pelo backend.
 - `GET /media/images/:id` responde com stream binario, entao `imageUrl` pode ser usado direto em `<img src="...">`.
+- Para produtos `ARTISANAL`, envie tambem `shippingWeightGrams` em gramas no create/update.
+- O `.env` nao carrega mais endereco de expedicao; esses dados ficam na `Platform` padrao cadastrada no banco.

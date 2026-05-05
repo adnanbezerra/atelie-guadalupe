@@ -9,7 +9,7 @@ import type {
     User,
 } from "@/lib/types";
 
-const API_BASE_URL = "/api";
+const API_BASE_PATH = "/api";
 
 export class ApiError extends Error {
     status: number;
@@ -34,7 +34,9 @@ function buildUrl(
     path: string,
     query?: Record<string, string | number | boolean | undefined>,
 ) {
-    const url = new URL(path, API_BASE_URL);
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const url = new URL(`${API_BASE_PATH}${normalizedPath}`, "http://local");
+
     if (query) {
         for (const [key, value] of Object.entries(query)) {
             if (value !== undefined && value !== "") {
@@ -42,7 +44,8 @@ function buildUrl(
             }
         }
     }
-    return url.toString();
+
+    return `${url.pathname}${url.search}`;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}) {

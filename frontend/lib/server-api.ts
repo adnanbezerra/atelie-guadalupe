@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/constants";
+import { env } from "@/lib/env";
 import { getAuthTokenFromCookies } from "@/lib/auth";
 import {
     Address,
@@ -23,7 +23,7 @@ async function readServerToken() {
 
 async function serverApi<T>(path: string, options: RequestOptions = {}) {
     const token = await readServerToken();
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(`${env.API_BASE_URL}${path}`, {
         method: options.method ?? "GET",
         body: options.body,
         headers: {

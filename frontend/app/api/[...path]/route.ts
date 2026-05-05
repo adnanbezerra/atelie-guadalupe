@@ -1,18 +1,18 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { API_BASE_URL, AUTH_COOKIE_NAME } from "@/lib/constants";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
 async function proxyRequest(request: NextRequest, path: string[]) {
     const url = new URL(request.url);
-    const target = new URL(`${API_BASE_URL}/${path.join("/")}`);
+    const target = new URL(`${env.API_BASE_URL}/${path.join("/")}`);
     target.search = url.search;
 
     const cookieStore = await cookies();
     const token =
         request.headers.get("authorization") ??
-        cookieStore.get(AUTH_COOKIE_NAME)?.value ??
+        cookieStore.get(env.AUTH_COOKIE_NAME)?.value ??
         cookieStore.get("auth_token")?.value ??
         cookieStore.get("auth-token")?.value ??
         cookieStore.get("atelie_token")?.value ??
