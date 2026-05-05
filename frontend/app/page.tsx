@@ -274,10 +274,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
                                 <div className="space-y-6">
                                     <p className="border-l-4 border-primary/20 py-2 pl-6 text-xl font-medium italic text-slate-700">
-                                        &ldquo;Somos uma família católica que, sob o
-                                        olhar da Providência Divina e inspirada
-                                        pela beleza da Criação, decidiu
-                                        transformar dons em serviço.&rdquo;
+                                        &ldquo;Somos uma família católica que,
+                                        sob o olhar da Providência Divina e
+                                        inspirada pela beleza da Criação,
+                                        decidiu transformar dons em
+                                        serviço.&rdquo;
                                     </p>
                                     <p className="text-lg leading-relaxed text-slate-600">
                                         Com o coração em nossos oito filhos —

@@ -340,9 +340,7 @@ function ProductForm({
                 placeholder="Peso para frete (gramas)"
                 disabled={category !== "ARTISANAL"}
                 value={shippingWeightGrams}
-                onChange={(event) =>
-                    setShippingWeightGrams(event.target.value)
-                }
+                onChange={(event) => setShippingWeightGrams(event.target.value)}
             />
             <Input
                 placeholder="Base64 da imagem ou data URL"
