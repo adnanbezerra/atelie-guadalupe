@@ -18,6 +18,7 @@ type CollectionCatalogProps = {
         heroAccent: string;
     };
     initialCatalog?: ProductsPayload;
+    initialLineUuid?: string;
     initialSearch?: string;
     lines: ProductLine[];
 };
@@ -38,6 +39,7 @@ export function CollectionCatalog({
     collectionKey,
     config,
     initialCatalog,
+    initialLineUuid = "",
     initialSearch = "",
     lines: initialLines,
 }: CollectionCatalogProps) {
@@ -46,8 +48,7 @@ export function CollectionCatalog({
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [search, setSearch] = useState(initialSearch);
-    const [lineUuid, setLineUuid] = useState("");
-    const [inStockOnly, setInStockOnly] = useState(false);
+    const [lineUuid, setLineUuid] = useState(initialLineUuid);
     const [, startTransition] = useTransition();
     const linesResource = useProductLines(initialLines, {
         skipClientFetch: true,
@@ -59,12 +60,9 @@ export function CollectionCatalog({
             pageSize: 24,
             search,
             lineUuid: lineUuid || undefined,
-            inStock: inStockOnly || undefined,
-        },
-        {
-            skipClientFetch: true,
         },
     );
+    const productLines = linesResource.lines;
 
     const filteredProducts = useMemo(() => {
         const items = productsResource.data?.items ?? [];
@@ -76,6 +74,10 @@ export function CollectionCatalog({
     }, [initialSearch]);
 
     useEffect(() => {
+        setLineUuid(initialLineUuid);
+    }, [initialLineUuid]);
+
+    useEffect(() => {
         const timeout = window.setTimeout(() => {
             const nextParams = new URLSearchParams(searchParams.toString());
 
@@ -83,6 +85,12 @@ export function CollectionCatalog({
                 nextParams.set("search", search.trim());
             } else {
                 nextParams.delete("search");
+            }
+
+            if (lineUuid) {
+                nextParams.set("lineUuid", lineUuid);
+            } else {
+                nextParams.delete("lineUuid");
             }
 
             const query = nextParams.toString();
@@ -103,7 +111,7 @@ export function CollectionCatalog({
         return () => {
             window.clearTimeout(timeout);
         };
-    }, [pathname, router, search, searchParams, startTransition]);
+    }, [lineUuid, pathname, router, search, searchParams, startTransition]);
 
     if (collectionKey === "crafts") {
         return (
@@ -336,55 +344,40 @@ export function CollectionCatalog({
                     <aside className="w-full space-y-8 md:w-64 md:flex-shrink-0">
                         <div>
                             <h4 className="mb-4 border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-wider">
-                                Fragrâncias
+                                Linhas de produtos
                             </h4>
                             <div className="space-y-2">
-                                {[
-                                    "Lavanda Francesa",
-                                    "Alecrim & Limão",
-                                    "Capim-Limão",
-                                    "Bergamota",
-                                    "Sem Perfume",
-                                ].map((label) => (
+                                <label className="flex cursor-pointer items-center gap-3 text-sm">
+                                    <input
+                                        checked={!lineUuid}
+                                        name="product-line"
+                                        onChange={() => setLineUuid("")}
+                                        type="radio"
+                                    />
+                                    Todas as linhas
+                                </label>
+                                {productLines.map((line) => (
                                     <label
-                                        className="flex items-center gap-3 text-sm"
-                                        key={label}
+                                        className="flex cursor-pointer items-center gap-3 text-sm"
+                                        key={line.uuid}
                                     >
-                                        <input type="checkbox" />
-                                        {label}
+                                        <input
+                                            checked={lineUuid === line.uuid}
+                                            name="product-line"
+                                            onChange={() =>
+                                                setLineUuid(line.uuid)
+                                            }
+                                            type="radio"
+                                        />
+                                        {line.name}
                                     </label>
                                 ))}
+                                {productLines.length === 0 ? (
+                                    <p className="text-sm text-slate-500">
+                                        Nenhuma linha cadastrada.
+                                    </p>
+                                ) : null}
                             </div>
-                        </div>
-                        <div>
-                            <h4 className="mb-4 border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-wider">
-                                Benefícios
-                            </h4>
-                            <div className="space-y-2">
-                                {[
-                                    "Relaxamento",
-                                    "Energizante",
-                                    "Hidratação Intensa",
-                                    "Pele Sensível",
-                                ].map((label) => (
-                                    <label
-                                        className="flex items-center gap-3 text-sm"
-                                        key={label}
-                                    >
-                                        <input type="checkbox" />
-                                        {label}
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="rounded-xl border border-primary/10 bg-primary/5 p-4">
-                            <p className="mb-2 text-xs font-bold uppercase text-primary">
-                                Dica Pro
-                            </p>
-                            <p className="text-sm leading-relaxed text-slate-600">
-                                Cremes com base de Karité são ideais para as
-                                áreas mais secas como cotovelos e pés.
-                            </p>
                         </div>
                     </aside>
 
@@ -398,24 +391,11 @@ export function CollectionCatalog({
                                 produtos
                             </p>
                             <div className="flex items-center gap-2">
-                                <span className="text-sm text-slate-500">
-                                    Ordenar por:
-                                </span>
-                                <select
-                                    className="cursor-pointer border-none bg-transparent text-sm font-bold outline-none"
-                                    onChange={(event) =>
-                                        setLineUuid(event.target.value)
-                                    }
-                                    value={lineUuid}
-                                >
-                                    <option value="">Mais populares</option>
-                                    <option value="lancamentos">
-                                        Lançamentos
-                                    </option>
-                                    <option value="menor-preco">
-                                        Menor preço
-                                    </option>
-                                </select>
+                                {productsResource.isLoading ? (
+                                    <span className="text-sm text-slate-500">
+                                        Atualizando...
+                                    </span>
+                                ) : null}
                             </div>
                         </div>
 

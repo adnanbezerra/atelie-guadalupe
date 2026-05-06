@@ -19,6 +19,7 @@ const emptyCatalog: ProductsPayload = {
 type BeautyCollectionPageProps = {
     searchParams?: Promise<{
         search?: string | string[];
+        lineUuid?: string | string[];
     }>;
 };
 
@@ -29,10 +30,18 @@ export default async function BeautyCollectionPage({
     const search = Array.isArray(resolvedSearchParams?.search)
         ? (resolvedSearchParams.search[0] ?? "")
         : (resolvedSearchParams?.search ?? "");
+    const lineUuid = Array.isArray(resolvedSearchParams?.lineUuid)
+        ? (resolvedSearchParams.lineUuid[0] ?? "")
+        : (resolvedSearchParams?.lineUuid ?? "");
 
     const [linesResult, productsResult] = await Promise.allSettled([
         fetchProductLines(),
-        fetchProducts({ page: 1, pageSize: 24, search: search || undefined }),
+        fetchProducts({
+            page: 1,
+            pageSize: 24,
+            search: search || undefined,
+            lineUuid: lineUuid || undefined,
+        }),
     ]);
 
     const lines =
@@ -48,6 +57,7 @@ export default async function BeautyCollectionPage({
                 collectionKey="beauty"
                 config={COLLECTION_CONFIG.beauty}
                 initialCatalog={products}
+                initialLineUuid={lineUuid}
                 initialSearch={search}
                 lines={lines}
             />
