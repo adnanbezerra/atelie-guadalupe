@@ -2,6 +2,9 @@ import { z } from "zod";
 
 const productSizeSchema = z.enum(["GRAMS_70", "GRAMS_100"]);
 const productCategorySchema = z.enum(["SELFCARE", "ARTISANAL"]);
+const publicProductCategorySchema = z
+    .enum(["ARTESANATO", "BELEZA"])
+    .transform((category) => (category === "ARTESANATO" ? "ARTISANAL" : "SELFCARE"));
 
 const imageUploadSchema = z.object({
     filename: z.string().trim().min(1).max(255),
@@ -95,6 +98,10 @@ export const productLineUuidParamSchema = z.object({
     uuid: z.uuid()
 });
 
+export const listProductLinesQuerySchema = z.object({
+    category: publicProductCategorySchema.optional()
+});
+
 export const listProductsQuerySchema = z
     .object({
         page: z.coerce.number().int().min(1).default(1),
@@ -102,6 +109,7 @@ export const listProductsQuerySchema = z
         search: z.string().trim().min(1).optional(),
         lineUuid: z.uuid().optional(),
         size: productSizeSchema.optional(),
+        category: publicProductCategorySchema.optional(),
         minPriceInCents: z.coerce.number().int().min(1).optional(),
         maxPriceInCents: z.coerce.number().int().min(1).optional(),
         inStock: z.coerce.boolean().optional()

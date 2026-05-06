@@ -1,6 +1,23 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
+import {
+    listProductLinesQuerySchema,
+    listProductsQuerySchema
+} from "../../src/modules/products/schemas/product-schema";
 import { ProductService } from "../../src/modules/products/services/product-service";
+
+test("product list query maps public categories to product categories", () => {
+    assert.equal(listProductsQuerySchema.parse({ category: "ARTESANATO" }).category, "ARTISANAL");
+    assert.equal(listProductsQuerySchema.parse({ category: "BELEZA" }).category, "SELFCARE");
+});
+
+test("product line list query maps public categories to product categories", () => {
+    assert.equal(
+        listProductLinesQuerySchema.parse({ category: "ARTESANATO" }).category,
+        "ARTISANAL"
+    );
+    assert.equal(listProductLinesQuerySchema.parse({ category: "BELEZA" }).category, "SELFCARE");
+});
 
 test("product service creates slug from product name", async () => {
     const repository = {

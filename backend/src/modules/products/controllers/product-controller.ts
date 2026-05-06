@@ -3,6 +3,7 @@ import { sendEither } from "../../../core/http/send-either";
 import {
     createProductLineSchema,
     createProductSchema,
+    listProductLinesQuerySchema,
     listProductsQuerySchema,
     productLineUuidParamSchema,
     productUuidParamSchema,
@@ -23,8 +24,9 @@ export class ProductController {
         return sendEither(reply, result);
     };
 
-    public listLines = async (_request: FastifyRequest, reply: FastifyReply) => {
-        const result = await this.productService.listLines();
+    public listLines = async (request: FastifyRequest, reply: FastifyReply) => {
+        const query = this.fastify.validateSchema(listProductLinesQuerySchema, request.query);
+        const result = await this.productService.listLines(query);
         return sendEither(reply, result);
     };
 

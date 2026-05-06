@@ -627,6 +627,21 @@ Uso:
 
 - listagem publica de linhas/categorias
 
+Query params:
+
+- `category` (`ARTESANATO` ou `BELEZA`)
+
+Exemplo:
+
+```http
+GET /products/lines?category=BELEZA
+```
+
+Observacao:
+
+- `category=ARTESANATO` retorna linhas com produtos ativos `ARTISANAL`
+- `category=BELEZA` retorna linhas com produtos ativos `SELFCARE`
+
 Resposta `200`:
 
 ```json
@@ -661,6 +676,7 @@ Query params:
 - `search`
 - `lineUuid`
 - `size` (`GRAMS_70` ou `GRAMS_100`)
+- `category` (`ARTESANATO` ou `BELEZA`)
 - `minPriceInCents`
 - `maxPriceInCents`
 - `inStock`
@@ -668,12 +684,13 @@ Query params:
 Exemplo:
 
 ```http
-GET /products?page=1&pageSize=12&search=lavanda&lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210&size=GRAMS_70&minPriceInCents=2000&maxPriceInCents=3000&inStock=true
+GET /products?page=1&pageSize=12&search=lavanda&category=ARTESANATO&lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210&size=GRAMS_70&minPriceInCents=2000&maxPriceInCents=3000&inStock=true
 ```
 
 Observacao:
 
 - para usar `minPriceInCents` e/ou `maxPriceInCents`, e obrigatorio informar `size`
+- `category=ARTESANATO` filtra produtos `ARTISANAL`; `category=BELEZA` filtra produtos `SELFCARE`
 - `inStock=true` considera produtos `ARTISANAL` com `stock > 0` e todos os produtos `SELFCARE`
 
 Resposta `200`:

@@ -31,12 +31,17 @@ type UpdateProductInput = Prisma.ProductUncheckedUpdateInput & {
     isActive?: boolean;
 };
 
+type ProductLineListQuery = {
+    category?: ProductCategory;
+};
+
 type ProductListQuery = {
     page: number;
     pageSize: number;
     search?: string;
     lineUuid?: string;
     size?: ProductSize;
+    category?: ProductCategory;
     minPriceInCents?: number;
     maxPriceInCents?: number;
     inStock?: boolean;
@@ -53,8 +58,20 @@ type ProductWithLine = Product & {
 export class ProductRepository {
     public constructor(private readonly prisma: PrismaClient) {}
 
-    public async listLines() {
+    public async listLines(query: ProductLineListQuery = {}) {
         return this.prisma.productLine.findMany({
+            where: {
+                ...(query.category
+                    ? {
+                          products: {
+                              some: {
+                                  category: query.category,
+                                  isActive: true
+                              }
+                          }
+                      }
+                    : {})
+            },
             orderBy: {
                 name: "asc"
             }
@@ -107,6 +124,7 @@ export class ProductRepository {
                       }
                   }
                 : {}),
+            ...(query.category ? { category: query.category } : {}),
             ...(query.inStock
                 ? {
                       OR: [

@@ -31,12 +31,17 @@ type CreateProductInput = {
 
 type UpdateProductInput = Partial<CreateProductInput>;
 
+type ListProductLinesInput = {
+    category?: ProductCategory;
+};
+
 type ListProductsInput = {
     page: number;
     pageSize: number;
     search?: string;
     lineUuid?: string;
     size?: ProductSize;
+    category?: ProductCategory;
     minPriceInCents?: number;
     maxPriceInCents?: number;
     inStock?: boolean;
@@ -48,10 +53,12 @@ export class ProductService {
         private readonly imageStorage: ImageStorage
     ) {}
 
-    public async listLines(): Promise<
+    public async listLines(
+        query: ListProductLinesInput
+    ): Promise<
         Either<AppError, { lines: Array<ReturnType<typeof presentProductLine>> }>
     > {
-        const lines = await this.productRepository.listLines();
+        const lines = await this.productRepository.listLines(query);
 
         return right({
             lines: lines.map((line) => presentProductLine(line))
