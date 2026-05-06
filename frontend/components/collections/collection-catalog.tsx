@@ -53,15 +53,12 @@ export function CollectionCatalog({
     const linesResource = useProductLines(initialLines, {
         skipClientFetch: true,
     });
-    const productsResource = useProducts(
-        initialCatalog,
-        {
-            page: 1,
-            pageSize: 24,
-            search,
-            lineUuid: lineUuid || undefined,
-        },
-    );
+    const productsResource = useProducts(initialCatalog, {
+        page: 1,
+        pageSize: 24,
+        search,
+        lineUuid: lineUuid || undefined,
+    });
     const productLines = linesResource.lines;
 
     const filteredProducts = useMemo(() => {

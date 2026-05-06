@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "public/logo-empty.png";
+import { CartDialogButton } from "./cart-dialog-button";
 
 type HeaderFrameProps = {
     activeCollection?: "beauty" | "crafts";
@@ -50,14 +51,7 @@ export function HeaderFrame({
                 <div className="flex flex-1 items-center justify-end gap-4">
                     {searchSlot}
                     <div className="flex gap-2">
-                        <Link
-                            className="rounded-lg bg-slate-100 p-2"
-                            href="/carrinho"
-                        >
-                            <span className="material-symbols-outlined text-slate-700">
-                                shopping_bag
-                            </span>
-                        </Link>
+                        <CartDialogButton />
                     </div>
                 </div>
             </div>
