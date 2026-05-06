@@ -1,34 +1,25 @@
 import { z } from "zod";
+import { acceptedPasswordSchema } from "../../auth/schemas/register-schema";
 
 export const updateMeSchema = z
     .object({
-        name: z.string().trim().min(3).max(120).optional(),
-        password: z
-            .string()
-            .min(8)
-            .max(72)
-            .regex(/[A-Z]/, "A senha deve conter ao menos uma letra maiuscula")
-            .regex(/[a-z]/, "A senha deve conter ao menos uma letra minuscula")
-            .regex(/\d/, "A senha deve conter ao menos um numero")
-            .regex(/[^a-zA-Z0-9]/, "A senha deve conter ao menos um caractere especial")
-            .optional()
+        name: z.string().trim().min(3).max(120).optional()
     })
     .refine((data) => Object.keys(data).length > 0, {
         message: "Informe ao menos um campo para atualizacao"
     });
 
+export const changeMyPasswordSchema = z.object({
+    email: z.email(),
+    currentPassword: z.string(),
+    newPassword: acceptedPasswordSchema
+});
+
 export const createManagedUserSchema = z.object({
     name: z.string().trim().min(3).max(120),
     email: z.email(),
     document: z.string().trim().min(11).max(18),
-    password: z
-        .string()
-        .min(8)
-        .max(72)
-        .regex(/[A-Z]/, "A senha deve conter ao menos uma letra maiuscula")
-        .regex(/[a-z]/, "A senha deve conter ao menos uma letra minuscula")
-        .regex(/\d/, "A senha deve conter ao menos um numero")
-        .regex(/[^a-zA-Z0-9]/, "A senha deve conter ao menos um caractere especial"),
+    password: acceptedPasswordSchema,
     role: z.enum(["ADMIN", "SUBADMIN", "USER"])
 });
 

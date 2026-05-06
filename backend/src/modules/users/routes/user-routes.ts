@@ -32,6 +32,19 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
         userController.updateMe
     );
 
+    fastify.patch(
+        "/password",
+        {
+            config: {
+                rateLimit: {
+                    max: 5,
+                    timeWindow: "1 minute"
+                }
+            }
+        },
+        userController.changeMyPassword
+    );
+
     fastify.post(
         "/",
         {

@@ -1,6 +1,6 @@
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
-import { hashPassword } from "../../../core/security/password";
+import { hashPassword, verifyPassword } from "../../../core/security/password";
 import { normalizeDocument } from "../../../core/utils/document";
 import { normalizeEmail } from "../../../core/utils/email";
 import { createUuid } from "../../../core/utils/uuid";
@@ -11,7 +11,12 @@ import { presentAddress, presentUser } from "./user-presenter";
 
 type UpdateMeInput = {
     name?: string;
-    password?: string;
+};
+
+type ChangeMyPasswordInput = {
+    email: string;
+    currentPassword: string;
+    newPassword: string;
 };
 
 type CreateManagedUserInput = {
@@ -63,18 +68,40 @@ export class UserService {
 
         const data: {
             name?: string;
-            passwordHash?: string;
         } = {};
 
         if (input.name) {
             data.name = input.name.trim();
         }
 
-        if (input.password) {
-            data.passwordHash = await hashPassword(input.password);
+        const updatedUser = await this.userRepository.updateByUuid(userUuid, data);
+
+        return right({
+            user: {
+                ...presentUser(updatedUser),
+                addresses: updatedUser.addresses.map(
+                    (address: Parameters<typeof presentAddress>[0]) => presentAddress(address)
+                )
+            }
+        });
+    }
+
+    public async changePassword(
+        input: ChangeMyPasswordInput
+    ): Promise<Either<AppError, { user: Record<string, unknown> }>> {
+        const user = await this.userRepository.findByEmail(normalizeEmail(input.email));
+        if (!user) {
+            return left(AppError.unauthorized("Email ou senha invalidos"));
         }
 
-        const updatedUser = await this.userRepository.updateByUuid(userUuid, data);
+        const passwordMatches = await verifyPassword(user.passwordHash, input.currentPassword);
+        if (!passwordMatches) {
+            return left(AppError.unauthorized("Email ou senha invalidos"));
+        }
+
+        const updatedUser = await this.userRepository.updateByUuid(user.uuid, {
+            passwordHash: await hashPassword(input.newPassword)
+        });
 
         return right({
             user: {

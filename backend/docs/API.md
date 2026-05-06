@@ -278,16 +278,15 @@ Campos permitidos:
 
 ```json
 {
-    "name": "Maria de Guadalupe",
-    "password": "NovaSenha@123"
+    "name": "Maria de Guadalupe"
 }
 ```
 
 Observacoes:
 
 - pode enviar apenas `name`
-- pode enviar apenas `password`
 - precisa enviar ao menos um campo
+- para alterar senha, use `PATCH /users/password`
 
 Resposta `200`:
 
@@ -309,7 +308,55 @@ Resposta `200`:
 }
 ```
 
-## 9.3 `POST /users`
+## 9.3 `PATCH /users/password`
+
+Autenticacao:
+
+- nao exige JWT
+
+Uso:
+
+- altera a senha usando email e senha atual
+- `email` precisa ser um email valido
+- `currentPassword` precisa bater com a senha atual salva
+- `newPassword` precisa seguir as regras de senha aceita: 8 a 72 caracteres, maiuscula, minuscula, numero e caractere especial
+
+Request:
+
+```json
+{
+    "email": "maria@email.com",
+    "currentPassword": "SenhaAntiga",
+    "newPassword": "NovaSenha@123"
+}
+```
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "user": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b101",
+            "name": "Maria de Guadalupe",
+            "email": "maria@email.com",
+            "document": "12345678900",
+            "role": "USER",
+            "isActive": true,
+            "createdAt": "2026-03-12T12:00:00.000Z",
+            "addresses": []
+        }
+    }
+}
+```
+
+Possiveis erros:
+
+- `401` email ou senha invalidos
+- `422` email invalido ou senha nova invalida
+
+## 9.4 `POST /users`
 
 Autenticacao:
 
@@ -351,7 +398,7 @@ Resposta `201`:
 }
 ```
 
-## 9.4 `PATCH /users/:uuid`
+## 9.5 `PATCH /users/:uuid`
 
 Autenticacao:
 

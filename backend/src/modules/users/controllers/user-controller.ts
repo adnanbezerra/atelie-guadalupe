@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { sendEither } from "../../../core/http/send-either";
 import { RoleName } from "../../../generated/prisma/enums";
 import {
+    changeMyPasswordSchema,
     createManagedUserSchema,
     updateManagedUserSchema,
     updateMeSchema,
@@ -23,6 +24,12 @@ export class UserController {
     public updateMe = async (request: FastifyRequest, reply: FastifyReply) => {
         const input = this.fastify.validateSchema(updateMeSchema, request.body);
         const result = await this.userService.updateMe(request.currentUser!.sub, input);
+        return sendEither(reply, result);
+    };
+
+    public changeMyPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+        const input = this.fastify.validateSchema(changeMyPasswordSchema, request.body);
+        const result = await this.userService.changePassword(input);
         return sendEither(reply, result);
     };
 
