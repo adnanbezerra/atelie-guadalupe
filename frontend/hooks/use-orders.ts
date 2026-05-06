@@ -16,9 +16,7 @@ export function useOrders(initialOrders: Order[] = []) {
 
         async function run() {
             if (!token) {
-                setError(
-                    "Faça login com um perfil administrativo para consultar pedidos.",
-                );
+                setError("Faça login para consultar pedidos.");
                 setIsLoading(false);
                 return;
             }

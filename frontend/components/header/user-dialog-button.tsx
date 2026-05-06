@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { AUTH_COOKIE_NAME } from "@/lib/constants";
 import { useApiToken } from "@/hooks/use-api-token";
+import { useProfile } from "@/hooks/use-profile";
 
 const TOKEN_KEYS = [
     AUTH_COOKIE_NAME,
@@ -27,6 +28,8 @@ export function UserDialogButton() {
     const router = useRouter();
     const token = useApiToken();
     const isLoggedIn = Boolean(token);
+    const profile = useProfile();
+    const isAdmin = ["ADMIN", "SUBADMIN"].includes(profile.user?.role || "");
 
     function handleLogout() {
         for (const key of TOKEN_KEYS) {
@@ -69,6 +72,17 @@ export function UserDialogButton() {
                 <div className="space-y-2 p-4">
                     {isLoggedIn ? (
                         <>
+                            {isAdmin && (
+                                <Link
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
+                                    href="/admin"
+                                >
+                                    <span className="material-symbols-outlined">
+                                        admin_panel_settings
+                                    </span>
+                                    Administração
+                                </Link>
+                            )}
                             <Link
                                 className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
                                 href="/perfil"

@@ -28,9 +28,7 @@ export function AdminDashboardPage({
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
                     Dashboard
                 </p>
-                <h1 className="mt-3 font-display text-5xl font-bold">
-
-                </h1>
+                <h1 className="mt-3 font-display text-5xl font-bold"></h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">
                     A estrutura segue o Stitch: KPIs no topo, histórico de
                     pedidos e atenção a estoque.
