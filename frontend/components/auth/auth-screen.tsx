@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 type AuthMode = "login" | "register";
@@ -22,6 +22,8 @@ type ApiEnvelope =
               message?: string;
           };
       };
+
+const ADMIN_ROLES = new Set(["ADMIN", "SUBADMIN"]);
 
 const fields = {
     login: [
@@ -90,9 +92,11 @@ const fields = {
 
 export function AuthScreen({ mode }: { mode: AuthMode }) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isLogin = mode === "login";
+    const nextPath = searchParams.get("next");
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -125,7 +129,11 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             }
 
             document.cookie = `auth_token=${payload.data.token}; path=/; max-age=2592000; samesite=lax`;
-            router.push(payload.data.user.role === "USER" ? "/" : "/admin");
+            const isAdmin = ADMIN_ROLES.has(payload.data.user.role ?? "");
+            const adminTarget = nextPath?.startsWith("/admin")
+                ? nextPath
+                : "/admin";
+            router.push(isAdmin ? adminTarget : "/");
             router.refresh();
         } catch (caughtError) {
             setError(

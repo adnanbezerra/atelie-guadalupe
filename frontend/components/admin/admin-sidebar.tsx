@@ -6,7 +6,7 @@ type AdminSidebarProps = {
     pathname: string;
 };
 
-const navItems = [
+export const adminNavItems = [
     { href: "/admin", icon: "dashboard", label: "Painel" },
     { href: "/admin/produtos", icon: "inventory_2", label: "Produtos" },
     {
@@ -38,7 +38,7 @@ export function AdminSidebar({ pathname }: AdminSidebarProps) {
                 </div>
             </div>
             <nav className="flex-1 space-y-1 px-4">
-                {navItems.map((item) => {
+                {adminNavItems.map((item) => {
                     const isActive =
                         item.href === "/admin"
                             ? pathname === "/admin"

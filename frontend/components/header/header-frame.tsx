@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import logo from "public/logo-empty.png";
 import { CartDialogButton } from "./cart-dialog-button";
+import { UserDialogButton } from "./user-dialog-button";
 
 type HeaderFrameProps = {
     activeCollection?: "beauty" | "crafts";
@@ -52,6 +53,7 @@ export function HeaderFrame({
                     {searchSlot}
                     <div className="flex gap-2">
                         <CartDialogButton />
+                        <UserDialogButton />
                     </div>
                 </div>
             </div>
