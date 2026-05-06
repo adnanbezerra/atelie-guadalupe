@@ -47,13 +47,16 @@ async function serverApi<T>(path: string, options: RequestOptions = {}) {
     return payload.data;
 }
 
-export async function fetchProductLines() {
-    return serverApi<{ lines: ProductLine[] }>("/products/lines");
+export async function fetchProductLines(params?: { category?: string }) {
+    const query = buildQuery(params ?? {});
+    const suffix = query ? `?${query}` : "";
+    return serverApi<{ lines: ProductLine[] }>(`/products/lines${suffix}`);
 }
 
 export async function fetchProducts(params: {
     page?: number;
     pageSize?: number;
+    category?: string;
     search?: string;
     lineUuid?: string;
     size?: string;

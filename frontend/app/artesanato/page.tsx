@@ -18,8 +18,13 @@ export default async function CraftsCollectionPage({
         : (resolvedSearchParams?.search ?? "");
 
     const [linesResult, productsResult] = await Promise.allSettled([
-        fetchProductLines(),
-        fetchProducts({ page: 1, pageSize: 24, search: search || undefined }),
+        fetchProductLines({ category: "ARTESANATO" }),
+        fetchProducts({
+            page: 1,
+            pageSize: 24,
+            category: "ARTESANATO",
+            search: search || undefined,
+        }),
     ]);
 
     const lines =

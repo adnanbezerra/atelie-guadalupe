@@ -82,8 +82,8 @@ export function getProducts(query?: ProductQuery) {
     return request<ProductListResponse>("/products", { query });
 }
 
-export function getProductLines() {
-    return request<{ lines: ProductLine[] }>("/products/lines");
+export function getProductLines(query?: { category?: string }) {
+    return request<{ lines: ProductLine[] }>("/products/lines", { query });
 }
 
 export function getCart(token: string) {

@@ -11,6 +11,7 @@ import type {
 
 type HydrationOptions = {
     skipClientFetch?: boolean;
+    category?: string;
 };
 
 export function useProductCatalog(query: ProductQuery) {
@@ -193,6 +194,7 @@ export function useProductLines(
     const [isLoading, setIsLoading] = useState(initialLines.length === 0);
     const [error, setError] = useState<string | null>(null);
     const skipClientFetch = Boolean(options.skipClientFetch);
+    const category = options.category;
 
     useEffect(() => {
         if (skipClientFetch) {
@@ -205,7 +207,7 @@ export function useProductLines(
             try {
                 setIsLoading(true);
                 setError(null);
-                const response = await getProductLines();
+                const response = await getProductLines({ category });
                 if (!cancelled) {
                     setData(response.lines);
                 }
@@ -229,7 +231,7 @@ export function useProductLines(
         return () => {
             cancelled = true;
         };
-    }, [skipClientFetch]);
+    }, [category, skipClientFetch]);
 
     return { data, lines: data, isLoading, error };
 }

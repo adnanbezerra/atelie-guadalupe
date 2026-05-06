@@ -35,10 +35,11 @@ export default async function BeautyCollectionPage({
         : (resolvedSearchParams?.lineUuid ?? "");
 
     const [linesResult, productsResult] = await Promise.allSettled([
-        fetchProductLines(),
+        fetchProductLines({ category: "BELEZA" }),
         fetchProducts({
             page: 1,
             pageSize: 24,
+            category: "BELEZA",
             search: search || undefined,
             lineUuid: lineUuid || undefined,
         }),

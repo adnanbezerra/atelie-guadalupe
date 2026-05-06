@@ -173,6 +173,7 @@ export type OrdersResponse = {
 export type ProductQuery = {
     page?: number;
     pageSize?: number;
+    category?: string;
     search?: string;
     lineUuid?: string;
     size?: string;

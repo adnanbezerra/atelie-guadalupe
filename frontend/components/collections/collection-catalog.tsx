@@ -50,12 +50,15 @@ export function CollectionCatalog({
     const [search, setSearch] = useState(initialSearch);
     const [lineUuid, setLineUuid] = useState(initialLineUuid);
     const [, startTransition] = useTransition();
+    const category = collectionKey === "beauty" ? "BELEZA" : "ARTESANATO";
     const linesResource = useProductLines(initialLines, {
         skipClientFetch: true,
+        category,
     });
     const productsResource = useProducts(initialCatalog, {
         page: 1,
         pageSize: 24,
+        category,
         search,
         lineUuid: lineUuid || undefined,
     });
@@ -151,59 +154,48 @@ export function CollectionCatalog({
                                         <span className="material-symbols-outlined text-[#D4AF37]">
                                             filter_list
                                         </span>
-                                        Categorias
+                                        Linhas de produtos
                                     </h3>
                                     <ul className="space-y-3">
-                                        {[
-                                            "Esculturas Sacras",
-                                            "Têxteis Litúrgicos",
-                                            "Cerâmica Manual",
-                                            "Oratórios",
-                                            "Terços e Sacramentais",
-                                        ].map((label) => (
-                                            <li key={label}>
-                                                <label className="flex cursor-pointer items-center gap-3 text-sm">
-                                                    <input type="checkbox" />
-                                                    {label}
-                                                </label>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <h3 className="mb-4 font-public font-semibold text-neutral-900">
-                                        Material
-                                    </h3>
-                                    <ul className="space-y-3">
-                                        {[
-                                            "Madeira Nobre",
-                                            "Cerâmica",
-                                            "Linho e Seda",
-                                        ].map((label) => (
-                                            <li key={label}>
+                                        <li>
+                                            <label className="flex cursor-pointer items-center gap-3 text-sm">
+                                                <input
+                                                    checked={!lineUuid}
+                                                    name="craft-product-line"
+                                                    onChange={() =>
+                                                        setLineUuid("")
+                                                    }
+                                                    type="radio"
+                                                />
+                                                Todas as linhas
+                                            </label>
+                                        </li>
+                                        {productLines.map((line) => (
+                                            <li key={line.uuid}>
                                                 <label className="flex cursor-pointer items-center gap-3 text-sm">
                                                     <input
-                                                        name="material"
+                                                        checked={
+                                                            lineUuid ===
+                                                            line.uuid
+                                                        }
+                                                        name="craft-product-line"
+                                                        onChange={() =>
+                                                            setLineUuid(
+                                                                line.uuid,
+                                                            )
+                                                        }
                                                         type="radio"
                                                     />
-                                                    {label}
+                                                    {line.name}
                                                 </label>
                                             </li>
                                         ))}
+                                        {productLines.length === 0 ? (
+                                            <li className="text-sm text-neutral-500">
+                                                Nenhuma linha cadastrada.
+                                            </li>
+                                        ) : null}
                                     </ul>
-                                </div>
-                                <div>
-                                    <h3 className="mb-4 font-public font-semibold text-neutral-900">
-                                        Faixa de Preço
-                                    </h3>
-                                    <input
-                                        className="w-full accent-[#4A3728]"
-                                        type="range"
-                                    />
-                                    <div className="mt-4 flex justify-between text-xs text-neutral-500">
-                                        <span>R$ 0</span>
-                                        <span>R$ 2.000+</span>
-                                    </div>
                                 </div>
                             </div>
                         </aside>
