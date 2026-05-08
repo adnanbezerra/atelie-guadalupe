@@ -102,6 +102,19 @@ Exemplo:
 
 Token ausente, expirado ou invalido.
 
+Quando o access token estiver expirado:
+
+```json
+{
+    "success": false,
+    "error": {
+        "code": "UNAUTHORIZED",
+        "message": "Access token expirado",
+        "details": []
+    }
+}
+```
+
 ### `403 FORBIDDEN`
 
 Usuario autenticado sem permissao para a acao.

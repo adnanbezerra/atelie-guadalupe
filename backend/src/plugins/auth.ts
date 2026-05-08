@@ -5,13 +5,31 @@ import { AppError } from "../core/errors/app-error";
 import { JwtUserPayload } from "../core/security/jwt-user-payload";
 
 type AllowedRole = "ADMIN" | "SUBADMIN" | "USER";
+type JwtVerificationError = Error & {
+    code?: string;
+};
+
+function isExpiredAccessTokenError(error: unknown): error is JwtVerificationError {
+    return (
+        error instanceof Error &&
+        (error as JwtVerificationError).code === "FST_JWT_AUTHORIZATION_TOKEN_EXPIRED"
+    );
+}
 
 export default fp(async (fastify) => {
     fastify.decorate(
         "authenticate",
         async function (request: FastifyRequest, _reply: FastifyReply) {
-            const payload = await request.jwtVerify<JwtUserPayload>();
-            request.currentUser = payload;
+            try {
+                const payload = await request.jwtVerify<JwtUserPayload>();
+                request.currentUser = payload;
+            } catch (error) {
+                if (isExpiredAccessTokenError(error)) {
+                    throw AppError.unauthorized("Access token expirado");
+                }
+
+                throw error;
+            }
         }
     );
 
