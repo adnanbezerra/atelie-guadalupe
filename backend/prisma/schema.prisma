@@ -75,7 +75,7 @@ model User {
   uuid         String             @unique @db.Uuid
   name         String
   email        String             @unique
-  document     String             @unique
+  document     String?            @unique
   phone        String?
   birthDate    DateTime?
   passwordHash String

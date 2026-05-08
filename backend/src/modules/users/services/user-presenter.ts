@@ -2,7 +2,7 @@ type UserWithRole = {
     uuid: string;
     name: string;
     email: string;
-    document: string;
+    document: string | null;
     phone?: string | null;
     birthDate?: Date | null;
     isActive: boolean;

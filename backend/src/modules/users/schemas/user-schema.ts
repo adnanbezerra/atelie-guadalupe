@@ -5,6 +5,16 @@ import { acceptedPasswordSchema } from "../../auth/schemas/register-schema";
 const optionalProfileString = (schema: z.ZodType<string>) =>
     z.string().trim().length(0).transform(() => undefined).or(schema).optional();
 
+const clearableProfileString = (schema: z.ZodType<string>) =>
+    z
+        .string()
+        .trim()
+        .length(0)
+        .transform(() => null)
+        .or(z.null())
+        .or(schema)
+        .optional();
+
 const stripUndefined = <T extends Record<string, unknown>>(data: T) =>
     Object.fromEntries(
         Object.entries(data).filter(([, value]) => typeof value !== "undefined")
@@ -23,7 +33,7 @@ export const updateMeSchema = z
     .object({
         name: optionalProfileString(z.string().trim().min(3).max(120)),
         email: optionalProfileString(z.email()),
-        document: optionalProfileString(z.string().trim().min(11).max(18)),
+        document: clearableProfileString(z.string().trim().min(11).max(18)),
         phone: optionalProfileString(z.string().trim().min(8).max(30)),
         birthDate: optionalProfileString(z.iso.date()),
         address: updateMeAddressSchema.optional()
@@ -47,7 +57,6 @@ export const changeMyPasswordSchema = z.object({
 export const createManagedUserSchema = z.object({
     name: z.string().trim().min(3).max(120),
     email: z.email(),
-    document: z.string().trim().min(11).max(18),
     password: acceptedPasswordSchema,
     role: z.enum(["ADMIN", "SUBADMIN", "USER"])
 });

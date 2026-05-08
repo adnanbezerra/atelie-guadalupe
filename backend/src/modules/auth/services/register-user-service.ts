@@ -12,7 +12,7 @@ import { presentUser } from "../../users/services/user-presenter";
 type RegisterInput = {
     name: string;
     email: string;
-    document: string;
+    document?: string | null;
     password: string;
 };
 
@@ -31,16 +31,18 @@ export class RegisterUserService {
         input: RegisterInput
     ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
         const email = normalizeEmail(input.email);
-        const document = normalizeDocument(input.document);
+        const document = input.document ? normalizeDocument(input.document) : null;
 
         const existingEmail = await this.userRepository.findByEmail(email);
         if (existingEmail) {
             return left(AppError.conflict("Email ja cadastrado"));
         }
 
-        const existingDocument = await this.userRepository.findByDocument(document);
-        if (existingDocument) {
-            return left(AppError.conflict("Documento ja cadastrado"));
+        if (document) {
+            const existingDocument = await this.userRepository.findByDocument(document);
+            if (existingDocument) {
+                return left(AppError.conflict("Documento ja cadastrado"));
+            }
         }
 
         const userRole = await this.roleRepository.findByName(RoleName.USER);

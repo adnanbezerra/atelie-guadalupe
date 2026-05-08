@@ -5,7 +5,7 @@ type CreateUserInput = {
     uuid: string;
     name: string;
     email: string;
-    document: string;
+    document?: string | null;
     passwordHash: string;
     roleId: number;
 };
@@ -13,7 +13,7 @@ type CreateUserInput = {
 type UpdateUserInput = {
     name?: string;
     email?: string;
-    document?: string;
+    document?: string | null;
     phone?: string;
     birthDate?: Date;
     passwordHash?: string;

@@ -29,7 +29,7 @@ type AddressInput = {
 type UpdateMeInput = {
     name?: string;
     email?: string;
-    document?: string;
+    document?: string | null;
     phone?: string;
     birthDate?: string;
     address?: AddressInput;
@@ -44,7 +44,6 @@ type ChangeMyPasswordInput = {
 type CreateManagedUserInput = {
     name: string;
     email: string;
-    document: string;
     password: string;
     role: RoleName;
 };
@@ -121,7 +120,7 @@ export class UserService {
         const data: {
             name?: string;
             email?: string;
-            document?: string;
+            document?: string | null;
             phone?: string;
             birthDate?: Date;
         } = {};
@@ -139,13 +138,17 @@ export class UserService {
             data.email = email;
         }
 
-        if (input.document) {
-            const document = normalizeDocument(input.document);
-            const existingDocument = await this.userRepository.findByDocument(document);
-            if (existingDocument && existingDocument.uuid !== userUuid) {
-                return left(AppError.conflict("Documento ja cadastrado"));
+        if (typeof input.document !== "undefined") {
+            if (input.document) {
+                const document = normalizeDocument(input.document);
+                const existingDocument = await this.userRepository.findByDocument(document);
+                if (existingDocument && existingDocument.uuid !== userUuid) {
+                    return left(AppError.conflict("Documento ja cadastrado"));
+                }
+                data.document = document;
+            } else {
+                data.document = null;
             }
-            data.document = document;
         }
 
         if (input.phone) {
@@ -266,16 +269,10 @@ export class UserService {
         input: CreateManagedUserInput
     ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
         const email = normalizeEmail(input.email);
-        const document = normalizeDocument(input.document);
 
         const existingEmail = await this.userRepository.findByEmail(email);
         if (existingEmail) {
             return left(AppError.conflict("Email ja cadastrado"));
-        }
-
-        const existingDocument = await this.userRepository.findByDocument(document);
-        if (existingDocument) {
-            return left(AppError.conflict("Documento ja cadastrado"));
         }
 
         const role = await this.roleRepository.findByName(input.role);
@@ -288,7 +285,6 @@ export class UserService {
             uuid: createUuid(),
             name: input.name.trim(),
             email,
-            document,
             passwordHash,
             roleId: role.id
         });

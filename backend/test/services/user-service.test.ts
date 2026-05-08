@@ -128,6 +128,16 @@ test("update me schema ignores empty optional profile fields", () => {
     });
 });
 
+test("update me schema accepts empty document to clear it", () => {
+    const input = updateMeSchema.parse({
+        document: ""
+    });
+
+    assert.deepEqual(input, {
+        document: null
+    });
+});
+
 test("update me updates personal data and upserts address", async () => {
     const user = makeUser(await hashPassword("Senha@123"));
     const updatedUsers: Array<Record<string, unknown>> = [];
@@ -194,6 +204,40 @@ test("update me updates personal data and upserts address", async () => {
     assert.equal(createdAddresses.length, 1);
     assert.equal(createdAddresses[0].document, "12345678901");
     assert.equal(createdAddresses[0].apartmentNumber, "42");
+});
+
+test("update me clears document without duplicate lookup", async () => {
+    const user = makeUser(await hashPassword("Senha@123"));
+    const updatedUsers: Array<Record<string, unknown>> = [];
+    let findByDocumentCalled = false;
+
+    const userRepository = {
+        findByUuid: async () => ({
+            ...user,
+            ...updatedUsers.at(-1)
+        }),
+        findByDocument: async () => {
+            findByDocumentCalled = true;
+            return null;
+        },
+        updateByUuid: async (_uuid: string, input: Record<string, unknown>) => {
+            updatedUsers.push(input);
+            return {
+                ...user,
+                ...input
+            };
+        }
+    };
+
+    const service = new UserService(userRepository as never, {} as never);
+    const result = await service.updateMe(user.uuid, {
+        document: null
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(findByDocumentCalled, false);
+    assert.equal(updatedUsers.length, 1);
+    assert.equal(updatedUsers[0].document, null);
 });
 
 test("update me rejects duplicated email", async () => {

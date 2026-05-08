@@ -882,7 +882,7 @@ export class ShippingService {
                 city: order.address!.city,
                 stateAbbr: order.address!.state,
                 postalCode: order.address!.zipCode,
-                document: order.address!.document ?? order.user.document,
+                document: order.address!.document ?? order.user.document ?? "",
                 email: order.user.email
             }),
             service: shipment.selectedServiceCode!,

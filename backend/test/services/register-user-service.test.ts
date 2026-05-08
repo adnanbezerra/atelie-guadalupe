@@ -50,6 +50,52 @@ test("register user service creates a default USER account", async () => {
     assert.equal(createdUsers.length, 1);
 });
 
+test("register user service creates account without document", async () => {
+    const roleRepository = {
+        findByName: async (name: string) => {
+            return name === RoleName.USER ? { id: 3, name: RoleName.USER } : null;
+        }
+    };
+
+    let findByDocumentCalled = false;
+    const createdUsers: Array<Record<string, unknown>> = [];
+    const userRepository = {
+        findByEmail: async () => null,
+        findByDocument: async () => {
+            findByDocumentCalled = true;
+            return null;
+        },
+        create: async (input: Record<string, unknown>) => {
+            const createdUser = {
+                ...input,
+                createdAt: new Date(),
+                isActive: true,
+                role: {
+                    name: RoleName.USER
+                }
+            };
+            createdUsers.push(createdUser);
+            return createdUser;
+        }
+    };
+
+    const service = new RegisterUserService(roleRepository as never, userRepository as never);
+    const result = await service.execute({
+        name: "Maria da Silva",
+        email: "MARIA@email.com",
+        password: "Senha@123"
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(findByDocumentCalled, false);
+    assert.equal(createdUsers.length, 1);
+    assert.equal(createdUsers[0].document, null);
+
+    if (result.success) {
+        assert.equal(result.value.user.document, null);
+    }
+});
+
 test("login service blocks inactive users", async () => {
     const userRepository = {
         findByEmail: async () => ({
