@@ -12,6 +12,10 @@ type CreateUserInput = {
 
 type UpdateUserInput = {
     name?: string;
+    email?: string;
+    document?: string;
+    phone?: string;
+    birthDate?: Date;
     passwordHash?: string;
     isActive?: boolean;
     roleId?: number;
@@ -49,7 +53,7 @@ export class UserRepository {
             },
             include: {
                 role: true,
-                addresses: true
+                address: true
             }
         });
     }
@@ -71,7 +75,7 @@ export class UserRepository {
             data: input,
             include: {
                 role: true,
-                addresses: true
+                address: true
             }
         });
     }

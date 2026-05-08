@@ -4,16 +4,19 @@ import { RoleName } from "../../../generated/prisma/enums";
 import {
     changeMyPasswordSchema,
     createManagedUserSchema,
+    myOrdersQuerySchema,
     updateManagedUserSchema,
     updateMeSchema,
     uuidParamSchema
 } from "../schemas/user-schema";
+import { OrderService } from "../../orders/services/order-service";
 import { UserService } from "../services/user-service";
 
 export class UserController {
     public constructor(
         private readonly fastify: FastifyInstance,
-        private readonly userService: UserService
+        private readonly userService: UserService,
+        private readonly orderService?: OrderService
     ) {}
 
     public getMe = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -24,6 +27,16 @@ export class UserController {
     public updateMe = async (request: FastifyRequest, reply: FastifyReply) => {
         const input = this.fastify.validateSchema(updateMeSchema, request.body);
         const result = await this.userService.updateMe(request.currentUser!.sub, input);
+        return sendEither(reply, result);
+    };
+
+    public listMyOrders = async (request: FastifyRequest, reply: FastifyReply) => {
+        if (!this.orderService) {
+            throw new Error("OrderService not configured");
+        }
+
+        const query = this.fastify.validateSchema(myOrdersQuerySchema, request.query);
+        const result = await this.orderService.listMine(request.currentUser!.sub, query);
         return sendEither(reply, result);
     };
 

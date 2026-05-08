@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "../../../generated/prisma/client";
 import { AppError } from "../../../core/errors/app-error";
-import { OrderStatus, ProductSize } from "../../../generated/prisma/enums";
+import { OrderStatus, PaymentMethod, ProductSize } from "../../../generated/prisma/enums";
 
 type CreateOrderInput = {
     uuid: string;
@@ -15,6 +15,7 @@ type CreateOrderInput = {
     couponId?: number;
     couponCodeSnapshot?: string;
     totalInCents: number;
+    paymentMethod?: PaymentMethod;
     notes?: string;
     placedAt: Date;
     items: Array<{
@@ -54,6 +55,7 @@ export class OrderRepository {
                 couponId: input.couponId,
                 couponCodeSnapshot: input.couponCodeSnapshot,
                 totalInCents: input.totalInCents,
+                paymentMethod: input.paymentMethod,
                 notes: input.notes,
                 placedAt: input.placedAt,
                 items: {
@@ -118,6 +120,7 @@ export class OrderRepository {
                         couponId: input.couponId,
                         couponCodeSnapshot: input.couponCodeSnapshot,
                         totalInCents: input.totalInCents,
+                        paymentMethod: input.paymentMethod,
                         notes: input.notes,
                         placedAt: input.placedAt,
                         items: {
@@ -177,6 +180,35 @@ export class OrderRepository {
                 createdAt: "desc"
             }
         });
+    }
+
+    public async listByUserIdPaginated(userId: number, page: number, pageSize: number) {
+        const [orders, total] = await this.prisma.$transaction([
+            this.prisma.order.findMany({
+                where: {
+                    userId
+                },
+                include: {
+                    items: true,
+                    address: true
+                },
+                orderBy: {
+                    createdAt: "desc"
+                },
+                skip: (page - 1) * pageSize,
+                take: pageSize
+            }),
+            this.prisma.order.count({
+                where: {
+                    userId
+                }
+            })
+        ]);
+
+        return {
+            orders,
+            total
+        };
     }
 
     public listAll() {

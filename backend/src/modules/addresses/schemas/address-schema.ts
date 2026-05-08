@@ -7,13 +7,13 @@ export const baseAddressSchema = z.object({
     zipCode: z.string().trim().min(8).max(9),
     street: z.string().trim().min(2).max(120),
     number: z.string().trim().min(1).max(20),
+    apartmentNumber: z.string().trim().max(20).optional(),
     complement: z.string().trim().max(120).optional(),
     neighborhood: z.string().trim().min(2).max(120),
     city: z.string().trim().min(2).max(120),
     state: z.string().trim().min(2).max(60),
     country: z.string().trim().min(2).max(60),
-    reference: z.string().trim().max(200).optional(),
-    isDefault: z.boolean().optional()
+    reference: z.string().trim().max(200).optional()
 });
 
 export const createAddressSchema = baseAddressSchema;

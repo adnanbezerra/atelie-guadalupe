@@ -1,4 +1,4 @@
-import { OrderStatus, RoleName } from "../../../generated/prisma/enums";
+import { OrderStatus, PaymentMethod, RoleName } from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
@@ -17,12 +17,18 @@ import { presentOrder } from "./order-presenter";
 
 type CreateOrderInput = {
     addressUuid?: string;
+    paymentMethod?: PaymentMethod;
     notes?: string;
 };
 
 type CurrentUser = {
     sub: string;
     role: RoleName;
+};
+
+type PaginationInput = {
+    page: number;
+    pageSize: number;
 };
 
 const allowedStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
@@ -147,6 +153,7 @@ export class OrderService {
             couponId: cart.coupon?.id,
             couponCodeSnapshot: cart.coupon?.code,
             totalInCents,
+            paymentMethod: input.paymentMethod,
             notes: input.notes?.trim(),
             placedAt: new Date(),
             items: pricedItems.map((pricedItem) => {
@@ -224,6 +231,45 @@ export class OrderService {
 
         return right({
             orders: orders.map((order) => presentOrder(order))
+        });
+    }
+
+    public async listMine(
+        currentUserUuid: string,
+        pagination: PaginationInput
+    ): Promise<
+        Either<
+            AppError,
+            {
+                orders: Array<ReturnType<typeof presentOrder>>;
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    totalPages: number;
+                };
+            }
+        >
+    > {
+        const user = await this.userRepository.findByUuid(currentUserUuid);
+        if (!user) {
+            return left(AppError.notFound("Usuario nao encontrado"));
+        }
+
+        const result = await this.orderRepository.listByUserIdPaginated(
+            user.id,
+            pagination.page,
+            pagination.pageSize
+        );
+
+        return right({
+            orders: result.orders.map((order) => presentOrder(order)),
+            pagination: {
+                page: pagination.page,
+                pageSize: pagination.pageSize,
+                total: result.total,
+                totalPages: Math.ceil(result.total / pagination.pageSize)
+            }
         });
     }
 

@@ -1,4 +1,4 @@
-import { OrderStatus, ProductSize } from "../../../generated/prisma/enums";
+import { OrderStatus, PaymentMethod, ProductSize } from "../../../generated/prisma/enums";
 import { getProductSizeInGrams } from "../../products/services/product-pricing";
 
 type OrderItemEntity = {
@@ -17,6 +17,7 @@ type AddressEntity = {
     zipCode: string;
     street: string;
     number: string;
+    apartmentNumber: string | null;
     complement: string | null;
     neighborhood: string;
     city: string;
@@ -30,6 +31,7 @@ type OrderEntity = {
     subtotalInCents: number;
     shippingInCents: number;
     discountInCents: number;
+    paymentMethod?: PaymentMethod | null;
     promotionDiscountInCents?: number;
     couponDiscountInCents?: number;
     couponCodeSnapshot?: string | null;
@@ -66,6 +68,7 @@ function presentAddress(address: AddressEntity | null | undefined) {
         zipCode: address.zipCode,
         street: address.street,
         number: address.number,
+        apartmentNumber: address.apartmentNumber,
         complement: address.complement,
         neighborhood: address.neighborhood,
         city: address.city,
@@ -81,6 +84,7 @@ export function presentOrder(order: OrderEntity) {
         subtotalInCents: order.subtotalInCents,
         shippingInCents: order.shippingInCents,
         discountInCents: order.discountInCents,
+        paymentMethod: order.paymentMethod ?? null,
         promotionDiscountInCents: order.promotionDiscountInCents ?? 0,
         couponDiscountInCents: order.couponDiscountInCents ?? 0,
         couponCode: order.couponCodeSnapshot ?? null,

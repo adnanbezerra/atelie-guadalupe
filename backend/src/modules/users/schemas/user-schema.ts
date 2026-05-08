@@ -1,13 +1,33 @@
 import { z } from "zod";
+import { baseAddressSchema } from "../../addresses/schemas/address-schema";
 import { acceptedPasswordSchema } from "../../auth/schemas/register-schema";
+
+const updateMeAddressSchema = baseAddressSchema
+    .partial()
+    .extend({
+        uuid: z.uuid().optional()
+    })
+    .refine((data) => Object.keys(data).length > 0, {
+        message: "Informe ao menos um campo de endereco para atualizacao"
+    });
 
 export const updateMeSchema = z
     .object({
-        name: z.string().trim().min(3).max(120).optional()
+        name: z.string().trim().min(3).max(120).optional(),
+        email: z.email().optional(),
+        document: z.string().trim().min(11).max(18).optional(),
+        phone: z.string().trim().min(8).max(30).optional(),
+        birthDate: z.iso.date().optional(),
+        address: updateMeAddressSchema.optional()
     })
     .refine((data) => Object.keys(data).length > 0, {
         message: "Informe ao menos um campo para atualizacao"
     });
+
+export const myOrdersQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(50).default(10)
+});
 
 export const changeMyPasswordSchema = z.object({
     email: z.email(),

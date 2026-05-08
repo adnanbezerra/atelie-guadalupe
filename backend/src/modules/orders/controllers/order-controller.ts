@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { OrderStatus } from "../../../generated/prisma/enums";
+import { OrderStatus, PaymentMethod } from "../../../generated/prisma/enums";
 import { sendEither } from "../../../core/http/send-either";
 import {
     createOrderSchema,
@@ -16,7 +16,10 @@ export class OrderController {
 
     public create = async (request: FastifyRequest, reply: FastifyReply) => {
         const input = this.fastify.validateSchema(createOrderSchema, request.body);
-        const result = await this.orderService.createFromCart(request.currentUser!.sub, input);
+        const result = await this.orderService.createFromCart(request.currentUser!.sub, {
+            ...input,
+            paymentMethod: input.paymentMethod as PaymentMethod | undefined
+        });
         return sendEither(reply, result, 201);
     };
 

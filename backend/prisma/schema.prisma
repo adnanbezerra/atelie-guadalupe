@@ -27,6 +27,12 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
 enum CartItemStatus {
   ACTIVE
   REMOVED
@@ -70,11 +76,13 @@ model User {
   name         String
   email        String             @unique
   document     String             @unique
+  phone        String?
+  birthDate    DateTime?
   passwordHash String
   isActive     Boolean            @default(true)
   roleId       Int
   role         Role               @relation(fields: [roleId], references: [id])
-  addresses    Address[]
+  address      Address?
   cart         Cart?
   orders       Order[]
   couponUses   CouponRedemption[]
@@ -107,30 +115,29 @@ model Platform {
 }
 
 model Address {
-  id           Int       @id @default(autoincrement())
-  uuid         String    @unique @db.Uuid
-  userId       Int?
-  platformId   Int?      @unique
-  label        String?
-  recipient    String
-  document     String?
-  zipCode      String
-  street       String
-  number       String
-  complement   String?
-  neighborhood String
-  city         String
-  state        String
-  country      String
-  reference    String?
-  isDefault    Boolean   @default(false)
-  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform     Platform? @relation(fields: [platformId], references: [id], onDelete: Cascade)
-  orders       Order[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              Int       @id @default(autoincrement())
+  uuid            String    @unique @db.Uuid
+  userId          Int?      @unique
+  platformId      Int?      @unique
+  label           String?
+  recipient       String
+  document        String?
+  zipCode         String
+  street          String
+  number          String
+  apartmentNumber String?
+  complement      String?
+  neighborhood    String
+  city            String
+  state           String
+  country         String
+  reference       String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform        Platform? @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  orders          Order[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  @@index([userId])
   @@index([platformId])
   @@index([uuid])
 }
@@ -223,6 +230,7 @@ model Order {
   shippingInCents          Int               @default(0)
   discountInCents          Int               @default(0)
   totalInCents             Int
+  paymentMethod            PaymentMethod?
   notes                    String?
   checkoutProvider         String?
   checkoutReference        String?

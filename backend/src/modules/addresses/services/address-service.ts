@@ -13,13 +13,13 @@ type AddressInput = {
     zipCode: string;
     street: string;
     number: string;
+    apartmentNumber?: string;
     complement?: string;
     neighborhood: string;
     city: string;
     state: string;
     country: string;
     reference?: string;
-    isDefault?: boolean;
 };
 
 type AddressUpdateInput = Partial<AddressInput>;
@@ -55,10 +55,6 @@ export class AddressService {
             return left(AppError.notFound("Usuario nao encontrado"));
         }
 
-        if (input.isDefault) {
-            await this.addressRepository.unsetDefaultAddresses(user.id);
-        }
-
         const address = await this.addressRepository.create({
             uuid: createUuid(),
             userId: user.id,
@@ -68,13 +64,13 @@ export class AddressService {
             zipCode: input.zipCode.trim(),
             street: input.street.trim(),
             number: input.number.trim(),
+            apartmentNumber: input.apartmentNumber?.trim(),
             complement: input.complement?.trim(),
             neighborhood: input.neighborhood.trim(),
             city: input.city.trim(),
             state: input.state.trim(),
             country: input.country.trim(),
-            reference: input.reference?.trim(),
-            isDefault: input.isDefault ?? false
+            reference: input.reference?.trim()
         });
 
         return right({
@@ -95,10 +91,6 @@ export class AddressService {
         const address = await this.addressRepository.findByUuid(addressUuid);
         if (!address || address.userId !== user.id) {
             return left(AppError.notFound("Endereco nao encontrado"));
-        }
-
-        if (input.isDefault) {
-            await this.addressRepository.unsetDefaultAddresses(user.id);
         }
 
         const updatedAddress = await this.addressRepository.updateByUuid(addressUuid, {

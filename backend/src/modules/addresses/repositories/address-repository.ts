@@ -10,13 +10,13 @@ type CreateAddressInput = {
     zipCode: string;
     street: string;
     number: string;
+    apartmentNumber?: string;
     complement?: string;
     neighborhood: string;
     city: string;
     state: string;
     country: string;
     reference?: string;
-    isDefault?: boolean;
 };
 
 type UpdateAddressInput = Omit<Partial<CreateAddressInput>, "uuid" | "userId" | "platformId">;
@@ -29,14 +29,17 @@ export class AddressRepository {
             where: {
                 userId
             },
-            orderBy: [
-                {
-                    isDefault: "desc"
-                },
-                {
-                    createdAt: "desc"
-                }
-            ]
+            orderBy: {
+                createdAt: "desc"
+            }
+        });
+    }
+
+    public findByUserId(userId: number) {
+        return this.prisma.address.findUnique({
+            where: {
+                userId
+            }
         });
     }
 
@@ -56,18 +59,6 @@ export class AddressRepository {
         });
     }
 
-    public async unsetDefaultAddresses(userId: number) {
-        await this.prisma.address.updateMany({
-            where: {
-                userId,
-                isDefault: true
-            },
-            data: {
-                isDefault: false
-            }
-        });
-    }
-
     public create(input: CreateAddressInput) {
         return this.prisma.address.create({
             data: {
@@ -80,13 +71,13 @@ export class AddressRepository {
                 zipCode: input.zipCode,
                 street: input.street,
                 number: input.number,
+                apartmentNumber: input.apartmentNumber,
                 complement: input.complement,
                 neighborhood: input.neighborhood,
                 city: input.city,
                 state: input.state,
                 country: input.country,
-                reference: input.reference,
-                isDefault: input.isDefault
+                reference: input.reference
             }
         });
     }

@@ -55,9 +55,7 @@ export class ProductService {
 
     public async listLines(
         query: ListProductLinesInput
-    ): Promise<
-        Either<AppError, { lines: Array<ReturnType<typeof presentProductLine>> }>
-    > {
+    ): Promise<Either<AppError, { lines: Array<ReturnType<typeof presentProductLine>> }>> {
         const lines = await this.productRepository.listLines(query);
 
         return right({

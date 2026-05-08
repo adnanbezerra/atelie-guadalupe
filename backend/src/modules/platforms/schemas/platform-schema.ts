@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { baseAddressSchema } from "../../addresses/schemas/address-schema";
 
-const platformAddressSchema = baseAddressSchema.omit({
-    isDefault: true
-});
+const platformAddressSchema = baseAddressSchema;
 
 export const createPlatformSchema = z.object({
     name: z.string().trim().min(2).max(120),

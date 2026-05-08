@@ -5,12 +5,35 @@ import { normalizeDocument } from "../../../core/utils/document";
 import { normalizeEmail } from "../../../core/utils/email";
 import { createUuid } from "../../../core/utils/uuid";
 import { RoleName } from "../../../generated/prisma/enums";
+import { AddressRepository } from "../../addresses/repositories/address-repository";
 import { RoleRepository } from "../../roles/repositories/role-repository";
 import { UserRepository } from "../repositories/user-repository";
 import { presentAddress, presentUser } from "./user-presenter";
 
+type AddressInput = {
+    uuid?: string;
+    label?: string;
+    recipient?: string;
+    document?: string;
+    zipCode?: string;
+    street?: string;
+    number?: string;
+    apartmentNumber?: string;
+    complement?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    reference?: string;
+};
+
 type UpdateMeInput = {
     name?: string;
+    email?: string;
+    document?: string;
+    phone?: string;
+    birthDate?: string;
+    address?: AddressInput;
 };
 
 type ChangeMyPasswordInput = {
@@ -33,10 +56,27 @@ type UpdateManagedUserInput = {
     role?: RoleName;
 };
 
+type AddressToUpsert = {
+    uuid: string;
+    userId: number | null;
+};
+
+const requiredAddressFields = [
+    "recipient",
+    "zipCode",
+    "street",
+    "number",
+    "neighborhood",
+    "city",
+    "state",
+    "country"
+] as const;
+
 export class UserService {
     public constructor(
         private readonly userRepository: UserRepository,
-        private readonly roleRepository: RoleRepository
+        private readonly roleRepository: RoleRepository,
+        private readonly addressRepository?: AddressRepository
     ) {}
 
     public async getMe(
@@ -50,9 +90,8 @@ export class UserService {
         return right({
             user: {
                 ...presentUser(user),
-                addresses: user.addresses.map((address: Parameters<typeof presentAddress>[0]) =>
-                    presentAddress(address)
-                )
+                address: user.address ? presentAddress(user.address) : null,
+                addresses: user.address ? [presentAddress(user.address)] : []
             }
         });
     }
@@ -66,22 +105,135 @@ export class UserService {
             return left(AppError.notFound("Usuario nao encontrado"));
         }
 
+        let addressToUpsert: AddressToUpsert | null = null;
+        if (input.address) {
+            if (!this.addressRepository) {
+                return left(AppError.business("Repositorio de enderecos nao configurado"));
+            }
+
+            addressToUpsert = input.address.uuid
+                ? await this.addressRepository.findByUuid(input.address.uuid)
+                : await this.addressRepository.findByUserId(user.id);
+
+            if (input.address.uuid && (!addressToUpsert || addressToUpsert.userId !== user.id)) {
+                return left(AppError.notFound("Endereco nao encontrado"));
+            }
+        }
+
         const data: {
             name?: string;
+            email?: string;
+            document?: string;
+            phone?: string;
+            birthDate?: Date;
         } = {};
 
         if (input.name) {
             data.name = input.name.trim();
         }
 
-        const updatedUser = await this.userRepository.updateByUuid(userUuid, data);
+        if (input.email) {
+            const email = normalizeEmail(input.email);
+            const existingEmail = await this.userRepository.findByEmail(email);
+            if (existingEmail && existingEmail.uuid !== userUuid) {
+                return left(AppError.conflict("Email ja cadastrado"));
+            }
+            data.email = email;
+        }
+
+        if (input.document) {
+            const document = normalizeDocument(input.document);
+            const existingDocument = await this.userRepository.findByDocument(document);
+            if (existingDocument && existingDocument.uuid !== userUuid) {
+                return left(AppError.conflict("Documento ja cadastrado"));
+            }
+            data.document = document;
+        }
+
+        if (input.phone) {
+            data.phone = input.phone.trim();
+        }
+
+        if (input.birthDate) {
+            data.birthDate = new Date(`${input.birthDate}T00:00:00.000Z`);
+        }
+
+        await this.userRepository.updateByUuid(userUuid, data);
+
+        if (input.address) {
+            const addressRepository = this.addressRepository!;
+            const addressInput = input.address;
+
+            if (!addressToUpsert) {
+                const missingFields = requiredAddressFields.filter((field) => !addressInput[field]);
+                if (missingFields.length > 0) {
+                    return left(
+                        AppError.validation(
+                            "Endereco incompleto",
+                            missingFields.map((field) => ({
+                                path: `address.${field}`,
+                                message: "Campo obrigatorio para criar endereco"
+                            }))
+                        )
+                    );
+                }
+            }
+
+            const addressData = {
+                label: addressInput.label?.trim(),
+                recipient: addressInput.recipient?.trim(),
+                document: addressInput.document
+                    ? normalizeDocument(addressInput.document)
+                    : undefined,
+                zipCode: addressInput.zipCode?.trim(),
+                street: addressInput.street?.trim(),
+                number: addressInput.number?.trim(),
+                apartmentNumber: addressInput.apartmentNumber?.trim(),
+                complement: addressInput.complement?.trim(),
+                neighborhood: addressInput.neighborhood?.trim(),
+                city: addressInput.city?.trim(),
+                state: addressInput.state?.trim(),
+                country: addressInput.country?.trim(),
+                reference: addressInput.reference?.trim()
+            };
+
+            if (addressToUpsert) {
+                await addressRepository.updateByUuid(addressToUpsert.uuid, addressData);
+            } else {
+                await addressRepository.create({
+                    uuid: createUuid(),
+                    userId: user.id,
+                    label: addressData.label,
+                    recipient: addressData.recipient!,
+                    document: addressData.document,
+                    zipCode: addressData.zipCode!,
+                    street: addressData.street!,
+                    number: addressData.number!,
+                    apartmentNumber: addressData.apartmentNumber,
+                    complement: addressData.complement,
+                    neighborhood: addressData.neighborhood!,
+                    city: addressData.city!,
+                    state: addressData.state!,
+                    country: addressData.country!,
+                    reference: addressData.reference
+                });
+            }
+        }
+
+        const userWithAddresses = await this.userRepository.findByUuid(userUuid);
+        if (!userWithAddresses) {
+            return left(AppError.notFound("Usuario nao encontrado"));
+        }
 
         return right({
             user: {
-                ...presentUser(updatedUser),
-                addresses: updatedUser.addresses.map(
-                    (address: Parameters<typeof presentAddress>[0]) => presentAddress(address)
-                )
+                ...presentUser(userWithAddresses),
+                address: userWithAddresses.address
+                    ? presentAddress(userWithAddresses.address)
+                    : null,
+                addresses: userWithAddresses.address
+                    ? [presentAddress(userWithAddresses.address)]
+                    : []
             }
         });
     }
@@ -106,9 +258,8 @@ export class UserService {
         return right({
             user: {
                 ...presentUser(updatedUser),
-                addresses: updatedUser.addresses.map(
-                    (address: Parameters<typeof presentAddress>[0]) => presentAddress(address)
-                )
+                address: updatedUser.address ? presentAddress(updatedUser.address) : null,
+                addresses: updatedUser.address ? [presentAddress(updatedUser.address)] : []
             }
         });
     }

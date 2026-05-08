@@ -1,7 +1,9 @@
 import { FastifyPluginAsync } from "fastify";
-import { AddressController } from "../../addresses/controllers/address-controller";
 import { AddressRepository } from "../../addresses/repositories/address-repository";
-import { AddressService } from "../../addresses/services/address-service";
+import { CartRepository } from "../../carts/repositories/cart-repository";
+import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
+import { OrderRepository } from "../../orders/repositories/order-repository";
+import { OrderService } from "../../orders/services/order-service";
 import { RoleRepository } from "../../roles/repositories/role-repository";
 import { UserController } from "../controllers/user-controller";
 import { UserRepository } from "../repositories/user-repository";
@@ -11,10 +13,18 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     const userRepository = new UserRepository(fastify.prisma);
     const roleRepository = new RoleRepository(fastify.prisma);
     const addressRepository = new AddressRepository(fastify.prisma);
-    const userService = new UserService(userRepository, roleRepository);
-    const addressService = new AddressService(userRepository, addressRepository);
-    const userController = new UserController(fastify, userService);
-    const addressController = new AddressController(fastify, addressService);
+    const cartRepository = new CartRepository(fastify.prisma);
+    const marketingRepository = new MarketingRepository(fastify.prisma);
+    const orderRepository = new OrderRepository(fastify.prisma);
+    const userService = new UserService(userRepository, roleRepository, addressRepository);
+    const orderService = new OrderService(
+        userRepository,
+        addressRepository,
+        cartRepository,
+        orderRepository,
+        marketingRepository
+    );
+    const userController = new UserController(fastify, userService, orderService);
 
     fastify.get(
         "/me",
@@ -30,6 +40,14 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
             preHandler: [fastify.authenticate]
         },
         userController.updateMe
+    );
+
+    fastify.get(
+        "/me/orders",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        userController.listMyOrders
     );
 
     fastify.patch(
@@ -59,36 +77,6 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
             preHandler: [fastify.authenticate, fastify.authorize(["ADMIN"])]
         },
         userController.updateManagedUser
-    );
-
-    fastify.get(
-        "/me/addresses",
-        {
-            preHandler: [fastify.authenticate]
-        },
-        addressController.listMyAddresses
-    );
-
-    fastify.post(
-        "/me/addresses",
-        {
-            preHandler: [fastify.authenticate]
-        },
-        addressController.createMyAddress
-    );
-
-    fastify.patch(
-        "/me/addresses/:uuid",
-        { preHandler: [fastify.authenticate] },
-        addressController.updateMyAddress
-    );
-
-    fastify.delete(
-        "/me/addresses/:uuid",
-        {
-            preHandler: [fastify.authenticate]
-        },
-        addressController.deleteMyAddress
     );
 };
 

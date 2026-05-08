@@ -3,6 +3,8 @@ type UserWithRole = {
     name: string;
     email: string;
     document: string;
+    phone?: string | null;
+    birthDate?: Date | null;
     isActive: boolean;
     createdAt: Date;
     role: {
@@ -17,13 +19,13 @@ type AddressEntity = {
     zipCode: string;
     street: string;
     number: string;
+    apartmentNumber: string | null;
     complement: string | null;
     neighborhood: string;
     city: string;
     state: string;
     country: string;
     reference: string | null;
-    isDefault: boolean;
     createdAt: Date;
     updatedAt: Date;
 };
@@ -34,6 +36,8 @@ export function presentUser(user: UserWithRole) {
         name: user.name,
         email: user.email,
         document: user.document,
+        phone: user.phone ?? null,
+        birthDate: user.birthDate ?? null,
         role: user.role.name,
         isActive: user.isActive,
         createdAt: user.createdAt
@@ -48,13 +52,13 @@ export function presentAddress(address: AddressEntity) {
         zipCode: address.zipCode,
         street: address.street,
         number: address.number,
+        apartmentNumber: address.apartmentNumber,
         complement: address.complement,
         neighborhood: address.neighborhood,
         city: address.city,
         state: address.state,
         country: address.country,
         reference: address.reference,
-        isDefault: address.isDefault,
         createdAt: address.createdAt,
         updatedAt: address.updatedAt
     };

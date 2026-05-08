@@ -170,6 +170,8 @@ Resposta `201`:
             "name": "Maria da Silva",
             "email": "maria@email.com",
             "document": "12345678900",
+            "phone": "11987654321",
+            "birthDate": "1988-08-12T00:00:00.000Z",
             "role": "USER",
             "isActive": true,
             "createdAt": "2026-03-12T12:00:00.000Z"
@@ -241,9 +243,28 @@ Resposta `200`:
             "name": "Maria da Silva",
             "email": "maria@email.com",
             "document": "12345678900",
+            "phone": "11987654321",
+            "birthDate": "1988-08-12T00:00:00.000Z",
             "role": "USER",
             "isActive": true,
             "createdAt": "2026-03-12T12:00:00.000Z",
+            "address": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+                "label": "Casa",
+                "recipient": "Maria da Silva",
+                "zipCode": "01001000",
+                "street": "Praca da Se",
+                "number": "100",
+                "apartmentNumber": "42",
+                "complement": null,
+                "neighborhood": "Se",
+                "city": "Sao Paulo",
+                "state": "SP",
+                "country": "Brasil",
+                "reference": null,
+                "createdAt": "2026-03-12T12:00:00.000Z",
+                "updatedAt": "2026-03-12T12:00:00.000Z"
+            },
             "addresses": [
                 {
                     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
@@ -252,13 +273,13 @@ Resposta `200`:
                     "zipCode": "01001000",
                     "street": "Praca da Se",
                     "number": "100",
+                    "apartmentNumber": "42",
                     "complement": null,
                     "neighborhood": "Se",
                     "city": "Sao Paulo",
                     "state": "SP",
                     "country": "Brasil",
                     "reference": null,
-                    "isDefault": true,
                     "createdAt": "2026-03-12T12:00:00.000Z",
                     "updatedAt": "2026-03-12T12:00:00.000Z"
                 }
@@ -278,14 +299,45 @@ Campos permitidos:
 
 ```json
 {
-    "name": "Maria de Guadalupe"
+    "name": "Maria de Guadalupe",
+    "email": "maria.guadalupe@email.com",
+    "document": "12345678900",
+    "phone": "11987654321",
+    "birthDate": "1988-08-12",
+    "address": {
+        "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+        "label": "Casa",
+        "recipient": "Maria de Guadalupe",
+        "document": "12345678900",
+        "zipCode": "01001000",
+        "street": "Praca da Se",
+        "number": "100",
+        "apartmentNumber": "42",
+        "complement": "Bloco B",
+        "neighborhood": "Se",
+        "city": "Sao Paulo",
+        "state": "SP",
+        "country": "Brasil",
+        "reference": "Proximo a catedral"
+    }
 }
 ```
 
 Observacoes:
 
-- pode enviar apenas `name`
+- pode enviar qualquer subconjunto dos campos acima
 - precisa enviar ao menos um campo
+- `birthDate` deve ser enviado em `YYYY-MM-DD`
+- `address` e um objeto estruturado, nao uma string unica
+- cada usuario possui no maximo um endereco
+- `address` faz upsert do endereco do usuario no mesmo formulario de perfil
+- `address` aceita payload parcial quando ja existe endereco ou quando `uuid` aponta para endereco do usuario
+- se `address.uuid` for enviado, o endereco precisa pertencer ao usuario logado
+- se `address.uuid` nao for enviado, o backend atualiza o endereco existente ou cria um novo
+- ao criar novo endereco, `address` precisa incluir `recipient`, `zipCode`, `street`, `number`, `neighborhood`, `city`, `state` e `country`
+- `number` e o numero do predio/casa; `apartmentNumber` identifica apartamento/sala/unidade
+- `isDefault` nao existe para endereco de usuario
+- nao existem rotas publicas `GET|POST|PATCH|DELETE /users/me/addresses`; use `GET /users/me` e `PATCH /users/me`
 - para alterar senha, use `PATCH /users/password`
 
 Resposta `200`:
@@ -297,18 +349,87 @@ Resposta `200`:
         "user": {
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b101",
             "name": "Maria de Guadalupe",
-            "email": "maria@email.com",
+            "email": "maria.guadalupe@email.com",
             "document": "12345678900",
+            "phone": "11987654321",
+            "birthDate": "1988-08-12T00:00:00.000Z",
             "role": "USER",
             "isActive": true,
             "createdAt": "2026-03-12T12:00:00.000Z",
+            "address": null,
             "addresses": []
         }
     }
 }
 ```
 
-## 9.3 `PATCH /users/password`
+Possiveis erros:
+
+- `409` email ja cadastrado
+- `409` documento ja cadastrado
+- `404` endereco nao encontrado
+- `422` payload invalido
+
+## 9.3 `GET /users/me/orders`
+
+Autenticacao:
+
+- obrigatoria
+
+Uso:
+
+- lista pedidos do cliente autenticado em rota explicita para area de perfil
+
+Query:
+
+```http
+GET /users/me/orders?page=1&pageSize=10
+```
+
+Observacoes:
+
+- `page` padrao: `1`
+- `pageSize` padrao: `10`
+- `pageSize` maximo: `50`
+- retorna `order` no mesmo formato de `GET /orders`, incluindo `paymentMethod`
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "orders": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b501",
+                "status": "PENDING",
+                "subtotalInCents": 5180,
+                "shippingInCents": 0,
+                "discountInCents": 0,
+                "paymentMethod": "PIX",
+                "promotionDiscountInCents": 0,
+                "couponDiscountInCents": 0,
+                "couponCode": null,
+                "totalInCents": 5180,
+                "notes": null,
+                "placedAt": "2026-03-12T12:00:00.000Z",
+                "createdAt": "2026-03-12T12:00:00.000Z",
+                "updatedAt": "2026-03-12T12:00:00.000Z",
+                "address": null,
+                "items": []
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "pageSize": 10,
+            "total": 1,
+            "totalPages": 1
+        }
+    }
+}
+```
+
+## 9.4 `PATCH /users/password`
 
 Autenticacao:
 
@@ -342,6 +463,8 @@ Resposta `200`:
             "name": "Maria de Guadalupe",
             "email": "maria@email.com",
             "document": "12345678900",
+            "phone": null,
+            "birthDate": null,
             "role": "USER",
             "isActive": true,
             "createdAt": "2026-03-12T12:00:00.000Z",
@@ -356,7 +479,7 @@ Possiveis erros:
 - `401` email ou senha invalidos
 - `422` email invalido ou senha nova invalida
 
-## 9.4 `POST /users`
+## 9.5 `POST /users`
 
 Autenticacao:
 
@@ -398,7 +521,7 @@ Resposta `201`:
 }
 ```
 
-## 9.5 `PATCH /users/:uuid`
+## 9.6 `PATCH /users/:uuid`
 
 Autenticacao:
 
@@ -436,152 +559,23 @@ Resposta `200`:
 
 ## 10. Addresses
 
-## 10.1 `GET /users/me/addresses`
+Enderecos do usuario nao possuem rotas dedicadas.
 
-Autenticacao:
+Use:
 
-- obrigatoria
+- `GET /users/me` para ler `user.address`
+- `PATCH /users/me` com `address` para criar ou atualizar o endereco
 
-Resposta `200`:
+Compatibilidade:
 
-```json
-{
-    "success": true,
-    "data": {
-        "addresses": [
-            {
-                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-                "label": "Casa",
-                "recipient": "Maria da Silva",
-                "zipCode": "01001000",
-                "street": "Praca da Se",
-                "number": "100",
-                "complement": "Apto 10",
-                "neighborhood": "Se",
-                "city": "Sao Paulo",
-                "state": "SP",
-                "country": "Brasil",
-                "reference": "Proximo a catedral",
-                "isDefault": true,
-                "createdAt": "2026-03-12T12:00:00.000Z",
-                "updatedAt": "2026-03-12T12:00:00.000Z"
-            }
-        ]
-    }
-}
-```
+- `user.addresses` ainda e retornado como array com zero ou um item.
 
-## 10.2 `POST /users/me/addresses`
+Rotas removidas:
 
-Autenticacao:
-
-- obrigatoria
-
-Request:
-
-```json
-{
-    "label": "Casa",
-    "recipient": "Maria da Silva",
-    "document": "12345678900",
-    "zipCode": "01001000",
-    "street": "Praca da Se",
-    "number": "100",
-    "complement": "Apto 10",
-    "neighborhood": "Se",
-    "city": "Sao Paulo",
-    "state": "SP",
-    "country": "Brasil",
-    "reference": "Proximo a catedral",
-    "isDefault": true
-}
-```
-
-Resposta `201`:
-
-```json
-{
-    "success": true,
-    "data": {
-        "address": {
-            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-            "label": "Casa",
-            "recipient": "Maria da Silva",
-            "zipCode": "01001000",
-            "street": "Praca da Se",
-            "number": "100",
-            "complement": "Apto 10",
-            "neighborhood": "Se",
-            "city": "Sao Paulo",
-            "state": "SP",
-            "country": "Brasil",
-            "reference": "Proximo a catedral",
-            "isDefault": true,
-            "createdAt": "2026-03-12T12:00:00.000Z",
-            "updatedAt": "2026-03-12T12:00:00.000Z"
-        }
-    }
-}
-```
-
-## 10.3 `PATCH /users/me/addresses/:uuid`
-
-Autenticacao:
-
-- obrigatoria
-
-Request exemplo:
-
-```json
-{
-    "complement": "Casa 2",
-    "isDefault": true
-}
-```
-
-Resposta `200`:
-
-```json
-{
-    "success": true,
-    "data": {
-        "address": {
-            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-            "label": "Casa",
-            "recipient": "Maria da Silva",
-            "zipCode": "01001000",
-            "street": "Praca da Se",
-            "number": "100",
-            "complement": "Casa 2",
-            "neighborhood": "Se",
-            "city": "Sao Paulo",
-            "state": "SP",
-            "country": "Brasil",
-            "reference": "Proximo a catedral",
-            "isDefault": true,
-            "createdAt": "2026-03-12T12:00:00.000Z",
-            "updatedAt": "2026-03-12T12:05:00.000Z"
-        }
-    }
-}
-```
-
-## 10.4 `DELETE /users/me/addresses/:uuid`
-
-Autenticacao:
-
-- obrigatoria
-
-Resposta `200`:
-
-```json
-{
-    "success": true,
-    "data": {
-        "deleted": true
-    }
-}
-```
+- `GET /users/me/addresses`
+- `POST /users/me/addresses`
+- `PATCH /users/me/addresses/:uuid`
+- `DELETE /users/me/addresses/:uuid`
 
 ## 11. Products
 
@@ -1323,6 +1317,7 @@ Resposta:
     "subtotalInCents": 5180,
     "shippingInCents": 0,
     "discountInCents": 777,
+    "paymentMethod": "PIX",
     "promotionDiscountInCents": 259,
     "couponDiscountInCents": 518,
     "couponCode": "BEMVINDA",
@@ -1337,6 +1332,7 @@ Resposta:
         "zipCode": "01001000",
         "street": "Praca da Se",
         "number": "100",
+        "apartmentNumber": "42",
         "complement": null,
         "neighborhood": "Se",
         "city": "Sao Paulo",
@@ -1373,6 +1369,7 @@ Request:
 ```json
 {
     "addressUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+    "paymentMethod": "PIX",
     "notes": "Entregar em horario comercial"
 }
 ```
@@ -1380,6 +1377,8 @@ Request:
 Observacoes:
 
 - `addressUuid` e opcional
+- `paymentMethod` e opcional e aceita `PIX`, `CREDIT_CARD` ou `DEBIT_CARD`
+- `paymentMethod` e apenas snapshot simples no pedido; metodos salvos/tokenizados ainda nao existem
 - o carrinho e esvaziado apos a criacao do pedido
 - os itens sao congelados como snapshot
 - cupom aplicado gera registro de uso e impede novo uso pelo mesmo cliente
@@ -1397,6 +1396,7 @@ Resposta `201`:
             "subtotalInCents": 5180,
             "shippingInCents": 0,
             "discountInCents": 777,
+            "paymentMethod": "PIX",
             "promotionDiscountInCents": 259,
             "couponDiscountInCents": 518,
             "couponCode": "BEMVINDA",
@@ -1411,6 +1411,7 @@ Resposta `201`:
                 "zipCode": "01001000",
                 "street": "Praca da Se",
                 "number": "100",
+                "apartmentNumber": "42",
                 "complement": null,
                 "neighborhood": "Se",
                 "city": "Sao Paulo",
@@ -1466,6 +1467,7 @@ Resposta `200`:
                 "subtotalInCents": 5180,
                 "shippingInCents": 0,
                 "discountInCents": 0,
+                "paymentMethod": null,
                 "promotionDiscountInCents": 0,
                 "couponDiscountInCents": 0,
                 "couponCode": null,
@@ -1767,7 +1769,8 @@ Resposta `200`:
                     "zipCode": "01153000",
                     "street": "Rua da Origem",
                     "number": "123",
-                    "complement": "Sala 1",
+                    "apartmentNumber": "Sala 1",
+                    "complement": "Fundos",
                     "neighborhood": "Centro",
                     "city": "Sao Paulo",
                     "state": "SP",
@@ -1821,7 +1824,8 @@ Request:
         "zipCode": "01153000",
         "street": "Rua da Origem",
         "number": "123",
-        "complement": "Sala 1",
+        "apartmentNumber": "Sala 1",
+        "complement": "Fundos",
         "neighborhood": "Centro",
         "city": "Sao Paulo",
         "state": "SP",
