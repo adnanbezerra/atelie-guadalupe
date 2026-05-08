@@ -1,6 +1,15 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAdminUsers } from "@/hooks/use-admin-users";
 import { User, UserRole } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
@@ -14,9 +23,8 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
     const [formState, setFormState] = useState({
         name: "",
         email: "",
-        document: "",
         password: "",
-        role: "SUBADMIN" as UserRole,
+        role: "USER" as UserRole,
     });
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -30,7 +38,6 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
             setFormState({
                 name: "",
                 email: "",
-                document: "",
                 password: "",
                 role: "SUBADMIN",
             });
@@ -73,19 +80,115 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
                     <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div>
                             <h1 className="font-display text-3xl font-bold text-slate-900">
-                                Gestão de Administradores
+                                Gestão de Usuários
                             </h1>
                             <p className="mt-1 text-sm text-slate-500">
                                 Visualize e gerencie as permissões e acessos da
                                 sua equipe interna.
                             </p>
                         </div>
-                        <button className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90">
-                            <span className="material-symbols-outlined text-xl">
-                                person_add
-                            </span>
-                            <span>Convidar Novo Administrador</span>
-                        </button>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button
+                                    className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90"
+                                    onClick={() => setStatusMessage(null)}
+                                >
+                                    <span className="material-symbols-outlined text-xl">
+                                        person_add
+                                    </span>
+                                    <span>Cadastrar Usuário</span>
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-lg overflow-hidden rounded-xl bg-white p-0">
+                                <DialogClose asChild>
+                                    <button
+                                        aria-label="Fechar"
+                                        className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                                    >
+                                        <span className="material-symbols-outlined text-xl">
+                                            close
+                                        </span>
+                                    </button>
+                                </DialogClose>
+                                <DialogHeader className="border-b border-slate-200 p-6">
+                                    <DialogTitle className="font-display text-2xl font-bold text-slate-900">
+                                        Cadastrar Usuário
+                                    </DialogTitle>
+                                    <DialogDescription className="text-sm text-slate-500">
+                                        Crie um acesso para a equipe interna.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <form
+                                    className="space-y-4 p-6"
+                                    onSubmit={handleCreate}
+                                >
+                                    <input
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                name: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="Nome"
+                                        value={formState.name}
+                                    />
+                                    <input
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                email: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="E-mail"
+                                        value={formState.email}
+                                    />
+                                    <input
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                password: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="Senha temporária"
+                                        type="password"
+                                        value={formState.password}
+                                    />
+                                    <select
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        onChange={(event) =>
+                                            setFormState((current) => ({
+                                                ...current,
+                                                role: event.target
+                                                    .value as UserRole,
+                                            }))
+                                        }
+                                        value={formState.role}
+                                    >
+                                        <option value="USER">Usuário</option>
+                                        <option value="SUBADMIN">
+                                            Subadministrador
+                                        </option>
+                                        <option value="ADMIN">
+                                            Administrador
+                                        </option>
+                                    </select>
+                                    <button
+                                        className="w-full rounded-lg bg-primary py-3 font-bold text-white"
+                                        type="submit"
+                                    >
+                                        Criar
+                                    </button>
+                                    {statusMessage ? (
+                                        <p className="text-sm text-slate-600">
+                                            {statusMessage}
+                                        </p>
+                                    ) : null}
+                                </form>
+                            </DialogContent>
+                        </Dialog>
                     </div>
 
                     <div className="mb-6 flex flex-col gap-4 sm:flex-row">
@@ -183,103 +286,6 @@ export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-
-                    <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <h3 className="font-display text-2xl font-bold text-slate-900">
-                                Convidar Novo Administrador
-                            </h3>
-                            <form
-                                className="mt-6 space-y-4"
-                                onSubmit={handleCreate}
-                            >
-                                <input
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                    onChange={(event) =>
-                                        setFormState((current) => ({
-                                            ...current,
-                                            name: event.target.value,
-                                        }))
-                                    }
-                                    placeholder="Nome"
-                                    value={formState.name}
-                                />
-                                <input
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                    onChange={(event) =>
-                                        setFormState((current) => ({
-                                            ...current,
-                                            email: event.target.value,
-                                        }))
-                                    }
-                                    placeholder="E-mail"
-                                    value={formState.email}
-                                />
-                                <input
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                    onChange={(event) =>
-                                        setFormState((current) => ({
-                                            ...current,
-                                            document: event.target.value,
-                                        }))
-                                    }
-                                    placeholder="Documento"
-                                    value={formState.document}
-                                />
-                                <input
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                    onChange={(event) =>
-                                        setFormState((current) => ({
-                                            ...current,
-                                            password: event.target.value,
-                                        }))
-                                    }
-                                    placeholder="Senha temporária"
-                                    type="password"
-                                    value={formState.password}
-                                />
-                                <select
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
-                                    onChange={(event) =>
-                                        setFormState((current) => ({
-                                            ...current,
-                                            role: event.target
-                                                .value as UserRole,
-                                        }))
-                                    }
-                                    value={formState.role}
-                                >
-                                    <option value="SUBADMIN">SUBADMIN</option>
-                                    <option value="USER">USER</option>
-                                    <option value="ADMIN">ADMIN</option>
-                                </select>
-                                <button
-                                    className="w-full rounded-lg bg-primary py-3 font-bold text-white"
-                                    type="submit"
-                                >
-                                    Criar via POST /users
-                                </button>
-                                {statusMessage ? (
-                                    <p className="text-sm text-slate-600">
-                                        {statusMessage}
-                                    </p>
-                                ) : null}
-                            </form>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <h3 className="font-display text-2xl font-bold text-slate-900">
-                                Estado do contrato
-                            </h3>
-                            <p className="mt-4 text-sm leading-7 text-slate-600">
-                                O frontend mantém o visual da listagem do
-                                Stitch, mas a API atual ainda não documenta um
-                                `GET /users` completo para administração. Por
-                                isso, a criação segue funcional e a tabela usa o
-                                contexto disponível.
-                            </p>
                         </div>
                     </div>
                 </div>

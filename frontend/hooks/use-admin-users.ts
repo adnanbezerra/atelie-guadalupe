@@ -47,7 +47,6 @@ export function useAdminUsers(initialUser: User | null) {
         createUser: async (payload: {
             name: string;
             email: string;
-            document: string;
             password: string;
             role: UserRole;
         }) => {
