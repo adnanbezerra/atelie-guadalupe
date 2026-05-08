@@ -136,7 +136,6 @@ export function ProfilePageClient() {
             }
 
             setAddressField("street", payload.logradouro ?? "");
-            setAddressField("complement", payload.complemento ?? "");
             setAddressField("neighborhood", payload.bairro ?? "");
             setAddressField("city", payload.localidade ?? "");
             setAddressField("state", payload.uf ?? "");
