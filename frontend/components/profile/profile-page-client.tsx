@@ -31,6 +31,7 @@ export function ProfilePageClient() {
     const [isBirthCalendarOpen, setIsBirthCalendarOpen] = useState(false);
     const [isCepLoading, setIsCepLoading] = useState(false);
     const [cepError, setCepError] = useState<string | null>(null);
+    const [successToast, setSuccessToast] = useState<string | null>(null);
     const profileFormRef = useRef<HTMLFormElement | null>(null);
     const birthCalendarRef = useRef<HTMLDivElement | null>(null);
     const lastCepRequestRef = useRef("");
@@ -99,7 +100,12 @@ export function ProfilePageClient() {
             return;
         }
 
-        await profile.updateProfile(payload);
+        const updatedUser = await profile.updateProfile(payload);
+
+        if (updatedUser && payload.address) {
+            setSuccessToast("Endereço atualizado com sucesso.");
+            window.setTimeout(() => setSuccessToast(null), 3500);
+        }
     }
 
     function setAddressField(name: string, value: string) {
@@ -243,6 +249,7 @@ export function ProfilePageClient() {
                             setBirthDate={setBirthDate}
                             setCalendarMonth={setCalendarMonth}
                             setIsBirthCalendarOpen={setIsBirthCalendarOpen}
+                            successToast={successToast}
                             user={user}
                         />
                     ) : null}
@@ -255,7 +262,7 @@ export function ProfilePageClient() {
                         />
                     ) : null}
 
-                    {activeView === "pagamento" ? <ProfilePaymentView /> : null}
+                    {/* {activeView === "pagamento" ? <ProfilePaymentView /> : null} */}
                 </section>
             </div>
         </main>

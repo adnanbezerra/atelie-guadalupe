@@ -13,12 +13,12 @@ export const navItems = [
         label: "Meus Pedidos",
         view: "pedidos",
     },
-    {
-        href: "/perfil#pagamento",
-        icon: "payments",
-        label: "Informações de Pagamento",
-        view: "pagamento",
-    },
+    // {
+    //     href: "/perfil#pagamento",
+    //     icon: "payments",
+    //     label: "Informações de Pagamento",
+    //     view: "pagamento",
+    // },
 ] as const;
 
 export type ProfileView = (typeof navItems)[number]["view"];
