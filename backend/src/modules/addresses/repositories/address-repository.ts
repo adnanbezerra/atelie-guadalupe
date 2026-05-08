@@ -5,7 +5,6 @@ type CreateAddressInput = {
     userId?: number | null;
     platformId?: number | null;
     label?: string;
-    recipient: string;
     document?: string;
     zipCode: string;
     street: string;
@@ -66,7 +65,6 @@ export class AddressRepository {
                 ...(typeof input.userId === "number" ? { userId: input.userId } : {}),
                 ...(typeof input.platformId === "number" ? { platformId: input.platformId } : {}),
                 label: input.label,
-                recipient: input.recipient,
                 document: input.document,
                 zipCode: input.zipCode,
                 street: input.street,

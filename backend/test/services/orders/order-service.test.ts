@@ -113,7 +113,6 @@ test("order service creates order from cart snapshot", async () => {
                 updatedAt: new Date(),
                 address: {
                     uuid: "address-1",
-                    recipient: "Maria",
                     zipCode: "01001000",
                     street: "Praca da Se",
                     number: "100",

@@ -2,6 +2,14 @@ import { z } from "zod";
 import { baseAddressSchema } from "../../addresses/schemas/address-schema";
 import { acceptedPasswordSchema } from "../../auth/schemas/register-schema";
 
+const optionalProfileString = (schema: z.ZodType<string>) =>
+    z.string().trim().length(0).transform(() => undefined).or(schema).optional();
+
+const stripUndefined = <T extends Record<string, unknown>>(data: T) =>
+    Object.fromEntries(
+        Object.entries(data).filter(([, value]) => typeof value !== "undefined")
+    );
+
 const updateMeAddressSchema = baseAddressSchema
     .partial()
     .extend({
@@ -13,13 +21,14 @@ const updateMeAddressSchema = baseAddressSchema
 
 export const updateMeSchema = z
     .object({
-        name: z.string().trim().min(3).max(120).optional(),
-        email: z.email().optional(),
-        document: z.string().trim().min(11).max(18).optional(),
-        phone: z.string().trim().min(8).max(30).optional(),
-        birthDate: z.iso.date().optional(),
+        name: optionalProfileString(z.string().trim().min(3).max(120)),
+        email: optionalProfileString(z.email()),
+        document: optionalProfileString(z.string().trim().min(11).max(18)),
+        phone: optionalProfileString(z.string().trim().min(8).max(30)),
+        birthDate: optionalProfileString(z.iso.date()),
         address: updateMeAddressSchema.optional()
     })
+    .transform(stripUndefined)
     .refine((data) => Object.keys(data).length > 0, {
         message: "Informe ao menos um campo para atualizacao"
     });

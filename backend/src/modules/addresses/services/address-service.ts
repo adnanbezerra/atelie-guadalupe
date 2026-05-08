@@ -8,7 +8,6 @@ import { AddressRepository } from "../repositories/address-repository";
 
 type AddressInput = {
     label?: string;
-    recipient: string;
     document?: string;
     zipCode: string;
     street: string;
@@ -59,7 +58,6 @@ export class AddressService {
             uuid: createUuid(),
             userId: user.id,
             label: input.label,
-            recipient: input.recipient.trim(),
             document: input.document ? normalizeDocument(input.document) : undefined,
             zipCode: input.zipCode.trim(),
             street: input.street.trim(),

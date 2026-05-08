@@ -13,7 +13,6 @@ type CreatePlatformInput = {
     address: {
         uuid: string;
         label?: string;
-        recipient: string;
         document?: string;
         zipCode: string;
         street: string;
@@ -38,7 +37,6 @@ type UpdatePlatformInput = {
     isDefault?: boolean;
     address?: {
         label?: string;
-        recipient?: string;
         document?: string | null;
         zipCode?: string;
         street?: string;

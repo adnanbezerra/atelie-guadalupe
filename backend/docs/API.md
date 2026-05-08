@@ -264,7 +264,6 @@ Resposta `200`:
             "address": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
                 "label": "Casa",
-                "recipient": "Maria da Silva",
                 "zipCode": "01001000",
                 "street": "Praca da Se",
                 "number": "100",
@@ -282,7 +281,6 @@ Resposta `200`:
                 {
                     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
                     "label": "Casa",
-                    "recipient": "Maria da Silva",
                     "zipCode": "01001000",
                     "street": "Praca da Se",
                     "number": "100",
@@ -320,7 +318,6 @@ Campos permitidos:
     "address": {
         "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
         "label": "Casa",
-        "recipient": "Maria de Guadalupe",
         "document": "12345678900",
         "zipCode": "01001000",
         "street": "Praca da Se",
@@ -347,7 +344,7 @@ Observacoes:
 - `address` aceita payload parcial quando ja existe endereco ou quando `uuid` aponta para endereco do usuario
 - se `address.uuid` for enviado, o endereco precisa pertencer ao usuario logado
 - se `address.uuid` nao for enviado, o backend atualiza o endereco existente ou cria um novo
-- ao criar novo endereco, `address` precisa incluir `recipient`, `zipCode`, `street`, `number`, `neighborhood`, `city`, `state` e `country`
+- ao criar novo endereco, `address` precisa incluir `zipCode`, `street`, `number`, `neighborhood`, `city`, `state` e `country`
 - `number` e o numero do predio/casa; `apartmentNumber` identifica apartamento/sala/unidade
 - `isDefault` nao existe para endereco de usuario
 - nao existem rotas publicas `GET|POST|PATCH|DELETE /users/me/addresses`; use `GET /users/me` e `PATCH /users/me`
@@ -1341,7 +1338,6 @@ Resposta:
     "updatedAt": "2026-03-12T12:00:00.000Z",
     "address": {
         "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-        "recipient": "Maria da Silva",
         "zipCode": "01001000",
         "street": "Praca da Se",
         "number": "100",
@@ -1420,7 +1416,6 @@ Resposta `201`:
             "updatedAt": "2026-03-12T12:00:00.000Z",
             "address": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-                "recipient": "Maria da Silva",
                 "zipCode": "01001000",
                 "street": "Praca da Se",
                 "number": "100",
@@ -1778,7 +1773,6 @@ Resposta `200`:
                 "address": {
                     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b802",
                     "label": "Plataforma",
-                    "recipient": "Atelie Guadalupe",
                     "zipCode": "01153000",
                     "street": "Rua da Origem",
                     "number": "123",
@@ -1832,7 +1826,6 @@ Request:
     "isDefault": true,
     "address": {
         "label": "Plataforma",
-        "recipient": "Atelie Guadalupe",
         "document": "12345678000199",
         "zipCode": "01153000",
         "street": "Rua da Origem",

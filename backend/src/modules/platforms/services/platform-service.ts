@@ -8,7 +8,6 @@ import { presentPlatform } from "./platform-presenter";
 
 type PlatformAddressInput = {
     label?: string;
-    recipient: string;
     document?: string;
     zipCode: string;
     street: string;
@@ -97,7 +96,6 @@ export class PlatformService {
             address: {
                 uuid: createUuid(),
                 label: input.address.label?.trim(),
-                recipient: input.address.recipient.trim(),
                 document: input.address.document
                     ? normalizeDocument(input.address.document)
                     : undefined,
@@ -158,9 +156,6 @@ export class PlatformService {
                       address: {
                           ...(typeof input.address.label !== "undefined"
                               ? { label: input.address.label?.trim() }
-                              : {}),
-                          ...(typeof input.address.recipient === "string"
-                              ? { recipient: input.address.recipient.trim() }
                               : {}),
                           ...(typeof input.address.document !== "undefined"
                               ? {

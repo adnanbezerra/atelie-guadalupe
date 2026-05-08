@@ -22,7 +22,6 @@ function createPlatform() {
             userId: null,
             platformId: 1,
             label: "Plataforma",
-            recipient: "Atelie Guadalupe",
             document: "12345678000199",
             zipCode: "01153000",
             street: "Rua da Origem",
@@ -59,7 +58,6 @@ function createConfirmedOrder() {
         updatedAt: new Date(),
         address: {
             uuid: "address-1",
-            recipient: "Maria Silva",
             document: "12345678901",
             zipCode: "01001000",
             street: "Rua A",
@@ -120,7 +118,6 @@ function createConfirmedOrder() {
                     websiteUrl: "http://localhost:3000"
                 },
                 address: {
-                    recipient: "Atelie Guadalupe",
                     document: "12345678000199",
                     postalCode: "01153000",
                     street: "Rua da Origem",
@@ -323,7 +320,6 @@ test("shipping service recalculates quote when quote-affecting options change", 
                     websiteUrl: "http://localhost:3000"
                 },
                 address: {
-                    recipient: "Atelie Guadalupe",
                     document: "12345678000199",
                     postalCode: "01153000",
                     street: "Rua da Origem",

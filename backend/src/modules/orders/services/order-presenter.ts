@@ -13,7 +13,6 @@ type OrderItemEntity = {
 
 type AddressEntity = {
     uuid: string;
-    recipient: string;
     zipCode: string;
     street: string;
     number: string;
@@ -64,7 +63,6 @@ function presentAddress(address: AddressEntity | null | undefined) {
 
     return {
         uuid: address.uuid,
-        recipient: address.recipient,
         zipCode: address.zipCode,
         street: address.street,
         number: address.number,

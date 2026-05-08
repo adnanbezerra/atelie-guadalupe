@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const baseAddressSchema = z.object({
     label: z.string().trim().min(2).max(60).optional(),
-    recipient: z.string().trim().min(3).max(120),
     document: z.string().trim().min(11).max(18).optional(),
     zipCode: z.string().trim().min(8).max(9),
     street: z.string().trim().min(2).max(120),

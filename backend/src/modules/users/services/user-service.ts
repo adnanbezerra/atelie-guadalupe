@@ -13,7 +13,6 @@ import { presentAddress, presentUser } from "./user-presenter";
 type AddressInput = {
     uuid?: string;
     label?: string;
-    recipient?: string;
     document?: string;
     zipCode?: string;
     street?: string;
@@ -62,7 +61,6 @@ type AddressToUpsert = {
 };
 
 const requiredAddressFields = [
-    "recipient",
     "zipCode",
     "street",
     "number",
@@ -158,7 +156,9 @@ export class UserService {
             data.birthDate = new Date(`${input.birthDate}T00:00:00.000Z`);
         }
 
-        await this.userRepository.updateByUuid(userUuid, data);
+        if (Object.keys(data).length > 0) {
+            await this.userRepository.updateByUuid(userUuid, data);
+        }
 
         if (input.address) {
             const addressRepository = this.addressRepository!;
@@ -181,7 +181,6 @@ export class UserService {
 
             const addressData = {
                 label: addressInput.label?.trim(),
-                recipient: addressInput.recipient?.trim(),
                 document: addressInput.document
                     ? normalizeDocument(addressInput.document)
                     : undefined,
@@ -204,7 +203,6 @@ export class UserService {
                     uuid: createUuid(),
                     userId: user.id,
                     label: addressData.label,
-                    recipient: addressData.recipient!,
                     document: addressData.document,
                     zipCode: addressData.zipCode!,
                     street: addressData.street!,

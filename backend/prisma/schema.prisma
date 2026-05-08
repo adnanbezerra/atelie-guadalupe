@@ -120,7 +120,6 @@ model Address {
   userId          Int?      @unique
   platformId      Int?      @unique
   label           String?
-  recipient       String
   document        String?
   zipCode         String
   street          String

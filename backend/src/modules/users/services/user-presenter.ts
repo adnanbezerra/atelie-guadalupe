@@ -15,7 +15,6 @@ type UserWithRole = {
 type AddressEntity = {
     uuid: string;
     label: string | null;
-    recipient: string;
     zipCode: string;
     street: string;
     number: string;
@@ -48,7 +47,6 @@ export function presentAddress(address: AddressEntity) {
     return {
         uuid: address.uuid,
         label: address.label,
-        recipient: address.recipient,
         zipCode: address.zipCode,
         street: address.street,
         number: address.number,

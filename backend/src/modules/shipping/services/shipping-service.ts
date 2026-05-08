@@ -84,7 +84,6 @@ type SenderSnapshot = {
         websiteUrl: string | null;
     };
     address: {
-        recipient: string;
         document: string | null;
         postalCode: string;
         street: string;
@@ -784,7 +783,6 @@ export class ShippingService {
                 websiteUrl: platform.websiteUrl
             },
             address: {
-                recipient: platform.address!.recipient,
                 document: platform.address!.document,
                 postalCode: platform.address!.zipCode,
                 street: platform.address!.street,
@@ -817,7 +815,6 @@ export class ShippingService {
         const city = getString(address.city);
         const state = getString(address.state);
         const country = getString(address.country);
-        const recipient = getString(address.recipient);
 
         if (
             !platformUuid ||
@@ -829,8 +826,7 @@ export class ShippingService {
             !neighborhood ||
             !city ||
             !state ||
-            !country ||
-            !recipient
+            !country
         ) {
             return null;
         }
@@ -846,7 +842,6 @@ export class ShippingService {
                 websiteUrl: getString(platform.websiteUrl)
             },
             address: {
-                recipient,
                 document: getString(address.document),
                 postalCode,
                 street,
@@ -879,7 +874,7 @@ export class ShippingService {
                     senderSnapshot.address.document ?? senderSnapshot.platform.document ?? undefined
             },
             to: normalizeSuperFreteRecipient({
-                name: ensureHumanName(order.address!.recipient, "Cliente"),
+                name: ensureHumanName(order.user.name, "Cliente"),
                 address: order.address!.street,
                 number: order.address!.number,
                 complement: order.address!.complement,

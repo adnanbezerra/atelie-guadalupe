@@ -34,7 +34,6 @@ test("platform service creates a platform and clears previous default when neede
         websiteUrl: "http://localhost:3000",
         isDefault: true,
         address: {
-            recipient: "Atelie Guadalupe",
             zipCode: "01153000",
             street: "Rua A",
             number: "10",

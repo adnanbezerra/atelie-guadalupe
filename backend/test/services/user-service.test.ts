@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import { test } from "node:test";
 import { hashPassword, verifyPassword } from "../../src/core/security/password";
 import { RoleName } from "../../src/generated/prisma/enums";
+import { updateMeSchema } from "../../src/modules/users/schemas/user-schema";
 import { UserService } from "../../src/modules/users/services/user-service";
 
 function makeUser(passwordHash: string) {
@@ -106,6 +107,27 @@ test("change password rejects unknown email with the same credentials error", as
     }
 });
 
+test("update me schema accepts partial payload without phone", () => {
+    const input = updateMeSchema.parse({
+        name: "Maria Atualizada"
+    });
+
+    assert.deepEqual(input, {
+        name: "Maria Atualizada"
+    });
+});
+
+test("update me schema ignores empty optional profile fields", () => {
+    const input = updateMeSchema.parse({
+        name: "Maria Atualizada",
+        phone: ""
+    });
+
+    assert.deepEqual(input, {
+        name: "Maria Atualizada"
+    });
+});
+
 test("update me updates personal data and upserts address", async () => {
     const user = makeUser(await hashPassword("Senha@123"));
     const updatedUsers: Array<Record<string, unknown>> = [];
@@ -150,7 +172,6 @@ test("update me updates personal data and upserts address", async () => {
         phone: "(11) 98765-4321",
         birthDate: "1988-08-12",
         address: {
-            recipient: "Maria Atualizada",
             document: "123.456.789-01",
             zipCode: "01001-000",
             street: "Praca da Se",
@@ -262,7 +283,6 @@ test("update me rejects address from another user", async () => {
     const result = await service.updateMe(user.uuid, {
         address: {
             uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-            recipient: "Maria",
             zipCode: "01001000",
             street: "Praca da Se",
             number: "100",

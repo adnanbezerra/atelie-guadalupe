@@ -281,7 +281,6 @@ const platformSeed = {
     isActive: true,
     isDefault: true,
     address: {
-        recipient: "Atelie Guadalupe",
         document: null,
         zipCode: "01153000",
         street: "Rua de Origem",
@@ -358,7 +357,6 @@ async function main() {
             },
             update: {
                 label: "Plataforma",
-                recipient: platformSeed.address.recipient,
                 document: platformSeed.address.document,
                 zipCode: platformSeed.address.zipCode,
                 street: platformSeed.address.street,
@@ -376,7 +374,6 @@ async function main() {
                 uuid: createUuid(),
                 platformId: platform.id,
                 label: "Plataforma",
-                recipient: platformSeed.address.recipient,
                 document: platformSeed.address.document,
                 zipCode: platformSeed.address.zipCode,
                 street: platformSeed.address.street,
