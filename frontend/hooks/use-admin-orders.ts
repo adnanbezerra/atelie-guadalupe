@@ -2,6 +2,10 @@
 
 import { useApiResource } from "./use-api-resource";
 import { getOrders } from "@/lib/api";
+import {
+    clearAuthSession,
+    isExpiredAccessTokenError,
+} from "@/lib/auth-session";
 import type { Order, OrderStatus } from "@/lib/types";
 import { useApiToken } from "@/hooks/use-api-token";
 
@@ -34,6 +38,10 @@ export function useAdminOrders(initialOrders: Order[]) {
             const payload = await response.json();
 
             if (!response.ok || !payload.success) {
+                if (isExpiredAccessTokenError(response.status, payload)) {
+                    clearAuthSession();
+                }
+
                 throw new Error(
                     payload.error?.message ?? "Falha ao atualizar status.",
                 );

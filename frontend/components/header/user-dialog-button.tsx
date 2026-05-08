@@ -10,19 +10,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { AUTH_COOKIE_NAME } from "@/lib/constants";
+import { clearAuthSession } from "@/lib/auth-session";
 import { useApiToken } from "@/hooks/use-api-token";
 import { useProfile } from "@/hooks/use-profile";
-
-const TOKEN_KEYS = [
-    AUTH_COOKIE_NAME,
-    "atelie_token",
-    "auth_token",
-    "auth-token",
-    "token",
-    "jwt",
-    "access_token",
-];
 
 export function UserDialogButton() {
     const router = useRouter();
@@ -32,11 +22,7 @@ export function UserDialogButton() {
     const isAdmin = ["ADMIN", "SUBADMIN"].includes(profile.user?.role || "");
 
     function handleLogout() {
-        for (const key of TOKEN_KEYS) {
-            document.cookie = `${key}=; path=/; max-age=0; samesite=lax`;
-            window.localStorage.removeItem(key);
-        }
-
+        clearAuthSession();
         router.push("/");
         router.refresh();
     }
@@ -60,7 +46,9 @@ export function UserDialogButton() {
                         <span className="material-symbols-outlined text-primary">
                             account_circle
                         </span>
-                        Minha conta
+                        {isLoggedIn
+                            ? `Salve Maria, ${profile.user?.name.split(" ")[0] || "Usuário"}!`
+                            : "Salve Maria, visitante!"}
                     </DialogTitle>
                     <DialogDescription className="text-sm text-slate-500">
                         {isLoggedIn

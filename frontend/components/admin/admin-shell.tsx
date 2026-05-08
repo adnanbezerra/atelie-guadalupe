@@ -37,23 +37,7 @@ export function AdminShell({ children }: AdminShellProps) {
 
 function AdminMobileHeader({ pathname }: { pathname: string }) {
     return (
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
-            <div className="flex items-center gap-3">
-                <Image
-                    alt="Logo do Ateliê Guadalupe"
-                    className="h-10 w-auto"
-                    src={logo}
-                />
-                <div>
-                    <p className="text-sm font-bold leading-tight text-primary">
-                        Ateliê Guadalupe
-                    </p>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
-                        Administração
-                    </p>
-                </div>
-            </div>
-
+        <header className="flex h-16 items-center border-b border-slate-200 bg-white px-4 lg:hidden">
             <Dialog>
                 <DialogTrigger asChild>
                     <button
@@ -133,6 +117,21 @@ function AdminMobileHeader({ pathname }: { pathname: string }) {
                     </div>
                 </DialogContent>
             </Dialog>
+            <div className="flex items-center ml-2 gap-3">
+                <Image
+                    alt="Logo do Ateliê Guadalupe"
+                    className="h-10 w-auto"
+                    src={logo}
+                />
+                <div>
+                    <p className="text-sm font-bold leading-tight text-primary">
+                        Ateliê Guadalupe
+                    </p>
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                        Administração
+                    </p>
+                </div>
+            </div>
         </header>
     );
 }

@@ -110,11 +110,12 @@ export type Cart = {
 export type Address = {
     uuid: string;
     label?: string;
-    recipient: string;
+    recipient?: string;
     document?: string;
     zipCode: string;
     street: string;
     number: string;
+    apartmentNumber?: string | null;
     complement?: string | null;
     neighborhood: string;
     city: string;
@@ -131,9 +132,12 @@ export type User = {
     name: string;
     email: string;
     document: string;
+    phone?: string | null;
+    birthDate?: string | null;
     role: UserRole;
     isActive: boolean;
     createdAt: string;
+    address?: Address | null;
     addresses?: Address[];
 };
 
@@ -151,6 +155,7 @@ export type OrderItem = {
 export type Order = {
     uuid: string;
     status: string;
+    paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | string | null;
     subtotalInCents: number;
     shippingInCents: number;
     discountInCents: number;
@@ -168,6 +173,30 @@ export type Order = {
 
 export type OrdersResponse = {
     orders: Order[];
+    pagination?: Pagination;
+};
+
+export type ProfileAddressInput = {
+    uuid?: string;
+    zipCode?: string;
+    street?: string;
+    number?: string;
+    apartmentNumber?: string;
+    complement?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+};
+
+export type UpdateCurrentUserInput = {
+    name?: string;
+    email?: string;
+    document?: string;
+    phone?: string;
+    birthDate?: string;
+    password?: string;
+    address?: ProfileAddressInput;
 };
 
 export type ProductQuery = {

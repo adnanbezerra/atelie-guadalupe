@@ -5,6 +5,7 @@ import { useOrders } from "@/hooks/use-orders";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { Order, Product } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useProfile } from "@/hooks/use-profile";
 
 type AdminDashboardClientProps = {
     initialOrders: Order[];
@@ -25,6 +26,7 @@ export function AdminDashboardClient({
     initialProducts,
 }: AdminDashboardClientProps) {
     const orders = useOrders(initialOrders);
+    const { user } = useProfile();
 
     const metrics = useMemo(() => {
         const currentMonth = monthKey(new Date().toISOString());
@@ -77,7 +79,8 @@ export function AdminDashboardClient({
             <div className="space-y-8 p-8">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-3xl font-bold text-slate-900">
-                        Salve Maria, Administrador
+                        Salve Maria,{" "}
+                        {user?.name.split(" ")[0] || "Administrador"}!
                     </h1>
                     <p className="text-slate-500">
                         Aqui está o que está acontecendo no ateliê hoje.

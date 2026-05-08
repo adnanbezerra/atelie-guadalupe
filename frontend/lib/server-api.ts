@@ -1,7 +1,6 @@
 import { env } from "@/lib/env";
 import { getAuthTokenFromCookies } from "@/lib/auth";
 import {
-    Address,
     ApiResponse,
     Cart,
     Order,
@@ -77,10 +76,15 @@ export async function fetchOrders() {
     return serverApi<{ orders: Order[] }>("/orders");
 }
 
-export async function fetchCurrentUser() {
-    return serverApi<{ user: User }>("/users/me");
+export async function fetchMyOrders(params?: {
+    page?: number;
+    pageSize?: number;
+}) {
+    const query = buildQuery(params ?? {});
+    const suffix = query ? `?${query}` : "";
+    return serverApi<{ orders: Order[] }>(`/users/me/orders${suffix}`);
 }
 
-export async function fetchAddresses() {
-    return serverApi<{ addresses: Address[] }>("/users/me/addresses");
+export async function fetchCurrentUser() {
+    return serverApi<{ user: User }>("/users/me");
 }

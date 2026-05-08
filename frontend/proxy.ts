@@ -1,14 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME } from "@/lib/constants";
-
-const TOKEN_COOKIE_NAMES = [
-    AUTH_COOKIE_NAME,
-    "atelie_token",
-    "auth-token",
-    "token",
-    "jwt",
-    "access_token",
-];
+import { AUTH_TOKEN_KEYS } from "@/lib/constants";
 
 const ADMIN_ROLES = new Set(["ADMIN", "SUBADMIN"]);
 
@@ -44,7 +35,7 @@ function readRoleFromToken(token: string) {
 }
 
 function readToken(request: NextRequest) {
-    for (const name of TOKEN_COOKIE_NAMES) {
+    for (const name of AUTH_TOKEN_KEYS) {
         const value = request.cookies.get(name)?.value;
 
         if (value) {
@@ -57,6 +48,11 @@ function readToken(request: NextRequest) {
 
 export function proxy(request: NextRequest) {
     const token = readToken(request);
+    const isProfileRoute = request.nextUrl.pathname.startsWith("/perfil");
+
+    if (isProfileRoute && !token) {
+        return NextResponse.redirect(new URL("/", request.url));
+    }
 
     if (!token) {
         const loginUrl = new URL("/login", request.url);
@@ -88,5 +84,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/admin/:path*"],
+    matcher: ["/admin/:path*", "/perfil/:path*"],
 };

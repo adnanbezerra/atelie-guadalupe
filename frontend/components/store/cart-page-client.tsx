@@ -21,6 +21,9 @@ export function CartPageClient({
     const [selectedAddress, setSelectedAddress] = useState(
         addresses[0]?.uuid ?? "",
     );
+    const [paymentMethod, setPaymentMethod] = useState<
+        "PIX" | "CREDIT_CARD" | "DEBIT_CARD"
+    >("PIX");
     const [notes, setNotes] = useState("");
     const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -146,6 +149,25 @@ export function CartPageClient({
                             ))}
                         </select>
                         <label className="block text-sm font-semibold">
+                            Pagamento
+                        </label>
+                        <select
+                            className="h-11 w-full rounded-xl border border-border bg-white/80 px-3 text-sm"
+                            onChange={(event) =>
+                                setPaymentMethod(
+                                    event.target.value as
+                                        | "PIX"
+                                        | "CREDIT_CARD"
+                                        | "DEBIT_CARD",
+                                )
+                            }
+                            value={paymentMethod}
+                        >
+                            <option value="PIX">Pix</option>
+                            <option value="CREDIT_CARD">Crédito</option>
+                            <option value="DEBIT_CARD">Débito</option>
+                        </select>
+                        <label className="block text-sm font-semibold">
                             Observações
                         </label>
                         <Input
@@ -161,6 +183,7 @@ export function CartPageClient({
                                 const order = await cart.checkout(
                                     selectedAddress || undefined,
                                     notes || undefined,
+                                    paymentMethod,
                                 );
                                 setFeedback(
                                     `Pedido ${order.uuid} criado com status ${order.status}.`,

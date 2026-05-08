@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { isExpiredAccessTokenError } from "@/lib/auth-session";
+import { AUTH_TOKEN_KEYS } from "@/lib/constants";
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -13,12 +15,9 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     const token =
         request.headers.get("authorization") ??
         cookieStore.get(env.AUTH_COOKIE_NAME)?.value ??
-        cookieStore.get("auth_token")?.value ??
-        cookieStore.get("auth-token")?.value ??
-        cookieStore.get("atelie_token")?.value ??
-        cookieStore.get("token")?.value ??
-        cookieStore.get("jwt")?.value ??
-        cookieStore.get("access_token")?.value;
+        AUTH_TOKEN_KEYS.map((name) => cookieStore.get(name)?.value).find(
+            Boolean,
+        );
     const contentType = request.headers.get("content-type");
     const accept = request.headers.get("accept");
 
@@ -66,13 +65,31 @@ async function proxyRequest(request: NextRequest, path: string[]) {
 
     const responseText = await response.text();
 
-    return new NextResponse(responseText, {
+    const proxiedResponse = new NextResponse(responseText, {
         status: response.status,
         headers: {
             "content-type":
                 response.headers.get("content-type") ?? "application/json",
         },
     });
+
+    try {
+        const payload = JSON.parse(responseText);
+
+        if (isExpiredAccessTokenError(response.status, payload)) {
+            for (const name of [env.AUTH_COOKIE_NAME, ...AUTH_TOKEN_KEYS]) {
+                proxiedResponse.cookies.set(name, "", {
+                    maxAge: 0,
+                    path: "/",
+                    sameSite: "lax",
+                });
+            }
+        }
+    } catch {
+        // Backend returned non-JSON body. Leave response unchanged.
+    }
+
+    return proxiedResponse;
 }
 
 export async function GET(

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { notifyAuthSessionChanged } from "@/lib/auth-session";
 
 type AuthMode = "login" | "register";
 
@@ -129,6 +130,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             }
 
             document.cookie = `auth_token=${payload.data.token}; path=/; max-age=2592000; samesite=lax`;
+            notifyAuthSessionChanged();
             const isAdmin = ADMIN_ROLES.has(payload.data.user.role ?? "");
             const adminTarget = nextPath?.startsWith("/admin")
                 ? nextPath

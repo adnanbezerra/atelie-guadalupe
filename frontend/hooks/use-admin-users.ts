@@ -3,6 +3,10 @@
 import { useApiResource } from "@/hooks/use-api-resource";
 import { useApiToken } from "@/hooks/use-api-token";
 import { createAdminUser, getCurrentUser } from "@/lib/api";
+import {
+    clearAuthSession,
+    isExpiredAccessTokenError,
+} from "@/lib/auth-session";
 import { User, UserRole } from "@/lib/types";
 
 async function readJson<T>(input: RequestInfo, init?: RequestInit) {
@@ -13,6 +17,10 @@ async function readJson<T>(input: RequestInfo, init?: RequestInit) {
     const payload = await response.json();
 
     if (!response.ok || !payload.success) {
+        if (isExpiredAccessTokenError(response.status, payload)) {
+            clearAuthSession();
+        }
+
         throw new Error(payload.error?.message ?? "Falha na requisicao.");
     }
 

@@ -9,8 +9,13 @@ import type {
     ProductListResponse,
     ProductQuery,
     UpdateProductInput,
+    UpdateCurrentUserInput,
     User,
 } from "@/lib/types";
+import {
+    clearAuthSession,
+    isExpiredAccessTokenError,
+} from "@/lib/auth-session";
 
 export class ApiError extends Error {
     status: number;
@@ -68,6 +73,10 @@ async function request<T>(path: string, options: RequestOptions = {}) {
     const payload = (await response.json()) as ApiEnvelope<T>;
 
     if (!response.ok || !payload.success) {
+        if (isExpiredAccessTokenError(response.status, payload)) {
+            clearAuthSession();
+        }
+
         throw new ApiError(
             payload.error?.message ?? "Falha ao acessar a API.",
             response.status,
@@ -146,14 +155,18 @@ export function getOrders(token: string) {
     return request<OrdersResponse>("/orders", { token });
 }
 
+export function getMyOrders(
+    token: string,
+    query: { page?: number; pageSize?: number } = {},
+) {
+    return request<OrdersResponse>("/users/me/orders", { token, query });
+}
+
 export function getCurrentUser(token: string) {
     return request<{ user: User }>("/users/me", { token });
 }
 
-export function updateCurrentUser(
-    token: string,
-    body: { name?: string; password?: string },
-) {
+export function updateCurrentUser(token: string, body: UpdateCurrentUserInput) {
     return request<{ user: User }>("/users/me", {
         method: "PATCH",
         token,
@@ -180,7 +193,11 @@ export function createAdminUser(
 
 export function createOrder(
     token: string,
-    body: { addressUuid?: string; notes?: string },
+    body: {
+        addressUuid?: string;
+        notes?: string;
+        paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
+    },
 ) {
     return request<{ order: Order }>("/orders", {
         method: "POST",

@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createAdminUser, getCurrentUser, updateCurrentUser } from "@/lib/api";
-import type { User } from "@/lib/types";
+import {
+    ApiError,
+    createAdminUser,
+    getCurrentUser,
+    updateCurrentUser,
+} from "@/lib/api";
+import { isExpiredAccessTokenError } from "@/lib/auth-session";
+import type { UpdateCurrentUserInput, User } from "@/lib/types";
 import { useApiToken } from "@/hooks/use-api-token";
 
 export function useProfile() {
@@ -17,6 +23,7 @@ export function useProfile() {
 
         async function run() {
             if (!token) {
+                setUser(null);
                 setError("Faça login para consultar o perfil.");
                 setIsLoading(false);
                 return;
@@ -31,6 +38,18 @@ export function useProfile() {
                 }
             } catch (err) {
                 if (!cancelled) {
+                    if (
+                        err instanceof ApiError &&
+                        isExpiredAccessTokenError(err.status, {
+                            error: {
+                                code: err.code,
+                                message: err.message,
+                            },
+                        })
+                    ) {
+                        setUser(null);
+                    }
+
                     setError(
                         err instanceof Error
                             ? err.message
@@ -74,6 +93,15 @@ export function useProfile() {
                 const response = await createAdminUser(token, input);
                 return response.user;
             } catch (err) {
+                if (
+                    err instanceof ApiError &&
+                    isExpiredAccessTokenError(err.status, {
+                        error: { code: err.code, message: err.message },
+                    })
+                ) {
+                    setUser(null);
+                }
+
                 setError(
                     err instanceof Error
                         ? err.message
@@ -84,7 +112,7 @@ export function useProfile() {
                 setIsSubmitting(false);
             }
         },
-        updateProfile: async (input: { name?: string; password?: string }) => {
+        updateProfile: async (input: UpdateCurrentUserInput) => {
             if (!token) {
                 setError("Faça login para atualizar o perfil.");
                 return null;
@@ -97,6 +125,15 @@ export function useProfile() {
                 setUser(response.user);
                 return response.user;
             } catch (err) {
+                if (
+                    err instanceof ApiError &&
+                    isExpiredAccessTokenError(err.status, {
+                        error: { code: err.code, message: err.message },
+                    })
+                ) {
+                    setUser(null);
+                }
+
                 setError(
                     err instanceof Error
                         ? err.message

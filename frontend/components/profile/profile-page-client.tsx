@@ -6,19 +6,9 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { useOrders } from "@/hooks/use-orders";
 import { useProfile } from "@/hooks/use-profile";
-import { AUTH_COOKIE_NAME } from "@/lib/constants";
+import { clearAuthSession } from "@/lib/auth-session";
 import { formatCurrency } from "@/lib/format";
-import type { Order } from "@/lib/types";
-
-const TOKEN_KEYS = [
-    AUTH_COOKIE_NAME,
-    "atelie_token",
-    "auth_token",
-    "auth-token",
-    "token",
-    "jwt",
-    "access_token",
-];
+import type { Address, Order, ProfileAddressInput } from "@/lib/types";
 
 const navItems = [
     { href: "/perfil", icon: "person", label: "Dados Pessoais", view: "dados" },
@@ -78,21 +68,6 @@ const paymentMethodLabels: Record<string, string> = {
     pix: "Pix",
 };
 
-const savedPaymentMethods = [
-    {
-        title: "Cartão principal",
-        method: "Crédito",
-        detail: "Visa final 2481",
-        icon: "credit_card",
-    },
-    {
-        title: "Pagamento rápido",
-        method: "Pix",
-        detail: "CPF cadastrado",
-        icon: "qr_code_2",
-    },
-];
-
 const monthOptions = [
     "janeiro",
     "fevereiro",
@@ -131,6 +106,37 @@ function formatDateValue(date?: Date) {
     }
 
     return date.toISOString().slice(0, 10);
+}
+
+function getPrimaryAddress(address?: Address | null, addresses?: Address[]) {
+    return address ?? addresses?.[0] ?? null;
+}
+
+function getFormString(formData: FormData, key: string) {
+    return String(formData.get(key) ?? "").trim();
+}
+
+function cleanDigits(value: string, maxLength: number) {
+    return onlyDigits(value, maxLength);
+}
+
+function buildAddressPayload(formData: FormData, uuid?: string) {
+    const address: ProfileAddressInput = {
+        uuid,
+        street: getFormString(formData, "street"),
+        number: getFormString(formData, "number"),
+        apartmentNumber: getFormString(formData, "apartmentNumber"),
+        complement: getFormString(formData, "complement"),
+        neighborhood: getFormString(formData, "neighborhood"),
+        city: getFormString(formData, "city"),
+        state: getFormString(formData, "state").toUpperCase(),
+        country: getFormString(formData, "country"),
+        zipCode: cleanDigits(getFormString(formData, "zipCode"), 8),
+    };
+
+    return Object.fromEntries(
+        Object.entries(address).filter(([, value]) => value !== ""),
+    ) as ProfileAddressInput;
 }
 
 function onlyDigits(value: string, maxLength: number) {
@@ -207,8 +213,9 @@ function formatPaymentMethod(order: ProfileOrder) {
 export function ProfilePageClient() {
     const router = useRouter();
     const profile = useProfile();
-    const orders = useOrders();
+    const orders = useOrders([], { scope: "me", page: 1, pageSize: 10 });
     const user = profile.user;
+    const primaryAddress = getPrimaryAddress(user?.address, user?.addresses);
     const [activeView, setActiveView] = useState<ProfileView>("dados");
     const [birthDate, setBirthDate] = useState<Date | undefined>();
     const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -228,6 +235,20 @@ export function ProfilePageClient() {
             window.removeEventListener("hashchange", handleHashChange);
         };
     }, []);
+
+    useEffect(() => {
+        if (!user?.birthDate) {
+            return;
+        }
+
+        const date = new Date(user.birthDate);
+        if (Number.isNaN(date.getTime())) {
+            return;
+        }
+
+        setBirthDate(date);
+        setCalendarMonth(date);
+    }, [user?.birthDate]);
 
     useEffect(() => {
         if (!isBirthCalendarOpen) {
@@ -255,17 +276,19 @@ export function ProfilePageClient() {
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const name = String(formData.get("name") ?? "");
 
-        await profile.updateProfile({ name });
+        await profile.updateProfile({
+            name: getFormString(formData, "name"),
+            email: getFormString(formData, "email"),
+            document: cleanDigits(getFormString(formData, "document"), 11),
+            phone: cleanDigits(getFormString(formData, "phone"), 11),
+            birthDate: getFormString(formData, "birthDate"),
+            address: buildAddressPayload(formData, primaryAddress?.uuid),
+        });
     }
 
     function handleLogout() {
-        for (const key of TOKEN_KEYS) {
-            document.cookie = `${key}=; path=/; max-age=0; samesite=lax`;
-            window.localStorage.removeItem(key);
-        }
-
+        clearAuthSession();
         router.push("/");
         router.refresh();
     }
@@ -426,6 +449,9 @@ export function ProfilePageClient() {
                                         </label>
                                         <input
                                             className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                            defaultValue={formatPhone(
+                                                user?.phone ?? "",
+                                            )}
                                             inputMode="tel"
                                             maxLength={15}
                                             name="phone"
@@ -660,6 +686,9 @@ export function ProfilePageClient() {
                                             </label>
                                             <input
                                                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.street ?? ""
+                                                }
                                                 name="street"
                                                 placeholder="Rua das Oliveiras"
                                                 type="text"
@@ -672,6 +701,9 @@ export function ProfilePageClient() {
                                             </label>
                                             <input
                                                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.number ?? ""
+                                                }
                                                 name="number"
                                                 placeholder="123"
                                                 type="text"
@@ -684,6 +716,10 @@ export function ProfilePageClient() {
                                             </label>
                                             <input
                                                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.neighborhood ??
+                                                    ""
+                                                }
                                                 name="neighborhood"
                                                 placeholder="Centro"
                                                 type="text"
@@ -696,6 +732,10 @@ export function ProfilePageClient() {
                                             </label>
                                             <input
                                                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={formatCep(
+                                                    primaryAddress?.zipCode ??
+                                                        "",
+                                                )}
                                                 inputMode="numeric"
                                                 maxLength={9}
                                                 name="zipCode"
@@ -717,6 +757,9 @@ export function ProfilePageClient() {
                                             </label>
                                             <input
                                                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.state ?? ""
+                                                }
                                                 name="state"
                                                 placeholder="SP"
                                                 type="text"
@@ -729,8 +772,43 @@ export function ProfilePageClient() {
                                             </label>
                                             <input
                                                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.country ??
+                                                    ""
+                                                }
                                                 name="country"
                                                 placeholder="Brasil"
+                                                type="text"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                                Cidade
+                                            </label>
+                                            <input
+                                                className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.city ?? ""
+                                                }
+                                                name="city"
+                                                placeholder="São Paulo"
+                                                type="text"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                                Apartamento
+                                            </label>
+                                            <input
+                                                className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.apartmentNumber ??
+                                                    ""
+                                                }
+                                                name="apartmentNumber"
+                                                placeholder="Apto 12"
                                                 type="text"
                                             />
                                         </div>
@@ -741,6 +819,10 @@ export function ProfilePageClient() {
                                             </label>
                                             <input
                                                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                                defaultValue={
+                                                    primaryAddress?.complement ??
+                                                    ""
+                                                }
                                                 name="complement"
                                                 placeholder="Apto, bloco ou referência"
                                                 type="text"
@@ -944,89 +1026,22 @@ export function ProfilePageClient() {
                                     Informações de Pagamento
                                 </h2>
                                 <p className="mt-1 text-slate-500">
-                                    Gerencie cartões e preferência para compras
-                                    futuras.
+                                    Métodos salvos ainda não estão disponíveis.
                                 </p>
                             </div>
 
-                            <div className="grid gap-4 md:grid-cols-2">
-                                {savedPaymentMethods.map((method) => (
-                                    <div
-                                        className="rounded-3xl border border-slate-100 bg-slate-50 p-5"
-                                        key={method.title}
-                                    >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <span className="material-symbols-outlined rounded-2xl bg-white p-3 text-slate-900 shadow-sm">
-                                                {method.icon}
-                                            </span>
-                                            <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                                {method.method}
-                                            </span>
-                                        </div>
-                                        <h3 className="mt-5 text-lg font-extrabold text-slate-900">
-                                            {method.title}
-                                        </h3>
-                                        <p className="mt-1 text-sm font-semibold text-slate-500">
-                                            {method.detail}
-                                        </p>
-                                    </div>
-                                ))}
+                            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
+                                <span className="material-symbols-outlined text-4xl text-slate-300">
+                                    payments
+                                </span>
+                                <h3 className="mt-4 text-lg font-extrabold text-slate-900">
+                                    Sem métodos salvos
+                                </h3>
+                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                                    Por enquanto, escolha Pix, crédito ou débito
+                                    ao finalizar o pedido.
+                                </p>
                             </div>
-
-                            <form className="mt-10 space-y-8">
-                                <div className="grid gap-8 md:grid-cols-2">
-                                    <div className="space-y-2 md:col-span-2">
-                                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                                            Nome no cartão
-                                        </label>
-                                        <input
-                                            className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
-                                            placeholder="Maria da Silva"
-                                            type="text"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                                            Número do cartão
-                                        </label>
-                                        <input
-                                            className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
-                                            inputMode="numeric"
-                                            placeholder="0000 0000 0000 0000"
-                                            type="text"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                                            Validade
-                                        </label>
-                                        <input
-                                            className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
-                                            placeholder="MM/AA"
-                                            type="text"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                                            Tipo
-                                        </label>
-                                        <select className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900">
-                                            <option>Crédito</option>
-                                            <option>Débito</option>
-                                            <option>Pix</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col items-center gap-4 border-t border-slate-50 pt-6 sm:flex-row">
-                                    <button
-                                        className="w-full rounded-2xl bg-slate-900 px-10 py-4 font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 sm:w-auto"
-                                        type="button"
-                                    >
-                                        Salvar Pagamento
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     ) : null}
                 </section>

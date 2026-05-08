@@ -1,41 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { AUTH_COOKIE_NAME } from "@/lib/constants";
-
-const TOKEN_STORAGE_KEYS = [
-    "atelie_token",
-    AUTH_COOKIE_NAME,
-    "auth_token",
-    "auth-token",
-    "token",
-    "jwt",
-    "access_token",
-];
-
-const TOKEN_COOKIE_KEYS = [
-    AUTH_COOKIE_NAME,
-    "atelie_token",
-    "auth_token",
-    "auth-token",
-    "token",
-    "jwt",
-    "access_token",
-];
+import { useEffect, useState } from "react";
+import { AUTH_SESSION_CHANGED_EVENT } from "@/lib/auth-session";
+import { AUTH_TOKEN_KEYS } from "@/lib/constants";
 
 function readToken() {
     if (typeof window === "undefined") {
         return null;
     }
 
-    for (const key of TOKEN_STORAGE_KEYS) {
+    for (const key of AUTH_TOKEN_KEYS) {
         const fromStorage = window.localStorage.getItem(key);
         if (fromStorage) {
             return fromStorage;
         }
     }
 
-    for (const key of TOKEN_COOKIE_KEYS) {
+    for (const key of AUTH_TOKEN_KEYS) {
         const cookieMatch = document.cookie.match(
             new RegExp(`(?:^|;\\s*)${key}=([^;]+)`),
         );
@@ -49,7 +30,21 @@ function readToken() {
 }
 
 export function useApiToken() {
-    const [token] = useState<string | null>(() => readToken());
+    const [token, setToken] = useState<string | null>(() => readToken());
+
+    useEffect(() => {
+        function syncToken() {
+            setToken(readToken());
+        }
+
+        window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncToken);
+        window.addEventListener("storage", syncToken);
+
+        return () => {
+            window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncToken);
+            window.removeEventListener("storage", syncToken);
+        };
+    }, []);
 
     return token;
 }

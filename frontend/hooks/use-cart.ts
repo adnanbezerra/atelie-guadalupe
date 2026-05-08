@@ -135,13 +135,21 @@ export function useCart(initialCart: Cart | null = null) {
             }
             await runMutation(() => removeCartCoupon(token));
         },
-        checkout: async (addressUuid?: string, notes?: string) => {
+        checkout: async (
+            addressUuid?: string,
+            notes?: string,
+            paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD",
+        ) => {
             if (!token) {
                 setError("Faça login para finalizar o pedido.");
                 throw new Error("Faça login para finalizar o pedido.");
             }
 
-            const payload = await createOrder(token, { addressUuid, notes });
+            const payload = await createOrder(token, {
+                addressUuid,
+                notes,
+                paymentMethod,
+            });
             setCart(null);
             return payload.order;
         },
