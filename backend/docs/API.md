@@ -654,21 +654,26 @@ Observacoes:
 
 ## 11.3 Formato da imagem no request
 
-O frontend deve enviar a imagem como objeto:
+O frontend deve enviar produto com `multipart/form-data`.
 
-```json
-{
-    "image": {
-        "filename": "sabonete.jpg",
-        "contentType": "image/jpeg",
-        "base64": "<base64 sem data:image/...;base64,>"
-    }
-}
+```http
+Content-Type: multipart/form-data
+
+name=Sabonete Artesanal
+category=ARTISANAL
+lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
+stock=8
+shippingWeightGrams=120
+shortDescription=Sabonete natural com lavanda
+longDescription=Sabonete natural com oleo essencial de lavanda e processo artesanal.
+image=<arquivo jpg/png/webp>
 ```
 
 Regras:
 
 - tipos aceitos: `image/jpeg`, `image/png`, `image/webp`
+- tamanho maximo: 5 MB
+- campo do arquivo: `image`
 - o backend grava a imagem no MongoDB GridFS
 - o backend salva no Postgres apenas a `imageUrl`
 
@@ -926,24 +931,18 @@ Autenticacao:
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
 
-Request:
+Request `multipart/form-data`:
 
-```json
-{
-    "name": "Sabonete Artesanal de Lavanda",
-    "category": "ARTISANAL",
-    "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
-    "image": {
-        "filename": "lavanda.jpg",
-        "contentType": "image/jpeg",
-        "base64": "<base64>"
-    },
-    "stock": 8,
-    "shippingWeightGrams": 120,
-    "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
-    "shortDescription": "Sabonete natural com lavanda",
-    "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal."
-}
+```http
+name=Sabonete Artesanal de Lavanda
+category=ARTISANAL
+lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
+image=<lavanda.jpg>
+stock=8
+shippingWeightGrams=120
+description=Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.
+shortDescription=Sabonete natural com lavanda
+longDescription=Sabonete natural com oleo essencial de lavanda e processo artesanal.
 ```
 
 Observacoes:
@@ -1003,24 +1002,18 @@ Autenticacao:
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
 
-Campos permitidos:
+Campos permitidos em `multipart/form-data`:
 
-```json
-{
-    "name": "Novo nome",
-    "category": "ARTISANAL",
-    "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
-    "image": {
-        "filename": "novo.jpg",
-        "contentType": "image/jpeg",
-        "base64": "<base64>"
-    },
-    "stock": 4,
-    "shippingWeightGrams": 120,
-    "description": "Descricao longa opcional atualizada",
-    "shortDescription": "Descricao curta atualizada",
-    "longDescription": "Descricao longa atualizada"
-}
+```http
+name=Novo nome
+category=ARTISANAL
+lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
+image=<novo.jpg>
+stock=4
+shippingWeightGrams=120
+description=Descricao longa opcional atualizada
+shortDescription=Descricao curta atualizada
+longDescription=Descricao longa atualizada
 ```
 
 Observacoes:
@@ -2161,7 +2154,7 @@ Resposta `200`:
 - Datas de promocao e cupom devem incluir horario quando enviadas.
 - Sempre use `uuid` nas rotas e no estado do frontend. Nao use IDs internos.
 - O frontend deve guardar o JWT e reenviar em `Authorization`.
-- Para imagem de produto, o frontend precisa converter o arquivo para base64 antes do envio.
+- Para imagem de produto, envie `multipart/form-data` com arquivo no campo `image`.
 - Para exibir imagem de produto, basta usar o valor de `imageUrl` retornado pelo backend.
 - `GET /media/images/:id` responde com stream binario, entao `imageUrl` pode ser usado direto em `<img src="...">`.
 - Para produtos `ARTISANAL`, envie tambem `shippingWeightGrams` em gramas no create/update.

@@ -23,7 +23,6 @@ export class MongoImageStorage implements ImageStorage {
             throw AppError.validation("Tipo de imagem nao suportado");
         }
 
-        const buffer = this.decodeBase64(input.base64);
         const uploadStream = this.bucket.openUploadStream(input.filename, {
             metadata: {
                 kind: "product-image",
@@ -34,7 +33,7 @@ export class MongoImageStorage implements ImageStorage {
         await new Promise<void>((resolve, reject) => {
             uploadStream.once("finish", () => resolve());
             uploadStream.once("error", (error) => reject(error));
-            uploadStream.end(buffer);
+            uploadStream.end(input.buffer);
         });
 
         return `${this.mediaBaseUrl}/media/images/${uploadStream.id.toString()}`;
@@ -51,14 +50,6 @@ export class MongoImageStorage implements ImageStorage {
         }
 
         await this.bucket.delete(new ObjectId(imageId)).catch(() => undefined);
-    }
-
-    private decodeBase64(value: string): Buffer {
-        try {
-            return Buffer.from(value, "base64");
-        } catch {
-            throw AppError.validation("Imagem em base64 invalida");
-        }
     }
 
     private extractImageId(url: string): string | null {

@@ -1,7 +1,7 @@
 export type UploadImageInput = {
     filename: string;
     contentType: string;
-    base64: string;
+    buffer: Buffer;
 };
 
 export interface ImageStorage {

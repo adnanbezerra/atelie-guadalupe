@@ -60,7 +60,7 @@ test("product service creates slug from product name", async () => {
         image: {
             filename: "lavanda.jpg",
             contentType: "image/jpeg",
-            base64: "aGVsbG8="
+            buffer: Buffer.from("hello")
         },
         stock: 8,
         shippingWeightGrams: 250,

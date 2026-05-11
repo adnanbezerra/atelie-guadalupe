@@ -9,7 +9,7 @@ const publicProductCategorySchema = z
 const imageUploadSchema = z.object({
     filename: z.string().trim().min(1).max(255),
     contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-    base64: z.string().trim().min(1)
+    buffer: z.instanceof(Buffer)
 });
 
 export const createProductLineSchema = z.object({
