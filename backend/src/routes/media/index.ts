@@ -45,6 +45,48 @@ const mediaRoutePlugin: FastifyPluginAsync = async (fastify) => {
 
         return reply.send(fastify.mongoBucket.openDownloadStream(fastify.mongoObjectId(params.id)));
     });
+
+    fastify.get("/videos/:id", async (request, reply) => {
+        if (!fastify.mongoVideoBucket) {
+            return reply.status(503).send({
+                success: false,
+                error: {
+                    code: "MEDIA_STORAGE_UNAVAILABLE",
+                    message: "Storage de videos nao configurado",
+                    details: []
+                }
+            });
+        }
+
+        const params = fastify.validateSchema(mediaImageParamSchema, request.params);
+
+        const files = await fastify
+            .mongoDb!.collection("testimonial-videos.files")
+            .find({
+                _id: fastify.mongoObjectId(params.id)
+            })
+            .toArray();
+
+        if (files.length === 0) {
+            return reply.status(404).send({
+                success: false,
+                error: {
+                    code: "RESOURCE_NOT_FOUND",
+                    message: "Video nao encontrado",
+                    details: []
+                }
+            });
+        }
+
+        const file = files[0] as { metadata?: { contentType?: string } };
+        if (file.metadata?.contentType) {
+            reply.type(file.metadata.contentType);
+        }
+
+        return reply.send(
+            fastify.mongoVideoBucket.openDownloadStream(fastify.mongoObjectId(params.id))
+        );
+    });
 };
 
 export default mediaRoutePlugin;
