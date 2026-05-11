@@ -23,12 +23,14 @@ export function AdminShell({ children }: AdminShellProps) {
     const pathname = usePathname();
 
     return (
-        <div className="min-h-screen bg-[#f6f6f8] text-slate-900">
-            <div className="flex h-screen overflow-hidden">
+        <div className="fixed inset-0 bg-[#f6f6f8] text-slate-900">
+            <div className="flex h-full overflow-hidden">
                 <AdminSidebar pathname={pathname} />
-                <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                     <AdminMobileHeader pathname={pathname} />
-                    <main className="flex-1 overflow-y-auto">{children}</main>
+                    <main className="min-h-0 flex-1 overflow-y-auto">
+                        {children}
+                    </main>
                 </div>
             </div>
         </div>
@@ -71,16 +73,23 @@ function AdminMobileHeader({ pathname }: { pathname: string }) {
                             const isActive =
                                 item.href === "/admin"
                                     ? pathname === "/admin"
-                                    : pathname.startsWith(item.href);
+                                    : item.href === "/admin/produtos"
+                                      ? pathname === item.href ||
+                                        (pathname.startsWith(`${item.href}/`) &&
+                                            pathname !== "/admin/produtos/novo")
+                                      : pathname.startsWith(item.href);
+                            const isCta = item.tone === "cta";
 
                             return (
                                 <DialogClose asChild key={item.href}>
                                     <Link
                                         className={cn(
                                             "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium",
-                                            isActive
-                                                ? "bg-primary text-white"
-                                                : "text-slate-600 hover:bg-slate-100",
+                                            isCta
+                                                ? "bg-blue-700 text-white hover:bg-blue-800"
+                                                : isActive
+                                                  ? "bg-primary text-white"
+                                                  : "text-slate-600 hover:bg-slate-100",
                                         )}
                                         href={item.href}
                                     >

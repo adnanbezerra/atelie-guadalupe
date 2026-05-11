@@ -2,6 +2,7 @@ import type {
     ApiEnvelope,
     Cart,
     CreateProductInput,
+    LegacyProductImageInput,
     OrdersResponse,
     Order,
     Product,
@@ -36,6 +37,57 @@ type RequestOptions = {
     query?: Record<string, string | number | boolean | undefined>;
 };
 
+function isLegacyProductImageInput(
+    value: unknown,
+): value is LegacyProductImageInput {
+    return Boolean(
+        value &&
+        typeof value === "object" &&
+        "base64" in value &&
+        "filename" in value &&
+        "contentType" in value,
+    );
+}
+
+function legacyImageToFile(image: LegacyProductImageInput) {
+    const bytes = Uint8Array.from(atob(image.base64), (char) =>
+        char.charCodeAt(0),
+    );
+
+    return new File([bytes], image.filename, { type: image.contentType });
+}
+
+function appendProductField(formData: FormData, key: string, value: unknown) {
+    if (value === undefined || value === null) return;
+
+    if (key === "image") {
+        const image =
+            typeof File !== "undefined" && value instanceof File
+                ? value
+                : isLegacyProductImageInput(value)
+                  ? legacyImageToFile(value)
+                  : null;
+
+        if (image) {
+            formData.append("image", image);
+        }
+
+        return;
+    }
+
+    formData.append(key, String(value));
+}
+
+function buildProductFormData(body: CreateProductInput | UpdateProductInput) {
+    const formData = new FormData();
+
+    for (const [key, value] of Object.entries(body)) {
+        appendProductField(formData, key, value);
+    }
+
+    return formData;
+}
+
 function buildUrl(
     path: string,
     query?: Record<string, string | number | boolean | undefined>,
@@ -58,15 +110,22 @@ function buildUrl(
 }
 
 async function request<T>(path: string, options: RequestOptions = {}) {
+    const isFormData = options.body instanceof FormData;
+    const body = options.body
+        ? isFormData
+            ? options.body
+            : JSON.stringify(options.body)
+        : undefined;
+
     const response = await fetch(buildUrl(path, options.query), {
         method: options.method ?? "GET",
         headers: {
-            "Content-Type": "application/json",
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
             ...(options.token
                 ? { Authorization: `Bearer ${options.token}` }
                 : {}),
         },
-        body: options.body ? JSON.stringify(options.body) : undefined,
+        body,
         cache: "no-store",
     });
 
@@ -209,7 +268,7 @@ export function createProduct(token: string, body: CreateProductInput) {
     return request<{ product: Product }>("/products", {
         method: "POST",
         token,
-        body,
+        body: buildProductFormData(body),
     });
 }
 
@@ -221,7 +280,7 @@ export function updateProduct(
     return request<{ product: Product }>(`/products/${productUuid}`, {
         method: "PATCH",
         token,
-        body,
+        body: buildProductFormData(body),
     });
 }
 

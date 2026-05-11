@@ -21,10 +21,10 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     const contentType = request.headers.get("content-type");
     const accept = request.headers.get("accept");
 
-    const bodyText =
+    const body =
         request.method === "GET" || request.method === "HEAD"
             ? undefined
-            : await request.text();
+            : await request.arrayBuffer();
     let response: Response;
 
     try {
@@ -41,7 +41,7 @@ async function proxyRequest(request: NextRequest, path: string[]) {
                       }
                     : {}),
             },
-            body: bodyText,
+            body,
             cache: "no-store",
         });
     } catch (error) {

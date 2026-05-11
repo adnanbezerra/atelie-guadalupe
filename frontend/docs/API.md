@@ -264,7 +264,6 @@ Resposta `200`:
             "address": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
                 "label": "Casa",
-                "recipient": "Maria da Silva",
                 "zipCode": "01001000",
                 "street": "Praca da Se",
                 "number": "100",
@@ -282,7 +281,6 @@ Resposta `200`:
                 {
                     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
                     "label": "Casa",
-                    "recipient": "Maria da Silva",
                     "zipCode": "01001000",
                     "street": "Praca da Se",
                     "number": "100",
@@ -320,7 +318,6 @@ Campos permitidos:
     "address": {
         "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
         "label": "Casa",
-        "recipient": "Maria de Guadalupe",
         "document": "12345678900",
         "zipCode": "01001000",
         "street": "Praca da Se",
@@ -347,7 +344,7 @@ Observacoes:
 - `address` aceita payload parcial quando ja existe endereco ou quando `uuid` aponta para endereco do usuario
 - se `address.uuid` for enviado, o endereco precisa pertencer ao usuario logado
 - se `address.uuid` nao for enviado, o backend atualiza o endereco existente ou cria um novo
-- ao criar novo endereco, `address` precisa incluir `recipient`, `zipCode`, `street`, `number`, `neighborhood`, `city`, `state` e `country`
+- ao criar novo endereco, `address` precisa incluir `zipCode`, `street`, `number`, `neighborhood`, `city`, `state` e `country`
 - `number` e o numero do predio/casa; `apartmentNumber` identifica apartamento/sala/unidade
 - `isDefault` nao existe para endereco de usuario
 - nao existem rotas publicas `GET|POST|PATCH|DELETE /users/me/addresses`; use `GET /users/me` e `PATCH /users/me`
@@ -657,21 +654,26 @@ Observacoes:
 
 ## 11.3 Formato da imagem no request
 
-O frontend deve enviar a imagem como objeto:
+O frontend deve enviar produto com `multipart/form-data`.
 
-```json
-{
-    "image": {
-        "filename": "sabonete.jpg",
-        "contentType": "image/jpeg",
-        "base64": "<base64 sem data:image/...;base64,>"
-    }
-}
+```http
+Content-Type: multipart/form-data
+
+name=Sabonete Artesanal
+category=ARTISANAL
+lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
+stock=8
+shippingWeightGrams=120
+shortDescription=Sabonete natural com lavanda
+longDescription=Sabonete natural com oleo essencial de lavanda e processo artesanal.
+image=<arquivo jpg/png/webp>
 ```
 
 Regras:
 
 - tipos aceitos: `image/jpeg`, `image/png`, `image/webp`
+- tamanho maximo: 5 MB
+- campo do arquivo: `image`
 - o backend grava a imagem no MongoDB GridFS
 - o backend salva no Postgres apenas a `imageUrl`
 
@@ -929,24 +931,18 @@ Autenticacao:
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
 
-Request:
+Request `multipart/form-data`:
 
-```json
-{
-    "name": "Sabonete Artesanal de Lavanda",
-    "category": "ARTISANAL",
-    "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
-    "image": {
-        "filename": "lavanda.jpg",
-        "contentType": "image/jpeg",
-        "base64": "<base64>"
-    },
-    "stock": 8,
-    "shippingWeightGrams": 120,
-    "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
-    "shortDescription": "Sabonete natural com lavanda",
-    "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal."
-}
+```http
+name=Sabonete Artesanal de Lavanda
+category=ARTISANAL
+lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
+image=<lavanda.jpg>
+stock=8
+shippingWeightGrams=120
+description=Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.
+shortDescription=Sabonete natural com lavanda
+longDescription=Sabonete natural com oleo essencial de lavanda e processo artesanal.
 ```
 
 Observacoes:
@@ -1006,24 +1002,18 @@ Autenticacao:
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
 
-Campos permitidos:
+Campos permitidos em `multipart/form-data`:
 
-```json
-{
-    "name": "Novo nome",
-    "category": "ARTISANAL",
-    "lineUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
-    "image": {
-        "filename": "novo.jpg",
-        "contentType": "image/jpeg",
-        "base64": "<base64>"
-    },
-    "stock": 4,
-    "shippingWeightGrams": 120,
-    "description": "Descricao longa opcional atualizada",
-    "shortDescription": "Descricao curta atualizada",
-    "longDescription": "Descricao longa atualizada"
-}
+```http
+name=Novo nome
+category=ARTISANAL
+lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
+image=<novo.jpg>
+stock=4
+shippingWeightGrams=120
+description=Descricao longa opcional atualizada
+shortDescription=Descricao curta atualizada
+longDescription=Descricao longa atualizada
 ```
 
 Observacoes:
@@ -1341,7 +1331,6 @@ Resposta:
     "updatedAt": "2026-03-12T12:00:00.000Z",
     "address": {
         "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-        "recipient": "Maria da Silva",
         "zipCode": "01001000",
         "street": "Praca da Se",
         "number": "100",
@@ -1420,7 +1409,6 @@ Resposta `201`:
             "updatedAt": "2026-03-12T12:00:00.000Z",
             "address": {
                 "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-                "recipient": "Maria da Silva",
                 "zipCode": "01001000",
                 "street": "Praca da Se",
                 "number": "100",
@@ -1778,7 +1766,6 @@ Resposta `200`:
                 "address": {
                     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b802",
                     "label": "Plataforma",
-                    "recipient": "Atelie Guadalupe",
                     "zipCode": "01153000",
                     "street": "Rua da Origem",
                     "number": "123",
@@ -1832,7 +1819,6 @@ Request:
     "isDefault": true,
     "address": {
         "label": "Plataforma",
-        "recipient": "Atelie Guadalupe",
         "document": "12345678000199",
         "zipCode": "01153000",
         "street": "Rua da Origem",
@@ -2161,15 +2147,166 @@ Resposta `200`:
 
 - retorna `order` e `shipment` atualizados
 
-## 18. Observacoes para frontend
+## 18. Testimonials
+
+Modelo:
+
+```json
+{
+    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+    "type": "TEXT",
+    "text": "Atendimento excelente e produto impecavel.",
+    "videoUrl": null,
+    "isActive": true,
+    "createdAt": "2026-03-12T12:00:00.000Z",
+    "updatedAt": "2026-03-12T12:00:00.000Z"
+}
+```
+
+Tipos:
+
+- `TEXT`: deve receber `text`
+- `VIDEO`: deve receber arquivo no campo `video`
+
+### `GET /testimonials`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "testimonials": []
+    }
+}
+```
+
+### `GET /testimonials/active`
+
+Uso:
+
+- listagem publica de testimonials ativos
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "testimonials": []
+    }
+}
+```
+
+### `GET /testimonials/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Uso:
+
+- carregar um testimonial especifico para tela de edicao
+
+### `PUT /testimonials`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- cria quando `uuid` nao e enviado
+- atualiza quando `uuid` e enviado
+- usa upsert no banco
+
+Request para `TEXT` pode ser JSON:
+
+```json
+{
+    "type": "TEXT",
+    "text": "Atendimento excelente e produto impecavel.",
+    "isActive": true
+}
+```
+
+Request para atualizar `TEXT`:
+
+```json
+{
+    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+    "type": "TEXT",
+    "text": "Texto atualizado.",
+    "isActive": true
+}
+```
+
+Request para `VIDEO` deve ser `multipart/form-data`:
+
+```http
+type=VIDEO
+isActive=true
+video=<depoimento.mp4>
+```
+
+Request para atualizar `VIDEO`:
+
+```http
+uuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b301
+type=VIDEO
+isActive=true
+video=<novo-depoimento.mp4>
+```
+
+Regras de video:
+
+- campo do arquivo: `video`
+- tipos aceitos: `video/mp4`, `video/webm`, `video/quicktime`
+- tamanho maximo: 5 MB
+- o backend grava o video no MongoDB GridFS
+- o backend salva no Postgres apenas `videoUrl`
+
+### `PATCH /testimonials/:uuid/deactivate`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- marca `isActive` como `false`
+
+### `DELETE /testimonials/:uuid`
+
+Autenticacao:
+
+- obrigatoria
+- `ADMIN` ou `SUBADMIN`
+
+Comportamento:
+
+- remove o registro do Postgres
+- se houver video, remove o arquivo do MongoDB GridFS
+
+## 19. Observacoes para frontend
 
 - Todos os valores monetarios estao em centavos.
 - Todas as datas estao em formato ISO.
 - Datas de promocao e cupom devem incluir horario quando enviadas.
 - Sempre use `uuid` nas rotas e no estado do frontend. Nao use IDs internos.
 - O frontend deve guardar o JWT e reenviar em `Authorization`.
-- Para imagem de produto, o frontend precisa converter o arquivo para base64 antes do envio.
+- Para imagem de produto, envie `multipart/form-data` com arquivo no campo `image`.
+- Para video de testimonial, envie `multipart/form-data` com arquivo no campo `video`.
 - Para exibir imagem de produto, basta usar o valor de `imageUrl` retornado pelo backend.
 - `GET /media/images/:id` responde com stream binario, entao `imageUrl` pode ser usado direto em `<img src="...">`.
+- `GET /media/videos/:id` responde com stream binario, entao `videoUrl` pode ser usado direto em `<video src="...">`.
 - Para produtos `ARTISANAL`, envie tambem `shippingWeightGrams` em gramas no create/update.
 - O `.env` nao carrega mais endereco de expedicao; esses dados ficam na `Platform` padrao cadastrada no banco.

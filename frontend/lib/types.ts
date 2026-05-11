@@ -211,11 +211,13 @@ export type ProductQuery = {
     inStock?: boolean;
 };
 
-export type ProductImageInput = {
+export type LegacyProductImageInput = {
     filename: string;
     contentType: "image/jpeg" | "image/png" | "image/webp";
     base64: string;
 };
+
+export type ProductImageInput = File | LegacyProductImageInput;
 
 export type CreateProductInput = {
     name: string;

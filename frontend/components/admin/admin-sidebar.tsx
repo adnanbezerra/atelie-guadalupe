@@ -7,6 +7,12 @@ type AdminSidebarProps = {
 };
 
 export const adminNavItems = [
+    {
+        href: "/admin/produtos/novo",
+        icon: "add_box",
+        label: "Adicionar produto",
+        tone: "cta",
+    },
     { href: "/admin", icon: "dashboard", label: "Painel" },
     { href: "/admin/produtos", icon: "inventory_2", label: "Produtos" },
     {
@@ -42,15 +48,22 @@ export function AdminSidebar({ pathname }: AdminSidebarProps) {
                     const isActive =
                         item.href === "/admin"
                             ? pathname === "/admin"
-                            : pathname.startsWith(item.href);
+                            : item.href === "/admin/produtos"
+                              ? pathname === item.href ||
+                                (pathname.startsWith(`${item.href}/`) &&
+                                    pathname !== "/admin/produtos/novo")
+                              : pathname.startsWith(item.href);
+                    const isCta = item.tone === "cta";
 
                     return (
                         <Link
                             key={item.href}
                             className={
-                                isActive
-                                    ? "flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white"
-                                    : "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
+                                isCta
+                                    ? "flex items-center gap-3 rounded-lg bg-blue-700 px-3 py-2.5 text-white shadow-sm hover:bg-blue-800"
+                                    : isActive
+                                      ? "flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white"
+                                      : "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600"
                             }
                             href={item.href}
                         >

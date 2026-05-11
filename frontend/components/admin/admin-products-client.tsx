@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
@@ -96,10 +97,13 @@ export function AdminProductsClient({
                             artesanato.
                         </p>
                     </div>
-                    <button className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white">
+                    <Link
+                        className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white"
+                        href="/admin/produtos/novo"
+                    >
                         <span className="material-symbols-outlined">add</span>
                         Adicionar Novo Produto
-                    </button>
+                    </Link>
                 </div>
 
                 <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -303,11 +307,14 @@ export function AdminProductsClient({
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button className="rounded-lg p-2 transition-colors hover:bg-primary/10 hover:text-primary">
+                                                    <Link
+                                                        className="rounded-lg p-2 transition-colors hover:bg-primary/10 hover:text-primary"
+                                                        href={`/admin/produtos/${product.uuid}`}
+                                                    >
                                                         <span className="material-symbols-outlined text-lg">
                                                             edit
                                                         </span>
-                                                    </button>
+                                                    </Link>
                                                     <button className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600">
                                                         <span className="material-symbols-outlined text-lg">
                                                             delete
