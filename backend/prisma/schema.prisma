@@ -177,6 +177,7 @@ model Testimonial {
   id        Int             @id @default(autoincrement())
   uuid      String          @unique @db.Uuid
   type      TestimonialType
+  title     String?
   text      String?         @db.Text
   videoUrl  String?
   isActive  Boolean         @default(true)

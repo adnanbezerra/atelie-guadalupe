@@ -68,6 +68,7 @@ test("testimonial service creates text testimonial", async () => {
 
     const result = await service.upsert({
         type: "TEXT",
+        title: "Cliente feliz",
         text: "Atendimento excelente",
         isActive: true
     });
@@ -76,6 +77,7 @@ test("testimonial service creates text testimonial", async () => {
 
     if (result.success) {
         assert.equal(result.value.testimonial.type, "TEXT");
+        assert.equal(result.value.testimonial.title, "Cliente feliz");
         assert.equal(result.value.testimonial.text, "Atendimento excelente");
         assert.equal(result.value.testimonial.videoUrl, null);
     }

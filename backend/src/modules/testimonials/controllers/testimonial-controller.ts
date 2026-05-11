@@ -5,6 +5,8 @@ import { UploadVideoInput } from "../../../core/storage/image-storage";
 import { testimonialUuidParamSchema, upsertTestimonialSchema } from "../schemas/testimonial-schema";
 import { TestimonialService } from "../services/testimonial-service";
 
+const testimonialVideoFileSizeLimitBytes = 100 * 1024 * 1024;
+
 export class TestimonialController {
     public constructor(
         private readonly fastify: FastifyInstance,
@@ -46,7 +48,11 @@ export class TestimonialController {
         const body: Record<string, unknown> = {};
         let video: UploadVideoInput | undefined;
 
-        for await (const part of request.parts()) {
+        for await (const part of request.parts({
+            limits: {
+                fileSize: testimonialVideoFileSizeLimitBytes
+            }
+        })) {
             if (part.type === "file") {
                 if (part.fieldname !== "video") {
                     throw AppError.validation("Campo de arquivo invalido");

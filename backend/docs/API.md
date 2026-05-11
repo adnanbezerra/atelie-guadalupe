@@ -2155,6 +2155,7 @@ Modelo:
 {
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
     "type": "TEXT",
+    "title": "Cliente feliz",
     "text": "Atendimento excelente e produto impecavel.",
     "videoUrl": null,
     "isActive": true,
@@ -2167,6 +2168,7 @@ Tipos:
 
 - `TEXT`: deve receber `text`
 - `VIDEO`: deve receber arquivo no campo `video`
+- `title`: opcional para qualquer tipo
 
 ### `GET /testimonials`
 
@@ -2232,6 +2234,7 @@ Request para `TEXT` pode ser JSON:
 ```json
 {
     "type": "TEXT",
+    "title": "Cliente feliz",
     "text": "Atendimento excelente e produto impecavel.",
     "isActive": true
 }
@@ -2243,6 +2246,7 @@ Request para atualizar `TEXT`:
 {
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
     "type": "TEXT",
+    "title": "Cliente feliz",
     "text": "Texto atualizado.",
     "isActive": true
 }
@@ -2252,6 +2256,7 @@ Request para `VIDEO` deve ser `multipart/form-data`:
 
 ```http
 type=VIDEO
+title=Cliente feliz
 isActive=true
 video=<depoimento.mp4>
 ```
@@ -2261,6 +2266,7 @@ Request para atualizar `VIDEO`:
 ```http
 uuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b301
 type=VIDEO
+title=Cliente feliz
 isActive=true
 video=<novo-depoimento.mp4>
 ```
@@ -2269,7 +2275,7 @@ Regras de video:
 
 - campo do arquivo: `video`
 - tipos aceitos: `video/mp4`, `video/webm`, `video/quicktime`
-- tamanho maximo: 5 MB
+- tamanho maximo: 100 MB
 - o backend grava o video no MongoDB GridFS
 - o backend salva no Postgres apenas `videoUrl`
 

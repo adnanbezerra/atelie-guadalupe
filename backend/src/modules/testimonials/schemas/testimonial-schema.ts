@@ -15,6 +15,7 @@ export const upsertTestimonialSchema = z
     .object({
         uuid: z.uuid().optional(),
         type: testimonialTypeSchema,
+        title: z.string().trim().min(1).max(255).optional(),
         text: z.string().trim().min(1).max(20000).optional(),
         video: videoUploadSchema.optional(),
         isActive: z.boolean().default(true)

@@ -9,6 +9,7 @@ import { presentTestimonial } from "./testimonial-presenter";
 type UpsertTestimonialInput = {
     uuid?: string;
     type: TestimonialType;
+    title?: string;
     text?: string;
     video?: UploadVideoInput;
     isActive: boolean;
@@ -85,12 +86,14 @@ export class TestimonialService {
             create: {
                 uuid,
                 type: input.type,
+                title: input.title?.trim() ?? null,
                 text: input.type === "TEXT" ? input.text?.trim() : null,
                 videoUrl: input.type === "VIDEO" ? videoUrl : null,
                 isActive: input.isActive
             },
             update: {
                 type: input.type,
+                title: input.title?.trim() ?? null,
                 text: input.type === "TEXT" ? input.text?.trim() : null,
                 videoUrl: input.type === "VIDEO" ? videoUrl : null,
                 isActive: input.isActive
