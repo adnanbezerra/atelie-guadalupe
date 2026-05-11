@@ -3,7 +3,13 @@ import { baseAddressSchema } from "../../addresses/schemas/address-schema";
 import { acceptedPasswordSchema } from "../../auth/schemas/register-schema";
 
 const optionalProfileString = (schema: z.ZodType<string>) =>
-    z.string().trim().length(0).transform(() => undefined).or(schema).optional();
+    z
+        .string()
+        .trim()
+        .length(0)
+        .transform(() => undefined)
+        .or(schema)
+        .optional();
 
 const clearableProfileString = (schema: z.ZodType<string>) =>
     z
@@ -16,9 +22,7 @@ const clearableProfileString = (schema: z.ZodType<string>) =>
         .optional();
 
 const stripUndefined = <T extends Record<string, unknown>>(data: T) =>
-    Object.fromEntries(
-        Object.entries(data).filter(([, value]) => typeof value !== "undefined")
-    );
+    Object.fromEntries(Object.entries(data).filter(([, value]) => typeof value !== "undefined"));
 
 const updateMeAddressSchema = baseAddressSchema
     .partial()

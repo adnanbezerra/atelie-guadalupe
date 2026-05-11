@@ -10,7 +10,13 @@ export const acceptedPasswordSchema = z
     .regex(/[^a-zA-Z0-9]/, "A senha deve conter ao menos um caractere especial");
 
 const optionalProfileString = (schema: z.ZodType<string>) =>
-    z.string().trim().length(0).transform(() => undefined).or(schema).optional();
+    z
+        .string()
+        .trim()
+        .length(0)
+        .transform(() => undefined)
+        .or(schema)
+        .optional();
 
 export const registerSchema = z.object({
     name: z.string().trim().min(3).max(120),

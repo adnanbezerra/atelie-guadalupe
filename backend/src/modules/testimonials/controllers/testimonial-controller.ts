@@ -2,10 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "../../../core/errors/app-error";
 import { sendEither } from "../../../core/http/send-either";
 import { UploadVideoInput } from "../../../core/storage/image-storage";
-import {
-    testimonialUuidParamSchema,
-    upsertTestimonialSchema
-} from "../schemas/testimonial-schema";
+import { testimonialUuidParamSchema, upsertTestimonialSchema } from "../schemas/testimonial-schema";
 import { TestimonialService } from "../services/testimonial-service";
 
 export class TestimonialController {

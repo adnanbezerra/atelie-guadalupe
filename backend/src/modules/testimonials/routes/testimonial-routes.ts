@@ -5,10 +5,7 @@ import { TestimonialService } from "../services/testimonial-service";
 
 const testimonialRoutes: FastifyPluginAsync = async (fastify) => {
     const testimonialRepository = new TestimonialRepository(fastify.prisma);
-    const testimonialService = new TestimonialService(
-        testimonialRepository,
-        fastify.imageStorage
-    );
+    const testimonialService = new TestimonialService(testimonialRepository, fastify.imageStorage);
     const controller = new TestimonialController(fastify, testimonialService);
     const adminHandlers = [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])];
 
