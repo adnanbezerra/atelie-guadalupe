@@ -6,6 +6,7 @@ import { MarketingRepository } from "../../marketing/repositories/marketing-repo
 import { applyPercentDiscount } from "../../marketing/services/discounts";
 import { ProductRepository } from "../../products/repositories/product-repository";
 import { calculateProductPriceInCents } from "../../products/services/product-pricing";
+import { ActivePromotionEntity } from "../../products/services/product-presenter";
 import { hasAvailableStock, ProductCategory } from "../../products/services/product-stock";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { CartRepository } from "../repositories/cart-repository";
@@ -47,7 +48,9 @@ export class CartService {
         const cart = await this.getOrCreateCart(user.id);
 
         return right({
-            cart: presentCart(await this.sanitizeCartCoupon(user, cart))
+            cart: presentCart(
+                await this.withActivePromotions(await this.sanitizeCartCoupon(user, cart))
+            )
         });
     }
 
@@ -111,7 +114,9 @@ export class CartService {
         const updatedCart = await this.getOrCreateCart(user.id);
 
         return right({
-            cart: presentCart(await this.sanitizeCartCoupon(user, updatedCart))
+            cart: presentCart(
+                await this.withActivePromotions(await this.sanitizeCartCoupon(user, updatedCart))
+            )
         });
     }
 
@@ -172,7 +177,11 @@ export class CartService {
                 const mergedCart = await this.getOrCreateCart(cart.userId);
 
                 return right({
-                    cart: presentCart(await this.sanitizeCartCoupon(user, mergedCart))
+                    cart: presentCart(
+                        await this.withActivePromotions(
+                            await this.sanitizeCartCoupon(user, mergedCart)
+                        )
+                    )
                 });
             }
         }
@@ -187,7 +196,9 @@ export class CartService {
         const updatedCart = await this.getOrCreateCart(cart.userId);
 
         return right({
-            cart: presentCart(await this.sanitizeCartCoupon(user, updatedCart))
+            cart: presentCart(
+                await this.withActivePromotions(await this.sanitizeCartCoupon(user, updatedCart))
+            )
         });
     }
 
@@ -212,7 +223,9 @@ export class CartService {
         const updatedCart = await this.getOrCreateCart(cart.userId);
 
         return right({
-            cart: presentCart(await this.sanitizeCartCoupon(user, updatedCart))
+            cart: presentCart(
+                await this.withActivePromotions(await this.sanitizeCartCoupon(user, updatedCart))
+            )
         });
     }
 
@@ -231,7 +244,7 @@ export class CartService {
         const updatedCart = await this.getOrCreateCart(cart.userId);
 
         return right({
-            cart: presentCart(updatedCart)
+            cart: presentCart(await this.withActivePromotions(updatedCart))
         });
     }
 
@@ -264,7 +277,7 @@ export class CartService {
         const updatedCart = await this.cartRepository.updateCoupon(cart.id, coupon.id);
 
         return right({
-            cart: presentCart(updatedCart)
+            cart: presentCart(await this.withActivePromotions(updatedCart))
         });
     }
 
@@ -280,7 +293,7 @@ export class CartService {
         const updatedCart = await this.cartRepository.updateCoupon(cart.id, null);
 
         return right({
-            cart: presentCart(updatedCart)
+            cart: presentCart(await this.withActivePromotions(updatedCart))
         });
     }
 
@@ -338,6 +351,31 @@ export class CartService {
         }
 
         return applyPercentDiscount(basePriceInCents, promotion.discountPercent);
+    }
+
+    private async withActivePromotions(cart: CartWithItemsAndCoupon) {
+        const categories = [...new Set(cart.items.map((item) => item.product.category))];
+        const promotionsByCategory = new Map(
+            await Promise.all(
+                categories.map(
+                    async (category): Promise<[ProductCategory, ActivePromotionEntity | null]> => [
+                        category,
+                        await this.marketingRepository.findBestActivePromotionForCategory(category)
+                    ]
+                )
+            )
+        );
+
+        return {
+            ...cart,
+            items: cart.items.map((item) => ({
+                ...item,
+                product: {
+                    ...item.product,
+                    activePromotion: promotionsByCategory.get(item.product.category) ?? null
+                }
+            }))
+        };
     }
 
     private async validateCouponForCart(

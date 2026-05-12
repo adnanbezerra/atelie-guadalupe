@@ -4,9 +4,10 @@ import { AppError } from "../../../core/errors/app-error";
 import { ImageStorage, UploadImageInput } from "../../../core/storage/image-storage";
 import { slugify } from "../../../core/utils/slug";
 import { createUuid } from "../../../core/utils/uuid";
+import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
 import { ProductRepository } from "../repositories/product-repository";
 import { presentProductLine } from "./product-line-presenter";
-import { presentProduct } from "./product-presenter";
+import { ActivePromotionEntity, presentProduct } from "./product-presenter";
 import { ProductCategory } from "./product-stock";
 
 type CreateProductLineInput = {
@@ -50,6 +51,7 @@ type ListProductsInput = {
 export class ProductService {
     public constructor(
         private readonly productRepository: ProductRepository,
+        private readonly marketingRepository: MarketingRepository,
         private readonly imageStorage: ImageStorage
     ) {}
 
@@ -117,10 +119,16 @@ export class ProductService {
         query: ListProductsInput
     ): Promise<Either<AppError, Record<string, unknown>>> {
         const result = await this.productRepository.listActive(query);
+        const promotionsByCategory = await this.findActivePromotionsByCategory(
+            result.items.map((item) => item.category)
+        );
 
         return right({
-            items: result.items.map((item: Parameters<typeof presentProduct>[0]) =>
-                presentProduct(item)
+            items: result.items.map((item) =>
+                presentProduct({
+                    ...item,
+                    activePromotion: promotionsByCategory.get(item.category) ?? null
+                })
             ),
             pagination: {
                 page: query.page,
@@ -140,7 +148,7 @@ export class ProductService {
         }
 
         return right({
-            product: presentProduct(product)
+            product: presentProduct(await this.withActivePromotion(product))
         });
     }
 
@@ -179,7 +187,7 @@ export class ProductService {
         });
 
         return right({
-            product: presentProduct(product)
+            product: presentProduct(await this.withActivePromotion(product))
         });
     }
 
@@ -279,7 +287,7 @@ export class ProductService {
         });
 
         return right({
-            product: presentProduct(product)
+            product: presentProduct(await this.withActivePromotion(product))
         });
     }
 
@@ -297,5 +305,30 @@ export class ProductService {
         return right({
             deleted: true as const
         });
+    }
+
+    private async withActivePromotion<T extends { category: ProductCategory }>(product: T) {
+        const activePromotion = await this.marketingRepository.findBestActivePromotionForCategory(
+            product.category
+        );
+
+        return {
+            ...product,
+            activePromotion
+        };
+    }
+
+    private async findActivePromotionsByCategory(categories: ProductCategory[]) {
+        const uniqueCategories = [...new Set(categories)];
+        const entries = await Promise.all(
+            uniqueCategories.map(
+                async (category): Promise<[ProductCategory, ActivePromotionEntity | null]> => [
+                    category,
+                    await this.marketingRepository.findBestActivePromotionForCategory(category)
+                ]
+            )
+        );
+
+        return new Map(entries);
     }
 }

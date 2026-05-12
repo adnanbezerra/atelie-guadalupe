@@ -191,3 +191,64 @@ test("cart service increments quantity when product already exists in cart", asy
     assert.equal(updates.length, 1);
     assert.equal(updates[0].quantity, 3);
 });
+
+test("cart service returns active promotion on items", async () => {
+    const promotion = {
+        uuid: "promotion-1",
+        name: "Semana da Lavanda",
+        slug: "semana-da-lavanda",
+        scope: "CATEGORY",
+        category: "ARTISANAL",
+        discountPercent: 20,
+        startsAt: new Date("2026-05-01T00:00:00.000Z"),
+        endsAt: null
+    };
+    const userRepository = {
+        findByUuid: async () => ({
+            id: 1,
+            uuid: "user-1"
+        })
+    };
+    const productRepository = {};
+    const cartRepository = {
+        findByUserId: async () => ({
+            id: 10,
+            uuid: "cart-1",
+            userId: 1,
+            coupon: null,
+            items: [
+                {
+                    uuid: "item-1",
+                    productSize: "GRAMS_70",
+                    quantity: 2,
+                    unitPriceInCents: 2072,
+                    productNameSnapshot: "Sabonete",
+                    product: {
+                        uuid: "product-1",
+                        category: "ARTISANAL",
+                        imageUrl: "https://cdn.exemplo.com/lavanda.jpg",
+                        stock: 10,
+                        isActive: true
+                    }
+                }
+            ]
+        })
+    };
+    const marketingRepository = {
+        findBestActivePromotionForCategory: async () => promotion
+    };
+
+    const service = new CartService(
+        userRepository as never,
+        productRepository as never,
+        cartRepository as never,
+        marketingRepository as never
+    );
+    const result = await service.getMyCart("user-1");
+
+    assert.equal(result.success, true);
+    if (result.success) {
+        assert.equal(result.value.cart.items[0].activePromotion?.uuid, "promotion-1");
+        assert.equal(result.value.cart.items[0].promotionDiscountPercent, 20);
+    }
+});

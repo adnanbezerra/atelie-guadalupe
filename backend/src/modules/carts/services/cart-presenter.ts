@@ -1,5 +1,6 @@
 import { ProductSize } from "../../../generated/prisma/enums";
 import { getProductSizeInGrams } from "../../products/services/product-pricing";
+import { presentActivePromotion } from "../../products/services/product-presenter";
 import { hasAvailableStock, ProductCategory } from "../../products/services/product-stock";
 
 type CartItemEntity = {
@@ -14,6 +15,16 @@ type CartItemEntity = {
         imageUrl: string;
         stock: number | null;
         isActive: boolean;
+        activePromotion?: {
+            uuid: string;
+            name: string;
+            slug: string;
+            scope: "ALL_PRODUCTS" | "CATEGORY";
+            category: ProductCategory | null;
+            discountPercent: number;
+            startsAt: Date;
+            endsAt: Date | null;
+        } | null;
     };
 };
 
@@ -35,6 +46,7 @@ export function presentCartItem(item: CartItemEntity) {
     const isAvailable =
         item.product.isActive &&
         hasAvailableStock(item.product.category, item.product.stock, item.quantity);
+    const activePromotion = presentActivePromotion(item.product.activePromotion);
 
     return {
         uuid: item.uuid,
@@ -45,6 +57,8 @@ export function presentCartItem(item: CartItemEntity) {
         quantity: item.quantity,
         unitPriceInCents: item.unitPriceInCents,
         totalPriceInCents: item.unitPriceInCents * item.quantity,
+        activePromotion,
+        promotionDiscountPercent: activePromotion?.discountPercent ?? 0,
         imageUrl: item.product.imageUrl,
         isAvailable
     };

@@ -1,11 +1,17 @@
 import { FastifyPluginAsync } from "fastify";
+import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
 import { ProductController } from "../controllers/product-controller";
 import { ProductRepository } from "../repositories/product-repository";
 import { ProductService } from "../services/product-service";
 
 const productRoutes: FastifyPluginAsync = async (fastify) => {
     const productRepository = new ProductRepository(fastify.prisma);
-    const productService = new ProductService(productRepository, fastify.imageStorage);
+    const marketingRepository = new MarketingRepository(fastify.prisma);
+    const productService = new ProductService(
+        productRepository,
+        marketingRepository,
+        fastify.imageStorage
+    );
     const controller = new ProductController(fastify, productService);
 
     fastify.get("/lines", controller.listLines);
