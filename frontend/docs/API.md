@@ -614,6 +614,17 @@ Rotas removidas:
             "priceInCents": 3700
         }
     ],
+    "activePromotion": {
+        "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+        "name": "Semana da Lavanda",
+        "slug": "semana-da-lavanda",
+        "scope": "CATEGORY",
+        "category": "ARTISANAL",
+        "discountPercent": 15,
+        "startsAt": "2026-05-01T00:00:00.000Z",
+        "endsAt": null
+    },
+    "promotionDiscountPercent": 15,
     "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
     "stock": 8,
     "shippingWeightGrams": 120,
@@ -636,6 +647,8 @@ Observacoes:
 - `description` e opcional e aceita texto longo
 - a precificacao e orientada pela linha do produto, retornada em `line`
 - `priceOptions` contem os precos cadastrados por tamanho
+- `activePromotion` traz a promocao vigente aplicada ao produto, ou `null` quando nao houver promocao ativa
+- `promotionDiscountPercent` repete o percentual da promocao vigente para leitura direta do frontend; retorna `0` sem promocao ativa
 - tamanhos atuais: `GRAMS_70` e `GRAMS_100`
 
 ## 11.2 Modelo de linha/categoria
@@ -778,6 +791,17 @@ Resposta `200`:
                         "priceInCents": 3700
                     }
                 ],
+                "activePromotion": {
+                    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                    "name": "Semana da Lavanda",
+                    "slug": "semana-da-lavanda",
+                    "scope": "CATEGORY",
+                    "category": "ARTISANAL",
+                    "discountPercent": 15,
+                    "startsAt": "2026-05-01T00:00:00.000Z",
+                    "endsAt": null
+                },
+                "promotionDiscountPercent": 15,
                 "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
                 "stock": 8,
                 "shippingWeightGrams": 120,
@@ -833,6 +857,17 @@ Resposta `200`:
                     "priceInCents": 3700
                 }
             ],
+            "activePromotion": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                "name": "Semana da Lavanda",
+                "slug": "semana-da-lavanda",
+                "scope": "CATEGORY",
+                "category": "ARTISANAL",
+                "discountPercent": 15,
+                "startsAt": "2026-05-01T00:00:00.000Z",
+                "endsAt": null
+            },
+            "promotionDiscountPercent": 15,
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
             "shippingWeightGrams": 120,
@@ -981,6 +1016,17 @@ Resposta `201`:
                     "priceInCents": 3700
                 }
             ],
+            "activePromotion": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                "name": "Semana da Lavanda",
+                "slug": "semana-da-lavanda",
+                "scope": "CATEGORY",
+                "category": "ARTISANAL",
+                "discountPercent": 15,
+                "startsAt": "2026-05-01T00:00:00.000Z",
+                "endsAt": null
+            },
+            "promotionDiscountPercent": 15,
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 8,
             "shippingWeightGrams": 120,
@@ -1053,6 +1099,17 @@ Resposta `200`:
                     "priceInCents": 3700
                 }
             ],
+            "activePromotion": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                "name": "Semana da Lavanda",
+                "slug": "semana-da-lavanda",
+                "scope": "CATEGORY",
+                "category": "ARTISANAL",
+                "discountPercent": 15,
+                "startsAt": "2026-05-01T00:00:00.000Z",
+                "endsAt": null
+            },
+            "promotionDiscountPercent": 15,
             "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
             "stock": 4,
             "shippingWeightGrams": 120,
@@ -1139,6 +1196,17 @@ Resposta `200`:
                     "quantity": 2,
                     "unitPriceInCents": 2590,
                     "totalPriceInCents": 5180,
+                    "activePromotion": {
+                        "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                        "name": "Semana da Lavanda",
+                        "slug": "semana-da-lavanda",
+                        "scope": "CATEGORY",
+                        "category": "ARTISANAL",
+                        "discountPercent": 15,
+                        "startsAt": "2026-05-01T00:00:00.000Z",
+                        "endsAt": null
+                    },
+                    "promotionDiscountPercent": 15,
                     "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
                     "isAvailable": true
                 }
@@ -1166,6 +1234,8 @@ Observacoes:
 - `isAvailable` ajuda o frontend a alertar item inativo ou sem estoque suficiente
 - para produtos `SELFCARE`, `isAvailable` nao depende de estoque
 - `unitPriceInCents` ja considera promocao vigente quando o item e adicionado ou atualizado
+- `activePromotion` no item do carrinho traz a promocao vigente do produto, ou `null` quando nao houver promocao ativa
+- `promotionDiscountPercent` no item repete o percentual vigente para leitura direta do frontend; retorna `0` sem promocao ativa
 - `coupon` sera `null` quando nenhum cupom estiver aplicado
 
 ## 13.2 `POST /cart/items`
@@ -1202,6 +1272,17 @@ Resposta `201`:
                     "quantity": 2,
                     "unitPriceInCents": 2590,
                     "totalPriceInCents": 5180,
+                    "activePromotion": {
+                        "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                        "name": "Semana da Lavanda",
+                        "slug": "semana-da-lavanda",
+                        "scope": "CATEGORY",
+                        "category": "ARTISANAL",
+                        "discountPercent": 15,
+                        "startsAt": "2026-05-01T00:00:00.000Z",
+                        "endsAt": null
+                    },
+                    "promotionDiscountPercent": 15,
                     "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
                     "isAvailable": true
                 }
@@ -2155,6 +2236,7 @@ Modelo:
 {
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
     "type": "TEXT",
+    "title": "Cliente feliz",
     "text": "Atendimento excelente e produto impecavel.",
     "videoUrl": null,
     "isActive": true,
@@ -2167,6 +2249,7 @@ Tipos:
 
 - `TEXT`: deve receber `text`
 - `VIDEO`: deve receber arquivo no campo `video`
+- `title`: opcional para qualquer tipo
 
 ### `GET /testimonials`
 
@@ -2232,6 +2315,7 @@ Request para `TEXT` pode ser JSON:
 ```json
 {
     "type": "TEXT",
+    "title": "Cliente feliz",
     "text": "Atendimento excelente e produto impecavel.",
     "isActive": true
 }
@@ -2243,6 +2327,7 @@ Request para atualizar `TEXT`:
 {
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
     "type": "TEXT",
+    "title": "Cliente feliz",
     "text": "Texto atualizado.",
     "isActive": true
 }
@@ -2252,6 +2337,7 @@ Request para `VIDEO` deve ser `multipart/form-data`:
 
 ```http
 type=VIDEO
+title=Cliente feliz
 isActive=true
 video=<depoimento.mp4>
 ```
@@ -2261,6 +2347,7 @@ Request para atualizar `VIDEO`:
 ```http
 uuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b301
 type=VIDEO
+title=Cliente feliz
 isActive=true
 video=<novo-depoimento.mp4>
 ```
@@ -2269,7 +2356,7 @@ Regras de video:
 
 - campo do arquivo: `video`
 - tipos aceitos: `video/mp4`, `video/webm`, `video/quicktime`
-- tamanho maximo: 5 MB
+- tamanho maximo: 100 MB
 - o backend grava o video no MongoDB GridFS
 - o backend salva no Postgres apenas `videoUrl`
 

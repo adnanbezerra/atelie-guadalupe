@@ -153,11 +153,12 @@ async function request<T>(path: string, options: RequestOptions = {}) {
     }
 
     const isFormData = body instanceof FormData;
+    const hasJsonBody = body !== undefined && !isFormData;
 
     const response = await fetch(buildUrl(path, options.query), {
         method: options.method ?? "GET",
         headers: {
-            ...(isFormData ? {} : { "Content-Type": "application/json" }),
+            ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
             ...(options.token
                 ? { Authorization: `Bearer ${options.token}` }
                 : {}),

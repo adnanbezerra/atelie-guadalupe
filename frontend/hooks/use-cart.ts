@@ -41,6 +41,7 @@ type CartContextValue = {
     isPending: boolean;
     isMutating: boolean;
     error: string | null;
+    dismissError: () => void;
     refresh: () => Promise<void>;
     hydrate: (cart: Cart | null) => void;
     addItem: (input: AddCartItemInput) => Promise<string | null>;
@@ -77,7 +78,10 @@ function getOptimisticCart(
     }
 
     const currentItems = currentCart?.items ?? [];
-    const unitPriceInCents = applyProductDiscount(priceOption.priceInCents);
+    const unitPriceInCents = applyProductDiscount(
+        priceOption.priceInCents,
+        product.promotionDiscountPercent,
+    );
     const itemIndex = currentItems.findIndex(
         (item) =>
             item.productUuid === input.productUuid &&
@@ -99,11 +103,14 @@ function getOptimisticCart(
             uuid: `optimistic-${input.productUuid}-${input.productSize}`,
             productUuid: input.productUuid,
             name: product.name,
+            category: product.category,
             productSize: input.productSize,
             grams: priceOption.grams,
             quantity: input.quantity,
             unitPriceInCents,
             totalPriceInCents: unitPriceInCents * input.quantity,
+            activePromotion: product.activePromotion,
+            promotionDiscountPercent: product.promotionDiscountPercent ?? 0,
             imageUrl: product.imageUrl,
             isAvailable: product.isActive,
         });
@@ -236,6 +243,7 @@ export function CartProvider({
             isPending: isMutating,
             isMutating,
             error,
+            dismissError: () => setError(null),
             refresh,
             hydrate,
             addItem: async (input: AddCartItemInput) => {

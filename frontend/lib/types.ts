@@ -40,6 +40,17 @@ export type ProductLine = {
     updatedAt?: string;
 };
 
+export type Promotion = {
+    uuid: string;
+    name: string;
+    slug: string;
+    scope: "ALL_PRODUCTS" | "CATEGORY" | string;
+    category: ProductCategory | null;
+    discountPercent: number;
+    startsAt: string;
+    endsAt: string | null;
+};
+
 export type Product = {
     uuid: string;
     slug: string;
@@ -47,6 +58,8 @@ export type Product = {
     category: ProductCategory;
     line: ProductLine;
     priceOptions: PriceOption[];
+    activePromotion?: Promotion | null;
+    promotionDiscountPercent?: number;
     imageUrl: string;
     stock: number | null;
     shippingWeightGrams: number | null;
@@ -81,11 +94,15 @@ export type CartItem = {
     uuid: string;
     productUuid: string;
     name: string;
+    category?: ProductCategory;
+    productCategory?: ProductCategory;
     productSize: string;
     grams: number;
     quantity: number;
     unitPriceInCents: number;
     totalPriceInCents: number;
+    activePromotion?: Promotion | null;
+    promotionDiscountPercent?: number;
     imageUrl: string;
     isAvailable: boolean;
 };
@@ -102,6 +119,7 @@ export type Cart = {
     summary: {
         itemsCount: number;
         subtotalInCents: number;
+        promotionDiscountInCents?: number;
         couponDiscountInCents: number;
         totalInCents: number;
     };

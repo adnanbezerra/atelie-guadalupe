@@ -17,10 +17,10 @@ import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
 import { CollectionKey, ProductLine, ProductsPayload } from "@/lib/types";
 import {
-    ACTIVE_PRODUCT_DISCOUNT_PERCENT,
     firstPriceInCents,
     formatCurrency,
     getPriceLabel,
+    normalizeDiscountPercent,
 } from "@/lib/utils";
 import { buildWhatsappLink } from "@/lib/whatsapp";
 import { toast } from "sonner";
@@ -214,10 +214,11 @@ export function CollectionCatalog({
         }
     }
 
-    function renderPrice(
-        prices: (typeof filteredProducts)[number]["priceOptions"],
-    ) {
-        const originalPriceInCents = firstPriceInCents(prices);
+    function renderPrice(product: (typeof filteredProducts)[number]) {
+        const originalPriceInCents = firstPriceInCents(product.priceOptions);
+        const discountPercent = normalizeDiscountPercent(
+            product.promotionDiscountPercent,
+        );
 
         if (originalPriceInCents <= 0) {
             return <span>Sob consulta</span>;
@@ -225,15 +226,19 @@ export function CollectionCatalog({
 
         return (
             <span className="flex flex-col leading-tight">
-                <span>{getPriceLabel(prices)}</span>
-                <span className="mt-1 flex items-center gap-2 text-xs font-semibold">
-                    <span className="text-neutral-400 line-through">
-                        {formatCurrency(originalPriceInCents)}
-                    </span>
-                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
-                        {ACTIVE_PRODUCT_DISCOUNT_PERCENT}% OFF
-                    </span>
+                <span>
+                    {getPriceLabel(product.priceOptions, discountPercent)}
                 </span>
+                {discountPercent > 0 ? (
+                    <span className="mt-1 flex items-center gap-2 text-xs font-semibold">
+                        <span className="text-neutral-400 line-through">
+                            {formatCurrency(originalPriceInCents)}
+                        </span>
+                        <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                            {discountPercent}% OFF
+                        </span>
+                    </span>
+                ) : null}
             </span>
         );
     }
@@ -352,9 +357,7 @@ export function CollectionCatalog({
                                         </p>
                                         <div className="mt-3 flex items-center justify-between">
                                             <span className="text-xl font-bold text-[#4A3728]">
-                                                {renderPrice(
-                                                    product.priceOptions,
-                                                )}
+                                                {renderPrice(product)}
                                             </span>
                                             <button
                                                 className="rounded bg-[#4A3728] px-4 py-2 text-xs font-medium tracking-wider text-white uppercase disabled:cursor-not-allowed disabled:opacity-60"
@@ -616,7 +619,7 @@ export function CollectionCatalog({
                                     </p>
                                     <div className="flex items-center justify-between">
                                         <span className="text-lg font-bold">
-                                            {renderPrice(product.priceOptions)}
+                                            {renderPrice(product)}
                                         </span>
                                         <button
                                             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
