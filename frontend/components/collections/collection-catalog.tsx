@@ -1,14 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
 import { ProductImage } from "@/components/shared/product-image";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { useCart } from "@/hooks/use-cart";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
 import { CollectionKey, ProductLine, ProductsPayload } from "@/lib/types";
-import { getPriceLabel } from "@/lib/utils";
+import {
+    ACTIVE_PRODUCT_DISCOUNT_PERCENT,
+    firstPriceInCents,
+    formatCurrency,
+    getPriceLabel,
+} from "@/lib/utils";
+import { buildWhatsappLink } from "@/lib/whatsapp";
+import { toast } from "sonner";
 import Header from "../header";
 
 type CollectionCatalogProps = {
@@ -38,7 +53,13 @@ export function CollectionCatalog({
     const searchParams = useSearchParams();
     const [search, setSearch] = useState(initialSearch);
     const [lineUuid, setLineUuid] = useState(initialLineUuid);
+    const pendingProductUuidsRef = useRef(new Set<string>());
+    const [, renderPendingProducts] = useState(0);
+    const [consultProductName, setConsultProductName] = useState<string | null>(
+        null,
+    );
     const [, startTransition] = useTransition();
+    const cart = useCart();
     const category = collectionKey === "beauty" ? "BELEZA" : "ARTESANATO";
     const linesResource = useProductLines(initialLines, {
         skipClientFetch: true,
@@ -102,6 +123,68 @@ export function CollectionCatalog({
         };
     }, [lineUuid, pathname, router, search, searchParams, startTransition]);
 
+    async function handleAddToCart(product: (typeof filteredProducts)[number]) {
+        const priceOption = product.priceOptions[0];
+
+        if (!priceOption || firstPriceInCents(product.priceOptions) <= 0) {
+            setConsultProductName(product.name);
+            return;
+        }
+
+        if (pendingProductUuidsRef.current.has(product.uuid)) {
+            return;
+        }
+
+        pendingProductUuidsRef.current.add(product.uuid);
+        renderPendingProducts((count) => count + 1);
+
+        try {
+            const errorMessage = await cart.addItem({
+                productUuid: product.uuid,
+                productSize: priceOption.size,
+                quantity: 1,
+                optimisticProduct: product,
+            });
+
+            if (errorMessage) {
+                toast.error("Não foi possível adicionar ao carrinho.", {
+                    description: errorMessage,
+                });
+            }
+        } finally {
+            pendingProductUuidsRef.current.delete(product.uuid);
+            renderPendingProducts((count) => count + 1);
+        }
+    }
+
+    function renderPrice(prices: (typeof filteredProducts)[number]["priceOptions"]) {
+        const originalPriceInCents = firstPriceInCents(prices);
+
+        if (originalPriceInCents <= 0) {
+            return <span>Sob consulta</span>;
+        }
+
+        return (
+            <span className="flex flex-col leading-tight">
+                <span>{getPriceLabel(prices)}</span>
+                <span className="mt-1 flex items-center gap-2 text-xs font-semibold">
+                    <span className="text-neutral-400 line-through">
+                        {formatCurrency(originalPriceInCents)}
+                    </span>
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                        {ACTIVE_PRODUCT_DISCOUNT_PERCENT}% OFF
+                    </span>
+                </span>
+            </span>
+        );
+    }
+
+    const whatsappLink = buildWhatsappLink(
+        consultProductName
+            ? `Olá, vim pelo website e gostaria de consultar o produto ${consultProductName}.`
+            : "Olá, vim pelo website e gostaria de consultar um produto.",
+    );
+
     if (collectionKey === "crafts") {
         return (
             <div className="min-h-screen bg-neutral-50 text-neutral-900">
@@ -134,7 +217,6 @@ export function CollectionCatalog({
                             liturgia.
                         </p>
                     </header>
-
                     <div className="flex flex-col gap-12 lg:flex-row">
                         <aside className="w-full lg:w-64 lg:flex-shrink-0">
                             <div className="sticky top-28 space-y-8">
@@ -211,16 +293,32 @@ export function CollectionCatalog({
                                         </p>
                                         <div className="mt-3 flex items-center justify-between">
                                             <span className="text-xl font-bold text-[#4A3728]">
-                                                {getPriceLabel(
+                                                {renderPrice(
                                                     product.priceOptions,
                                                 )}
                                             </span>
-                                            <Link
-                                                className="rounded bg-[#4A3728] px-4 py-2 text-xs font-medium tracking-wider text-white uppercase"
-                                                href="/carrinho"
+                                            <button
+                                                className="rounded bg-[#4A3728] px-4 py-2 text-xs font-medium tracking-wider text-white uppercase disabled:cursor-not-allowed disabled:opacity-60"
+                                                disabled={
+                                                    pendingProductUuidsRef.current.has(
+                                                        product.uuid,
+                                                    ) ||
+                                                    product.priceOptions
+                                                        .length === 0
+                                                }
+                                                onClick={() =>
+                                                    void handleAddToCart(
+                                                        product,
+                                                    )
+                                                }
+                                                type="button"
                                             >
-                                                Ver Detalhes
-                                            </Link>
+                                                {pendingProductUuidsRef.current.has(
+                                                    product.uuid,
+                                                )
+                                                    ? "Adicionando"
+                                                    : "Comprar"}
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -250,6 +348,42 @@ export function CollectionCatalog({
                         </div>
                     </div>
                 </main>
+                <Dialog
+                    onOpenChange={(open) => {
+                        if (!open) setConsultProductName(null);
+                    }}
+                    open={consultProductName != null}
+                >
+                    <DialogContent className="max-w-md rounded-xl bg-white p-6">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold text-neutral-900">
+                                Atendimento pelo WhatsApp
+                            </DialogTitle>
+                            <DialogDescription className="text-sm leading-6 text-neutral-600">
+                                {consultProductName} está com preço sob
+                                consulta e é tratado diretamente pelo
+                                WhatsApp. Deseja abrir a conversa agora?
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <button
+                                className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700"
+                                onClick={() => setConsultProductName(null)}
+                                type="button"
+                            >
+                                Agora não
+                            </button>
+                            <a
+                                className="rounded-lg bg-emerald-600 px-4 py-2 text-center text-sm font-semibold text-white"
+                                href={whatsappLink}
+                                rel="noopener noreferrer"
+                                target="_blank"
+                            >
+                                Abrir WhatsApp
+                            </a>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         );
     }
@@ -370,7 +504,6 @@ export function CollectionCatalog({
                                 ) : null}
                             </div>
                         </div>
-
                         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
                             {filteredProducts.map((product) => (
                                 <div className="group" key={product.uuid}>
@@ -380,11 +513,6 @@ export function CollectionCatalog({
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             src={product.imageUrl}
                                         />
-                                        <button className="absolute top-3 right-3 rounded-full bg-white/80 p-2 backdrop-blur">
-                                            <span className="material-symbols-outlined text-sm">
-                                                favorite
-                                            </span>
-                                        </button>
                                         <div className="absolute bottom-3 left-3">
                                             <span className="rounded bg-white/90 px-2 py-1 text-[10px] font-bold tracking-widest text-primary uppercase">
                                                 {product.line.name}
@@ -399,16 +527,28 @@ export function CollectionCatalog({
                                     </p>
                                     <div className="flex items-center justify-between">
                                         <span className="text-lg font-bold">
-                                            {getPriceLabel(
-                                                product.priceOptions,
-                                            )}
+                                            {renderPrice(product.priceOptions)}
                                         </span>
-                                        <Link
-                                            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-                                            href="/carrinho"
+                                        <button
+                                            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                                            disabled={
+                                                pendingProductUuidsRef.current.has(
+                                                    product.uuid,
+                                                ) ||
+                                                product.priceOptions.length ===
+                                                    0
+                                            }
+                                            onClick={() =>
+                                                void handleAddToCart(product)
+                                            }
+                                            type="button"
                                         >
-                                            Comprar
-                                        </Link>
+                                            {pendingProductUuidsRef.current.has(
+                                                product.uuid,
+                                            )
+                                                ? "Adicionando"
+                                                : "Comprar"}
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -416,6 +556,42 @@ export function CollectionCatalog({
                     </div>
                 </div>
             </main>
+            <Dialog
+                onOpenChange={(open) => {
+                    if (!open) setConsultProductName(null);
+                }}
+                open={consultProductName != null}
+            >
+                <DialogContent className="max-w-md rounded-xl bg-white p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-slate-900">
+                            Atendimento pelo WhatsApp
+                        </DialogTitle>
+                        <DialogDescription className="text-sm leading-6 text-slate-600">
+                            {consultProductName} está com preço sob consulta e
+                            é tratado diretamente pelo WhatsApp. Deseja abrir a
+                            conversa agora?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button
+                            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                            onClick={() => setConsultProductName(null)}
+                            type="button"
+                        >
+                            Agora não
+                        </button>
+                        <a
+                            className="rounded-lg bg-emerald-600 px-4 py-2 text-center text-sm font-semibold text-white"
+                            href={whatsappLink}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                        >
+                            Abrir WhatsApp
+                        </a>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

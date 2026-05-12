@@ -38,10 +38,25 @@ export function firstPriceInCents(
     return prices?.[0]?.priceInCents ?? 0;
 }
 
-export function getPriceLabel(
+export const ACTIVE_PRODUCT_DISCOUNT_PERCENT = 5;
+
+export function applyProductDiscount(priceInCents: number) {
+    return Math.round(
+        (priceInCents * (100 - ACTIVE_PRODUCT_DISCOUNT_PERCENT)) / 100,
+    );
+}
+
+export function firstDiscountedPriceInCents(
     prices: Array<{ priceInCents: number }> | undefined,
 ) {
     const value = firstPriceInCents(prices);
+    return value > 0 ? applyProductDiscount(value) : 0;
+}
+
+export function getPriceLabel(
+    prices: Array<{ priceInCents: number }> | undefined,
+) {
+    const value = firstDiscountedPriceInCents(prices);
     return value > 0 ? formatCurrency(value) : "Sob consulta";
 }
 

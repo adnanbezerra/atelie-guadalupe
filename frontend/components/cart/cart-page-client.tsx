@@ -55,7 +55,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     {item.name}
                                 </p>
                                 <p className="text-xs text-slate-500">
-                                    {item.grams}g • {item.productSize}
+                                    {item.grams}g
                                 </p>
                                 <p className="mt-1 font-bold text-primary">
                                     {formatCurrency(item.totalPriceInCents)}
@@ -149,8 +149,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                 Seu carrinho está vazio
                             </h2>
                             <p className="mt-3 text-sm text-slate-500">
-                                O backend cria o carrinho automaticamente no
-                                primeiro acesso.
+                                Adicione alguns produtos para começar a comprar
                             </p>
                             <Link
                                 href="/beleza-natural"
