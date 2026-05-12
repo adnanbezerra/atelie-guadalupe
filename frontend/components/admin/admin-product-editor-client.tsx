@@ -7,6 +7,7 @@ import {
     useAdminProducts,
     type AdminProductsPayload,
 } from "@/hooks/use-admin-products";
+import { ProductImage } from "@/components/shared/product-image";
 import type {
     CreateProductInput,
     Product,
@@ -403,13 +404,11 @@ function ProductForm({
                         </label>
                         {previewUrl ? (
                             <div className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                <div
+                                <ProductImage
+                                    alt="Prévia do produto"
                                     aria-label="Prévia do produto"
                                     className="h-full w-full bg-cover bg-center"
-                                    role="img"
-                                    style={{
-                                        backgroundImage: `url(${previewUrl})`,
-                                    }}
+                                    src={previewUrl}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                                     <button

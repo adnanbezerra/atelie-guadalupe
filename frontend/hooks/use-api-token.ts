@@ -37,6 +37,8 @@ export function useApiToken() {
             setToken(readToken());
         }
 
+        syncToken();
+
         window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncToken);
         window.addEventListener("storage", syncToken);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ProductImage } from "@/components/shared/product-image";
 import { useProductCatalog, useProductLines } from "@/hooks/use-products";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -214,12 +215,13 @@ export function CatalogPageClient({ kind }: { kind: CatalogKind }) {
                                     className="overflow-hidden p-0"
                                     key={product.uuid}
                                 >
-                                    <div
-                                        className="aspect-square bg-cover bg-center"
-                                        style={{
-                                            backgroundImage: `url(${product.imageUrl})`,
-                                        }}
-                                    />
+                                    <div className="aspect-square bg-slate-100">
+                                        <ProductImage
+                                            alt={product.name}
+                                            className="h-full w-full object-cover"
+                                            src={product.imageUrl}
+                                        />
+                                    </div>
                                     <div className="p-6">
                                         <Badge className="bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
                                             {product.line.name}

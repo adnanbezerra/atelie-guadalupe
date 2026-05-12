@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ProductImage } from "@/components/shared/product-image";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { ProductLine, ProductsPayload } from "@/lib/types";
@@ -230,18 +231,14 @@ export function AdminProductsClient({
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="size-12 overflow-hidden rounded-lg bg-slate-200 shadow-inner">
-                                                        {product.imageUrl ? (
-                                                            <img
-                                                                alt={
-                                                                    product.name
-                                                                }
-                                                                className="h-full w-full object-cover"
-                                                                src={
-                                                                    product.imageUrl
-                                                                }
-                                                            />
-                                                        ) : null}
+                                                    <div className="size-20 min-h-20 min-w-20 overflow-hidden rounded-lg bg-slate-200 shadow-inner">
+                                                        <ProductImage
+                                                            alt={product.name}
+                                                            className="h-full w-full object-cover"
+                                                            src={
+                                                                product.imageUrl
+                                                            }
+                                                        />
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-slate-900">

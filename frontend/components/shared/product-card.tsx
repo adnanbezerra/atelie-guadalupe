@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import type { Product } from "@/lib/types";
+import { ProductImage } from "./product-image";
 
 export function ProductCard({ product }: { product: Product }) {
     const firstPrice = product.priceOptions[0];
@@ -11,7 +12,7 @@ export function ProductCard({ product }: { product: Product }) {
     return (
         <Card className="group overflow-hidden">
             <div className="aspect-[4/5] bg-secondary/50">
-                <img
+                <ProductImage
                     alt={product.name}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     src={product.imageUrl}

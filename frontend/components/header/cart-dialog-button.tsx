@@ -12,6 +12,7 @@ import {
 import { useApiToken } from "@/hooks/use-api-token";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/format";
+import { ProductImage } from "@/components/shared/product-image";
 
 export function CartDialogButton() {
     const token = useApiToken();
@@ -97,7 +98,7 @@ export function CartDialogButton() {
                                         className="flex gap-3 p-5"
                                         key={item.uuid}
                                     >
-                                        <img
+                                        <ProductImage
                                             alt={item.name}
                                             className="h-16 w-16 rounded-lg bg-slate-100 object-cover"
                                             src={item.imageUrl}

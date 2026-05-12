@@ -24,23 +24,30 @@ export function SiteFooter() {
                         </p>
                     </div>
                     <div>
-                        <Link className="mb-6 text-white" href="/beleza-natural">
+                        <Link
+                            className="mb-6 text-white"
+                            href="/beleza-natural"
+                        >
                             Beleza da Criação
                         </Link>
-                        <br className='mb-4'></br>
+                        <br className="mb-4"></br>
                         <Link className="mb-6 text-white" href="/artesanato">
                             Artesanato católico
                         </Link>
                     </div>
                     <div>
                         <h4 className="mb-6 text-white">
-                            Artesanato católico e cremes terapêuticos diretamente de Patos - Paraíba
+                            Artesanato católico e cremes terapêuticos
+                            diretamente de Patos - Paraíba
                         </h4>
                     </div>
                 </div>
                 <div className="flex flex-col gap-6 border-t border-white/5 pt-8 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
                     <div className="flex gap-8">
-                        <Link href="https://adnanbezerra.tech" className="hover:text-primary">
+                        <Link
+                            href="https://adnanbezerra.tech"
+                            className="hover:text-primary"
+                        >
                             Desenvolvido por Adnan Bezerra
                         </Link>
                     </div>

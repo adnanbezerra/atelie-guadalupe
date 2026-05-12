@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { ProductImage } from "@/components/shared/product-image";
 import { ProductShelfSkeleton } from "@/components/site/product-shelf-skeleton";
 import { Card } from "@/components/ui/card";
 import { useProducts } from "@/hooks/use-products";
@@ -49,13 +50,11 @@ function Shelf({
                             className="overflow-hidden p-4"
                         >
                             <div className="aspect-[4/4.6] overflow-hidden rounded-[1.5rem] bg-slate-100">
-                                {product.imageUrl ? (
-                                    <img
-                                        alt={product.name}
-                                        className="h-full w-full object-cover"
-                                        src={product.imageUrl}
-                                    />
-                                ) : null}
+                                <ProductImage
+                                    alt={product.name}
+                                    className="h-full w-full object-cover"
+                                    src={product.imageUrl}
+                                />
                             </div>
                             <div className="mt-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/70">

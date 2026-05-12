@@ -144,12 +144,15 @@ function buildUrl(
 }
 
 async function request<T>(path: string, options: RequestOptions = {}) {
-    const isFormData = options.body instanceof FormData;
-    const body = options.body
-        ? isFormData
-            ? options.body
-            : JSON.stringify(options.body)
-        : undefined;
+    let body: BodyInit | undefined;
+
+    if (options.body instanceof FormData) {
+        body = options.body;
+    } else if (options.body !== undefined) {
+        body = JSON.stringify(options.body);
+    }
+
+    const isFormData = body instanceof FormData;
 
     const response = await fetch(buildUrl(path, options.query), {
         method: options.method ?? "GET",

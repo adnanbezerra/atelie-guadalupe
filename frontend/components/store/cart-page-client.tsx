@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ProductImage } from "@/components/shared/product-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -47,7 +48,7 @@ export function CartPageClient({
                             key={item.uuid}
                             className="grid gap-5 p-5 md:grid-cols-[140px_1fr_auto] md:items-center"
                         >
-                            <img
+                            <ProductImage
                                 alt={item.name}
                                 className="aspect-square rounded-2xl object-cover"
                                 src={item.imageUrl}

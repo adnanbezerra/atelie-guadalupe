@@ -13,7 +13,12 @@ function decodeBase64Url(value: string) {
     return atob(padded);
 }
 
-function readRoleFromToken(token: string) {
+type TokenPayload = {
+    exp?: unknown;
+    role?: unknown;
+};
+
+function readPayloadFromToken(token: string) {
     const normalizedToken = token.startsWith("Bearer ")
         ? token.slice("Bearer ".length)
         : token;
@@ -24,14 +29,18 @@ function readRoleFromToken(token: string) {
     }
 
     try {
-        const parsed = JSON.parse(decodeBase64Url(payload)) as {
-            role?: unknown;
-        };
-
-        return typeof parsed.role === "string" ? parsed.role : null;
+        return JSON.parse(decodeBase64Url(payload)) as TokenPayload;
     } catch {
         return null;
     }
+}
+
+function isExpired(payload: TokenPayload) {
+    if (typeof payload.exp !== "number") {
+        return false;
+    }
+
+    return payload.exp <= Math.floor(Date.now() / 1000);
 }
 
 function readToken(request: NextRequest) {
@@ -48,35 +57,33 @@ function readToken(request: NextRequest) {
 
 export function proxy(request: NextRequest) {
     const token = readToken(request);
+    const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const isProfileRoute = request.nextUrl.pathname.startsWith("/perfil");
-
-    if (isProfileRoute && !token) {
-        return NextResponse.redirect(new URL("/", request.url));
-    }
+    const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
 
     if (!token) {
         const loginUrl = new URL("/login", request.url);
-        loginUrl.searchParams.set(
-            "next",
-            `${request.nextUrl.pathname}${request.nextUrl.search}`,
-        );
+        loginUrl.searchParams.set("next", next);
 
         return NextResponse.redirect(loginUrl);
     }
 
-    const role = readRoleFromToken(token);
+    const payload = readPayloadFromToken(token);
 
-    if (!role) {
+    if (!payload || isExpired(payload)) {
         const loginUrl = new URL("/login", request.url);
-        loginUrl.searchParams.set(
-            "next",
-            `${request.nextUrl.pathname}${request.nextUrl.search}`,
-        );
+        loginUrl.searchParams.set("next", next);
 
         return NextResponse.redirect(loginUrl);
     }
 
-    if (!ADMIN_ROLES.has(role)) {
+    if (isProfileRoute) {
+        return NextResponse.next();
+    }
+
+    const role = typeof payload.role === "string" ? payload.role : null;
+
+    if (isAdminRoute && (!role || !ADMIN_ROLES.has(role))) {
         return NextResponse.redirect(new URL("/", request.url));
     }
 

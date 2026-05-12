@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ProductImage } from "@/components/shared/product-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
 import { Cart } from "@/lib/types";
@@ -44,11 +45,10 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                             key={item.uuid}
                             className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
                         >
-                            <div
-                                className="size-20 shrink-0 rounded-lg bg-cover bg-center"
-                                style={{
-                                    backgroundImage: `url(${item.imageUrl})`,
-                                }}
+                            <ProductImage
+                                alt={item.name}
+                                className="size-20 shrink-0 rounded-lg object-cover"
+                                src={item.imageUrl}
                             />
                             <div className="grow">
                                 <p className="font-display text-base font-bold text-slate-900">

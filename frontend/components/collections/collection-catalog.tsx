@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
+import { ProductImage } from "@/components/shared/product-image";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
 import { CollectionKey, ProductLine, ProductsPayload } from "@/lib/types";
@@ -22,18 +23,6 @@ type CollectionCatalogProps = {
     initialSearch?: string;
     lines: ProductLine[];
 };
-
-const beautyFallbacks = [
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuByKdOx5QYbNjO2Vt0bSCqox-wwT1fwHrvMchPharYB04gwPSd862O6w3RtFc0FcqIIpcAadjRj5CIh4Jy-WbsmE-iKHKAxw-2CjkQtDuBzOG_KUr8jIXOkJAJQOOi50ra3Ncd_0vUqufn_hp6jxruPIOEgJf0OSv4Qyo5YDU48YW1XYPmLqhX10Hj1RUFlpd8DohTgoG0LKQKtRE_sOJHqgFuuBW6Db7R2Vyp6g4KNRCiPrCMYmBkvBtnphrgWY8KbksoHK_w8kqRy",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCHAJdYTAjSnRLfcNtvEdh9ExOZcn31vkfLOD3hqiSW-vhfa46YsuxN0xlhRylhI1_-SQxN4jtrR_Rc_sfGHrSbkFMJGeA-Uy5anogwnREmdl1Mss5R2oA3T9AG407UUGSwTCjEwBlpAj0pME2pe7WrbQVG3drfTurVKeBXGr14TQpnLJpORjVxRdeqofaAktWRUB-y4yYzpu8pZis689RELHxdRy1WITBHaHpQt6v-SPvdEP_jRDDtzboasgbSR4MRZxXW9rLSi-cx",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDJJUXqZO2gN314pFSGnG3xAg4Ey9TR8J8yihYWyuD12jOmLct2Np1oGWSNSVv4uOonBlLWM36oLb1ZISH_IkenphXjvxq2xzv8GS85lHGZAX4IYt3UaPu1k5FnwfXopRNd3Ts1itit1rfjDaH3oAd1GeGhvIuidGsdh1XHaiMiR7AzHn_VcrhU4wT2RZFj-CeIccc2MEjiuozPqnf_IOts4uyxaBfsUYU1lTczJD63Yse4-1IL5hkBurTAkDy7poRyvY1EU9FPjmuq",
-];
-
-const craftsFallbacks = [
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuA4r6sNAjhfRfhb4GyLGm_4o6s4CU_A6eomoq2JVAHOWcBKeLb8npAEwwdhrrucRkb4XmvyF3nGUmg7bXKeQf5Ps8H-k57MmWtJQ4SYOEFLbPxzGFESUg_6CaXJ7z_TNb0mvlJTx4THdQhp43EPTw_h8g2M8msWd5sObB5z0BT74web-GQlQ0VfAUzrOPAifR24mJYSAl6ej8HUUp6SuZNtQsIcZCXg0SOSFj8xU9GMnBLF5I5pLyjMR9AKioDLRo-KUYXFVGpBhG7a",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAi7JoDNtZs4KgPn5FmKlRvhfmY3KQjAshhM3-Cx_ToldiQXJbs2mUHxAcgn3KSD9F3rIEqc9kzmg3UgDUeC4zpBHTcEuWF9QoVD5RLcG3-NaCPkGEpmt1bQCfa18SMh29e-bqupTZTqCoxk0v73aAXHuji5MVGpHU2IPJ_jkxT0moFWOM1IoItwHUqZ0s1Ys77igjd00pHFw_vHmLspghkKdXXLPfjXY_Q-1OHFtVbisZGamguwa8WvjUZbijWaH5aq_g5_nZRjbh2",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCTXQhvncRD8SkL6AzLTBn3A-KdZkThgqViHub1exi8EG-VlI-LOdltxN4XNSTsCL0t-FvvDd5AGTyYPKWFoGiltGa5FVaj9wo_Ic97AkojqwTI54-Hhpk2XmpX-29XHN5qqQFYIdjdZMpUxSeRbPPI0Lgs93_worHaab2G0hdp3mXNra64jPA2ZB0Wn71WtlbWo9_0YMSPqPSjdVewpdOHQ5o81L_8tKNxi6ixFQQteGbVdIDorc_zm71ouJbcB5QvHeBjo2oXKMn4",
-];
 
 export function CollectionCatalog({
     collectionKey,
@@ -202,19 +191,13 @@ export function CollectionCatalog({
 
                         <div className="flex-1">
                             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
-                                {filteredProducts.map((product, index) => (
+                                {filteredProducts.map((product) => (
                                     <div className="group" key={product.uuid}>
                                         <div className="relative mb-4 aspect-[4/5] overflow-hidden rounded-lg bg-neutral-100">
-                                            <img
+                                            <ProductImage
                                                 alt={product.name}
                                                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                src={
-                                                    product.imageUrl ||
-                                                    craftsFallbacks[
-                                                        index %
-                                                            craftsFallbacks.length
-                                                    ]
-                                                }
+                                                src={product.imageUrl}
                                             />
                                             <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 text-[10px] font-bold tracking-widest uppercase text-[#4A3728]">
                                                 {product.line.name}
@@ -389,19 +372,13 @@ export function CollectionCatalog({
                         </div>
 
                         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                            {filteredProducts.map((product, index) => (
+                            {filteredProducts.map((product) => (
                                 <div className="group" key={product.uuid}>
                                     <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                        <img
+                                        <ProductImage
                                             alt={product.name}
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                            src={
-                                                product.imageUrl ||
-                                                beautyFallbacks[
-                                                    index %
-                                                        beautyFallbacks.length
-                                                ]
-                                            }
+                                            src={product.imageUrl}
                                         />
                                         <button className="absolute top-3 right-3 rounded-full bg-white/80 p-2 backdrop-blur">
                                             <span className="material-symbols-outlined text-sm">

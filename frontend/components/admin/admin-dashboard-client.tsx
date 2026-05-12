@@ -92,7 +92,6 @@ export function AdminDashboardClient({
                         {
                             icon: "payments",
                             iconClass: "bg-primary/10 text-primary",
-                            badge: "+12.5%",
                             badgeClass: "bg-emerald-50 text-emerald-600",
                             label: "Vendas Totais (Mês)",
                             value: formatCurrency(metrics.totalSales),
@@ -100,7 +99,6 @@ export function AdminDashboardClient({
                         {
                             icon: "shopping_bag",
                             iconClass: "bg-amber-100 text-amber-600",
-                            badge: "+5.2%",
                             badgeClass: "bg-emerald-50 text-emerald-600",
                             label: "Pedidos este Mês",
                             value: `${metrics.currentOrders.length}`,
@@ -108,7 +106,6 @@ export function AdminDashboardClient({
                         {
                             icon: "receipt_long",
                             iconClass: "bg-indigo-100 text-indigo-600",
-                            badge: "Estável",
                             badgeClass: "text-slate-400",
                             label: "Ticket Médio",
                             value: formatCurrency(
@@ -128,11 +125,6 @@ export function AdminDashboardClient({
                                         {item.icon}
                                     </span>
                                 </div>
-                                <span
-                                    className={`rounded-full px-2 py-1 text-xs font-bold ${item.badgeClass}`}
-                                >
-                                    {item.badge}
-                                </span>
                             </div>
                             <p className="text-sm font-medium text-slate-500">
                                 {item.label}

@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState, EmptyState } from "@/components/ui/state";
+import { ProductImage } from "@/components/shared/product-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/utils";
@@ -83,11 +84,10 @@ export function CartPageClient() {
                         {cart.items.map((item) => (
                             <Card className="p-5" key={item.uuid}>
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                                    <div
-                                        className="size-24 rounded-2xl bg-cover bg-center"
-                                        style={{
-                                            backgroundImage: `url(${item.imageUrl})`,
-                                        }}
+                                    <ProductImage
+                                        alt={item.name}
+                                        className="size-24 rounded-2xl object-cover"
+                                        src={item.imageUrl}
                                     />
                                     <div className="flex-1">
                                         <p className="font-display text-2xl font-semibold">
