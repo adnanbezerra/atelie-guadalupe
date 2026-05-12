@@ -73,35 +73,36 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <main>
                 <section className="relative flex min-h-[80vh] items-center overflow-hidden">
                     <div className="absolute inset-0 grid grid-cols-2">
-                        {[
-                            "https://lh3.googleusercontent.com/aida-public/AB6AXuAivgAEmKgpjW-wT8pfHxE1eiEQxhZaT3EPrRTHf96grXE05DQEDfOXC8Pt-2IwNT3207NdubuzDD4XmSUlWxIfTmbaM0BkMvHMqvWGyxRcjzXn2cnM8JliEfCgo4CacbjPb_akkkfGty3a78SSFYehVSUUK_g7n32E7EMJYKsdS6-po5gXNpSWMJT8_grJOMlTRiByZQHtIdYFJv-3_8H9-_LQU0uKwU7L8O3HxgZvHIXzy-_92nx8wrolsQ_ytwOVYyWG6s051Xee",
-                            "/crucifixo.png",
-                        ].map((image, index) => (
-                            <div
-                                key={image}
-                                className="relative overflow-hidden"
-                            >
-                                <div className="absolute inset-0 z-10 bg-primary/20" />
+                        {["./creme-2.webp", "/crucifixo.webp"].map(
+                            (image, index) => (
                                 <div
-                                    className={
-                                        index === 1
-                                            ? "h-full w-full border-l border-white/20 bg-cover"
-                                            : "h-full w-full bg-cover bg-center"
-                                    }
-                                    style={
-                                        index === 1
-                                            ? {
-                                                  backgroundImage: `url(${image})`,
-                                                  backgroundPosition:
-                                                      "22% center",
-                                              }
-                                            : {
-                                                  backgroundImage: `url(${image})`,
-                                              }
-                                    }
-                                />
-                            </div>
-                        ))}
+                                    key={image}
+                                    className="relative overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 z-10 bg-primary/20" />
+                                    <div
+                                        className={
+                                            index === 1
+                                                ? "h-full w-full border-l border-white/20 bg-cover"
+                                                : "h-full w-full bg-cover bg-center"
+                                        }
+                                        style={
+                                            index === 1
+                                                ? {
+                                                      backgroundImage: `url(${image})`,
+                                                      backgroundPosition:
+                                                          "22% center",
+                                                  }
+                                                : {
+                                                      backgroundImage: `url(${image})`,
+                                                      backgroundPosition:
+                                                          "center right",
+                                                  }
+                                        }
+                                    />
+                                </div>
+                            ),
+                        )}
                     </div>
                     <div className="relative z-20 mx-auto w-full max-w-7xl px-4 text-center sm:px-6 lg:px-8">
                         <div className="mx-auto max-w-2xl rounded-xl border border-primary/10 bg-white/90 p-8 shadow-2xl backdrop-blur-md md:p-12">
@@ -143,7 +144,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                     className="h-full w-full bg-cover bg-center"
                                     style={{
                                         backgroundImage:
-                                            "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCVTRf9ZTFuVLnLr5PbOvlfcpn7zNt8ky36c8ZT3uHUUgJ7SZKGsMXU76rKMyktMHS-GIAwHLJ90S-_w-XEJ3M4bZdtlGxxs2tXa_RbK2EF9g-ZGHBK9gZ3qpOnijul-MfvCY56-thEruYxnyf9sV6X4dGrgQzYbXrxaknZ-9AJM53xaRnZTD-DCOBk8zUyKyfK1n1b0whKgHXoL1M2duVZY3YGoim3WvD1Wo_FoPc7G5IZU4pLYH_Ikxc4WOZ-4GW8fnSSRxuZnmns')",
+                                            "url('./oleo-personalizado.webp')",
                                     }}
                                 />
                             </div>
@@ -250,9 +251,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             <div className="relative lg:col-span-5">
                                 <div className="aspect-[4/5] overflow-hidden rounded-2xl shadow-2xl">
                                     <img
-                                        alt="Ambiente familiar acolhedor"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzxA4l5o3xuESk9knRAj7aRT0ZrWPCDRA2vDN4dGK8-PEieFWb4_ogkeWMnPUPo4JGC-ICWHAh2Fcjkai4DFU48wPyBo9_pGV6lzc1DfCyNmS5iOTxRNNalJIhDqM09rqzePtTlTMHwtaVDZC3XHek3rWmxGUbxA2Zmz0zrB47ZKyGKu-QPv1Fm7JK944geZvhWnJmIXy20l_ZXTQXsxP-09Cjauz8uJcxHL51zsjpss-9uUf3LVggLNlan99ASa8Mm-9kttZTN0rI"
-                                        className="h-full w-full object-cover"
+                                        alt="Foto da Evilma Maria, fundadora do Ateliê Guadalupe"
+                                        src="./evilma.webp"
+                                        className="h-full w-full object-cover object-[0%_25%]"
                                     />
                                 </div>
                                 <div className="absolute -bottom-8 -left-8 hidden rounded-xl border border-primary/5 bg-white p-8 shadow-xl md:block">
