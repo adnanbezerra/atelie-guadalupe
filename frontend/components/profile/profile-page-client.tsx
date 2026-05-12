@@ -6,7 +6,6 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProfileDataView } from "@/components/profile/profile-data-view";
 import { ProfileOrdersView } from "@/components/profile/profile-orders-view";
-import { ProfilePaymentView } from "@/components/profile/profile-payment-view";
 import {
     buildDirtyProfilePayload,
     fetchViaCepAddress,
@@ -260,7 +259,6 @@ export function ProfilePageClient() {
                         />
                     ) : null}
 
-                    {/* {activeView === "pagamento" ? <ProfilePaymentView /> : null} */}
                 </section>
             </div>
         </main>

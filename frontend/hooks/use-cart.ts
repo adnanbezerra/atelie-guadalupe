@@ -244,8 +244,11 @@ export function CartProvider({
                 return message;
             }
 
-            const { optimisticProduct: _optimisticProduct, ...payload } =
-                input;
+            const payload = {
+                productSize: input.productSize,
+                productUuid: input.productUuid,
+                quantity: input.quantity,
+            };
 
             return runMutation(
                 () => createCartItem(token, payload),
