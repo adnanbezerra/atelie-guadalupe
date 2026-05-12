@@ -228,100 +228,103 @@ export function CartProvider({
         }
     }
 
-    const value = useMemo<CartContextValue>(() => ({
-        cart,
-        data: cart,
-        isLoading,
-        isPending: isMutating,
-        isMutating,
-        error,
-        refresh,
-        hydrate,
-        addItem: async (input: AddCartItemInput) => {
-            if (!token) {
-                const message = "Faça login para adicionar itens.";
-                setError(message);
-                return message;
-            }
+    const value = useMemo<CartContextValue>(
+        () => ({
+            cart,
+            data: cart,
+            isLoading,
+            isPending: isMutating,
+            isMutating,
+            error,
+            refresh,
+            hydrate,
+            addItem: async (input: AddCartItemInput) => {
+                if (!token) {
+                    const message = "Faça login para adicionar itens.";
+                    setError(message);
+                    return message;
+                }
 
-            const payload = {
-                productSize: input.productSize,
-                productUuid: input.productUuid,
-                quantity: input.quantity,
-            };
+                const payload = {
+                    productSize: input.productSize,
+                    productUuid: input.productUuid,
+                    quantity: input.quantity,
+                };
 
-            return runMutation(
-                () => createCartItem(token, payload),
-                getOptimisticCart(latestCartRef.current, input),
-            );
-        },
-        updateItem: async (
-            itemUuid: string,
-            quantity: number,
-            productSize?: string,
-        ) => {
-            if (!token) {
-                setError("Faça login para editar o carrinho.");
-                return;
-            }
-            await runMutation(() =>
-                updateCartItem(token, itemUuid, { quantity, productSize }),
-            );
-        },
-        removeItem: async (itemUuid: string) => {
-            if (!token) {
-                setError("Faça login para editar o carrinho.");
-                return;
-            }
-            await runMutation(() => removeCartItem(token, itemUuid));
-        },
-        clear: async () => {
-            if (!token) {
-                setError("Faça login para limpar o carrinho.");
-                return;
-            }
-            await runMutation(() => clearCart(token));
-        },
-        clearCart: async () => {
-            if (!token) {
-                setError("Faça login para limpar o carrinho.");
-                return;
-            }
-            await runMutation(() => clearCart(token));
-        },
-        applyCoupon: async (code: string) => {
-            if (!token) {
-                setError("Faça login para aplicar cupom.");
-                return;
-            }
-            await runMutation(() => applyCartCoupon(token, code));
-        },
-        removeCoupon: async () => {
-            if (!token) {
-                setError("Faça login para remover cupom.");
-                return;
-            }
-            await runMutation(() => removeCartCoupon(token));
-        },
-        checkout: async (
-            addressUuid?: string,
-            notes?: string,
-            paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD",
-        ) => {
-            if (!token) {
-                setError("Faça login para finalizar o pedido.");
-                throw new Error("Faça login para finalizar o pedido.");
-            }
+                return runMutation(
+                    () => createCartItem(token, payload),
+                    getOptimisticCart(latestCartRef.current, input),
+                );
+            },
+            updateItem: async (
+                itemUuid: string,
+                quantity: number,
+                productSize?: string,
+            ) => {
+                if (!token) {
+                    setError("Faça login para editar o carrinho.");
+                    return;
+                }
+                await runMutation(() =>
+                    updateCartItem(token, itemUuid, { quantity, productSize }),
+                );
+            },
+            removeItem: async (itemUuid: string) => {
+                if (!token) {
+                    setError("Faça login para editar o carrinho.");
+                    return;
+                }
+                await runMutation(() => removeCartItem(token, itemUuid));
+            },
+            clear: async () => {
+                if (!token) {
+                    setError("Faça login para limpar o carrinho.");
+                    return;
+                }
+                await runMutation(() => clearCart(token));
+            },
+            clearCart: async () => {
+                if (!token) {
+                    setError("Faça login para limpar o carrinho.");
+                    return;
+                }
+                await runMutation(() => clearCart(token));
+            },
+            applyCoupon: async (code: string) => {
+                if (!token) {
+                    setError("Faça login para aplicar cupom.");
+                    return;
+                }
+                await runMutation(() => applyCartCoupon(token, code));
+            },
+            removeCoupon: async () => {
+                if (!token) {
+                    setError("Faça login para remover cupom.");
+                    return;
+                }
+                await runMutation(() => removeCartCoupon(token));
+            },
+            checkout: async (
+                addressUuid?: string,
+                notes?: string,
+                paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD",
+            ) => {
+                if (!token) {
+                    setError("Faça login para finalizar o pedido.");
+                    throw new Error("Faça login para finalizar o pedido.");
+                }
 
-            const payload = await createOrder(token, {
-                addressUuid,
-                notes,
-                paymentMethod,
-            });
-            setCart(null);
-            return payload.order;
-        },
-    }), [cart, error, hydrate, isLoading, isMutating, refresh, token]);
+                const payload = await createOrder(token, {
+                    addressUuid,
+                    notes,
+                    paymentMethod,
+                });
+                setCart(null);
+                return payload.order;
+            },
+        }),
+        [cart, error, hydrate, isLoading, isMutating, refresh, token],
+    );
 
     return createElement(CartContext.Provider, { value }, children);
 }

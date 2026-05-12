@@ -17,8 +17,7 @@ const WHATSAPP_MESSAGE =
     "Olá, vim pelo website e gostaria de fazer um diagnóstico personalizado!";
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
-const previewImage =
-    "./personalizado.webp";
+const previewImage = "./personalizado.webp";
 
 function WhatsAppIcon() {
     return (

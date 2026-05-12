@@ -258,7 +258,6 @@ export function ProfilePageClient() {
                             orders={orders.data}
                         />
                     ) : null}
-
                 </section>
             </div>
         </main>
