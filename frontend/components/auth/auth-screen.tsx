@@ -269,7 +269,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     <img
                         alt="Atmosfera Ateliê Guadalupe"
                         className="absolute inset-0 h-full w-full object-cover"
-                        src="/auth-guadalupe.png"
+                        src="/auth-guadalupe.webp"
                     />
                     <div className="absolute inset-0 z-20 flex flex-col justify-end bg-gradient-to-t from-[#1A2E44]/80 via-transparent to-transparent p-16">
                         <div className="max-w-md">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans, Noto_Serif, Public_Sans } from "next/font/google";
+import { WhatsappFloatingButtonGate } from "@/components/shared/whatsapp-floating-button-gate";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
                 className={`${notoSans.variable} ${notoSerif.variable} ${publicSans.variable} antialiased`}
             >
                 {children}
+                <WhatsappFloatingButtonGate />
                 <Toaster />
             </body>
         </html>
