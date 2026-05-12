@@ -24,66 +24,24 @@ export function SiteFooter() {
                         </p>
                     </div>
                     <div>
-                        <h4 className="mb-6 font-bold text-white">
+                        <Link className="mb-6 text-white" href="/beleza-natural">
                             Beleza da Criação
-                        </h4>
-                        <div className="space-y-4 text-sm">
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/beleza-natural"
-                            >
-                                Cremes botânicos
-                            </Link>
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/beleza-natural"
-                            >
-                                Séruns faciais
-                            </Link>
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/carrinho"
-                            >
-                                Meu carrinho
-                            </Link>
-                        </div>
+                        </Link>
+                        <br className='mb-4'></br>
+                        <Link className="mb-6 text-white" href="/artesanato">
+                            Artesanato católico
+                        </Link>
                     </div>
                     <div>
-                        <h4 className="mb-6 font-bold text-white">
-                            Artesanato
+                        <h4 className="mb-6 text-white">
+                            Artesanato católico e cremes terapêuticos diretamente de Patos - Paraíba
                         </h4>
-                        <div className="space-y-4 text-sm">
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/artesanato"
-                            >
-                                Arte sacra
-                            </Link>
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/artesanato"
-                            >
-                                Cerâmica manual
-                            </Link>
-                            <Link
-                                className="block transition-colors hover:text-primary"
-                                href="/artesanato"
-                            >
-                                Oratórios
-                            </Link>
-                        </div>
                     </div>
                 </div>
                 <div className="flex flex-col gap-6 border-t border-white/5 pt-8 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
                     <div className="flex gap-8">
-                        <Link href="/" className="hover:text-primary">
-                            Contato
-                        </Link>
-                        <Link href="/" className="hover:text-primary">
-                            Sustentabilidade
-                        </Link>
-                        <Link href="/" className="hover:text-primary">
-                            Política de devolução
+                        <Link href="https://adnanbezerra.tech" className="hover:text-primary">
+                            Desenvolvido por Adnan Bezerra
                         </Link>
                     </div>
                 </div>
