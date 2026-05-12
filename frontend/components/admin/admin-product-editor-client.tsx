@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
     useAdminProducts,
     type AdminProductsPayload,
 } from "@/hooks/use-admin-products";
-import { ProductImage } from "@/components/shared/product-image";
 import type {
     CreateProductInput,
     Product,
@@ -51,7 +51,6 @@ export function AdminProductEditorClient({
                 : null,
         [productUuid, products.data.items],
     );
-    const [feedback, setFeedback] = useState<string | null>(null);
     const isEditing = Boolean(productUuid);
 
     if (isEditing && !product) {
@@ -105,36 +104,37 @@ export function AdminProductEditorClient({
 
                 <ProductForm
                     key={product?.uuid ?? "new"}
-                    feedback={feedback}
                     lines={products.data.lines}
                     onSubmit={async (payload) => {
                         try {
-                            setFeedback(null);
-
                             if (product) {
                                 await products.updateProduct(
                                     product.uuid,
                                     payload,
                                 );
-                                setFeedback("Produto atualizado.");
+                                toast.success("Produto salvo com sucesso.", {
+                                    description:
+                                        "As vitrines já usam os dados atualizados.",
+                                });
                                 return;
                             }
 
                             if (!isCreateProductPayload(payload)) {
-                                setFeedback(
-                                    "Informe imagem e campos obrigatórios.",
-                                );
+                                toast.error("Não foi possível cadastrar.", {
+                                    description:
+                                        "Informe imagem, nome, linha e descrições.",
+                                });
                                 return;
                             }
 
                             await products.createProduct(payload);
                             router.push("/admin/produtos");
                         } catch (error) {
-                            setFeedback(
-                                error instanceof Error
-                                    ? error.message
-                                    : "Falha ao salvar produto.",
-                            );
+                            const detail =
+                                error instanceof Error ? error.message : null;
+                            toast.error("Não foi possível salvar o produto.", {
+                                description: detail ?? "Tente novamente.",
+                            });
                         }
                     }}
                     product={product}
@@ -173,12 +173,10 @@ function ProductForm({
     product,
     lines,
     onSubmit,
-    feedback,
 }: {
     product: Product | null;
     lines: AdminProductsPayload["lines"];
     onSubmit: (payload: ProductFormPayload) => Promise<void>;
-    feedback: string | null;
 }) {
     const [name, setName] = useState(product?.name ?? "");
     const [lineUuid, setLineUuid] = useState(
@@ -404,10 +402,10 @@ function ProductForm({
                         </label>
                         {previewUrl ? (
                             <div className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                <ProductImage
+                                <img
                                     alt="Prévia do produto"
                                     aria-label="Prévia do produto"
-                                    className="h-full w-full bg-cover bg-center"
+                                    className="h-full w-full object-cover"
                                     src={previewUrl}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
@@ -500,9 +498,9 @@ function ProductForm({
                     </Field>
                 </section>
 
-                {formError || feedback ? (
+                {formError ? (
                     <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                        {formError ?? feedback}
+                        {formError}
                     </p>
                 ) : null}
 

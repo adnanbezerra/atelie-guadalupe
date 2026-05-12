@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
     Dialog,
     DialogContent,
@@ -57,21 +58,6 @@ export function AdminTestimonialsClient({
     );
     const [open, setOpen] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!toastMessage) {
-            return;
-        }
-
-        const timeoutId = window.setTimeout(() => {
-            setToastMessage(null);
-        }, 3500);
-
-        return () => {
-            window.clearTimeout(timeoutId);
-        };
-    }, [toastMessage]);
 
     const filteredItems = useMemo(() => {
         if (typeFilter === "ALL") {
@@ -158,7 +144,7 @@ export function AdminTestimonialsClient({
                                             options,
                                         );
                                         setOpen(false);
-                                        setToastMessage(
+                                        toast.success(
                                             "Testemunho criado com sucesso.",
                                         );
                                     } catch (error) {
@@ -174,15 +160,6 @@ export function AdminTestimonialsClient({
                         </DialogContent>
                     </Dialog>
                 </div>
-
-                {toastMessage ? (
-                    <div className="fixed right-6 top-6 z-[70] flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-lg">
-                        <span className="material-symbols-outlined text-lg">
-                            check_circle
-                        </span>
-                        {toastMessage}
-                    </div>
-                ) : null}
 
                 <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-4">
                     {[

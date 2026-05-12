@@ -29,7 +29,6 @@ type ProfileDataViewProps = {
     isBirthCalendarOpen: boolean;
     isCepLoading: boolean;
     cepError: string | null;
-    successToast: string | null;
     profileFormRef: RefObject<HTMLFormElement | null>;
     birthCalendarRef: RefObject<HTMLDivElement | null>;
     onSubmit: FormEventHandler<HTMLFormElement>;
@@ -50,7 +49,6 @@ export function ProfileDataView({
     isBirthCalendarOpen,
     isCepLoading,
     cepError,
-    successToast,
     profileFormRef,
     birthCalendarRef,
     onSubmit,
@@ -61,18 +59,6 @@ export function ProfileDataView({
 }: ProfileDataViewProps) {
     return (
         <div className="relative rounded-3xl border border-slate-100 bg-white p-8 shadow-sm md:p-12">
-            {successToast ? (
-                <div
-                    className="fixed right-4 top-24 z-50 flex max-w-sm items-center gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-emerald-700 shadow-2xl shadow-slate-200 md:right-8"
-                    role="status"
-                >
-                    <span className="material-symbols-outlined text-emerald-600">
-                        check_circle
-                    </span>
-                    {successToast}
-                </div>
-            ) : null}
-
             <div className="mb-10 flex items-start justify-between gap-6">
                 <div>
                     <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">

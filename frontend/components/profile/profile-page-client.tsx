@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { ProfileDataView } from "@/components/profile/profile-data-view";
 import { ProfileOrdersView } from "@/components/profile/profile-orders-view";
 import { ProfilePaymentView } from "@/components/profile/profile-payment-view";
@@ -31,7 +32,6 @@ export function ProfilePageClient() {
     const [isBirthCalendarOpen, setIsBirthCalendarOpen] = useState(false);
     const [isCepLoading, setIsCepLoading] = useState(false);
     const [cepError, setCepError] = useState<string | null>(null);
-    const [successToast, setSuccessToast] = useState<string | null>(null);
     const profileFormRef = useRef<HTMLFormElement | null>(null);
     const birthCalendarRef = useRef<HTMLDivElement | null>(null);
     const lastCepRequestRef = useRef("");
@@ -103,8 +103,7 @@ export function ProfilePageClient() {
         const updatedUser = await profile.updateProfile(payload);
 
         if (updatedUser && payload.address) {
-            setSuccessToast("Endereço atualizado com sucesso.");
-            window.setTimeout(() => setSuccessToast(null), 3500);
+            toast.success("Endereço atualizado com sucesso.");
         }
     }
 
@@ -249,7 +248,6 @@ export function ProfilePageClient() {
                             setBirthDate={setBirthDate}
                             setCalendarMonth={setCalendarMonth}
                             setIsBirthCalendarOpen={setIsBirthCalendarOpen}
-                            successToast={successToast}
                             user={user}
                         />
                     ) : null}
