@@ -35,6 +35,7 @@ type CollectionCatalogProps = {
     };
     initialCatalog?: ProductsPayload;
     initialLineUuid?: string;
+    initialPage?: number;
     initialSearch?: string;
     lines: ProductLine[];
 };
@@ -44,6 +45,7 @@ export function CollectionCatalog({
     config,
     initialCatalog,
     initialLineUuid = "",
+    initialPage = 1,
     initialSearch = "",
     lines: initialLines,
 }: CollectionCatalogProps) {
@@ -53,6 +55,7 @@ export function CollectionCatalog({
     const searchParams = useSearchParams();
     const [search, setSearch] = useState(initialSearch);
     const [lineUuid, setLineUuid] = useState(initialLineUuid);
+    const [page, setPage] = useState(initialPage);
     const pendingProductUuidsRef = useRef(new Set<string>());
     const [, renderPendingProducts] = useState(0);
     const [consultProductName, setConsultProductName] = useState<string | null>(
@@ -66,13 +69,22 @@ export function CollectionCatalog({
         category,
     });
     const productsResource = useProducts(initialCatalog, {
-        page: 1,
+        page,
         pageSize: 24,
         category,
         search,
         lineUuid: lineUuid || undefined,
     });
     const productLines = linesResource.lines;
+    const pagination = productsResource.data?.pagination;
+    const totalPages = pagination?.totalPages ?? 0;
+    const pageNumbers = useMemo(() => {
+        if (totalPages <= 0) {
+            return [];
+        }
+
+        return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }, [totalPages]);
 
     const filteredProducts = useMemo(() => {
         const items = productsResource.data?.items ?? [];
@@ -88,6 +100,16 @@ export function CollectionCatalog({
     }, [initialLineUuid]);
 
     useEffect(() => {
+        setPage(initialPage);
+    }, [initialPage]);
+
+    useEffect(() => {
+        if (totalPages > 0 && page > totalPages) {
+            setPage(totalPages);
+        }
+    }, [page, totalPages]);
+
+    useEffect(() => {
         const timeout = window.setTimeout(() => {
             const nextParams = new URLSearchParams(searchParams.toString());
 
@@ -101,6 +123,12 @@ export function CollectionCatalog({
                 nextParams.set("lineUuid", lineUuid);
             } else {
                 nextParams.delete("lineUuid");
+            }
+
+            if (page > 1) {
+                nextParams.set("page", String(page));
+            } else {
+                nextParams.delete("page");
             }
 
             const query = nextParams.toString();
@@ -121,7 +149,36 @@ export function CollectionCatalog({
         return () => {
             window.clearTimeout(timeout);
         };
-    }, [lineUuid, pathname, router, search, searchParams, startTransition]);
+    }, [
+        lineUuid,
+        page,
+        pathname,
+        router,
+        search,
+        searchParams,
+        startTransition,
+    ]);
+
+    function handleSearchChange(value: string) {
+        setSearch(value);
+        setPage(1);
+    }
+
+    function handleLineChange(value: string) {
+        setLineUuid(value);
+        setPage(1);
+    }
+
+    function handlePageChange(value: number) {
+        const nextPage = Math.min(Math.max(value, 1), Math.max(totalPages, 1));
+
+        if (nextPage === page) {
+            return;
+        }
+
+        setPage(nextPage);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
     async function handleAddToCart(product: (typeof filteredProducts)[number]) {
         const priceOption = product.priceOptions[0];
@@ -157,7 +214,9 @@ export function CollectionCatalog({
         }
     }
 
-    function renderPrice(prices: (typeof filteredProducts)[number]["priceOptions"]) {
+    function renderPrice(
+        prices: (typeof filteredProducts)[number]["priceOptions"],
+    ) {
         const originalPriceInCents = firstPriceInCents(prices);
 
         if (originalPriceInCents <= 0) {
@@ -191,7 +250,7 @@ export function CollectionCatalog({
                 <Header
                     activeCollection="crafts"
                     search={search}
-                    setSearch={setSearch}
+                    setSearch={handleSearchChange}
                 />
 
                 <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -234,7 +293,7 @@ export function CollectionCatalog({
                                                     checked={!lineUuid}
                                                     name="craft-product-line"
                                                     onChange={() =>
-                                                        setLineUuid("")
+                                                        handleLineChange("")
                                                     }
                                                     type="radio"
                                                 />
@@ -251,7 +310,7 @@ export function CollectionCatalog({
                                                         }
                                                         name="craft-product-line"
                                                         onChange={() =>
-                                                            setLineUuid(
+                                                            handleLineChange(
                                                                 line.uuid,
                                                             )
                                                         }
@@ -324,27 +383,57 @@ export function CollectionCatalog({
                                 ))}
                             </div>
 
-                            <div className="mt-16 flex items-center justify-center gap-4">
-                                <button className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200">
-                                    <span className="material-symbols-outlined text-sm">
-                                        chevron_left
-                                    </span>
-                                </button>
-                                <button className="flex h-10 w-10 items-center justify-center rounded-full bg-[#4A3728] font-bold text-white">
-                                    1
-                                </button>
-                                <button className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200">
-                                    2
-                                </button>
-                                <button className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200">
-                                    3
-                                </button>
-                                <button className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200">
-                                    <span className="material-symbols-outlined text-sm">
-                                        chevron_right
-                                    </span>
-                                </button>
-                            </div>
+                            {totalPages > 1 ? (
+                                <div className="mt-16 flex items-center justify-center gap-3">
+                                    <button
+                                        aria-label="Página anterior"
+                                        className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 disabled:cursor-not-allowed disabled:opacity-40"
+                                        disabled={page <= 1}
+                                        onClick={() =>
+                                            handlePageChange(page - 1)
+                                        }
+                                        type="button"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">
+                                            chevron_left
+                                        </span>
+                                    </button>
+                                    {pageNumbers.map((pageNumber) => (
+                                        <button
+                                            aria-current={
+                                                pageNumber === page
+                                                    ? "page"
+                                                    : undefined
+                                            }
+                                            className={
+                                                pageNumber === page
+                                                    ? "flex h-10 w-10 items-center justify-center rounded-full bg-[#4A3728] font-bold text-white"
+                                                    : "flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200"
+                                            }
+                                            key={pageNumber}
+                                            onClick={() =>
+                                                handlePageChange(pageNumber)
+                                            }
+                                            type="button"
+                                        >
+                                            {pageNumber}
+                                        </button>
+                                    ))}
+                                    <button
+                                        aria-label="Próxima página"
+                                        className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 disabled:cursor-not-allowed disabled:opacity-40"
+                                        disabled={page >= totalPages}
+                                        onClick={() =>
+                                            handlePageChange(page + 1)
+                                        }
+                                        type="button"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">
+                                            chevron_right
+                                        </span>
+                                    </button>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 </main>
@@ -360,9 +449,9 @@ export function CollectionCatalog({
                                 Atendimento pelo WhatsApp
                             </DialogTitle>
                             <DialogDescription className="text-sm leading-6 text-neutral-600">
-                                {consultProductName} está com preço sob
-                                consulta e é tratado diretamente pelo
-                                WhatsApp. Deseja abrir a conversa agora?
+                                {consultProductName} está com preço sob consulta
+                                e é tratado diretamente pelo WhatsApp. Deseja
+                                abrir a conversa agora?
                             </DialogDescription>
                         </DialogHeader>
                         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -393,7 +482,7 @@ export function CollectionCatalog({
             <Header
                 activeCollection="beauty"
                 search={search}
-                setSearch={setSearch}
+                setSearch={handleSearchChange}
             />
             <main className="mx-auto w-full max-w-7xl px-6 py-8 md:px-10">
                 <nav className="mb-8 flex items-center gap-2 text-sm text-slate-500">
@@ -457,7 +546,7 @@ export function CollectionCatalog({
                                     <input
                                         checked={!lineUuid}
                                         name="product-line"
-                                        onChange={() => setLineUuid("")}
+                                        onChange={() => handleLineChange("")}
                                         type="radio"
                                     />
                                     Todas as linhas
@@ -471,7 +560,7 @@ export function CollectionCatalog({
                                             checked={lineUuid === line.uuid}
                                             name="product-line"
                                             onChange={() =>
-                                                setLineUuid(line.uuid)
+                                                handleLineChange(line.uuid)
                                             }
                                             type="radio"
                                         />
@@ -568,8 +657,8 @@ export function CollectionCatalog({
                             Atendimento pelo WhatsApp
                         </DialogTitle>
                         <DialogDescription className="text-sm leading-6 text-slate-600">
-                            {consultProductName} está com preço sob consulta e
-                            é tratado diretamente pelo WhatsApp. Deseja abrir a
+                            {consultProductName} está com preço sob consulta e é
+                            tratado diretamente pelo WhatsApp. Deseja abrir a
                             conversa agora?
                         </DialogDescription>
                     </DialogHeader>
