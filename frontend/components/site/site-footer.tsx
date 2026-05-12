@@ -73,14 +73,6 @@ export function SiteFooter() {
                             </Link>
                         </div>
                     </div>
-                    <div>
-                        <Link
-                            href="/admin"
-                            className="block transition-colors hover:text-primary"
-                        >
-                            Tela de Admin
-                        </Link>
-                    </div>
                 </div>
                 <div className="flex flex-col gap-6 border-t border-white/5 pt-8 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
                     <div className="flex gap-8">

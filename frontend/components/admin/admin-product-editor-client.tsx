@@ -155,15 +155,6 @@ function AdminProductTopbar({ title }: { title: string }) {
                 </span>
             </div>
             <div className="flex items-center gap-3">
-                <button
-                    className="rounded-full p-2 text-slate-400 hover:text-primary"
-                    type="button"
-                >
-                    <span className="material-symbols-outlined">
-                        notifications
-                    </span>
-                </button>
-                <div className="hidden h-6 w-px bg-slate-200 sm:block" />
                 <Link
                     className="rounded-full p-2 text-slate-400 hover:text-primary"
                     href="/"

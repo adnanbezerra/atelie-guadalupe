@@ -9,7 +9,11 @@ import type {
     ProductLine,
     ProductListResponse,
     ProductQuery,
+    Testimonial,
+    TestimonialsPayload,
+    CreateTestimonialInput,
     UpdateProductInput,
+    UpdateTestimonialInput,
     UpdateCurrentUserInput,
     User,
 } from "@/lib/types";
@@ -31,10 +35,14 @@ export class ApiError extends Error {
 }
 
 type RequestOptions = {
-    method?: "GET" | "POST" | "PATCH" | "DELETE";
+    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: unknown;
     token?: string | null;
     query?: Record<string, string | number | boolean | undefined>;
+};
+
+type UploadProgressOptions = {
+    onUploadProgress?: (progress: number) => void;
 };
 
 function isLegacyProductImageInput(
@@ -83,6 +91,32 @@ function buildProductFormData(body: CreateProductInput | UpdateProductInput) {
 
     for (const [key, value] of Object.entries(body)) {
         appendProductField(formData, key, value);
+    }
+
+    return formData;
+}
+
+function buildTestimonialFormData(
+    body: Extract<
+        CreateTestimonialInput | UpdateTestimonialInput,
+        { type: "VIDEO" }
+    >,
+) {
+    const formData = new FormData();
+
+    if ("uuid" in body) {
+        formData.append("uuid", body.uuid);
+    }
+
+    formData.append("type", body.type);
+    formData.append("isActive", String(body.isActive));
+
+    if (body.title) {
+        formData.append("title", body.title);
+    }
+
+    if (body.video) {
+        formData.append("video", body.video);
     }
 
     return formData;
@@ -144,6 +178,65 @@ async function request<T>(path: string, options: RequestOptions = {}) {
     }
 
     return payload.data;
+}
+
+function requestWithUploadProgress<T>(
+    path: string,
+    options: RequestOptions & UploadProgressOptions,
+) {
+    return new Promise<T>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.open(options.method ?? "GET", buildUrl(path, options.query));
+
+        if (options.token) {
+            xhr.setRequestHeader("Authorization", `Bearer ${options.token}`);
+        }
+
+        xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable || !options.onUploadProgress) {
+                return;
+            }
+
+            const progress = Math.round((event.loaded / event.total) * 100);
+            options.onUploadProgress(Math.min(99, progress));
+        };
+
+        xhr.onload = () => {
+            let payload: ApiEnvelope<T>;
+
+            try {
+                payload = JSON.parse(xhr.responseText) as ApiEnvelope<T>;
+            } catch {
+                reject(new ApiError("Resposta inválida da API.", xhr.status));
+                return;
+            }
+
+            if (xhr.status < 200 || xhr.status >= 300 || !payload.success) {
+                if (isExpiredAccessTokenError(xhr.status, payload)) {
+                    clearAuthSession();
+                }
+
+                reject(
+                    new ApiError(
+                        payload.error?.message ?? "Falha ao acessar a API.",
+                        xhr.status,
+                        payload.error?.code,
+                    ),
+                );
+                return;
+            }
+
+            options.onUploadProgress?.(100);
+            resolve(payload.data);
+        };
+
+        xhr.onerror = () => {
+            reject(new ApiError("Falha ao acessar a API.", xhr.status));
+        };
+
+        xhr.send(options.body instanceof FormData ? options.body : undefined);
+    });
 }
 
 export function getProducts(query?: ProductQuery) {
@@ -286,6 +379,51 @@ export function updateProduct(
 
 export function deleteProduct(token: string, productUuid: string) {
     return request<{ deleted: boolean }>(`/products/${productUuid}`, {
+        method: "DELETE",
+        token,
+    });
+}
+
+export function getTestimonials(token?: string | null) {
+    return request<TestimonialsPayload>("/testimonials", { token });
+}
+
+export function upsertTestimonial(
+    token: string,
+    body: CreateTestimonialInput | UpdateTestimonialInput,
+    options: UploadProgressOptions = {},
+) {
+    if (body.type === "VIDEO") {
+        return requestWithUploadProgress<{ testimonial: Testimonial }>(
+            "/testimonials",
+            {
+                method: "PUT",
+                token,
+                body: buildTestimonialFormData(body),
+                onUploadProgress: options.onUploadProgress,
+            },
+        );
+    }
+
+    return request<{ testimonial: Testimonial }>("/testimonials", {
+        method: "PUT",
+        token,
+        body,
+    });
+}
+
+export function deactivateTestimonial(token: string, testimonialUuid: string) {
+    return request<{ testimonial: Testimonial }>(
+        `/testimonials/${testimonialUuid}/deactivate`,
+        {
+            method: "PATCH",
+            token,
+        },
+    );
+}
+
+export function deleteTestimonial(token: string, testimonialUuid: string) {
+    return request<{ deleted: boolean }>(`/testimonials/${testimonialUuid}`, {
         method: "DELETE",
         token,
     });

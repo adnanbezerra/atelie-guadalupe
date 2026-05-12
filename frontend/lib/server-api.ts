@@ -6,6 +6,7 @@ import {
     Order,
     ProductLine,
     ProductsPayload,
+    TestimonialsPayload,
     User,
 } from "@/lib/types";
 import { buildQuery } from "@/lib/utils";
@@ -87,4 +88,12 @@ export async function fetchMyOrders(params?: {
 
 export async function fetchCurrentUser() {
     return serverApi<{ user: User }>("/users/me");
+}
+
+export async function fetchTestimonials() {
+    return serverApi<TestimonialsPayload>("/testimonials");
+}
+
+export async function fetchActiveTestimonials() {
+    return serverApi<TestimonialsPayload>("/testimonials/active");
 }

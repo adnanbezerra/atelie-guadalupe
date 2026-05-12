@@ -211,6 +211,53 @@ export type ProductQuery = {
     inStock?: boolean;
 };
 
+export type TestimonialType = "TEXT" | "VIDEO";
+
+export type Testimonial = {
+    uuid: string;
+    type: TestimonialType;
+    title?: string | null;
+    text: string | null;
+    videoUrl: string | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type TestimonialsPayload = {
+    testimonials: Testimonial[];
+};
+
+export type CreateTestimonialInput =
+    | {
+          type: "TEXT";
+          title?: string;
+          text: string;
+          isActive: boolean;
+      }
+    | {
+          type: "VIDEO";
+          title?: string;
+          video: File;
+          isActive: boolean;
+      };
+
+export type UpdateTestimonialInput =
+    | {
+          uuid: string;
+          type: "TEXT";
+          title?: string;
+          text: string;
+          isActive: boolean;
+      }
+    | {
+          uuid: string;
+          type: "VIDEO";
+          title?: string;
+          video?: File;
+          isActive: boolean;
+      };
+
 export type LegacyProductImageInput = {
     filename: string;
     contentType: "image/jpeg" | "image/png" | "image/webp";

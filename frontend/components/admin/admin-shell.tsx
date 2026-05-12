@@ -78,18 +78,15 @@ function AdminMobileHeader({ pathname }: { pathname: string }) {
                                         (pathname.startsWith(`${item.href}/`) &&
                                             pathname !== "/admin/produtos/novo")
                                       : pathname.startsWith(item.href);
-                            const isCta = item.tone === "cta";
 
                             return (
                                 <DialogClose asChild key={item.href}>
                                     <Link
                                         className={cn(
                                             "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium",
-                                            isCta
-                                                ? "bg-blue-700 text-white hover:bg-blue-800"
-                                                : isActive
-                                                  ? "bg-primary text-white"
-                                                  : "text-slate-600 hover:bg-slate-100",
+                                            isActive
+                                                ? "bg-primary text-white"
+                                                : "text-slate-600 hover:bg-slate-100",
                                         )}
                                         href={item.href}
                                     >

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
 import { SiteFooter } from "@/components/site/site-footer";
-import { getFeaturedCollections } from "@/lib/catalog";
-import { fetchProducts } from "@/lib/server-api";
+import { fetchActiveTestimonials } from "@/lib/server-api";
 import { ServerHeader } from "@/components/header/server";
+import type { Testimonial } from "@/lib/types";
 
 type HomePageProps = {
     searchParams?: Promise<{
@@ -11,47 +11,60 @@ type HomePageProps = {
     }>;
 };
 
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+    const title =
+        testimonial.title ??
+        (testimonial.type === "VIDEO" ? "Depoimento em vídeo" : "Depoimento");
+    const text = testimonial.text ?? "";
+
+    return (
+        <article className="flex min-h-[22rem] w-[82vw] max-w-[23rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-primary/5 bg-white shadow-lg md:w-[31%] md:min-w-[20rem]">
+            {testimonial.type === "VIDEO" && testimonial.videoUrl ? (
+                <div className="h-48 min-h-48 max-h-60 overflow-hidden bg-slate-950 md:h-56">
+                    <video
+                        className="h-full w-full object-contain"
+                        controls
+                        preload="metadata"
+                        src={testimonial.videoUrl}
+                    />
+                </div>
+            ) : (
+                <div className="flex h-48 min-h-48 max-h-60 items-center bg-primary/10 px-6 md:h-56">
+                    <span className="material-symbols-outlined text-5xl text-primary">
+                        format_quote
+                    </span>
+                </div>
+            )}
+            <div className="flex flex-1 flex-col p-6">
+                <span className="mb-3 inline-flex w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
+                    {testimonial.type === "VIDEO" ? "Vídeo" : "Texto"}
+                </span>
+                <h3 className="font-display text-xl font-bold text-slate-900">
+                    {title}
+                </h3>
+                {text ? (
+                    <p className="mt-3 line-clamp-5 text-sm leading-6 text-slate-600">
+                        {text}
+                    </p>
+                ) : null}
+            </div>
+        </article>
+    );
+}
+
 export default async function HomePage({ searchParams }: HomePageProps) {
     const resolvedSearchParams = searchParams ? await searchParams : undefined;
     const search = Array.isArray(resolvedSearchParams?.search)
         ? (resolvedSearchParams.search[0] ?? "")
         : (resolvedSearchParams?.search ?? "");
 
-    const [productsResult] = await Promise.allSettled([
-        fetchProducts({ page: 1, pageSize: 18, search: search || undefined }),
+    const [testimonialsResult] = await Promise.allSettled([
+        fetchActiveTestimonials(),
     ]);
-    const products =
-        productsResult.status === "fulfilled" ? productsResult.value.items : [];
-    const collections = getFeaturedCollections(products);
-    const featuredCards = [
-        {
-            title: "Cuidados Faciais",
-            description:
-                "Séruns e tônicos produzidos com paciência e reverência à criação.",
-            href: "/beleza-natural",
-            image:
-                collections.beauty[0]?.imageUrl ??
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuCepVaRudtCLchGkhLvWlK-EJWvW2kkUuTxKEB5f7W0FWV0Aofz2phETGaFJo_zXitNUtNNQIMaYjyBbnN-6iorAdBe87IY-HMm_ODEsdpLo8PHE9oYas4EERQ9LC4Ghkb6PpCz8aGNaOH0VhgcJQjISLLju0G-mkJJr_-K5oOqwfYYTvb07ok3zdEgTfqVFHsdEeQCaMWaiObpgYk5qoLb7a22DQ1FSiDA4TRyp-3IQAcgvD-VyaEsYfSuETwI59zTjHrJi5kOxlpN",
-        },
-        {
-            title: "Cerâmica Manual",
-            description:
-                "Peças modeladas à mão que refletem o trabalho digno e artesanal.",
-            href: "/artesanato",
-            image:
-                collections.crafts[0]?.imageUrl ??
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuCl7cjYe96CRQ6vvjKIG8USTJp1JOuqj_iDo3NBoL6UiD0t7P-AsTYRNbWftmVQj04w4upQkivTh2A0vx_kpakY0r-xeFraoTqPPLx9BTUCK-910pcGlG0Sd-ddgpkcdM_RCbOV7qWq7L9CTNj5vmKuPEIj8Y5mF6glR2RTZL4T2Mth84jzLKeBRx2mrv3RBVA5U0blqNJa8Sph9lj2EkjUGSOvtcknuZWihgDuOqwC8NYt0gAo7KtmcdTBCjGyb07uF4fWnDwp6v94",
-        },
-        {
-            title: "Tear e Fibras",
-            description:
-                "Fibras naturais tecidas com a simplicidade e beleza das tradições.",
-            href: "/artesanato",
-            image:
-                collections.crafts[1]?.imageUrl ??
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuCtMb-HIi96so-OrMaso_mOTkdRsQAxyC6f4DPBk12glSM_me6qD991y3Zl88NSvQAgGWgsyg0d9QU8GUKGWdwOwcA9NymhZ0muGaV_Ox1nXKoP-W3IjprJxR6gkvl9odwQZ-xC1ZcTWKzMkyTcrELwXoKWlqPe_8Oi7ptMdn00__5eHxCag3BPo62S26uEFB9uEZ7vuBfiNb1BFcdJxXAUuncdzCn5XBj9zJy-o59--sESf-m1QlXTLHn6KS8uD_dNQgyhafE3Xm07",
-        },
-    ];
+    const testimonials =
+        testimonialsResult.status === "fulfilled"
+            ? testimonialsResult.value.testimonials
+            : [];
 
     return (
         <div className="min-h-screen bg-[#f6f6f8]">
@@ -181,58 +194,52 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     </div>
                 </section>
 
-                <section className="bg-primary/5 py-24">
+                <section className="bg-primary/5 py-20">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="mb-12 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                            <div className="max-w-xl">
+                        <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                            <div className="max-w-3xl">
                                 <h2 className="font-display text-3xl font-bold text-slate-900">
-                                    Nossos Universos
+                                    Testemunhos e Feedbacks
                                 </h2>
-                                <p className="mt-4 text-slate-600">
-                                    Curadoria especial de produtos que unem o
-                                    cuidado pessoal à dignidade do lar católico.
+                                <p className="mt-4 text-lg leading-relaxed text-slate-600">
+                                    Algumas das palavras que nossos clientes
+                                    fiéis falaram sobre a qualidade dos nossos
+                                    produtos.
                                 </p>
                             </div>
                             <Link
-                                href="/beleza-natural"
+                                href="/artesanato"
                                 className="flex items-center gap-2 font-bold text-primary hover:underline"
                             >
-                                Ver catálogo completo
+                                Conhecer produtos
                                 <span className="material-symbols-outlined">
                                     north_east
                                 </span>
                             </Link>
                         </div>
-                        <div className="grid gap-8 md:grid-cols-3">
-                            {featuredCards.map((card) => (
-                                <div
-                                    key={card.title}
-                                    className="overflow-hidden rounded-2xl border border-primary/5 bg-white shadow-lg"
-                                >
-                                    <div className="h-64 overflow-hidden">
-                                        <div
-                                            className="h-full w-full bg-cover bg-center transition-transform duration-500 hover:scale-110"
-                                            style={{
-                                                backgroundImage: `url(${card.image})`,
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="p-6">
-                                        <h3 className="font-display text-xl font-bold text-slate-900">
-                                            {card.title}
-                                        </h3>
-                                        <p className="mb-4 mt-2 text-sm text-slate-600">
-                                            {card.description}
-                                        </p>
-                                        <Link
-                                            href={card.href}
-                                            className="text-sm font-bold uppercase tracking-wider text-primary"
-                                        >
-                                            Explorar →
-                                        </Link>
-                                    </div>
+                        <div className="-mx-4 flex snap-x gap-6 overflow-x-auto px-4 pb-2">
+                            {testimonials.length > 0 ? (
+                                testimonials.map((testimonial) => (
+                                    <TestimonialCard
+                                        key={testimonial.uuid}
+                                        testimonial={testimonial}
+                                    />
+                                ))
+                            ) : (
+                                <div className="min-h-[18rem] w-full rounded-2xl border border-primary/5 bg-white p-8 shadow-lg">
+                                    <span className="material-symbols-outlined text-4xl text-primary">
+                                        format_quote
+                                    </span>
+                                    <h3 className="mt-6 font-display text-2xl font-bold text-slate-900">
+                                        Em breve
+                                    </h3>
+                                    <p className="mt-3 max-w-xl text-slate-600">
+                                        Novos testemunhos de clientes serão
+                                        exibidos aqui quando estiverem
+                                        disponíveis.
+                                    </p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </section>

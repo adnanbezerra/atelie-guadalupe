@@ -110,6 +110,15 @@ export async function POST(
     return proxyRequest(request, path);
 }
 
+export async function PUT(
+    request: NextRequest,
+    context: { params: Promise<{ path: string[] }> },
+) {
+    const { path } = await context.params;
+
+    return proxyRequest(request, path);
+}
+
 export async function PATCH(
     request: NextRequest,
     context: { params: Promise<{ path: string[] }> },
