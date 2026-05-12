@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.env*
+.git
+.gitignore
+.next
+.pnpm-store
+.stitch
+Dockerfile
+node_modules
+npm-debug.log*
+package-lock.json
+pnpm-debug.log*
+README.md
