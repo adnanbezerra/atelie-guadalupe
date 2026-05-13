@@ -2,7 +2,7 @@ import "dotenv/config";
 import * as bcrypt from "bcrypt";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { PromotionScope, RoleName } from "../src/generated/prisma/enums";
+import { PromotionScope, RoleName, TestimonialType } from "../src/generated/prisma/enums";
 import { slugify } from "../src/core/utils/slug";
 import { createUuid } from "../src/core/utils/uuid";
 
@@ -215,6 +215,8 @@ const productSeed = [
         products: [
             {
                 name: "Crucifixo",
+                imageUrl:
+                    "https://atelie-guadalupe-backend.ithx86.easypanel.host/media/images/6a03517f232ecbb0376498aa",
                 stock: 0,
                 shippingWeightGrams: 5000,
                 shortDescription: "Crucifixo artesanal para devocao e decoracao de ambientes.",
@@ -267,6 +269,18 @@ const promotionsSeed = [
         discountPercent: 5,
         startsAt: new Date("2026-05-04T00:00:00.000Z"),
         endsAt: null,
+        isActive: true
+    }
+] as const;
+
+const testimonialsSeed = [
+    {
+        uuid: "019e18cf-df46-76b9-a76f-fcaeef90fd97",
+        type: TestimonialType.VIDEO,
+        title: "Michelly Araújo - Nutricionista GAPS",
+        text: null,
+        videoUrl:
+            "https://atelie-guadalupe-backend.ithx86.easypanel.host/media/videos/6a0241803f751b1ad1d76ee8",
         isActive: true
     }
 ] as const;
@@ -418,6 +432,10 @@ async function main() {
                     "shippingWeightGrams" in productSeedItem
                         ? productSeedItem.shippingWeightGrams
                         : null;
+                const imageUrl =
+                    "imageUrl" in productSeedItem
+                        ? productSeedItem.imageUrl
+                        : `/media/products/${productSlug}.webp`;
 
                 if (legacySlugs.length > 0) {
                     const existingProduct = await prisma.product.findUnique({
@@ -465,7 +483,7 @@ async function main() {
                         description: productDescriptionsBySlug[productSlug] ?? null,
                         shortDescription: productSeedItem.shortDescription,
                         longDescription: productSeedItem.longDescription,
-                        imageUrl: `/media/products/${productSlug}.webp`,
+                        imageUrl,
                         stock: lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
                         shippingWeightGrams,
                         isActive: true
@@ -476,7 +494,7 @@ async function main() {
                         category: lineSeed.category,
                         name: productSeedItem.name,
                         slug: productSlug,
-                        imageUrl: `/media/products/${productSlug}.webp`,
+                        imageUrl,
                         stock: lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
                         shippingWeightGrams,
                         description: productDescriptionsBySlug[productSlug] ?? null,
@@ -542,6 +560,29 @@ async function main() {
                     startsAt: promotionSeed.startsAt,
                     endsAt: promotionSeed.endsAt,
                     isActive: promotionSeed.isActive
+                }
+            });
+        }
+
+        for (const testimonialSeed of testimonialsSeed) {
+            await prisma.testimonial.upsert({
+                where: {
+                    uuid: testimonialSeed.uuid
+                },
+                update: {
+                    type: testimonialSeed.type,
+                    title: testimonialSeed.title,
+                    text: testimonialSeed.text,
+                    videoUrl: testimonialSeed.videoUrl,
+                    isActive: testimonialSeed.isActive
+                },
+                create: {
+                    uuid: testimonialSeed.uuid,
+                    type: testimonialSeed.type,
+                    title: testimonialSeed.title,
+                    text: testimonialSeed.text,
+                    videoUrl: testimonialSeed.videoUrl,
+                    isActive: testimonialSeed.isActive
                 }
             });
         }
