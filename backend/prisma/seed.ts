@@ -381,7 +381,6 @@ async function main() {
                 state: platformSeed.address.state,
                 country: platformSeed.address.country,
                 reference: platformSeed.address.reference,
-                isDefault: false,
                 userId: null
             },
             create: {
@@ -397,8 +396,7 @@ async function main() {
                 city: platformSeed.address.city,
                 state: platformSeed.address.state,
                 country: platformSeed.address.country,
-                reference: platformSeed.address.reference,
-                isDefault: false
+                reference: platformSeed.address.reference
             }
         });
 
