@@ -30,13 +30,6 @@ COPY src ./src
 RUN pnpm exec prisma generate
 RUN pnpm run build:ts
 
-FROM deps AS production-deps
-
-ENV NODE_ENV=production
-
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --prod --frozen-lockfile --offline
-
 FROM node:22-bookworm-slim AS runner
 
 ENV NODE_ENV=production
@@ -50,12 +43,16 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY --from=production-deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/prisma ./prisma
+COPY --from=build --chown=node:node /app/src ./src
+COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
+COPY --from=build --chown=node:node /app/tsconfig.json ./tsconfig.json
 COPY --chown=node:node package.json ./
 
 USER node
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "pnpm exec fastify start --address \"$HOST\" --port \"$PORT\" -l info dist/app.js"]
+CMD ["sh", "-c", "pnpm run prisma:seed && pnpm exec fastify start --address \"$HOST\" --port \"$PORT\" -l info dist/app.js"]
