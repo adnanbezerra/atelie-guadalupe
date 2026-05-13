@@ -16,6 +16,10 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --offline --frozen-lockfile
 
 FROM base AS builder
+ARG API_BASE_URL
+ARG AUTH_COOKIE_NAME=auth_token
+ENV API_BASE_URL=$API_BASE_URL
+ENV AUTH_COOKIE_NAME=$AUTH_COOKIE_NAME
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
@@ -23,10 +27,15 @@ RUN pnpm build
 FROM node:22-alpine AS runner
 WORKDIR /app
 
+ARG API_BASE_URL
+ARG AUTH_COOKIE_NAME=auth_token
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV API_BASE_URL=$API_BASE_URL
+ENV AUTH_COOKIE_NAME=$AUTH_COOKIE_NAME
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
