@@ -30,6 +30,18 @@ COPY src ./src
 RUN pnpm exec prisma generate
 RUN pnpm run build:ts
 
+FROM build AS migrate
+
+ENV NODE_ENV=production
+
+CMD ["pnpm", "run", "prisma:migrate:deploy"]
+
+FROM build AS seed
+
+ENV NODE_ENV=production
+
+CMD ["pnpm", "run", "prisma:seed"]
+
 FROM node:22-bookworm-slim AS runner
 
 ENV NODE_ENV=production
@@ -53,6 +65,6 @@ COPY --chown=node:node package.json ./
 
 USER node
 
-EXPOSE 3000
+EXPOSE 80
 
-CMD ["sh", "-c", "pnpm run prisma:seed && pnpm exec fastify start --address \"$HOST\" --port \"$PORT\" -l info dist/app.js"]
+CMD ["sh", "-c", "pnpm exec fastify start --address \"$HOST\" --port \"$PORT\" -l info dist/app.js"]
