@@ -6,11 +6,15 @@ const allowedContentTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const allowedVideoContentTypes = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 
 export class MongoImageStorage implements ImageStorage {
+    private readonly mediaBaseUrl: string;
+
     public constructor(
         private readonly bucket: GridFSBucket | null,
         private readonly videoBucket: GridFSBucket | null,
-        private readonly mediaBaseUrl: string
-    ) {}
+        mediaBaseUrl: string
+    ) {
+        this.mediaBaseUrl = mediaBaseUrl.replace(/\/+$/, "");
+    }
 
     public isConfigured(): boolean {
         return this.bucket !== null;
@@ -38,7 +42,7 @@ export class MongoImageStorage implements ImageStorage {
             uploadStream.end(input.buffer);
         });
 
-        return `${this.mediaBaseUrl}/media/images/${uploadStream.id.toString()}`;
+        return this.mediaUrl("images", uploadStream.id.toString());
     }
 
     public async uploadTestimonialVideo(input: UploadImageInput): Promise<string> {
@@ -63,7 +67,7 @@ export class MongoImageStorage implements ImageStorage {
             uploadStream.end(input.buffer);
         });
 
-        return `${this.mediaBaseUrl}/media/videos/${uploadStream.id.toString()}`;
+        return this.mediaUrl("videos", uploadStream.id.toString());
     }
 
     public async deleteProductImageByUrl(url: string): Promise<void> {
@@ -99,5 +103,9 @@ export class MongoImageStorage implements ImageStorage {
     private extractMediaId(url: string, mediaType: "images" | "videos"): string | null {
         const match = url.match(new RegExp(`/media/${mediaType}/([a-f0-9]{24})$`, "i"));
         return match?.[1] ?? null;
+    }
+
+    private mediaUrl(mediaType: "images" | "videos", id: string): string {
+        return `${this.mediaBaseUrl}/media/${mediaType}/${id}`;
     }
 }

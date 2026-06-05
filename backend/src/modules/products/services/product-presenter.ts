@@ -1,3 +1,4 @@
+import { normalizePublicMediaUrl } from "../../../core/storage/media-url";
 import { listProductSizePrices } from "./product-pricing";
 import { ProductCategory } from "./product-stock";
 
@@ -67,7 +68,7 @@ export function presentProduct(product: ProductEntity) {
         priceOptions: listProductSizePrices(product.line),
         activePromotion,
         promotionDiscountPercent: activePromotion?.discountPercent ?? 0,
-        imageUrl: product.imageUrl,
+        imageUrl: normalizePublicMediaUrl(product.imageUrl),
         stock: product.stock,
         shippingWeightGrams: product.shippingWeightGrams,
         description: product.description,

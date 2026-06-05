@@ -6,8 +6,7 @@ import { ImageStorage } from "../core/storage/image-storage";
 export default fp(async (fastify) => {
     const mongoUrl = process.env.MONGODB_URL;
     const dbName = process.env.MONGODB_DB_NAME ?? process.env.MONGODB_NAME;
-    const mediaBaseUrl =
-        process.env.MEDIA_BASE_URL ?? `http://localhost:${process.env.PORT ?? "3000"}`;
+    const mediaBaseUrl = process.env.MEDIA_BASE_URL ?? "";
 
     let mongoClient: MongoClient | null = null;
     let mongoDb: Db | null = null;
