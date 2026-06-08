@@ -113,9 +113,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                 A Harmonia da Criação como Dom de Deus
                             </h1>
                             <p className="mt-6 text-lg leading-relaxed text-slate-600">
-                                Cosméticos botânicos e artesanato autoral que
-                                celebram a beleza da alma e o cuidado com o
-                                templo do Espírito.
+                                Cosméticos de puro sebo de boi e artesanato
+                                autoral que celebram a beleza da alma e o
+                                cuidado com o templo do Espírito.
                             </p>
                             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
                                 <Link
@@ -175,9 +175,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             </p>
                             <ul className="space-y-4">
                                 {[
+                                    "Sebo de boi purificado para nutrir a sua pele",
                                     "Óleos essenciais que honram a natureza",
-                                    "Extratos botânicos frescos e puros",
-                                    "Embalagem artesanal feita por mãos cristãs",
+                                    "Produtos feitos em oração por uma alma cristã verdadeira",
                                 ].map((item) => (
                                     <li
                                         key={item}

@@ -504,12 +504,14 @@ export function CollectionCatalog({
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         <div className="flex flex-col justify-center lg:col-span-2">
                             <h1 className="font-display text-5xl font-bold">
-                                Cremes Botânicos
+                                Cremes de Sebo Bovino Clarificado
                             </h1>
                             <p className="mt-4 max-w-xl text-lg text-slate-600">
-                                Fórmulas artesanais ricas em óleos essenciais
-                                puros. Hidratação profunda que respeita o
-                                equilíbrio natural da sua pele.
+                                Fórmulas de sebo clarificado feitos por uma
+                                especialista, sem odor e sem reações negativas,
+                                ricas em óleos essenciais puros. Hidratação
+                                profunda que respeita o equilíbrio natural da
+                                sua pele.
                             </p>
                         </div>
                         <div className="relative flex aspect-[4/3] items-end overflow-hidden rounded-xl bg-primary p-8 lg:aspect-auto">
