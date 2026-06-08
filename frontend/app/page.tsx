@@ -170,8 +170,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             <p className="text-lg leading-relaxed text-slate-600">
                                 Reconhecemos que cada pessoa é uma obra singular
                                 do Criador. Nossos especialistas preparam
-                                fórmulas botânicas exclusivas que respeitam a
-                                identidade de sua pele.
+                                fórmulas de sebo bovino clarificado exclusivas
+                                que respeitam a identidade de sua pele.
                             </p>
                             <ul className="space-y-4">
                                 {[
