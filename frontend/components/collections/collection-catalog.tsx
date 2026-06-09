@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
@@ -514,13 +515,25 @@ export function CollectionCatalog({
                                 sua pele.
                             </p>
                         </div>
-                        <div className="relative flex aspect-[4/3] items-end overflow-hidden rounded-xl bg-primary p-8 lg:aspect-auto">
+                        <div className="overflow-hidden rounded-xl bg-slate-100">
+                            <img
+                                alt="Beleza Natural"
+                                className="h-auto w-auto"
+                                src="/banner.webp"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <div className="flex flex-col gap-10 md:flex-row">
+                    <aside className="w-full space-y-8 md:w-64 md:flex-shrink-0">
+                        <div className="relative flex min-h-[300px] items-end overflow-hidden rounded-xl bg-primary p-6 md:min-h-[330px]">
                             <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.7)),url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlA75ZIl1MTF9dZEkw8ZGtS2qRo3TYuYP0CuYTOQk8Z-W2LDeQo-HR46KdtUBc2QJKagrRvuU7WUJIb-j-5SPkN7gQ-ziWitpDvK479fJiWYaET-A6PbOyS7Zu1SrdzFu131HDyAbJZwxj1YovX4SHJomGK-yZkX8gVhqX_Am41hncNcdje8k80OT8J0WXf-Kea2LLaGSzBcy0VofU8dJkJEggzkaFJOaIM_5cCluHjgrYPTShqlqC_a7o44zzlYLEz44zxXh5VMYN')] bg-cover bg-center" />
                             <div className="relative z-10 w-full">
-                                <h3 className="font-display text-2xl font-bold text-white">
+                                <h3 className="font-display text-xl leading-tight font-bold text-white">
                                     Crie seu Creme Personalizado
                                 </h3>
-                                <p className="mt-2 text-sm text-white/80">
+                                <p className="mt-3 text-sm leading-6 text-white/80">
                                     Receba atendimento personalizado para os
                                     ativos e o cuidado ideal para a sua
                                     necessidade.
@@ -528,7 +541,7 @@ export function CollectionCatalog({
                                 <PersonalDiagnosisDialog
                                     trigger={
                                         <button
-                                            className="mt-4 block w-full rounded-lg bg-white py-3 text-center font-bold text-primary transition hover:bg-white/90"
+                                            className="mt-5 block w-full rounded-lg bg-white px-3 py-3 text-center text-sm font-bold text-primary transition hover:bg-white/90"
                                             type="button"
                                         >
                                             Falar com atendimento
@@ -537,11 +550,6 @@ export function CollectionCatalog({
                                 />
                             </div>
                         </div>
-                    </div>
-                </section>
-
-                <div className="flex flex-col gap-10 md:flex-row">
-                    <aside className="w-full space-y-8 md:w-64 md:flex-shrink-0">
                         <div>
                             <h4 className="mb-4 border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-wider">
                                 Linhas de produtos
