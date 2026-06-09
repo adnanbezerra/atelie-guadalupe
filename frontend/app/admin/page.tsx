@@ -1,21 +1,21 @@
 import { AdminDashboardClient } from "@/components/admin/admin-dashboard-client";
-import { fetchOrders, fetchProducts } from "@/lib/server-api";
+import { fetchMarketing, fetchOrders } from "@/lib/server-api";
 
 export default async function AdminDashboardPage() {
-    const [ordersResult, productsResult] = await Promise.allSettled([
+    const [ordersResult, marketingResult] = await Promise.allSettled([
         fetchOrders(),
-        fetchProducts({ page: 1, pageSize: 40 }),
+        fetchMarketing(),
     ]);
 
     const initialOrders =
         ordersResult.status === "fulfilled" ? ordersResult.value.orders : [];
-    const initialProducts =
-        productsResult.status === "fulfilled" ? productsResult.value.items : [];
+    const initialMarketing =
+        marketingResult.status === "fulfilled" ? marketingResult.value : null;
 
     return (
         <AdminDashboardClient
             initialOrders={initialOrders}
-            initialProducts={initialProducts}
+            initialMarketing={initialMarketing}
         />
     );
 }

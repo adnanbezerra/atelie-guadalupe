@@ -3,6 +3,9 @@ import { getAuthTokenFromCookies } from "@/lib/auth";
 import {
     ApiResponse,
     Cart,
+    MarketingCoupon,
+    MarketingPayload,
+    MarketingPromotion,
     Order,
     ProductLine,
     Product,
@@ -107,4 +110,18 @@ export async function fetchTestimonials() {
 
 export async function fetchActiveTestimonials() {
     return serverApi<TestimonialsPayload>("/testimonials/active");
+}
+
+export async function fetchMarketing() {
+    const [promotionsResponse, couponsResponse] = await Promise.all([
+        serverApi<{ promotions: MarketingPromotion[] }>(
+            "/marketing/promotions",
+        ),
+        serverApi<{ coupons: MarketingCoupon[] }>("/marketing/coupons"),
+    ]);
+
+    return {
+        promotions: promotionsResponse.promotions,
+        coupons: couponsResponse.coupons,
+    } satisfies MarketingPayload;
 }

@@ -1,8 +1,13 @@
 import type {
     ApiEnvelope,
     Cart,
+    CreateMarketingCouponInput,
+    CreateMarketingPromotionInput,
     CreateProductInput,
     LegacyProductImageInput,
+    MarketingCoupon,
+    MarketingPayload,
+    MarketingPromotion,
     OrdersResponse,
     Order,
     Product,
@@ -12,6 +17,8 @@ import type {
     Testimonial,
     TestimonialsPayload,
     CreateTestimonialInput,
+    UpdateMarketingCouponInput,
+    UpdateMarketingPromotionInput,
     UpdateProductInput,
     UpdateTestimonialInput,
     UpdateCurrentUserInput,
@@ -407,6 +414,84 @@ export function deleteProduct(token: string, productUuid: string) {
         method: "DELETE",
         token,
     });
+}
+
+export async function getMarketing(token: string): Promise<MarketingPayload> {
+    const [promotionsResponse, couponsResponse] = await Promise.all([
+        request<{ promotions: MarketingPromotion[] }>("/marketing/promotions", {
+            token,
+        }),
+        request<{ coupons: MarketingCoupon[] }>("/marketing/coupons", {
+            token,
+        }),
+    ]);
+
+    return {
+        promotions: promotionsResponse.promotions,
+        coupons: couponsResponse.coupons,
+    };
+}
+
+export function createMarketingPromotion(
+    token: string,
+    body: CreateMarketingPromotionInput,
+) {
+    return request<{ promotion: MarketingPromotion }>("/marketing/promotions", {
+        method: "POST",
+        token,
+        body,
+    });
+}
+
+export function updateMarketingPromotion(
+    token: string,
+    promotionUuid: string,
+    body: UpdateMarketingPromotionInput,
+) {
+    return request<{ promotion: MarketingPromotion }>(
+        `/marketing/promotions/${promotionUuid}`,
+        {
+            method: "PATCH",
+            token,
+            body,
+        },
+    );
+}
+
+export function createMarketingCoupon(
+    token: string,
+    body: CreateMarketingCouponInput,
+) {
+    return request<{ coupon: MarketingCoupon }>("/marketing/coupons", {
+        method: "POST",
+        token,
+        body,
+    });
+}
+
+export function updateMarketingCoupon(
+    token: string,
+    couponUuid: string,
+    body: UpdateMarketingCouponInput,
+) {
+    return request<{ coupon: MarketingCoupon }>(
+        `/marketing/coupons/${couponUuid}`,
+        {
+            method: "PATCH",
+            token,
+            body,
+        },
+    );
+}
+
+export function cancelMarketingCoupon(token: string, couponUuid: string) {
+    return request<{ coupon: MarketingCoupon }>(
+        `/marketing/coupons/${couponUuid}/cancel`,
+        {
+            method: "POST",
+            token,
+        },
+    );
 }
 
 export function getTestimonials(token?: string | null) {

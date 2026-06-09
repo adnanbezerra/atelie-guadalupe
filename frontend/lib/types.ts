@@ -49,7 +49,73 @@ export type Promotion = {
     discountPercent: number;
     startsAt: string;
     endsAt: string | null;
+    isActive?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 };
+
+export type MarketingPromotion = Required<
+    Pick<
+        Promotion,
+        | "uuid"
+        | "name"
+        | "slug"
+        | "scope"
+        | "category"
+        | "discountPercent"
+        | "startsAt"
+        | "endsAt"
+    >
+> & {
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type MarketingCoupon = {
+    uuid: string;
+    code: string;
+    discountPercent: number;
+    validUntil: string | null;
+    maxUses: number | null;
+    usedCount: number;
+    emails: string[];
+    stackableWithPromotions: boolean;
+    isActive: boolean;
+    cancelledAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type MarketingPayload = {
+    promotions: MarketingPromotion[];
+    coupons: MarketingCoupon[];
+};
+
+export type CreateMarketingPromotionInput = {
+    name: string;
+    scope: "ALL_PRODUCTS" | "CATEGORY";
+    category?: ProductCategory | null;
+    discountPercent: number;
+    startsAt: string;
+    endsAt?: string | null;
+    isActive: boolean;
+};
+
+export type UpdateMarketingPromotionInput =
+    Partial<CreateMarketingPromotionInput>;
+
+export type CreateMarketingCouponInput = {
+    code: string;
+    discountPercent: number;
+    validUntil?: string | null;
+    maxUses?: number | null;
+    emails: string[];
+    stackableWithPromotions: boolean;
+    isActive: boolean;
+};
+
+export type UpdateMarketingCouponInput = Partial<CreateMarketingCouponInput>;
 
 export type Product = {
     uuid: string;

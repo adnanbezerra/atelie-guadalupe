@@ -1,15 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
+import { AdminMarketingPanel } from "@/components/admin/admin-marketing-panel";
 import { useOrders } from "@/hooks/use-orders";
-import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
-import { Order, Product } from "@/lib/types";
+import { MarketingPayload, Order } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useProfile } from "@/hooks/use-profile";
 
 type AdminDashboardClientProps = {
     initialOrders: Order[];
-    initialProducts: Product[];
+    initialMarketing: MarketingPayload | null;
 };
 
 function monthKey(date: string) {
@@ -17,13 +17,9 @@ function monthKey(date: string) {
     return `${current.getUTCFullYear()}-${current.getUTCMonth()}`;
 }
 
-function hasLowStock(product: Product) {
-    return product.stock != null && product.stock <= LOW_STOCK_THRESHOLD;
-}
-
 export function AdminDashboardClient({
     initialOrders,
-    initialProducts,
+    initialMarketing,
 }: AdminDashboardClientProps) {
     const orders = useOrders(initialOrders);
     const { user } = useProfile();
@@ -44,9 +40,8 @@ export function AdminDashboardClient({
             totalSales,
             currentOrders,
             averageTicket,
-            lowStock: initialProducts.filter(hasLowStock).slice(0, 3),
         };
-    }, [initialProducts, orders.data]);
+    }, [orders.data]);
 
     const chartOrders = (
         metrics.currentOrders.length ? metrics.currentOrders : orders.data
@@ -177,45 +172,7 @@ export function AdminDashboardClient({
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h3 className="mb-6 text-lg font-bold">
-                            Alertas de Estoque
-                        </h3>
-                        <div className="space-y-4">
-                            {metrics.lowStock.map((product, index) => (
-                                <div
-                                    className={`flex items-center gap-4 rounded-lg border p-3 ${
-                                        index === 0
-                                            ? "border-red-100 bg-red-50"
-                                            : "border-amber-100 bg-amber-50"
-                                    }`}
-                                    key={product.uuid}
-                                >
-                                    <span
-                                        className={`material-symbols-outlined ${
-                                            index === 0
-                                                ? "text-red-600"
-                                                : "text-amber-600"
-                                        }`}
-                                    >
-                                        {index === 0 ? "error" : "warning"}
-                                    </span>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-bold text-slate-900">
-                                            {product.name}
-                                        </p>
-                                        <p className="text-xs text-slate-600">
-                                            Estoque baixo: {product.stock}{" "}
-                                            unidades
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <button className="mt-6 w-full rounded-lg border border-primary/20 py-2 text-sm font-bold text-primary">
-                            Ver Estoque Completo
-                        </button>
-                    </div>
+                    <AdminMarketingPanel initialMarketing={initialMarketing} />
                 </div>
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
