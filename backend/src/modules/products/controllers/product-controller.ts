@@ -8,6 +8,7 @@ import {
     listProductLinesQuerySchema,
     listProductsQuerySchema,
     productLineUuidParamSchema,
+    productSlugParamSchema,
     productUuidParamSchema,
     updateProductLineSchema,
     updateProductSchema
@@ -35,6 +36,12 @@ export class ProductController {
     public detail = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(productUuidParamSchema, request.params);
         const result = await this.productService.detail(params.uuid);
+        return sendEither(reply, result);
+    };
+
+    public detailBySlug = async (request: FastifyRequest, reply: FastifyReply) => {
+        const params = this.fastify.validateSchema(productSlugParamSchema, request.params);
+        const result = await this.productService.detailBySlug(params.slug);
         return sendEither(reply, result);
     };
 

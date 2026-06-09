@@ -152,6 +152,19 @@ export class ProductService {
         });
     }
 
+    public async detailBySlug(
+        slug: string
+    ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
+        const product = await this.productRepository.findBySlug(slug);
+        if (!product || !product.isActive) {
+            return left(AppError.notFound("Produto nao encontrado"));
+        }
+
+        return right({
+            product: presentProduct(await this.withActivePromotion(product))
+        });
+    }
+
     public async create(
         input: CreateProductInput
     ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {

@@ -94,6 +94,10 @@ export const productUuidParamSchema = z.object({
     uuid: z.uuid()
 });
 
+export const productSlugParamSchema = z.object({
+    slug: z.string().trim().min(1).max(160)
+});
+
 export const productLineUuidParamSchema = z.object({
     uuid: z.uuid()
 });

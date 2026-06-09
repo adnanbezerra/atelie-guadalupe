@@ -161,3 +161,89 @@ test("product service lists active promotion on products", async () => {
         assert.equal(item.promotionDiscountPercent, 15);
     }
 });
+
+test("product service finds active product detail by slug", async () => {
+    const promotion = {
+        uuid: "promotion-1",
+        name: "Semana da Lavanda",
+        slug: "semana-da-lavanda",
+        scope: "CATEGORY",
+        category: "ARTISANAL",
+        discountPercent: 15,
+        startsAt: new Date("2026-05-01T00:00:00.000Z"),
+        endsAt: null
+    };
+    const repository = {
+        findBySlug: async (slug: string) => ({
+            uuid: "product-1",
+            slug,
+            name: "Sabonete Lavanda",
+            category: "ARTISANAL",
+            imageUrl: "https://cdn.exemplo.com/lavanda.jpg",
+            stock: 8,
+            shippingWeightGrams: 250,
+            description: null,
+            shortDescription: "Natural com lavanda",
+            longDescription: "Sabonete natural com oleo essencial de lavanda.",
+            isActive: true,
+            line: {
+                uuid: "line-1",
+                slug: "linha-sabonetes",
+                name: "Linha Sabonetes",
+                price70gInCents: 2590,
+                price100gInCents: 3700
+            },
+            createdAt: new Date(),
+            updatedAt: new Date()
+        })
+    };
+    const marketingRepository = {
+        findBestActivePromotionForCategory: async () => promotion
+    };
+    const imageStorage = {
+        uploadProductImage: async () => "",
+        deleteProductImageByUrl: async () => undefined,
+        isConfigured: () => true
+    };
+
+    const service = new ProductService(
+        repository as never,
+        marketingRepository as never,
+        imageStorage as never
+    );
+    const result = await service.detailBySlug("sabonete-lavanda");
+
+    assert.equal(result.success, true);
+    if (result.success) {
+        assert.equal(result.value.product.slug, "sabonete-lavanda");
+        assert.equal(result.value.product.activePromotion?.uuid, "promotion-1");
+        assert.equal(result.value.product.promotionDiscountPercent, 15);
+    }
+});
+
+test("product service returns not found for missing product detail by slug", async () => {
+    const repository = {
+        findBySlug: async () => null
+    };
+    const marketingRepository = {
+        findBestActivePromotionForCategory: async () => null
+    };
+    const imageStorage = {
+        uploadProductImage: async () => "",
+        deleteProductImageByUrl: async () => undefined,
+        isConfigured: () => true
+    };
+
+    const service = new ProductService(
+        repository as never,
+        marketingRepository as never,
+        imageStorage as never
+    );
+    const result = await service.detailBySlug("sabonete-lavanda");
+
+    assert.equal(result.success, false);
+    if (!result.success) {
+        assert.equal(result.value.statusCode, 404);
+        assert.equal(result.value.message, "Produto nao encontrado");
+    }
+});

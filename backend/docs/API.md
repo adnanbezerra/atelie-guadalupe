@@ -882,7 +882,90 @@ Resposta `200`:
 }
 ```
 
-## 11.7 `POST /products/lines`
+## 11.7 `GET /products/slug/:slug`
+
+Uso:
+
+- detalhe publico do produto por slug
+- mesmo payload de `GET /products/:uuid`
+
+Params:
+
+- `slug`: slug publico unico do produto
+
+Exemplo:
+
+```http
+GET /products/slug/sabonete-artesanal-de-lavanda
+```
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "product": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
+            "slug": "sabonete-artesanal-de-lavanda",
+            "name": "Sabonete Artesanal de Lavanda",
+            "category": "ARTISANAL",
+            "line": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b210",
+                "slug": "linha-rn",
+                "name": "Linha RN"
+            },
+            "priceOptions": [
+                {
+                    "size": "GRAMS_70",
+                    "grams": 70,
+                    "priceInCents": 2590
+                },
+                {
+                    "size": "GRAMS_100",
+                    "grams": 100,
+                    "priceInCents": 3700
+                }
+            ],
+            "activePromotion": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b701",
+                "name": "Semana da Lavanda",
+                "slug": "semana-da-lavanda",
+                "scope": "CATEGORY",
+                "category": "ARTISANAL",
+                "discountPercent": 15,
+                "startsAt": "2026-05-01T00:00:00.000Z",
+                "endsAt": null
+            },
+            "promotionDiscountPercent": 15,
+            "imageUrl": "http://localhost:3000/media/images/507f1f77bcf86cd799439011",
+            "stock": 8,
+            "shippingWeightGrams": 120,
+            "description": "Texto longo opcional com historia do produto, modo de uso, composicao e observacoes.",
+            "shortDescription": "Sabonete natural com lavanda",
+            "longDescription": "Sabonete natural com oleo essencial de lavanda e processo artesanal.",
+            "isActive": true,
+            "createdAt": "2026-03-12T12:00:00.000Z",
+            "updatedAt": "2026-03-12T12:00:00.000Z"
+        }
+    }
+}
+```
+
+Resposta `404`:
+
+```json
+{
+    "success": false,
+    "error": {
+        "code": "RESOURCE_NOT_FOUND",
+        "message": "Produto nao encontrado",
+        "details": []
+    }
+}
+```
+
+## 11.8 `POST /products/lines`
 
 Autenticacao:
 
@@ -918,7 +1001,7 @@ Resposta `201`:
 }
 ```
 
-## 11.8 `PATCH /products/lines/:uuid`
+## 11.9 `PATCH /products/lines/:uuid`
 
 Autenticacao:
 
@@ -959,7 +1042,7 @@ Resposta `200`:
 }
 ```
 
-## 11.9 `POST /products`
+## 11.10 `POST /products`
 
 Autenticacao:
 
@@ -1041,7 +1124,7 @@ Resposta `201`:
 }
 ```
 
-## 11.10 `PATCH /products/:uuid`
+## 11.11 `PATCH /products/:uuid`
 
 Autenticacao:
 
@@ -1124,7 +1207,7 @@ Resposta `200`:
 }
 ```
 
-## 11.11 `DELETE /products/:uuid`
+## 11.12 `DELETE /products/:uuid`
 
 Autenticacao:
 

@@ -16,6 +16,7 @@ const productRoutes: FastifyPluginAsync = async (fastify) => {
 
     fastify.get("/lines", controller.listLines);
     fastify.get("/", controller.list);
+    fastify.get("/slug/:slug", controller.detailBySlug);
     fastify.get("/:uuid", controller.detail);
 
     fastify.post(
