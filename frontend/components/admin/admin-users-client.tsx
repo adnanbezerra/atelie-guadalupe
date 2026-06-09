@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { toast } from "sonner";
 import {
     Dialog,
     DialogClose,
@@ -21,6 +22,7 @@ type AdminUsersClientProps = {
 export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
     const users = useAdminUsers(initialUsers);
 
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [formState, setFormState] = useState({
         name: "",
         email: "",
@@ -35,13 +37,14 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
 
         try {
             await users.createUser(formState);
-            setStatusMessage("Usuário criado com sucesso.");
             setFormState({
                 name: "",
                 email: "",
                 password: "",
                 role: "SUBADMIN",
             });
+            setIsCreateDialogOpen(false);
+            toast.success("Usuário criado com sucesso.");
         } catch (reason) {
             setStatusMessage(
                 reason instanceof Error ? reason.message : "Falha ao criar.",
@@ -88,11 +91,16 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                 sua equipe interna.
                             </p>
                         </div>
-                        <Dialog>
+                        <Dialog
+                            open={isCreateDialogOpen}
+                            onOpenChange={(open) => {
+                                setIsCreateDialogOpen(open);
+                                setStatusMessage(null);
+                            }}
+                        >
                             <DialogTrigger asChild>
                                 <button
                                     className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90"
-                                    onClick={() => setStatusMessage(null)}
                                 >
                                     <span className="material-symbols-outlined text-xl">
                                         person_add
