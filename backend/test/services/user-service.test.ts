@@ -107,6 +107,44 @@ test("change password rejects unknown email with the same credentials error", as
     }
 });
 
+test("list users returns presented users with address aliases", async () => {
+    const address = {
+        uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+        label: "Casa",
+        zipCode: "01001000",
+        street: "Praca da Se",
+        number: "100",
+        apartmentNumber: "42",
+        complement: null,
+        neighborhood: "Se",
+        city: "Sao Paulo",
+        state: "SP",
+        country: "Brasil",
+        reference: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+    };
+    const user = {
+        ...makeUser(await hashPassword("Senha@123")),
+        address
+    };
+
+    const userRepository = {
+        findAll: async () => [user]
+    };
+
+    const service = new UserService(userRepository as never, {} as never);
+    const result = await service.listUsers();
+
+    assert.equal(result.success, true);
+    if (result.success) {
+        assert.equal(result.value.users.length, 1);
+        assert.equal(result.value.users[0].uuid, user.uuid);
+        assert.deepEqual(result.value.users[0].address, address);
+        assert.deepEqual(result.value.users[0].addresses, [address]);
+    }
+});
+
 test("update me schema accepts partial payload without phone", () => {
     const input = updateMeSchema.parse({
         name: "Maria Atualizada"

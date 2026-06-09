@@ -19,6 +19,11 @@ export class UserController {
         private readonly orderService?: OrderService
     ) {}
 
+    public listUsers = async (_request: FastifyRequest, reply: FastifyReply) => {
+        const result = await this.userService.listUsers();
+        return sendEither(reply, result);
+    };
+
     public getMe = async (request: FastifyRequest, reply: FastifyReply) => {
         const result = await this.userService.getMe(request.currentUser!.sub);
         return sendEither(reply, result);

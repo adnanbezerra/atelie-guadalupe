@@ -76,6 +76,18 @@ export class UserService {
         private readonly addressRepository?: AddressRepository
     ) {}
 
+    public async listUsers(): Promise<Either<AppError, { users: Array<Record<string, unknown>> }>> {
+        const users = await this.userRepository.findAll();
+
+        return right({
+            users: users.map((user) => ({
+                ...presentUser(user),
+                address: user.address ? presentAddress(user.address) : null,
+                addresses: user.address ? [presentAddress(user.address)] : []
+            }))
+        });
+    }
+
     public async getMe(
         userUuid: string
     ): Promise<Either<AppError, { user: Record<string, unknown> }>> {

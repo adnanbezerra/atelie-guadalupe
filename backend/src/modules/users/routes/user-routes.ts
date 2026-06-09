@@ -27,6 +27,14 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     const userController = new UserController(fastify, userService, orderService);
 
     fastify.get(
+        "/",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN"])]
+        },
+        userController.listUsers
+    );
+
+    fastify.get(
         "/me",
         {
             preHandler: [fastify.authenticate]

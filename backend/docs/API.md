@@ -489,7 +489,80 @@ Possiveis erros:
 - `401` email ou senha invalidos
 - `422` email invalido ou senha nova invalida
 
-## 9.5 `POST /users`
+## 9.5 `GET /users`
+
+Autenticacao:
+
+- obrigatoria
+- apenas `ADMIN`
+
+Uso:
+
+- lista todos os usuarios do sistema para area administrativa
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "users": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b101",
+                "name": "Maria da Silva",
+                "email": "maria@email.com",
+                "document": "12345678900",
+                "phone": "11987654321",
+                "birthDate": "1988-08-12T00:00:00.000Z",
+                "role": "USER",
+                "isActive": true,
+                "createdAt": "2026-03-12T12:00:00.000Z",
+                "address": {
+                    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+                    "label": "Casa",
+                    "zipCode": "01001000",
+                    "street": "Praca da Se",
+                    "number": "100",
+                    "apartmentNumber": "42",
+                    "complement": null,
+                    "neighborhood": "Se",
+                    "city": "Sao Paulo",
+                    "state": "SP",
+                    "country": "Brasil",
+                    "reference": null,
+                    "createdAt": "2026-03-12T12:00:00.000Z",
+                    "updatedAt": "2026-03-12T12:00:00.000Z"
+                },
+                "addresses": [
+                    {
+                        "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+                        "label": "Casa",
+                        "zipCode": "01001000",
+                        "street": "Praca da Se",
+                        "number": "100",
+                        "apartmentNumber": "42",
+                        "complement": null,
+                        "neighborhood": "Se",
+                        "city": "Sao Paulo",
+                        "state": "SP",
+                        "country": "Brasil",
+                        "reference": null,
+                        "createdAt": "2026-03-12T12:00:00.000Z",
+                        "updatedAt": "2026-03-12T12:00:00.000Z"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+Observacoes:
+
+- `address` retorna o endereco unico do usuario ou `null`
+- `addresses` e mantido por compatibilidade e retorna zero ou um item
+
+## 9.6 `POST /users`
 
 Autenticacao:
 
@@ -531,7 +604,7 @@ Resposta `201`:
 }
 ```
 
-## 9.6 `PATCH /users/:uuid`
+## 9.7 `PATCH /users/:uuid`
 
 Autenticacao:
 

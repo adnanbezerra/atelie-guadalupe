@@ -24,6 +24,18 @@ type UpdateUserInput = {
 export class UserRepository {
     public constructor(private readonly prisma: PrismaClient) {}
 
+    public findAll() {
+        return this.prisma.user.findMany({
+            include: {
+                role: true,
+                address: true
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        });
+    }
+
     public findByEmail(email: string) {
         return this.prisma.user.findUnique({
             where: {
