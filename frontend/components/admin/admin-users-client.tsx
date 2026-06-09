@@ -15,11 +15,12 @@ import { User, UserRole } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
 
 type AdminUsersClientProps = {
-    initialUser: User | null;
+    initialUsers: User[];
 };
 
-export function AdminUsersClient({ initialUser }: AdminUsersClientProps) {
-    const users = useAdminUsers(initialUser);
+export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
+    const users = useAdminUsers(initialUsers);
+
     const [formState, setFormState] = useState({
         name: "",
         email: "",

@@ -328,6 +328,10 @@ export function getOrders(token: string) {
     return request<OrdersResponse>("/orders", { token });
 }
 
+export function getUsers(token: string) {
+    return request<{ users: User[] }>("/users", { token });
+}
+
 export function getMyOrders(
     token: string,
     query: { page?: number; pageSize?: number } = {},

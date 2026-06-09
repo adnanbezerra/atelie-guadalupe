@@ -2,7 +2,7 @@
 
 import { useApiResource } from "@/hooks/use-api-resource";
 import { useApiToken } from "@/hooks/use-api-token";
-import { createAdminUser, getCurrentUser } from "@/lib/api";
+import { createAdminUser, getUsers } from "@/lib/api";
 import {
     clearAuthSession,
     isExpiredAccessTokenError,
@@ -27,19 +27,18 @@ async function readJson<T>(input: RequestInfo, init?: RequestInit) {
     return payload.data as T;
 }
 
-export function useAdminUsers(initialUser: User | null) {
+export function useAdminUsers(initialUsers: User[]) {
     const token = useApiToken();
     const authHeaders: Record<string, string> = token
         ? { Authorization: `Bearer ${token}` }
         : {};
-    const initialUsers = initialUser ? [initialUser] : [];
     const resource = useApiResource<User[]>(initialUsers, async () => {
         if (!token) {
             throw new Error("Faça login para consultar usuários.");
         }
 
-        const payload = await getCurrentUser(token);
-        return payload.user ? [payload.user] : [];
+        const payload = await getUsers(token);
+        return payload.users;
     });
 
     return {

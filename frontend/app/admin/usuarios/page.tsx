@@ -1,10 +1,10 @@
 import { AdminUsersClient } from "@/components/admin/admin-users-client";
-import { fetchCurrentUser } from "@/lib/server-api";
+import { fetchUsers } from "@/lib/server-api";
 
 export default async function AdminUsersPage() {
-    const userResult = await Promise.allSettled([fetchCurrentUser()]);
-    const initialUser =
-        userResult[0].status === "fulfilled" ? userResult[0].value.user : null;
+    const usersResult = await Promise.allSettled([fetchUsers()]);
+    const initialUsers =
+        usersResult[0].status === "fulfilled" ? usersResult[0].value.users : [];
 
-    return <AdminUsersClient initialUser={initialUser} />;
+    return <AdminUsersClient initialUsers={initialUsers} />;
 }

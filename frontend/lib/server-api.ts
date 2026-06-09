@@ -84,6 +84,10 @@ export async function fetchOrders() {
     return serverApi<{ orders: Order[] }>("/orders");
 }
 
+export async function fetchUsers() {
+    return serverApi<{ users: User[] }>("/users");
+}
+
 export async function fetchMyOrders(params?: {
     page?: number;
     pageSize?: number;
