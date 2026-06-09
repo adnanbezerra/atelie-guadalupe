@@ -38,6 +38,20 @@ export function firstPriceInCents(
     return prices?.[0]?.priceInCents ?? 0;
 }
 
+export function getLowestPriceOption<T extends { priceInCents: number }>(
+    prices: T[] | undefined,
+) {
+    const validPrices = prices?.filter((price) => price.priceInCents > 0) ?? [];
+
+    if (!validPrices.length) {
+        return null;
+    }
+
+    return validPrices.reduce((lowest, price) =>
+        price.priceInCents < lowest.priceInCents ? price : lowest,
+    );
+}
+
 export function normalizeDiscountPercent(value?: number | null) {
     if (!value || value <= 0) {
         return 0;
@@ -69,6 +83,10 @@ export function getPriceLabel(
 ) {
     const value = firstDiscountedPriceInCents(prices, discountPercent);
     return value > 0 ? formatCurrency(value) : "Sob consulta";
+}
+
+export function formatProductSizeLabel(grams?: number | null) {
+    return grams ? `${grams}g` : "Tamanho selecionado";
 }
 
 export function matchesCollection(kind: "beauty" | "craft", text: string) {

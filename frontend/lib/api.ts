@@ -247,6 +247,12 @@ export function getProducts(query?: ProductQuery) {
     return request<ProductListResponse>("/products", { query });
 }
 
+export function getProductBySlug(slug: string) {
+    return request<{ product: Product }>(
+        `/products/slug/${encodeURIComponent(slug)}`,
+    );
+}
+
 export function getProductLines(query?: { category?: string }) {
     return request<{ lines: ProductLine[] }>("/products/lines", { query });
 }

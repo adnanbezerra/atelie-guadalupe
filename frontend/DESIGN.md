@@ -2,108 +2,108 @@
 name: "Atelie Guadalupe"
 description: "A devout artisan storefront for natural tallow products and handmade goods."
 colors:
-  guadalupe-blue: "#1940b3"
-  guadalupe-blue-ring: "#1940b34d"
-  gilded-craft: "#d1a054"
-  soft-relic: "#e7e0d4"
-  quiet-chapel: "#f6f6f8"
-  surface: "#ffffff"
-  surface-warm: "#f8f5ef"
-  sacred-texture: "#faf9f6"
-  ink-slate: "#1f2937"
-  muted-slate: "#667085"
-  border-slate: "#0f172a17"
-  craft-brown: "#4A3728"
-  destructive: "#b42318"
-  success: "#167a45"
-  warning: "#b54708"
-  whatsapp: "#25D366"
+    guadalupe-blue: "#1940b3"
+    guadalupe-blue-ring: "#1940b34d"
+    gilded-craft: "#d1a054"
+    soft-relic: "#e7e0d4"
+    quiet-chapel: "#f6f6f8"
+    surface: "#ffffff"
+    surface-warm: "#f8f5ef"
+    sacred-texture: "#faf9f6"
+    ink-slate: "#1f2937"
+    muted-slate: "#667085"
+    border-slate: "#0f172a17"
+    craft-brown: "#4A3728"
+    destructive: "#b42318"
+    success: "#167a45"
+    warning: "#b54708"
+    whatsapp: "#25D366"
 typography:
-  display:
-    fontFamily: "Noto Serif, serif"
-    fontSize: "2.25rem to 3.75rem"
-    fontWeight: 700
-    lineHeight: 1.1
-    letterSpacing: "normal"
-  headline:
-    fontFamily: "Noto Serif, serif"
-    fontSize: "1.875rem to 3rem"
-    fontWeight: 700
-    lineHeight: 1.15
-    letterSpacing: "normal"
-  title:
-    fontFamily: "Noto Sans, sans-serif"
-    fontSize: "1.125rem to 1.5rem"
-    fontWeight: 700
-    lineHeight: 1.25
-    letterSpacing: "normal"
-  body:
-    fontFamily: "Noto Sans, sans-serif"
-    fontSize: "1rem"
-    fontWeight: 400
-    lineHeight: 1.6
-    letterSpacing: "normal"
-  label:
-    fontFamily: "Public Sans, Noto Sans, sans-serif"
-    fontSize: "0.75rem"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "0.08em to 0.24em"
+    display:
+        fontFamily: "Noto Serif, serif"
+        fontSize: "2.25rem to 3.75rem"
+        fontWeight: 700
+        lineHeight: 1.1
+        letterSpacing: "normal"
+    headline:
+        fontFamily: "Noto Serif, serif"
+        fontSize: "1.875rem to 3rem"
+        fontWeight: 700
+        lineHeight: 1.15
+        letterSpacing: "normal"
+    title:
+        fontFamily: "Noto Sans, sans-serif"
+        fontSize: "1.125rem to 1.5rem"
+        fontWeight: 700
+        lineHeight: 1.25
+        letterSpacing: "normal"
+    body:
+        fontFamily: "Noto Sans, sans-serif"
+        fontSize: "1rem"
+        fontWeight: 400
+        lineHeight: 1.6
+        letterSpacing: "normal"
+    label:
+        fontFamily: "Public Sans, Noto Sans, sans-serif"
+        fontSize: "0.75rem"
+        fontWeight: 700
+        lineHeight: 1.2
+        letterSpacing: "0.08em to 0.24em"
 rounded:
-  sm: "4px"
-  md: "8px"
-  lg: "12px"
-  xl: "16px"
-  modal: "32px"
-  full: "9999px"
+    sm: "4px"
+    md: "8px"
+    lg: "12px"
+    xl: "16px"
+    modal: "32px"
+    full: "9999px"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "16px"
-  lg: "24px"
-  xl: "32px"
-  section: "80px to 96px"
+    xs: "4px"
+    sm: "8px"
+    md: "16px"
+    lg: "24px"
+    xl: "32px"
+    section: "80px to 96px"
 components:
-  button-primary:
-    backgroundColor: "{colors.guadalupe-blue}"
-    textColor: "{colors.surface}"
-    rounded: "{rounded.md}"
-    padding: "12px 16px"
-  button-primary-large:
-    backgroundColor: "{colors.guadalupe-blue}"
-    textColor: "{colors.surface}"
-    rounded: "{rounded.xl}"
-    padding: "20px 40px"
-  button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.guadalupe-blue}"
-    rounded: "{rounded.md}"
-    padding: "12px 16px"
-  button-craft:
-    backgroundColor: "{colors.craft-brown}"
-    textColor: "{colors.surface}"
-    rounded: "{rounded.sm}"
-    padding: "8px 16px"
-  input-default:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink-slate}"
-    rounded: "{rounded.md}"
-    padding: "10px 12px"
-  chip-selected:
-    backgroundColor: "{colors.guadalupe-blue}"
-    textColor: "{colors.surface}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
-  product-card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink-slate}"
-    rounded: "{rounded.xl}"
-    padding: "16px to 24px"
-  dialog:
-    backgroundColor: "{colors.surface-warm}"
-    textColor: "{colors.ink-slate}"
-    rounded: "{rounded.modal}"
-    padding: "0px"
+    button-primary:
+        backgroundColor: "{colors.guadalupe-blue}"
+        textColor: "{colors.surface}"
+        rounded: "{rounded.md}"
+        padding: "12px 16px"
+    button-primary-large:
+        backgroundColor: "{colors.guadalupe-blue}"
+        textColor: "{colors.surface}"
+        rounded: "{rounded.xl}"
+        padding: "20px 40px"
+    button-secondary:
+        backgroundColor: "{colors.surface}"
+        textColor: "{colors.guadalupe-blue}"
+        rounded: "{rounded.md}"
+        padding: "12px 16px"
+    button-craft:
+        backgroundColor: "{colors.craft-brown}"
+        textColor: "{colors.surface}"
+        rounded: "{rounded.sm}"
+        padding: "8px 16px"
+    input-default:
+        backgroundColor: "{colors.surface}"
+        textColor: "{colors.ink-slate}"
+        rounded: "{rounded.md}"
+        padding: "10px 12px"
+    chip-selected:
+        backgroundColor: "{colors.guadalupe-blue}"
+        textColor: "{colors.surface}"
+        rounded: "{rounded.md}"
+        padding: "8px 16px"
+    product-card:
+        backgroundColor: "{colors.surface}"
+        textColor: "{colors.ink-slate}"
+        rounded: "{rounded.xl}"
+        padding: "16px to 24px"
+    dialog:
+        backgroundColor: "{colors.surface-warm}"
+        textColor: "{colors.ink-slate}"
+        rounded: "{rounded.modal}"
+        padding: "0px"
 ---
 
 # Design System: Atelie Guadalupe

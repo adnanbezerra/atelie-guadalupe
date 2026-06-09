@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/format";
+import { formatProductSizeLabel } from "@/lib/utils";
 import type { Order } from "@/lib/types";
 import {
     formatAddress,
@@ -126,7 +127,10 @@ export function ProfileOrdersView({
                                                     </p>
                                                     <p className="text-slate-500">
                                                         {item.quantity}x{" "}
-                                                        {item.grams}g
+                                                        Tamanho:{" "}
+                                                        {formatProductSizeLabel(
+                                                            item.grams,
+                                                        )}
                                                     </p>
                                                 </div>
                                                 <p className="font-bold text-slate-900">

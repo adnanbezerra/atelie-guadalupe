@@ -5,6 +5,7 @@ import {
     Cart,
     Order,
     ProductLine,
+    Product,
     ProductsPayload,
     TestimonialsPayload,
     User,
@@ -67,6 +68,12 @@ export async function fetchProducts(params: {
     const query = buildQuery(params);
     const suffix = query ? `?${query}` : "";
     return serverApi<ProductsPayload>(`/products${suffix}`);
+}
+
+export async function fetchProductBySlug(slug: string) {
+    return serverApi<{ product: Product }>(
+        `/products/slug/${encodeURIComponent(slug)}`,
+    );
 }
 
 export async function fetchCart() {

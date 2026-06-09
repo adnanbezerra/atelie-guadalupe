@@ -13,7 +13,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
 import { Cart } from "@/lib/types";
 import { buildWhatsappLink } from "@/lib/whatsapp";
-import { formatCurrency, normalizeDiscountPercent } from "@/lib/utils";
+import {
+    formatCurrency,
+    formatProductSizeLabel,
+    normalizeDiscountPercent,
+} from "@/lib/utils";
 
 type CartPageClientProps = {
     initialCart: Cart | null;
@@ -52,7 +56,7 @@ function buildCartWhatsappMessage(cart: Cart | null) {
     const itemLines = cart.items
         .map(
             (item) =>
-                `- ${item.quantity}x ${item.name} (${item.grams}g): ${formatCurrency(item.totalPriceInCents)}`,
+                `- ${item.quantity}x ${item.name} - Tamanho: ${formatProductSizeLabel(item.grams)}: ${formatCurrency(item.totalPriceInCents)}`,
         )
         .join("\n");
     const promotionDiscount =
@@ -98,7 +102,6 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
     const subtotalBeforeDiscount =
         (cart.data?.summary.subtotalInCents ?? 0) +
         (backendPromotionDiscount === undefined ? promotionDiscount : 0);
-    const totalDiscount = promotionDiscount + couponDiscount;
     const hasItems = Boolean(cart.data?.items.length);
     const whatsappLink = buildWhatsappLink(buildCartWhatsappMessage(cart.data));
 
@@ -148,7 +151,8 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     {item.name}
                                 </p>
                                 <p className="text-xs text-slate-500">
-                                    {item.grams}g
+                                    Tamanho:{" "}
+                                    {formatProductSizeLabel(item.grams)}
                                 </p>
                                 <p className="mt-1 font-bold text-primary">
                                     {formatCurrency(item.totalPriceInCents)}

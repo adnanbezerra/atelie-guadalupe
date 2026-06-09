@@ -18,13 +18,14 @@ export function SearchQueryInput({
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [value, setValue] = useState(initialValue);
+    const [hasUserEdited, setHasUserEdited] = useState(false);
     const [, startTransition] = useTransition();
 
     useEffect(() => {
-        setValue(initialValue);
-    }, [initialValue]);
+        if (!hasUserEdited) {
+            return;
+        }
 
-    useEffect(() => {
         const timeout = window.setTimeout(() => {
             const nextParams = new URLSearchParams(searchParams.toString());
 
@@ -53,7 +54,15 @@ export function SearchQueryInput({
         return () => {
             window.clearTimeout(timeout);
         };
-    }, [pathname, router, searchParams, searchPath, startTransition, value]);
+    }, [
+        hasUserEdited,
+        pathname,
+        router,
+        searchParams,
+        searchPath,
+        startTransition,
+        value,
+    ]);
 
     return (
         <div className="relative hidden w-full max-w-xs sm:flex">
@@ -62,7 +71,10 @@ export function SearchQueryInput({
             </span>
             <input
                 className="w-full rounded-lg bg-slate-100 py-2 pr-4 pl-10 text-sm outline-none"
-                onChange={(event) => setValue(event.target.value)}
+                onChange={(event) => {
+                    setHasUserEdited(true);
+                    setValue(event.target.value);
+                }}
                 placeholder={placeholder}
                 value={value}
             />

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
@@ -16,11 +15,18 @@ import {
 import { useCart } from "@/hooks/use-cart";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
-import { CollectionKey, ProductLine, ProductsPayload } from "@/lib/types";
 import {
-    firstPriceInCents,
+    CollectionKey,
+    PriceOption,
+    Product,
+    ProductLine,
+    ProductsPayload,
+} from "@/lib/types";
+import {
+    applyProductDiscount,
+    formatProductSizeLabel,
     formatCurrency,
-    getPriceLabel,
+    getLowestPriceOption,
     normalizeDiscountPercent,
 } from "@/lib/utils";
 import { buildWhatsappLink } from "@/lib/whatsapp";
@@ -62,6 +68,7 @@ export function CollectionCatalog({
     const [consultProductName, setConsultProductName] = useState<string | null>(
         null,
     );
+    const [sizeProduct, setSizeProduct] = useState<Product | null>(null);
     const [, startTransition] = useTransition();
     const cart = useCart();
     const category = collectionKey === "beauty" ? "BELEZA" : "ARTESANATO";
@@ -89,6 +96,7 @@ export function CollectionCatalog({
 
     const filteredProducts = useMemo(() => {
         const items = productsResource.data?.items ?? [];
+
         return filterProductsByCollection(items, collectionKey);
     }, [collectionKey, productsResource.data?.items]);
 
@@ -181,10 +189,22 @@ export function CollectionCatalog({
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    async function handleAddToCart(product: (typeof filteredProducts)[number]) {
-        const priceOption = product.priceOptions[0];
+    function handleRequestAddToCart(
+        product: (typeof filteredProducts)[number],
+    ) {
+        if (!getLowestPriceOption(product.priceOptions)) {
+            setConsultProductName(product.name);
+            return;
+        }
 
-        if (!priceOption || firstPriceInCents(product.priceOptions) <= 0) {
+        setSizeProduct(product);
+    }
+
+    async function handleAddToCart(
+        product: (typeof filteredProducts)[number],
+        priceOption: PriceOption,
+    ) {
+        if (priceOption.priceInCents <= 0) {
             setConsultProductName(product.name);
             return;
         }
@@ -208,6 +228,8 @@ export function CollectionCatalog({
                 toast.error("Não foi possível adicionar ao carrinho.", {
                     description: errorMessage,
                 });
+            } else {
+                setSizeProduct(null);
             }
         } finally {
             pendingProductUuidsRef.current.delete(product.uuid);
@@ -216,9 +238,14 @@ export function CollectionCatalog({
     }
 
     function renderPrice(product: (typeof filteredProducts)[number]) {
-        const originalPriceInCents = firstPriceInCents(product.priceOptions);
+        const lowestPriceOption = getLowestPriceOption(product.priceOptions);
+        const originalPriceInCents = lowestPriceOption?.priceInCents ?? 0;
         const discountPercent = normalizeDiscountPercent(
             product.promotionDiscountPercent,
+        );
+        const finalPriceInCents = applyProductDiscount(
+            originalPriceInCents,
+            discountPercent,
         );
 
         if (originalPriceInCents <= 0) {
@@ -227,8 +254,11 @@ export function CollectionCatalog({
 
         return (
             <span className="flex flex-col leading-tight">
-                <span>
-                    {getPriceLabel(product.priceOptions, discountPercent)}
+                <span className="mb-1 text-xs font-semibold text-slate-500">
+                    A partir de
+                </span>
+                <span className='text-red'>
+                    {formatCurrency(finalPriceInCents)}
                 </span>
                 {discountPercent > 0 ? (
                     <span className="mt-1 flex items-center gap-2 text-xs font-semibold">
@@ -241,6 +271,91 @@ export function CollectionCatalog({
                     </span>
                 ) : null}
             </span>
+        );
+    }
+
+    function renderSizeDialog() {
+        const product = sizeProduct;
+        const discountPercent = normalizeDiscountPercent(
+            product?.promotionDiscountPercent,
+        );
+        const priceOptions = [...(product?.priceOptions ?? [])]
+            .filter((option) => option.priceInCents > 0)
+            .sort((a, b) => a.grams - b.grams);
+
+        return (
+            <Dialog
+                onOpenChange={(open) => {
+                    if (!open) setSizeProduct(null);
+                }}
+                open={product != null}
+            >
+                <DialogContent className="max-w-md rounded-xl bg-white p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-slate-900">
+                            Escolha o tamanho
+                        </DialogTitle>
+                        <DialogDescription className="text-sm leading-6 text-slate-600">
+                            {product?.name} tem valores por tamanho. Selecione
+                            uma opção para adicionar ao carrinho.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-5 grid gap-3">
+                        {priceOptions.map((option) => {
+                            const finalPrice = applyProductDiscount(
+                                option.priceInCents,
+                                discountPercent,
+                            );
+
+                            return (
+                                <button
+                                    className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                                    disabled={
+                                        !product ||
+                                        pendingProductUuidsRef.current.has(
+                                            product.uuid,
+                                        )
+                                    }
+                                    key={option.size}
+                                    onClick={() =>
+                                        product
+                                            ? void handleAddToCart(
+                                                  product,
+                                                  option,
+                                              )
+                                            : undefined
+                                    }
+                                    type="button"
+                                >
+                                    <span>
+                                        <span className="block text-sm font-black uppercase tracking-widest text-slate-900">
+                                            {formatProductSizeLabel(
+                                                option.grams,
+                                            )}
+                                        </span>
+                                        <span className="mt-1 block text-xs text-slate-500">
+                                            Tamanho escolhido no carrinho e no
+                                            pedido
+                                        </span>
+                                    </span>
+                                    <span className="text-right">
+                                        {discountPercent > 0 ? (
+                                            <span className="block text-xs font-semibold text-slate-400 line-through">
+                                                {formatCurrency(
+                                                    option.priceInCents,
+                                                )}
+                                            </span>
+                                        ) : null}
+                                        <span className="block text-base font-black text-primary">
+                                            {formatCurrency(finalPrice)}
+                                        </span>
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </DialogContent>
+            </Dialog>
         );
     }
 
@@ -341,18 +456,25 @@ export function CollectionCatalog({
                                 {filteredProducts.map((product) => (
                                     <div className="group" key={product.uuid}>
                                         <div className="relative mb-4 aspect-[4/5] overflow-hidden rounded-lg bg-neutral-100">
-                                            <ProductImage
-                                                alt={product.name}
-                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                src={product.imageUrl}
-                                            />
+                                            <Link
+                                                aria-label={`Ver ${product.name}`}
+                                                href={`/produto/${product.slug}`}
+                                            >
+                                                <ProductImage
+                                                    alt={product.name}
+                                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    src={product.imageUrl}
+                                                />
+                                            </Link>
                                             <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 text-[10px] font-bold tracking-widest uppercase text-[#4A3728]">
                                                 {product.line.name}
                                             </div>
                                         </div>
-                                        <h4 className="font-public text-lg font-medium text-neutral-900">
-                                            {product.name}
-                                        </h4>
+                                        <Link href={`/produto/${product.slug}`}>
+                                            <h4 className="font-public text-lg font-medium text-neutral-900 transition hover:text-[#4A3728]">
+                                                {product.name}
+                                            </h4>
+                                        </Link>
                                         <p className="mt-1 text-sm text-neutral-500">
                                             {product.shortDescription}
                                         </p>
@@ -370,7 +492,7 @@ export function CollectionCatalog({
                                                         .length === 0
                                                 }
                                                 onClick={() =>
-                                                    void handleAddToCart(
+                                                    handleRequestAddToCart(
                                                         product,
                                                     )
                                                 }
@@ -477,6 +599,7 @@ export function CollectionCatalog({
                         </div>
                     </DialogContent>
                 </Dialog>
+                {renderSizeDialog()}
             </div>
         );
     }
@@ -610,20 +733,27 @@ export function CollectionCatalog({
                             {filteredProducts.map((product) => (
                                 <div className="group" key={product.uuid}>
                                     <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                        <ProductImage
-                                            alt={product.name}
-                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                            src={product.imageUrl}
-                                        />
+                                        <Link
+                                            aria-label={`Ver ${product.name}`}
+                                            href={`/produto/${product.slug}`}
+                                        >
+                                            <ProductImage
+                                                alt={product.name}
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                src={product.imageUrl}
+                                            />
+                                        </Link>
                                         <div className="absolute bottom-3 left-3">
                                             <span className="rounded bg-white/90 px-2 py-1 text-[10px] font-bold tracking-widest text-primary uppercase">
                                                 {product.line.name}
                                             </span>
                                         </div>
                                     </div>
-                                    <h3 className="font-display text-lg font-bold">
-                                        {product.name}
-                                    </h3>
+                                    <Link href={`/produto/${product.slug}`}>
+                                        <h3 className="font-display text-lg font-bold transition hover:text-primary">
+                                            {product.name}
+                                        </h3>
+                                    </Link>
                                     <p className="mb-3 text-sm text-slate-500">
                                         {product.shortDescription}
                                     </p>
@@ -641,7 +771,7 @@ export function CollectionCatalog({
                                                     0
                                             }
                                             onClick={() =>
-                                                void handleAddToCart(product)
+                                                handleRequestAddToCart(product)
                                             }
                                             type="button"
                                         >
@@ -694,6 +824,7 @@ export function CollectionCatalog({
                     </div>
                 </DialogContent>
             </Dialog>
+            {renderSizeDialog()}
         </div>
     );
 }

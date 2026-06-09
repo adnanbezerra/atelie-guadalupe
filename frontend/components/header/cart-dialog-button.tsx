@@ -12,6 +12,7 @@ import {
 import { useApiToken } from "@/hooks/use-api-token";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/format";
+import { formatProductSizeLabel } from "@/lib/utils";
 import { ProductImage } from "@/components/shared/product-image";
 
 export function CartDialogButton() {
@@ -108,8 +109,11 @@ export function CartDialogButton() {
                                                 {item.name}
                                             </p>
                                             <p className="mt-1 text-xs text-slate-500">
-                                                {item.grams}g · Quantidade{" "}
-                                                {item.quantity}
+                                                Tamanho:{" "}
+                                                {formatProductSizeLabel(
+                                                    item.grams,
+                                                )}{" "}
+                                                · Quantidade {item.quantity}
                                             </p>
                                             <p className="mt-2 text-sm font-bold text-primary">
                                                 {formatCurrency(
