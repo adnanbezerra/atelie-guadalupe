@@ -4,6 +4,8 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+- Whenever you try to find data from a backend endpoint, always check at docs/API.md first. In case the endpoint you're looking for doesn't exist, inform me and write down a .md on the contract which you need it to have.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**

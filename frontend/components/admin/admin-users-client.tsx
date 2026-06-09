@@ -99,9 +99,7 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                             }}
                         >
                             <DialogTrigger asChild>
-                                <button
-                                    className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90"
-                                >
+                                <button className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90">
                                     <span className="material-symbols-outlined text-xl">
                                         person_add
                                     </span>

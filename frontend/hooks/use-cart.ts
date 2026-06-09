@@ -419,8 +419,7 @@ export function CartProvider({
                         item.uuid === itemUuid
                             ? {
                                   ...item,
-                                  productSize:
-                                      productSize ?? item.productSize,
+                                  productSize: productSize ?? item.productSize,
                                   quantity,
                                   totalPriceInCents:
                                       item.unitPriceInCents * quantity,

@@ -257,7 +257,7 @@ export function CollectionCatalog({
                 <span className="mb-1 text-xs font-semibold text-slate-500">
                     A partir de
                 </span>
-                <span className='text-red'>
+                <span className="text-red">
                     {formatCurrency(finalPriceInCents)}
                 </span>
                 {discountPercent > 0 ? (
