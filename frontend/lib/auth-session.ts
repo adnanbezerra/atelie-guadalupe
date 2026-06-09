@@ -14,16 +14,39 @@ export function isExpiredAccessTokenError(
     payload: ApiErrorPayload,
 ) {
     const message = payload.error?.message?.toLowerCase() ?? "";
+    const code = payload.error?.code;
+    const mentionsAccessToken =
+        message.includes("access token") || message.includes("jwt");
+    const hasExpiredTokenMessage =
+        mentionsAccessToken &&
+        (message.includes("expirado") || message.includes("expired"));
+    const hasInvalidTokenMessage =
+        mentionsAccessToken &&
+        (message.includes("invalid") ||
+            message.includes("invalido") ||
+            message.includes("inválido"));
 
     return (
-        status === 401 &&
-        payload.error?.code === "UNAUTHORIZED" &&
-        message.includes("access token") &&
-        message.includes("expirado")
+        (code === "UNAUTHORIZED" && status === 401) ||
+        hasExpiredTokenMessage ||
+        hasInvalidTokenMessage
     );
 }
 
-export function clearAuthSession() {
+export function isAuthSessionFailureEndpoint(path: string) {
+    const normalizedPath = path.startsWith("/api/")
+        ? path.slice("/api".length)
+        : path;
+
+    return (
+        normalizedPath === "/users/me" ||
+        normalizedPath.startsWith("/users/me/") ||
+        normalizedPath === "/cart/items" ||
+        normalizedPath.startsWith("/cart/items/")
+    );
+}
+
+export function clearAuthSession(options: { redirectToLogin?: boolean } = {}) {
     if (typeof window === "undefined") {
         return;
     }
@@ -34,6 +57,16 @@ export function clearAuthSession() {
     }
 
     window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
+
+    if (options.redirectToLogin) {
+        const currentPath = `${window.location.pathname}${window.location.search}`;
+        const loginUrl = new URL("/login", window.location.origin);
+
+        if (!["/login", "/cadastro"].includes(window.location.pathname)) {
+            loginUrl.searchParams.set("next", currentPath);
+            window.location.assign(loginUrl.toString());
+        }
+    }
 }
 
 export function notifyAuthSessionChanged() {

@@ -20,6 +20,7 @@ export function CartDialogButton() {
     const cart = useCart();
     const items = cart.data?.items ?? [];
     const itemCount = cart.data?.summary.itemsCount ?? 0;
+    const hasItems = items.length > 0;
 
     return (
         <Dialog>
@@ -55,7 +56,7 @@ export function CartDialogButton() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    {!token ? (
+                    {!token && !hasItems ? (
                         <div className="space-y-3 p-5">
                             <Link
                                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:brightness-110"
@@ -112,14 +113,69 @@ export function CartDialogButton() {
                                                 Tamanho:{" "}
                                                 {formatProductSizeLabel(
                                                     item.grams,
-                                                )}{" "}
-                                                · Quantidade {item.quantity}
+                                                )}
                                             </p>
                                             <p className="mt-2 text-sm font-bold text-primary">
                                                 {formatCurrency(
                                                     item.totalPriceInCents,
                                                 )}
                                             </p>
+                                            <div className="mt-3 flex items-center gap-2">
+                                                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
+                                                    <button
+                                                        aria-label={`Diminuir quantidade de ${item.name}`}
+                                                        className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                                        disabled={
+                                                            cart.isMutating
+                                                        }
+                                                        onClick={() =>
+                                                            cart.updateItem(
+                                                                item.uuid,
+                                                                item.quantity -
+                                                                    1,
+                                                            )
+                                                        }
+                                                        type="button"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className="w-7 text-center text-xs font-black text-slate-900">
+                                                        {item.quantity}
+                                                    </span>
+                                                    <button
+                                                        aria-label={`Aumentar quantidade de ${item.name}`}
+                                                        className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                                        disabled={
+                                                            cart.isMutating
+                                                        }
+                                                        onClick={() =>
+                                                            cart.updateItem(
+                                                                item.uuid,
+                                                                item.quantity +
+                                                                    1,
+                                                            )
+                                                        }
+                                                        type="button"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    aria-label={`Remover ${item.name} do carrinho`}
+                                                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    disabled={cart.isMutating}
+                                                    onClick={() =>
+                                                        cart.removeItem(
+                                                            item.uuid,
+                                                        )
+                                                    }
+                                                    type="button"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">
+                                                        delete
+                                                    </span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

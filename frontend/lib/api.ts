@@ -19,6 +19,7 @@ import type {
 } from "@/lib/types";
 import {
     clearAuthSession,
+    isAuthSessionFailureEndpoint,
     isExpiredAccessTokenError,
 } from "@/lib/auth-session";
 
@@ -170,8 +171,13 @@ async function request<T>(path: string, options: RequestOptions = {}) {
     const payload = (await response.json()) as ApiEnvelope<T>;
 
     if (!response.ok || !payload.success) {
-        if (isExpiredAccessTokenError(response.status, payload)) {
-            clearAuthSession();
+        if (
+            isExpiredAccessTokenError(response.status, payload) ||
+            (response.status === 500 &&
+                Boolean(options.token) &&
+                isAuthSessionFailureEndpoint(path))
+        ) {
+            clearAuthSession({ redirectToLogin: true });
         }
 
         throw new ApiError(
@@ -217,8 +223,13 @@ function requestWithUploadProgress<T>(
             }
 
             if (xhr.status < 200 || xhr.status >= 300 || !payload.success) {
-                if (isExpiredAccessTokenError(xhr.status, payload)) {
-                    clearAuthSession();
+                if (
+                    isExpiredAccessTokenError(xhr.status, payload) ||
+                    (xhr.status === 500 &&
+                        Boolean(options.token) &&
+                        isAuthSessionFailureEndpoint(path))
+                ) {
+                    clearAuthSession({ redirectToLogin: true });
                 }
 
                 reject(

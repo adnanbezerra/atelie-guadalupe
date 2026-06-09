@@ -23,9 +23,11 @@ import {
     updateCartItem,
 } from "@/lib/api";
 import type { ReactNode } from "react";
-import type { Cart, Order, Product } from "@/lib/types";
+import type { Cart, CartItem, Order, Product } from "@/lib/types";
 import { useApiToken } from "@/hooks/use-api-token";
 import { applyProductDiscount } from "@/lib/utils";
+
+const GUEST_CART_STORAGE_KEY = "atelie_guest_cart";
 
 type AddCartItemInput = {
     productUuid: string;
@@ -63,6 +65,89 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
+
+function createEmptyGuestCart(): Cart {
+    return {
+        uuid: "guest-cart",
+        items: [],
+        coupon: null,
+        summary: {
+            itemsCount: 0,
+            subtotalInCents: 0,
+            couponDiscountInCents: 0,
+            totalInCents: 0,
+        },
+    };
+}
+
+function summarizeCartItems(items: CartItem[]): Cart["summary"] {
+    const subtotalInCents = items.reduce(
+        (total, item) => total + item.totalPriceInCents,
+        0,
+    );
+    const itemsCount = items.reduce((total, item) => total + item.quantity, 0);
+
+    return {
+        itemsCount,
+        subtotalInCents,
+        couponDiscountInCents: 0,
+        totalInCents: subtotalInCents,
+    };
+}
+
+function buildGuestCart(items: CartItem[]): Cart {
+    return {
+        uuid: "guest-cart",
+        items,
+        coupon: null,
+        summary: summarizeCartItems(items),
+    };
+}
+
+function readGuestCart() {
+    if (typeof window === "undefined") {
+        return createEmptyGuestCart();
+    }
+
+    const rawCart = window.sessionStorage.getItem(GUEST_CART_STORAGE_KEY);
+
+    if (!rawCart) {
+        return createEmptyGuestCart();
+    }
+
+    try {
+        const parsed = JSON.parse(rawCart) as Cart;
+
+        if (!Array.isArray(parsed.items)) {
+            return createEmptyGuestCart();
+        }
+
+        return buildGuestCart(parsed.items);
+    } catch {
+        return createEmptyGuestCart();
+    }
+}
+
+function writeGuestCart(cart: Cart) {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    if (cart.items.length === 0) {
+        clearGuestCart();
+        return;
+    }
+
+    window.sessionStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(cart));
+}
+
+function clearGuestCart() {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    window.sessionStorage.removeItem(GUEST_CART_STORAGE_KEY);
+}
 
 function getOptimisticCart(
     currentCart: Cart | null,
@@ -153,6 +238,7 @@ export function CartProvider({
     const [isMutating, setIsMutating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const latestCartRef = useRef<Cart | null>(initialCart);
+    const syncedGuestCartTokenRef = useRef<string | null>(null);
 
     useEffect(() => {
         latestCartRef.current = cart;
@@ -160,15 +246,36 @@ export function CartProvider({
 
     const refresh = useCallback(async () => {
         if (!token) {
+            const guestCart = readGuestCart();
+
+            latestCartRef.current = guestCart;
+            setCart(guestCart);
             setIsLoading(false);
-            setError("Faça login para visualizar o carrinho.");
-            setCart(null);
+            setError(null);
             return;
         }
 
         try {
             setIsLoading(true);
             setError(null);
+            const guestCart = readGuestCart();
+
+            if (
+                guestCart.items.length > 0 &&
+                syncedGuestCartTokenRef.current !== token
+            ) {
+                for (const item of guestCart.items) {
+                    await createCartItem(token, {
+                        productSize: item.productSize,
+                        productUuid: item.productUuid,
+                        quantity: item.quantity,
+                    });
+                }
+
+                clearGuestCart();
+                syncedGuestCartTokenRef.current = token;
+            }
+
             const response = await getCart(token);
             setCart(response.cart);
         } catch (err) {
@@ -235,6 +342,14 @@ export function CartProvider({
         }
     }
 
+    function updateGuestCart(nextCart: Cart) {
+        latestCartRef.current = nextCart;
+        writeGuestCart(nextCart);
+        startTransition(() => {
+            setCart(nextCart);
+        });
+    }
+
     const value = useMemo<CartContextValue>(
         () => ({
             cart,
@@ -248,9 +363,21 @@ export function CartProvider({
             hydrate,
             addItem: async (input: AddCartItemInput) => {
                 if (!token) {
-                    const message = "Faça login para adicionar itens.";
-                    setError(message);
-                    return message;
+                    const nextCart = getOptimisticCart(
+                        latestCartRef.current ?? readGuestCart(),
+                        input,
+                    );
+
+                    if (!nextCart) {
+                        const message =
+                            "Não foi possível adicionar este produto.";
+                        setError(message);
+                        return message;
+                    }
+
+                    setError(null);
+                    updateGuestCart(nextCart);
+                    return null;
                 }
 
                 const payload = {
@@ -269,8 +396,39 @@ export function CartProvider({
                 quantity: number,
                 productSize?: string,
             ) => {
+                if (quantity <= 0) {
+                    if (!token) {
+                        const currentCart =
+                            latestCartRef.current ?? readGuestCart();
+                        const nextItems = currentCart.items.filter(
+                            (item) => item.uuid !== itemUuid,
+                        );
+
+                        updateGuestCart(buildGuestCart(nextItems));
+                        return;
+                    }
+
+                    await runMutation(() => removeCartItem(token, itemUuid));
+                    return;
+                }
+
                 if (!token) {
-                    setError("Faça login para editar o carrinho.");
+                    const currentCart =
+                        latestCartRef.current ?? readGuestCart();
+                    const nextItems = currentCart.items.map((item) =>
+                        item.uuid === itemUuid
+                            ? {
+                                  ...item,
+                                  productSize:
+                                      productSize ?? item.productSize,
+                                  quantity,
+                                  totalPriceInCents:
+                                      item.unitPriceInCents * quantity,
+                              }
+                            : item,
+                    );
+
+                    updateGuestCart(buildGuestCart(nextItems));
                     return;
                 }
                 await runMutation(() =>
@@ -279,21 +437,27 @@ export function CartProvider({
             },
             removeItem: async (itemUuid: string) => {
                 if (!token) {
-                    setError("Faça login para editar o carrinho.");
+                    const currentCart =
+                        latestCartRef.current ?? readGuestCart();
+                    const nextItems = currentCart.items.filter(
+                        (item) => item.uuid !== itemUuid,
+                    );
+
+                    updateGuestCart(buildGuestCart(nextItems));
                     return;
                 }
                 await runMutation(() => removeCartItem(token, itemUuid));
             },
             clear: async () => {
                 if (!token) {
-                    setError("Faça login para limpar o carrinho.");
+                    updateGuestCart(createEmptyGuestCart());
                     return;
                 }
                 await runMutation(() => clearCart(token));
             },
             clearCart: async () => {
                 if (!token) {
-                    setError("Faça login para limpar o carrinho.");
+                    updateGuestCart(createEmptyGuestCart());
                     return;
                 }
                 await runMutation(() => clearCart(token));

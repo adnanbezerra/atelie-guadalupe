@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { isExpiredAccessTokenError } from "@/lib/auth-session";
+import {
+    isAuthSessionFailureEndpoint,
+    isExpiredAccessTokenError,
+} from "@/lib/auth-session";
 import { AUTH_TOKEN_KEYS } from "@/lib/constants";
 import { env } from "@/lib/env";
 
@@ -72,11 +75,18 @@ async function proxyRequest(request: NextRequest, path: string[]) {
                 response.headers.get("content-type") ?? "application/json",
         },
     });
+    const shouldClearAuthSession =
+        response.status === 500 &&
+        Boolean(token) &&
+        isAuthSessionFailureEndpoint(`/${path.join("/")}`);
 
     try {
         const payload = JSON.parse(responseText);
 
-        if (isExpiredAccessTokenError(response.status, payload)) {
+        if (
+            shouldClearAuthSession ||
+            isExpiredAccessTokenError(response.status, payload)
+        ) {
             for (const name of [env.AUTH_COOKIE_NAME, ...AUTH_TOKEN_KEYS]) {
                 proxiedResponse.cookies.set(name, "", {
                     maxAge: 0,
@@ -86,7 +96,15 @@ async function proxyRequest(request: NextRequest, path: string[]) {
             }
         }
     } catch {
-        // Backend returned non-JSON body. Leave response unchanged.
+        if (shouldClearAuthSession) {
+            for (const name of [env.AUTH_COOKIE_NAME, ...AUTH_TOKEN_KEYS]) {
+                proxiedResponse.cookies.set(name, "", {
+                    maxAge: 0,
+                    path: "/",
+                    sameSite: "lax",
+                });
+            }
+        }
     }
 
     return proxiedResponse;
