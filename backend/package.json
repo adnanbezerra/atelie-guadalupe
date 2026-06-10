@@ -21,7 +21,8 @@
         "prisma:generate": "pnpm exec prisma generate",
         "prisma:migrate:dev": "pnpm exec prisma migrate dev",
         "prisma:migrate:deploy": "pnpm exec prisma migrate deploy",
-        "prisma:seed": "ts-node prisma/seed.ts"
+        "prisma:seed": "ts-node prisma/seed.ts",
+        "prisma:update-products": "ts-node prisma/update-product-seed-data.ts"
     },
     "keywords": [],
     "author": "",
