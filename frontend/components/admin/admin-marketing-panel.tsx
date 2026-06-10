@@ -27,6 +27,9 @@ type AdminMarketingPanelProps = {
 };
 
 type MarketingTab = "promotions" | "coupons";
+type MarketingEditor =
+    | { kind: "promotion"; item?: MarketingPromotion }
+    | { kind: "coupon"; item?: MarketingCoupon };
 
 const categoryLabels: Record<ProductCategory, string> = {
     ARTISANAL: "Artesanal",
@@ -89,6 +92,7 @@ export function AdminMarketingPanel({
     const marketing = useAdminMarketing(initialMarketing);
     const [open, setOpen] = useState(false);
     const [tab, setTab] = useState<MarketingTab>("promotions");
+    const [editor, setEditor] = useState<MarketingEditor | null>(null);
 
     const activePromotions = useMemo(
         () =>
@@ -105,151 +109,185 @@ export function AdminMarketingPanel({
     );
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={(nextOpen) => {
-                setOpen(nextOpen);
-                if (nextOpen) {
-                    void marketing.refreshMarketing();
-                }
-            }}
-        >
-            <DialogTrigger asChild>
-                <button className="group h-full min-h-[354px] w-full rounded-xl border border-slate-200 bg-white p-0 text-left shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-primary/30 focus-visible:ring-4 focus-visible:ring-primary/20">
-                    <div className="flex h-full flex-col overflow-hidden rounded-xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">
-                                    Promoções e Cupons
-                                </h3>
-                                <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                                    Marketing ativo
-                                </p>
+        <>
+            <Dialog
+                open={open}
+                onOpenChange={(nextOpen) => {
+                    setOpen(nextOpen);
+                    if (nextOpen) {
+                        void marketing.refreshMarketing();
+                    }
+                }}
+            >
+                <DialogTrigger asChild>
+                    <button className="group h-full min-h-[354px] w-full rounded-xl border border-slate-200 bg-white p-0 text-left shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-primary/30 focus-visible:ring-4 focus-visible:ring-primary/20">
+                        <div className="flex h-full flex-col overflow-hidden rounded-xl">
+                            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">
+                                        Promoções e Cupons
+                                    </h3>
+                                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                        Marketing ativo
+                                    </p>
+                                </div>
+                                <span className="material-symbols-outlined rounded-lg bg-primary/10 p-2 text-primary group-hover:bg-primary group-hover:text-white">
+                                    sell
+                                </span>
                             </div>
-                            <span className="material-symbols-outlined rounded-lg bg-primary/10 p-2 text-primary group-hover:bg-primary group-hover:text-white">
-                                sell
-                            </span>
-                        </div>
 
-                        <div className="grid flex-1 grid-rows-2">
-                            <MarketingPreviewList
-                                empty="Nenhuma promoção ativa"
-                                icon="local_offer"
-                                items={activePromotions
-                                    .slice(0, 3)
-                                    .map((promotion) => ({
-                                        key: promotion.uuid,
-                                        title: promotion.name,
-                                        detail: `${percentLabel(
-                                            promotion.discountPercent,
-                                        )} · ${promotionScopeLabel(promotion)}`,
-                                    }))}
-                                label={`${activePromotions.length} promoções`}
-                            />
-                            <MarketingPreviewList
-                                empty="Nenhum cupom ativo"
-                                icon="confirmation_number"
-                                items={activeCoupons
-                                    .slice(0, 3)
-                                    .map((coupon) => ({
-                                        key: coupon.uuid,
-                                        title: coupon.code,
-                                        detail: `${percentLabel(
-                                            coupon.discountPercent,
-                                        )} · ${coupon.usedCount}/${
-                                            coupon.maxUses ?? "sem limite"
-                                        } usos`,
-                                    }))}
-                                label={`${activeCoupons.length} cupons`}
-                            />
-                        </div>
+                            <div className="grid flex-1 grid-rows-2">
+                                <MarketingPreviewList
+                                    empty="Nenhuma promoção ativa"
+                                    icon="local_offer"
+                                    items={activePromotions
+                                        .slice(0, 3)
+                                        .map((promotion) => ({
+                                            key: promotion.uuid,
+                                            title: promotion.name,
+                                            detail: `${percentLabel(
+                                                promotion.discountPercent,
+                                            )} · ${promotionScopeLabel(promotion)}`,
+                                        }))}
+                                    label={`${activePromotions.length} promoções`}
+                                />
+                                <MarketingPreviewList
+                                    empty="Nenhum cupom ativo"
+                                    icon="confirmation_number"
+                                    items={activeCoupons
+                                        .slice(0, 3)
+                                        .map((coupon) => ({
+                                            key: coupon.uuid,
+                                            title: coupon.code,
+                                            detail: `${percentLabel(
+                                                coupon.discountPercent,
+                                            )} · ${coupon.usedCount}/${
+                                                coupon.maxUses ?? "sem limite"
+                                            } usos`,
+                                        }))}
+                                    label={`${activeCoupons.length} cupons`}
+                                />
+                            </div>
 
-                        <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 text-sm font-bold text-primary">
-                            Abrir gestão de marketing
+                            <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 text-sm font-bold text-primary">
+                                Abrir gestão de marketing
+                            </div>
                         </div>
+                    </button>
+                </DialogTrigger>
+
+                <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden rounded-xl bg-slate-50">
+                    <DialogHeader className="border-b border-slate-200 bg-white p-6">
+                        <DialogTitle className="font-display text-2xl font-bold text-slate-900">
+                            Gestão de Promoções e Cupons
+                        </DialogTitle>
+                        <DialogDescription className="text-sm leading-6 text-slate-500">
+                            Controle campanhas ativas, crie regras novas e
+                            desative itens sem remover histórico.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid max-h-[calc(92vh-121px)] grid-cols-1 overflow-y-auto lg:grid-cols-[15rem_1fr]">
+                        <aside className="border-b border-slate-200 bg-white p-4 lg:border-r lg:border-b-0">
+                            <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+                                <TabButton
+                                    active={tab === "promotions"}
+                                    count={activePromotions.length}
+                                    icon="local_offer"
+                                    label="Promoções"
+                                    onClick={() => setTab("promotions")}
+                                />
+                                <TabButton
+                                    active={tab === "coupons"}
+                                    count={activeCoupons.length}
+                                    icon="confirmation_number"
+                                    label="Cupons"
+                                    onClick={() => setTab("coupons")}
+                                />
+                            </div>
+                            {marketing.error ? (
+                                <p className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-xs font-semibold text-red-700">
+                                    {marketing.error}
+                                </p>
+                            ) : null}
+                        </aside>
+
+                        <main className="p-5">
+                            {tab === "promotions" ? (
+                                <PromotionsManager
+                                    items={activePromotions}
+                                    onCreate={() =>
+                                        setEditor({ kind: "promotion" })
+                                    }
+                                    onDeactivate={async (uuid) => {
+                                        await marketing.deactivatePromotion(
+                                            uuid,
+                                        );
+                                        toast.success("Promoção desativada.");
+                                    }}
+                                    onEdit={(item) =>
+                                        setEditor({ kind: "promotion", item })
+                                    }
+                                />
+                            ) : (
+                                <CouponsManager
+                                    items={activeCoupons}
+                                    onCreate={() =>
+                                        setEditor({ kind: "coupon" })
+                                    }
+                                    onDeactivate={async (uuid) => {
+                                        await marketing.deactivateCoupon(uuid);
+                                        toast.success("Cupom cancelado.");
+                                    }}
+                                    onEdit={(item) =>
+                                        setEditor({ kind: "coupon", item })
+                                    }
+                                />
+                            )}
+                        </main>
                     </div>
-                </button>
-            </DialogTrigger>
+                </DialogContent>
+            </Dialog>
 
-            <DialogContent className="max-h-[92vh] max-w-6xl overflow-hidden rounded-xl bg-slate-50">
-                <DialogHeader className="border-b border-slate-200 bg-white p-6">
-                    <DialogTitle className="font-display text-2xl font-bold text-slate-900">
-                        Gestão de Promoções e Cupons
-                    </DialogTitle>
-                    <DialogDescription className="text-sm leading-6 text-slate-500">
-                        Controle campanhas ativas, crie regras novas e desative
-                        itens sem remover histórico.
-                    </DialogDescription>
-                </DialogHeader>
+            <MarketingEditorDialog
+                editor={editor}
+                isPending={marketing.isPending}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setEditor(null);
+                    }
+                }}
+                onSubmitCoupon={async (payload) => {
+                    if (editor?.kind !== "coupon") return;
 
-                <div className="grid max-h-[calc(92vh-121px)] grid-cols-1 overflow-y-auto lg:grid-cols-[15rem_1fr]">
-                    <aside className="border-b border-slate-200 bg-white p-4 lg:border-r lg:border-b-0">
-                        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
-                            <TabButton
-                                active={tab === "promotions"}
-                                count={marketing.data.promotions.length}
-                                icon="local_offer"
-                                label="Promoções"
-                                onClick={() => setTab("promotions")}
-                            />
-                            <TabButton
-                                active={tab === "coupons"}
-                                count={marketing.data.coupons.length}
-                                icon="confirmation_number"
-                                label="Cupons"
-                                onClick={() => setTab("coupons")}
-                            />
-                        </div>
-                        {marketing.error ? (
-                            <p className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-xs font-semibold text-red-700">
-                                {marketing.error}
-                            </p>
-                        ) : null}
-                    </aside>
+                    if (editor.item) {
+                        await marketing.updateCoupon(editor.item.uuid, payload);
+                        toast.success("Cupom atualizado.");
+                    } else {
+                        await marketing.createCoupon(payload);
+                        toast.success("Cupom criado.");
+                    }
 
-                    <main className="p-5">
-                        {tab === "promotions" ? (
-                            <PromotionsManager
-                                isPending={marketing.isPending}
-                                items={marketing.data.promotions}
-                                onCreate={async (payload) => {
-                                    await marketing.createPromotion(payload);
-                                    toast.success("Promoção criada.");
-                                }}
-                                onDeactivate={async (uuid) => {
-                                    await marketing.deactivatePromotion(uuid);
-                                    toast.success("Promoção desativada.");
-                                }}
-                                onUpdate={async (uuid, payload) => {
-                                    await marketing.updatePromotion(
-                                        uuid,
-                                        payload,
-                                    );
-                                    toast.success("Promoção atualizada.");
-                                }}
-                            />
-                        ) : (
-                            <CouponsManager
-                                isPending={marketing.isPending}
-                                items={marketing.data.coupons}
-                                onCreate={async (payload) => {
-                                    await marketing.createCoupon(payload);
-                                    toast.success("Cupom criado.");
-                                }}
-                                onDeactivate={async (uuid) => {
-                                    await marketing.deactivateCoupon(uuid);
-                                    toast.success("Cupom cancelado.");
-                                }}
-                                onUpdate={async (uuid, payload) => {
-                                    await marketing.updateCoupon(uuid, payload);
-                                    toast.success("Cupom atualizado.");
-                                }}
-                            />
-                        )}
-                    </main>
-                </div>
-            </DialogContent>
-        </Dialog>
+                    setEditor(null);
+                }}
+                onSubmitPromotion={async (payload) => {
+                    if (editor?.kind !== "promotion") return;
+
+                    if (editor.item) {
+                        await marketing.updatePromotion(
+                            editor.item.uuid,
+                            payload,
+                        );
+                        toast.success("Promoção atualizada.");
+                    } else {
+                        await marketing.createPromotion(payload);
+                        toast.success("Promoção criada.");
+                    }
+
+                    setEditor(null);
+                }}
+            />
+        </>
     );
 }
 
@@ -342,53 +380,49 @@ function TabButton({
 }
 
 function PromotionsManager({
-    isPending,
     items,
     onCreate,
     onDeactivate,
-    onUpdate,
+    onEdit,
 }: {
-    isPending: boolean;
     items: MarketingPromotion[];
-    onCreate: (payload: CreateMarketingPromotionInput) => Promise<void>;
+    onCreate: () => void;
     onDeactivate: (uuid: string) => Promise<void>;
-    onUpdate: (
-        uuid: string,
-        payload: CreateMarketingPromotionInput,
-    ) => Promise<void>;
+    onEdit: (item: MarketingPromotion) => void;
 }) {
-    const [editing, setEditing] = useState<MarketingPromotion | null>(null);
-    const [formVersion, setFormVersion] = useState(0);
-
     return (
-        <div className="grid gap-5 xl:grid-cols-[24rem_1fr]">
-            <PromotionForm
-                editing={editing}
-                isPending={isPending}
-                key={`${editing?.uuid ?? "new"}-${formVersion}`}
-                onCancelEdit={() => setEditing(null)}
-                onSubmit={async (payload) => {
-                    if (editing) {
-                        await onUpdate(editing.uuid, payload);
-                        setEditing(null);
-                        return;
-                    }
-
-                    await onCreate(payload);
-                    setFormVersion((version) => version + 1);
-                }}
-            />
+        <div className="space-y-4">
+            <div className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
+                <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                        Promoções ativas
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Campanhas em vigor ou dentro da janela atual.
+                    </p>
+                </div>
+                <button
+                    className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white"
+                    onClick={onCreate}
+                    type="button"
+                >
+                    <span className="material-symbols-outlined text-lg">
+                        add
+                    </span>
+                    Nova promoção
+                </button>
+            </div>
             <div className="space-y-3">
                 {items.map((promotion) => (
                     <PromotionRow
                         key={promotion.uuid}
                         onDeactivate={onDeactivate}
-                        onEdit={() => setEditing(promotion)}
+                        onEdit={() => onEdit(promotion)}
                         promotion={promotion}
                     />
                 ))}
                 {!items.length ? (
-                    <EmptyState label="Nenhuma promoção." />
+                    <EmptyState label="Nenhuma promoção ativa." />
                 ) : null}
             </div>
         </div>
@@ -396,66 +430,124 @@ function PromotionsManager({
 }
 
 function CouponsManager({
-    isPending,
     items,
     onCreate,
     onDeactivate,
-    onUpdate,
+    onEdit,
 }: {
-    isPending: boolean;
     items: MarketingCoupon[];
-    onCreate: (payload: CreateMarketingCouponInput) => Promise<void>;
+    onCreate: () => void;
     onDeactivate: (uuid: string) => Promise<void>;
-    onUpdate: (
-        uuid: string,
-        payload: CreateMarketingCouponInput,
-    ) => Promise<void>;
+    onEdit: (item: MarketingCoupon) => void;
 }) {
-    const [editing, setEditing] = useState<MarketingCoupon | null>(null);
-    const [formVersion, setFormVersion] = useState(0);
-
     return (
-        <div className="grid gap-5 xl:grid-cols-[24rem_1fr]">
-            <CouponForm
-                editing={editing}
-                isPending={isPending}
-                key={`${editing?.uuid ?? "new"}-${formVersion}`}
-                onCancelEdit={() => setEditing(null)}
-                onSubmit={async (payload) => {
-                    if (editing) {
-                        await onUpdate(editing.uuid, payload);
-                        setEditing(null);
-                        return;
-                    }
-
-                    await onCreate(payload);
-                    setFormVersion((version) => version + 1);
-                }}
-            />
+        <div className="space-y-4">
+            <div className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
+                <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                        Cupons ativos
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Códigos disponíveis para uso no carrinho.
+                    </p>
+                </div>
+                <button
+                    className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white"
+                    onClick={onCreate}
+                    type="button"
+                >
+                    <span className="material-symbols-outlined text-lg">
+                        add
+                    </span>
+                    Novo cupom
+                </button>
+            </div>
             <div className="space-y-3">
                 {items.map((coupon) => (
                     <CouponRow
                         coupon={coupon}
                         key={coupon.uuid}
                         onDeactivate={onDeactivate}
-                        onEdit={() => setEditing(coupon)}
+                        onEdit={() => onEdit(coupon)}
                     />
                 ))}
-                {!items.length ? <EmptyState label="Nenhum cupom." /> : null}
+                {!items.length ? (
+                    <EmptyState label="Nenhum cupom ativo." />
+                ) : null}
             </div>
         </div>
+    );
+}
+
+function MarketingEditorDialog({
+    editor,
+    isPending,
+    onOpenChange,
+    onSubmitCoupon,
+    onSubmitPromotion,
+}: {
+    editor: MarketingEditor | null;
+    isPending: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmitCoupon: (payload: CreateMarketingCouponInput) => Promise<void>;
+    onSubmitPromotion: (
+        payload: CreateMarketingPromotionInput,
+    ) => Promise<void>;
+}) {
+    const title =
+        editor?.kind === "promotion"
+            ? editor.item
+                ? "Editar promoção"
+                : "Criar promoção"
+            : editor?.item
+              ? "Editar cupom"
+              : "Criar cupom";
+    const description =
+        editor?.kind === "promotion"
+            ? "Defina desconto, escopo e janela de validade da campanha."
+            : "Defina código, limite de uso, segmentação e acúmulo com promoções.";
+
+    return (
+        <Dialog open={Boolean(editor)} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-xl bg-slate-50">
+                <DialogHeader className="border-b border-slate-200 bg-white p-6">
+                    <DialogTitle className="font-display text-2xl font-bold text-slate-900">
+                        {title}
+                    </DialogTitle>
+                    <DialogDescription className="text-sm leading-6 text-slate-500">
+                        {description}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="p-5">
+                    {editor?.kind === "promotion" ? (
+                        <PromotionForm
+                            editing={editor.item ?? null}
+                            isPending={isPending}
+                            key={editor.item?.uuid ?? "new-promotion"}
+                            onSubmit={onSubmitPromotion}
+                        />
+                    ) : null}
+                    {editor?.kind === "coupon" ? (
+                        <CouponForm
+                            editing={editor.item ?? null}
+                            isPending={isPending}
+                            key={editor.item?.uuid ?? "new-coupon"}
+                            onSubmit={onSubmitCoupon}
+                        />
+                    ) : null}
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
 
 function PromotionForm({
     editing,
     isPending,
-    onCancelEdit,
     onSubmit,
 }: {
     editing: MarketingPromotion | null;
     isPending: boolean;
-    onCancelEdit: () => void;
     onSubmit: (payload: CreateMarketingPromotionInput) => Promise<void>;
 }) {
     const [name, setName] = useState(editing?.name ?? "");
@@ -495,10 +587,6 @@ function PromotionForm({
                 await onSubmit(payload);
             }}
         >
-            <FormTitle
-                action={editing ? "Editando promoção" : "Nova promoção"}
-                onCancelEdit={editing ? onCancelEdit : undefined}
-            />
             <Field label="Nome">
                 <input
                     className={inputClass}
@@ -581,12 +669,10 @@ function PromotionForm({
 function CouponForm({
     editing,
     isPending,
-    onCancelEdit,
     onSubmit,
 }: {
     editing: MarketingCoupon | null;
     isPending: boolean;
-    onCancelEdit: () => void;
     onSubmit: (payload: CreateMarketingCouponInput) => Promise<void>;
 }) {
     const [code, setCode] = useState(editing?.code ?? "");
@@ -626,10 +712,6 @@ function CouponForm({
                 await onSubmit(payload);
             }}
         >
-            <FormTitle
-                action={editing ? "Editando cupom" : "Novo cupom"}
-                onCancelEdit={editing ? onCancelEdit : undefined}
-            />
             <Field label="Código">
                 <input
                     className={`${inputClass} uppercase`}
@@ -853,29 +935,6 @@ function Checkbox({
             />
             {label}
         </label>
-    );
-}
-
-function FormTitle({
-    action,
-    onCancelEdit,
-}: {
-    action: string;
-    onCancelEdit?: () => void;
-}) {
-    return (
-        <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="text-lg font-bold text-slate-900">{action}</h3>
-            {onCancelEdit ? (
-                <button
-                    className="text-sm font-bold text-slate-500 hover:text-slate-900"
-                    onClick={onCancelEdit}
-                    type="button"
-                >
-                    Cancelar
-                </button>
-            ) : null}
-        </div>
     );
 }
 
