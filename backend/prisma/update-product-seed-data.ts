@@ -2,7 +2,8 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { slugify } from "../src/core/utils/slug";
-import { productDescriptionsBySlug, productSeed } from "./seed";
+import { createUuid } from "../src/core/utils/uuid";
+import { productSeed } from "./seed";
 
 async function main() {
     const connectionString = process.env.DATABASE_URL;
@@ -65,25 +66,39 @@ async function main() {
                     }
                 });
 
-                if (!product) {
-                    console.warn(`Produto não encontrado: ${productSlug}`);
-                    continue;
+                if (product) {
+                    await prisma.product.update({
+                        where: {
+                            id: product.id
+                        },
+                        data: {
+                            lineId: line.id,
+                            category: lineSeed.category,
+                            name: productSeedItem.name,
+                            slug: productSlug,
+                            shortDescription: productSeedItem.shortDescription,
+                            longDescription: productSeedItem.longDescription,
+                            isActive: true
+                        }
+                    });
+                } else {
+                    await prisma.product.create({
+                        data: {
+                            uuid: createUuid(),
+                            lineId: line.id,
+                            category: lineSeed.category,
+                            name: productSeedItem.name,
+                            slug: productSlug,
+                            imageUrl: `/media/products/${productSlug}.webp`,
+                            stock: lineSeed.category === "ARTISANAL" ? 0 : null,
+                            shippingWeightGrams: null,
+                            description: null,
+                            shortDescription: productSeedItem.shortDescription,
+                            longDescription: productSeedItem.longDescription,
+                            isActive: true
+                        }
+                    });
                 }
-
-                await prisma.product.update({
-                    where: {
-                        id: product.id
-                    },
-                    data: {
-                        lineId: line.id,
-                        category: lineSeed.category,
-                        name: productSeedItem.name,
-                        slug: productSlug,
-                        description: productDescriptionsBySlug[productSlug] ?? null,
-                        shortDescription: productSeedItem.shortDescription,
-                        longDescription: productSeedItem.longDescription
-                    }
-                });
                 updatedProducts += 1;
             }
         }

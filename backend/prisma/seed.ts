@@ -34,113 +34,36 @@ export const productDescriptionsBySlug: Record<string, string> = {
         "Uso a partir de 6 anos. Combate odores fortes nas axilas com formulação natural e segura."
 };
 
-const productIngredientsBySlug: Record<string, readonly string[]> = {
-    "desodorante-gestante-lactante": [
-        "sebo bovino",
-        "óleo de coco",
-        "calêndula",
-        "camomila alemã",
-        "semente de uva",
-        "rosa mosqueta",
-        "copaíba resina",
-        "lavanda",
-        "melaleuca",
-        "eucalipto",
-        "bicarbonato de sódio",
-        "magnésio PA"
-    ],
-    "hidrapele-especial-para-dermatite": ["sebo bovino", "óleo de coco"],
-    "hidrapele-para-dores-articulares": [
-        "sebo bovino",
-        "óleo de coco",
-        "calêndula",
-        "camomila alemã",
-        "semente de uva",
-        "rosa mosqueta",
-        "copaíba resina",
-        "lavanda",
-        "melaleuca",
-        "orégano",
-        "eucalipto",
-        "alecrim",
-        "magnésio",
-        "dolamita"
-    ],
-    "hidrapele-infantil-com-acao-de-prevencao-e-tratamento-de-assaduras": [
-        "sebo bovino",
-        "óleo de coco",
-        "calêndula",
-        "camomila alemã",
-        "semente de uva",
-        "rosa mosqueta",
-        "copaíba resina",
-        "lavanda",
-        "melaleuca",
-        "olíbano"
-    ],
-    "desodorante-adulto-masculino-e-feminino": [
-        "sebo bovino",
-        "óleo de coco",
-        "calêndula",
-        "camomila alemã",
-        "semente de uva",
-        "rosa mosqueta",
-        "copaíba resina",
-        "lavanda",
-        "melaleuca",
-        "cedro",
-        "eucalipto",
-        "orégano",
-        "magnésio",
-        "bicarbonato"
-    ],
-    "hidrapele-adulto": [
-        "sebo bovino",
-        "óleo de coco",
-        "calêndula",
-        "camomila alemã",
-        "semente de uva",
-        "rosa mosqueta",
-        "copaíba resina",
-        "lavanda",
-        "melaleuca",
-        "gerânio",
-        "olíbano"
-    ],
-    "hidrapele-infantil-com-acao-repelente": [
-        "sebo bovino",
-        "óleo de coco",
-        "calêndula",
-        "camomila alemã",
-        "semente de uva",
-        "rosa mosqueta",
-        "copaíba resina",
-        "lavanda",
-        "melaleuca",
-        "cravo",
-        "orégano",
-        "citronela"
-    ],
-    "hidrapele-gestante-lactante": [
-        "sebo bovino",
-        "óleo de coco",
-        "calêndula",
-        "camomila alemã",
-        "semente de uva",
-        "rosa mosqueta",
-        "copaíba resina",
-        "lavanda",
-        "melaleuca"
-    ]
+const productLongDescriptionsBySlug: Record<string, string> = {
+    "desodorante-gestante-e-lactante":
+        "Feito à base de sebo bovino, óleo de coco, plantas, óleos vegetais e óleos essenciais próprios para a gestação e amamentação. Uma formulação natural, desenvolvida com muito cuidado para desodorizar e cuidar da pele durante essa linda e delicada etapa da vida.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, semente de uva, rosa mosqueta, copaíba resina, lavanda, melaleuca, eucalipto, bicarbonato de sódio e magnésio PA.",
+    desodorante:
+        "Desodorante natural que auxilia no combate aos maus odores, inclusive ao cheiro forte e persistente nas axilas. Sua fórmula cuida da pele enquanto promove proteção e uma agradável sensação de limpeza.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, semente de uva, rosa mosqueta, copaíba resina, lavanda, melaleuca, cedro, eucalipto, orégano, magnésio e bicarbonato.",
+    "desodorante-infantil":
+        "Produto de uso externo, indicado a partir de 6 anos e feito especialmente para crianças que apresentam cheiro forte nas axilas. Sua formulação natural foi desenvolvida com muito cuidado para desodorizar e cuidar da pele da criança.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, copaíba resina, rosa mosqueta, semente de uva, lavanda, melaleuca, cedro, orégano, dolamita, bicarbonato e magnésio.",
+    "hidrapele-rn":
+        "Creme desenvolvido especialmente para a delicada pele do recém-nascido. Promove proteção, hidratação profunda e cuidado diário, auxiliando na prevenção de irritações e assaduras.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, copaíba resina, lavanda e melaleuca.",
+    "hidrapele-adulto":
+        "Creme hidratante que pode ser usado da testa aos pés. Sua fórmula promove cuidado, reparação e uma potente hidratação, ajudando a manter a pele nutrida, protegida e saudável.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, semente de uva, rosa mosqueta, copaíba resina, lavanda, melaleuca, gerânio e olíbano.",
+    "hidrapele-adulto-com-acao-repelente":
+        "Creme que reúne os benefícios de hidratação, reparação e proteção da pele com uma ação repelente natural. Auxilia na proteção contra picadas de insetos, mantendo a pele profundamente hidratada e cuidada.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, copaíba resina, rosa mosqueta, lavanda, melaleuca, cravo, orégano e citronela.",
+    "hidrapele-infantil-repelente":
+        "Creme infantil desenvolvido para hidratar e proteger a pele da criança contra picadas de insetos. Além da ação repelente, promove cuidado, proteção e hidratação profunda para a pele infantil.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, semente de uva, rosa mosqueta, copaíba resina, lavanda, melaleuca, cravo, orégano e citronela.",
+    "hidrapele-gestante-e-lactante":
+        "Creme desenvolvido especialmente para o período da gestação e amamentação. Promove hidratação profunda, restauração e cuidado com a pele, auxiliando na prevenção do ressecamento e de outros desconfortos desse lindo período.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, semente de uva, rosa mosqueta, copaíba resina, lavanda e melaleuca.",
+    "hidrapele-gestante-e-lactante-com-acao-repelente":
+        "Desenvolvido com muito cuidado para o período gestacional e de amamentação. Sua fórmula atua na hidratação e proteção da pele, auxiliando também contra picadas de mosquitos de maneira natural.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, copaíba resina, óleo de semente de uva, lavanda, melaleuca, cravo e citronela.",
+    "hidrapele-para-assaduras":
+        "Creme infantil desenvolvido para proteger e cuidar profundamente da pele. Promove hidratação intensa e auxilia na prevenção e no cuidado de assaduras, irritações e áreas sensibilizadas.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, semente de uva, rosa mosqueta, copaíba resina, lavanda, melaleuca e olíbano.",
+    "hidrapele-especial-para-dermatite":
+        "Um precioso creme desenvolvido para nutrir profundamente a pele irritada e sensibilizada por dermatites, eczema, psoríase ou outros sintomas de pele. Por possuir uma fórmula simples, permite uma hidratação delicada e profunda.\n\nIngredientes: sebo bovino e óleo de coco.",
+    "hidrapele-para-dores-articulares":
+        "Pomada natural desenvolvida para proporcionar conforto e alívio nas regiões afetadas por dores musculares, articulares e de tecidos moles. Sua fórmula promove uma agradável ação relaxante e pode ser aplicada por meio de massagens.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, semente de uva, rosa mosqueta, copaíba resina, lavanda, melaleuca, orégano, eucalipto, alecrim, magnésio e dolamita.",
+    "hidrapele-especial-para-psoriase":
+        "Creme especial desenvolvido para hidratar profundamente e cuidar da pele ressecada, sensível e com descamação. Sua fórmula auxilia no conforto da pele, promovendo nutrição, suavidade e proteção para as áreas afetadas pela psoríase.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, copaíba resina, semente de uva, lavanda, melaleuca, bergamota e hortelã-pimenta.",
+    "hidrapele-especial-para-lupus":
+        "Creme especial desenvolvido para oferecer hidratação profunda e cuidado à pele sensível e fragilizada. Sua combinação de ingredientes naturais auxilia na nutrição, proteção e conforto da pele, deixando-a mais macia e hidratada.\n\nIngredientes: sebo bovino, óleo de coco, calêndula, camomila alemã, copaíba resina, semente de uva, rosa mosqueta, lavanda, melaleuca, hortelã-pimenta e olíbano."
 };
-
-function withIngredients(description: string, ingredients?: readonly string[]) {
-    if (!ingredients) {
-        return description;
-    }
-
-    return `${description}\n\nIngredientes: ${ingredients.join(", ")}`;
-}
 
 export const productSeed = [
     {
@@ -153,8 +76,7 @@ export const productSeed = [
                 name: "Hidrapele RN",
                 shortDescription:
                     "Hidrapele RN para cuidados delicados e proteção da pele do recém-nascido.",
-                longDescription:
-                    "Fórmula pensada para a rotina de cuidado do recém-nascido, ajudando a proteger a pele com toque suave e uso diário."
+                longDescription: productLongDescriptionsBySlug["hidrapele-rn"]
             }
         ]
     },
@@ -165,24 +87,18 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Hidrapele infantil com acao de prevencao e tratamento de assaduras",
+                name: "Hidrapele para Assaduras",
+                legacySlugs: ["hidrapele-infantil-com-acao-de-prevencao-e-tratamento-de-assaduras"],
                 shortDescription:
                     "Hidrapele infantil para prevenção e tratamento de assaduras no cuidado diário.",
-                longDescription: withIngredients(
-                    "Produto infantil desenvolvido para ajudar na prevenção e no tratamento de assaduras, com textura pensada para a pele sensível.",
-                    productIngredientsBySlug[
-                        "hidrapele-infantil-com-acao-de-prevencao-e-tratamento-de-assaduras"
-                    ]
-                )
+                longDescription: productLongDescriptionsBySlug["hidrapele-para-assaduras"]
             },
             {
-                name: "Hidrapele infantil com acao repelente",
+                name: "Hidrapele Infantil Repelente",
+                legacySlugs: ["hidrapele-infantil-com-acao-repelente"],
                 shortDescription:
                     "Hidrapele infantil com ação repelente para reforçar a proteção no dia a dia.",
-                longDescription: withIngredients(
-                    "Versão infantil do Hidrapele com ação repelente, unindo cuidado com a pele e suporte adicional para ambientes externos.",
-                    productIngredientsBySlug["hidrapele-infantil-com-acao-repelente"]
-                )
+                longDescription: productLongDescriptionsBySlug["hidrapele-infantil-repelente"]
             }
         ]
     },
@@ -193,20 +109,17 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Hidrapele adulto",
+                name: "Hidrapele Adulto",
                 shortDescription:
                     "Hidrapele adulto para hidratar e proteger a pele na rotina diária.",
-                longDescription: withIngredients(
-                    "Produto voltado ao cuidado da pele adulta, com aplicação prática para manutenção da hidratação e da proteção cotidiana.",
-                    productIngredientsBySlug["hidrapele-adulto"]
-                )
+                longDescription: productLongDescriptionsBySlug["hidrapele-adulto"]
             },
             {
-                name: "Hidrapele adulto com acao repelente",
+                name: "Hidrapele Adulto com Ação Repelente",
                 shortDescription:
                     "Hidrapele adulto com ação repelente para cuidado e proteção em ambientes externos.",
                 longDescription:
-                    "Fórmula adulta com ação repelente, indicada para quem busca cuidado com a pele e suporte adicional em exposições do dia a dia."
+                    productLongDescriptionsBySlug["hidrapele-adulto-com-acao-repelente"]
             }
         ]
     },
@@ -217,14 +130,11 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Hidrapele para dores articulares",
+                name: "Hidrapele para Dores Articulares",
                 legacySlugs: ["creme-para-dores-articulares"],
                 shortDescription:
                     "Hidrapele pensado para uso localizado em regiões de desconforto articular.",
-                longDescription: withIngredients(
-                    "Produto da linha de dores articulares com aplicação localizada, voltado ao cuidado complementar em momentos de desconforto.",
-                    productIngredientsBySlug["hidrapele-para-dores-articulares"]
-                )
+                longDescription: productLongDescriptionsBySlug["hidrapele-para-dores-articulares"]
             }
         ]
     },
@@ -235,13 +145,10 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Hidrapele especial para dermatite",
+                name: "Hidrapele Especial para Dermatite",
                 shortDescription:
                     "Hidrapele especial desenvolvido para cuidados de peles com dermatite.",
-                longDescription: withIngredients(
-                    "Versão especial do Hidrapele para rotinas de cuidado mais específicas, com foco em peles que exigem maior delicadeza.",
-                    productIngredientsBySlug["hidrapele-especial-para-dermatite"]
-                )
+                longDescription: productLongDescriptionsBySlug["hidrapele-especial-para-dermatite"]
             }
         ]
     },
@@ -252,11 +159,17 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Hidrapele especial para Lupus, psoriase",
+                name: "Hidrapele Especial para Lúpus",
+                legacySlugs: ["hidrapele-especial-para-lupus-psoriase"],
                 shortDescription:
-                    "Hidrapele especial desenvolvido para cuidados de peles com lúpus e psoríase.",
-                longDescription:
-                    "Versão especial do Hidrapele para rotinas de cuidado específicas, com foco em peles que exigem atenção constante."
+                    "Hidrapele especial desenvolvido para cuidados de peles com lúpus.",
+                longDescription: productLongDescriptionsBySlug["hidrapele-especial-para-lupus"]
+            },
+            {
+                name: "Hidrapele Especial para Psoríase",
+                shortDescription:
+                    "Hidrapele especial desenvolvido para cuidados de peles com psoríase.",
+                longDescription: productLongDescriptionsBySlug["hidrapele-especial-para-psoriase"]
             }
         ]
     },
@@ -267,20 +180,21 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Hidrapele gestante lactante",
+                name: "Hidrapele Gestante e Lactante",
+                legacySlugs: ["hidrapele-gestante-lactante"],
                 shortDescription:
                     "Hidrapele para gestantes e lactantes com cuidado suave para a rotina diária.",
-                longDescription: withIngredients(
-                    "Produto pensado para o período de gestação e lactação, oferecendo cuidado diário com proposta de aplicação delicada.",
-                    productIngredientsBySlug["hidrapele-gestante-lactante"]
-                )
+                longDescription: productLongDescriptionsBySlug["hidrapele-gestante-e-lactante"]
             },
             {
-                name: "Hidrapele com acao repelente gestante lactante",
+                name: "Hidrapele Gestante e Lactante com Ação Repelente",
+                legacySlugs: ["hidrapele-com-acao-repelente-gestante-lactante"],
                 shortDescription:
                     "Hidrapele com ação repelente para gestantes e lactantes em uso cotidiano.",
                 longDescription:
-                    "Versão com ação repelente pensada para gestantes e lactantes, conciliando proteção e cuidado com a pele."
+                    productLongDescriptionsBySlug[
+                        "hidrapele-gestante-e-lactante-com-acao-repelente"
+                    ]
             }
         ]
     },
@@ -291,11 +205,10 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Desodorante infantil",
+                name: "Desodorante Infantil",
                 shortDescription:
                     "Desodorante infantil formulado para a rotina de cuidado e frescor diário.",
-                longDescription:
-                    "Produto da linha infantil com proposta de uso diário, pensado para oferecer frescor e cuidado adequado ao público infantil."
+                longDescription: productLongDescriptionsBySlug["desodorante-infantil"]
             }
         ]
     },
@@ -306,13 +219,11 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Desodorante adulto masculino e feminino",
+                name: "Desodorante",
+                legacySlugs: ["desodorante-adulto-masculino-e-feminino"],
                 shortDescription:
                     "Desodorante adulto para uso masculino e feminino na rotina diária.",
-                longDescription: withIngredients(
-                    "Produto para o público adulto, com uso masculino e feminino, voltado ao cuidado pessoal e frescor no dia a dia.",
-                    productIngredientsBySlug["desodorante-adulto-masculino-e-feminino"]
-                )
+                longDescription: productLongDescriptionsBySlug.desodorante
             }
         ]
     },
@@ -323,13 +234,11 @@ export const productSeed = [
         category: "SELFCARE" as const,
         products: [
             {
-                name: "Desodorante gestante lactante",
+                name: "Desodorante Gestante e Lactante",
+                legacySlugs: ["desodorante-gestante-lactante"],
                 shortDescription:
                     "Desodorante para gestantes e lactantes com proposta de uso diário.",
-                longDescription: withIngredients(
-                    "Produto pensado para o período de gestação e lactação, com foco em frescor e praticidade para a rotina de cuidado pessoal.",
-                    productIngredientsBySlug["desodorante-gestante-lactante"]
-                )
+                longDescription: productLongDescriptionsBySlug["desodorante-gestante-e-lactante"]
             }
         ]
     },

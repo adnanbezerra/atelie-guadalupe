@@ -23,7 +23,9 @@ export default tseslint.config(
                 ...globals.node
             },
             parserOptions: {
-                projectService: true
+                projectService: {
+                    allowDefaultProject: ["prisma/seed.ts", "prisma/update-product-seed-data.ts"]
+                }
             }
         },
         rules: {
