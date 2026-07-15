@@ -1,237 +1,89 @@
 # Prompts para imagens dos produtos de beleza natural
 
-## Decisao
-
-Nao criar uma skill agora. O catalogo atual e fechado e cabe em um arquivo revisavel. Criar uma
-skill so passa a valer a pena se novos produtos forem adicionados com frequencia ou se estes
-prompts precisarem ser regenerados automaticamente a partir do seed.
-
 ## Como usar
 
-1. Anexe no ChatGPT a foto principal real do produto.
-2. Copie somente o prompt do produto correspondente.
-3. Gere a imagem.
-4. Confira se rotulo, embalagem e proporcoes do produto permaneceram fieis a foto anexada.
+Anexe ao ChatGPT a foto principal real do produto e copie somente o conteúdo do bloco correspondente. Cada prompt está em uma única linha para facilitar a cópia. Todas as imagens devem ser quadradas, coerentes como coleção e fiéis à embalagem anexada.
 
-## Premissas
-
-- Formato escolhido: quadrado `1:1`, adequado para cards de catalogo.
-- Todos os prompts seguem mesma direcao de arte para formar uma colecao visual coerente.
-- O arquivo `prisma/seed.ts` nao informa a composicao completa de todos os produtos.
-- Ingredientes especificos aparecem apenas quando confirmados no seed.
-- Elementos naturais genericos sao linguagem visual de categoria, nao declaracao de composicao.
-- O crucifixo artesanal foi excluido porque nao e produto de beleza natural.
-
-## 1. Hidrapele RN
+## 1. Hidrapele Recém-Nascidos
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele RN no centro da composicao, em primeiro plano,
-com rotulo, cores, formato, tampa e proporcoes fieis a referencia. Nao redesenhe o rotulo e nao
-invente texto. A direita, mostre um bebe recem-nascido tranquilo, com pele saudavel, envolvido em
-tecido leve de algodao cru, em pose segura e delicada. A esquerda, componha uma natureza-morta
-minimalista com elementos naturais genericos e suaves: folhas claras, tecido de algodao, pequena
-vasilha artesanal com creme e luz difusa. Esses elementos sao linguagem visual de cuidado natural,
-sem afirmar ingredientes especificos. Fundo creme quente, luz natural suave de janela, sombras
-delicadas, paleta neutra e organica. Produto deve ser protagonista absoluto. Sem textos adicionais,
-sem selo, sem marca d'agua, sem duplicar embalagem, sem mostrar aplicacao na pele, sem vermelhidao,
-sem assadura e sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Recém-Nascidos" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Recém-Nascidos", com essa grafia exata, sem alterar nem inventar qualquer outro texto. Reserve claramente o lado esquerdo apenas para uma natureza-morta elegante com todos os ingredientes do produto: sebo bovino clarificado representado como creme branco em pequena tigela de cerâmica, óleo de coco, flores de calêndula, camomila alemã, resina de copaíba, lavanda e folhas de melaleuca, sem carne e sem animais. No lado direito, mostre uma mãe adulta sentada em poltrona clara, vista em três quartos e olhando com ternura para um bebê recém-nascido tranquilo em seus braços; a mulher deve ter rosto natural e distinto dos demais anúncios e vestir vestido católico modesto de mangas, sem decote, cobrindo ombros, colo, joelhos e pernas. Fundo creme quente, luz natural suave de janela e sombras delicadas, mantendo separação visual clara entre ingredientes, produto e pessoas. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, nudez, aplicação na pele, vermelhidão, assadura ou estética clínica.
 ```
 
-## 2. Hidrapele infantil com acao de prevencao e tratamento de assaduras
+## 2. Hidrapele para Assaduras
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele infantil com acao de prevencao e tratamento de
-assaduras no centro da composicao, em primeiro plano, com rotulo, cores, formato, tampa e proporcoes
-fieis a referencia. Nao redesenhe o rotulo e nao invente texto. A direita, mostre uma crianca
-pequena sorrindo suavemente ao lado de cuidador adulto parcialmente enquadrado, em cena domestica
-segura e afetuosa. A esquerda, componha uma natureza-morta minimalista com elementos naturais
-genericos e suaves: tecido de algodao cru, folhas claras, pequena vasilha artesanal com creme e
-luz difusa. Esses elementos sao linguagem visual de cuidado natural, sem afirmar ingredientes
-especificos. Fundo bege claro, luz natural suave, paleta organica e limpa. Produto deve ser
-protagonista absoluto. Sem textos adicionais, sem selo, sem marca d'agua, sem duplicar embalagem,
-sem fralda exposta, sem mostrar aplicacao na pele, sem vermelhidao, sem assadura e sem imagem
-clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele para Assaduras" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele para Assaduras", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, componha uma natureza-morta organizada com todos os ingredientes: sebo bovino clarificado como creme branco em tigela artesanal, óleo de coco, calêndula, camomila alemã, sementes de uva, óleo de rosa-mosqueta, resina de copaíba, lavanda, melaleuca e olíbano, sem animais e sem carne. No lado direito, mostre uma criança pequena saudável caminhando alegremente para a esquerda e segurando a mão do pai, enquadrado parcialmente e agachado à altura dela, em cena doméstica segura e afetuosa; use rostos, cabelo, roupa, gesto e direção do olhar diferentes dos outros anúncios. Fundo bege claro, luz matinal difusa, paleta orgânica limpa e composição equilibrada em três zonas. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, fralda exposta, nudez, aplicação na pele, vermelhidão, assadura ou imagem clínica.
 ```
 
-## 3. Hidrapele infantil com acao repelente
+## 3. Hidrapele Infantil Repelente
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele infantil com acao repelente no centro da
-composicao, em primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia.
-Nao redesenhe o rotulo e nao invente texto. A direita, mostre uma crianca alegre em ambiente
-externo calmo, com roupa leve, cercada por luz natural e vegetacao desfocada. A esquerda, componha
-uma natureza-morta minimalista com folhas verdes frescas e ramos botanicos genericos. Use esses
-elementos como linguagem visual de natureza e protecao externa, sem representar ingredientes
-especificos e sem exibir insetos em destaque. Fundo claro com verde suave, luz de fim de tarde,
-paleta natural e limpa. Produto deve ser protagonista absoluto. Sem textos adicionais, sem selo,
-sem marca d'agua, sem duplicar embalagem, sem picadas, sem vermelhidao e sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Infantil Repelente" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Infantil Repelente", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, apresente todos os ingredientes em natureza-morta botânica: sebo bovino clarificado como creme branco em pequena tigela, óleo de coco, calêndula, camomila alemã, sementes de uva, óleo de rosa-mosqueta, resina de copaíba, lavanda, melaleuca, cravo, orégano e citronela, sem animais e sem carne. No lado direito, mostre uma criança de cerca de oito anos brincando com um pequeno avião de madeira em jardim iluminado, corpo voltado para a direita e rosto em perfil; envolva a criança inteira com uma bolha protetora translúcida, luminosa e elegante, claramente visível, enquanto poucos mosquitos realistas e discretos permanecem do lado de fora e são desviados pelo escudo, comunicando proteção sem ameaça. Roupa infantil comportada, rosto e pose distintos dos demais anúncios, fundo verde suave desfocado e luz de fim de tarde. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, insetos dentro da bolha, picadas, vermelhidão ou imagem clínica.
 ```
 
-## 4. Hidrapele adulto
+## 4. Hidrapele Adulto
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele adulto no centro da composicao, em primeiro
-plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia. Nao redesenhe o rotulo e
-nao invente texto. A direita, mostre uma pessoa adulta com expressao serena e pele saudavel, em
-cena cotidiana elegante e natural. A esquerda, represente os componentes confirmados no seed:
-pequena vasilha artesanal com base cremosa remetendo a sebo bovino clarificado, frasco ambar com
-gotas de oleos essenciais e folhagens botanicas discretas, sem incluir planta especifica nao
-confirmada. Fundo creme quente, luz natural lateral, sombras suaves, paleta organica refinada.
-Produto deve ser protagonista absoluto. Sem textos adicionais, sem selo, sem marca d'agua, sem
-duplicar embalagem, sem animal, sem mostrar aplicacao na pele e sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Adulto" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Adulto", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, componha uma natureza-morta refinada com todos os ingredientes: sebo bovino clarificado como creme branco em tigela de cerâmica, óleo de coco, calêndula, camomila alemã, sementes de uva, óleo de rosa-mosqueta, resina de copaíba, lavanda, melaleuca, gerânio e olíbano, sem animais e sem carne. No lado direito, mostre uma mulher adulta de aparência natural em pé junto a uma estante, segurando um livro fechado à altura da cintura, corpo de frente e olhar sereno ligeiramente para a esquerda; use identidade facial e penteado diferentes das outras mulheres. Ela deve vestir saia longa abaixo dos joelhos e blusa elegante de mangas, segundo modéstia católica, sem decote e com ombros, colo e pernas cobertos. Fundo creme com madeira clara, luz lateral suave e paleta orgânica refinada. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, nudez, aplicação na pele ou imagem clínica.
 ```
 
-## 5. Hidrapele adulto com acao repelente
+## 5. Hidrapele Adulto com Ação Repelente
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele adulto com acao repelente no centro da
-composicao, em primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia.
-Nao redesenhe o rotulo e nao invente texto. A direita, mostre uma pessoa adulta tranquila em
-ambiente externo agradavel, com roupa leve e luz de fim de tarde. A esquerda, componha folhas
-verdes frescas e ramos botanicos genericos com movimento sutil. Use esses elementos como linguagem
-visual de natureza e protecao externa, sem afirmar ingredientes especificos e sem destacar
-insetos. Fundo claro com vegetacao desfocada, paleta natural refinada, iluminacao suave. Produto
-deve ser protagonista absoluto. Sem textos adicionais, sem selo, sem marca d'agua, sem duplicar
-embalagem, sem picadas, sem vermelhidao e sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Adulto com Ação Repelente" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Adulto com Ação Repelente", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, apresente todos os ingredientes em natureza-morta: sebo bovino clarificado como creme branco em tigela artesanal, óleo de coco, calêndula, camomila alemã, resina de copaíba, óleo de rosa-mosqueta, lavanda, melaleuca, cravo, orégano e citronela, sem animais e sem carne. No lado direito, mostre um homem adulto caminhando por uma trilha verde, corpo em movimento para a esquerda e rosto olhando ao longe para a direita, com roupa discreta de passeio; envolva-o com um escudo translúcido em forma de cúpula luminosa, claramente perceptível, e mostre poucos mosquitos discretos sendo repelidos do lado de fora da proteção. Use rosto, ação e enquadramento distintos de todas as outras personagens, vegetação desfocada, luz dourada de fim de tarde e atmosfera segura. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, insetos atravessando o escudo, picadas, vermelhidão ou imagem clínica.
 ```
 
-## 6. Hidrapele para dores articulares
+## 6. Hidrapele para Dores Articulares
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele para dores articulares no centro da composicao,
-em primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia. Nao
-redesenhe o rotulo e nao invente texto. A direita, mostre uma pessoa adulta madura em momento de
-bem-estar, sentada confortavelmente apos atividade leve, com uma das maos repousando naturalmente
-sobre o joelho, sem gesto de dor intensa. A esquerda, componha pfolhas verdes, ramos secos e pequena
-vasilha artesanal com creme. Esses elementos sao linguagem visual de cuidado natural, sem afirmar
-ingredientes especificos. Fundo quente e sereno, luz natural lateral, paleta terrosa refinada.
-Produto deve ser protagonista absoluto. Sem textos adicionais, sem selo, sem marca d'agua, sem
-duplicar embalagem, sem anatomia destacada, sem imagem medica e sem representacao de lesao.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele para Dores Articulares" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele para Dores Articulares", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, componha uma natureza-morta detalhada com todos os ingredientes: sebo bovino clarificado como creme branco em tigela de cerâmica, óleo de coco, calêndula, camomila alemã, sementes de uva, óleo de rosa-mosqueta, resina de copaíba, lavanda, melaleuca, orégano, eucalipto, alecrim, magnésio e dolamita, sem animais e sem carne. No lado direito, mostre um homem maduro saudável levantando-se com tranquilidade de um banco de jardim após atividade leve, uma mão apoiada naturalmente no joelho e expressão relaxada, olhando para a esquerda, sem dramatizar dor; rosto e pose devem ser únicos na coleção. Fundo terroso quente, luz natural lateral e vegetação suave. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, anatomia destacada, lesão, sofrimento, raio-x ou imagem médica.
 ```
 
-## 7. Hidrapele especial para dermatite
+## 7. Hidrapele Especial para Dermatite
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele especial para dermatite no centro da
-composicao, em primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia.
-Nao redesenhe o rotulo e nao invente texto. A direita, mostre uma pessoa adulta serena, com pele
-saudavel e expressao de conforto, em cena minimalista de autocuidado. A esquerda, represente os
-componentes confirmados no seed: coco aberto de forma elegante, pequena vasilha artesanal com
-oleo de coco e uma segunda vasilha com base cremosa remetendo a sebo bovino clarificado. Fundo
-creme claro, luz natural muito suave, sombras delicadas e paleta neutra. Produto deve ser
-protagonista absoluto. Sem oleos essenciais, sem textos adicionais, sem selo, sem marca d'agua,
-sem duplicar embalagem, sem animal, sem mostrar aplicacao na pele, sem vermelhidao, sem lesao e
-sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Especial para Dermatite" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Especial para Dermatite", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, mostre somente os dois ingredientes do produto de forma elegante e inequívoca: sebo bovino clarificado como creme branco e puro em pequena tigela de cerâmica e óleo de coco ao lado de um coco aberto, sem animais e sem carne. No lado direito, retrate um homem adulto jovem de pele saudável em perfil, sentado junto a uma janela e tocando suavemente o próprio antebraço coberto pela manga arregaçada, com expressão de conforto e olhar para fora da imagem; use rosto, cabelo e pose diferentes dos outros anúncios, preservando aparência bonita, digna e natural. Fundo marfim minimalista, luz difusa muito suave e sombras delicadas. Sem óleos essenciais, plantas extras, textos adicionais, selos, marca-d'água, embalagem duplicada, feridas, descamação, vermelhidão, sofrimento ou estética clínica.
 ```
 
-## 8. Hidrapele especial para Lupus, psoriase
+## 8. Hidrapele Especial para Lúpus
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele especial para Lupus, psoriase no centro da
-composicao, em primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia.
-Nao redesenhe o rotulo e nao invente texto. A direita, mostre uma pessoa adulta serena, em momento
-de autocuidado, com pele saudavel e iluminacao delicada. A esquerda, componha pequena vasilha
-artesanal com creme, tecido de algodao cru e folhagens botanicas genericas muito discretas. Esses
-elementos sao linguagem visual de cuidado natural, sem afirmar ingredientes especificos. Fundo
-creme claro, luz natural difusa, paleta neutra e calma. Produto deve ser protagonista absoluto.
-Sem textos adicionais, sem selo, sem marca d'agua, sem duplicar embalagem, sem mostrar aplicacao
-na pele, sem vermelhidao, sem lesao, sem imagem clinica e sem simbolos medicos.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Especial para Lúpus" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Especial para Lúpus", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, componha uma natureza-morta refinada com todos os ingredientes: sebo bovino clarificado como creme branco em tigela artesanal, óleo de coco, calêndula, camomila alemã, resina de copaíba, sementes de uva, óleo de rosa-mosqueta, lavanda, melaleuca, hortelã-pimenta e olíbano, sem animais e sem carne. No lado direito, retrate uma mulher adulta bonita e digna, com aparência saudável e realista, em pé sob luz suave de varanda, corpo em três quartos voltado para a esquerda e rosto olhando serenamente para a câmera, sem aparência doente, abatida ou caricata; use identidade facial e penteado exclusivos. Ela deve vestir vestido longo de mangas em tom azul suave, conforme modéstia católica, sem decote e cobrindo ombros, colo, joelhos e pernas. Fundo claro e tranquilo, luz difusa e paleta azul-creme protetora. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, símbolos médicos, lesões, manchas exageradas, sofrimento ou estética clínica.
 ```
 
-## 9. Hidrapele gestante lactante
+## 9. Hidrapele Especial para Psoríase
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele gestante lactante no centro da composicao, em
-primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia. Nao redesenhe o
-rotulo e nao invente texto. A direita, mostre uma gestante adulta serena em pose natural e
-respeitosa, usando roupa leve em tons neutros, em ambiente domestico iluminado por janela. A
-esquerda, componha folhas claras, tecido de algodao cru e pequena vasilha artesanal com creme.
-Esses elementos sao linguagem visual de cuidado natural, sem afirmar ingredientes especificos.
-Fundo creme quente, luz suave, sombras delicadas, paleta organica refinada. Produto deve ser
-protagonista absoluto. Sem textos adicionais, sem selo, sem marca d'agua, sem duplicar embalagem,
-sem nudez, sem mostrar aplicacao na pele e sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Especial para Psoríase" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Especial para Psoríase", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, apresente todos os ingredientes em natureza-morta: sebo bovino clarificado como creme branco em tigela artesanal, óleo de coco, calêndula, camomila alemã, resina de copaíba, sementes de uva, lavanda, melaleuca, bergamota e hortelã-pimenta, sem animais e sem carne. No lado direito, mostre um homem adulto de aparência agradável e saudável sentado de lado em uma cadeira clara, ajustando calmamente o punho da camisa e olhando para baixo com leve sorriso, com rosto e pose únicos na coleção; a cena deve transmitir conforto e autocuidado, nunca doença ou constrangimento. Fundo areia claro, luz suave frontal e paleta verde-creme serena. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, lesões, placas, descamação exagerada, vermelhidão, sofrimento ou imagem clínica.
 ```
 
-## 10. Hidrapele com acao repelente gestante lactante
+## 10. Hidrapele Gestante e Lactante
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Hidrapele com acao repelente gestante lactante no centro
-da composicao, em primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a
-referencia. Nao redesenhe o rotulo e nao invente texto. A direita, mostre uma gestante adulta
-serena em jardim tranquilo, usando roupa leve em tons neutros, em pose natural e respeitosa. A
-esquerda, componha folhas verdes frescas e ramos botanicos genericos com movimento sutil. Use
-esses elementos como linguagem visual de natureza e protecao externa, sem afirmar ingredientes
-especificos e sem destacar insetos. Fundo claro com vegetacao desfocada, luz de fim de tarde,
-paleta natural refinada. Produto deve ser protagonista absoluto. Sem textos adicionais, sem selo,
-sem marca d'agua, sem duplicar embalagem, sem nudez, sem picadas, sem vermelhidao e sem imagem
-clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Gestante e Lactante" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Gestante e Lactante", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, componha uma natureza-morta refinada com todos os ingredientes: sebo bovino clarificado como creme branco em tigela de cerâmica, óleo de coco, calêndula, camomila alemã, sementes de uva, óleo de rosa-mosqueta, resina de copaíba, lavanda e melaleuca, sem animais e sem carne. No lado direito, mostre uma gestante adulta serena em pé de perfil voltada para a direita, uma mão sobre o ventre e outra segurando uma pequena flor, com rosto natural e diferente das outras personagens; ela deve vestir vestido longo de mangas em linho claro, segundo modéstia católica, sem decote e cobrindo ombros, colo, joelhos e pernas. Ambiente doméstico luminoso, fundo creme quente e luz suave de janela. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, nudez, transparência na roupa, aplicação na pele ou imagem clínica.
 ```
 
-## 11. Desodorante infantil
+## 11. Hidrapele Gestante e Lactante com Ação Repelente
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Desodorante infantil no centro da composicao, em primeiro
-plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia. Nao redesenhe o rotulo e
-nao invente texto. A direita, mostre uma crianca com idade escolar, alegre e confortavel, usando
-roupa casual limpa em ambiente claro e familiar. A esquerda, componha folhas verdes suaves,
-tecido de algodao branco e elementos botanicos genericos discretos. Esses elementos sao linguagem
-visual de frescor natural, sem afirmar ingredientes especificos. Fundo bege muito claro, luz
-natural suave, paleta limpa e organica. Produto deve ser protagonista absoluto. Sem textos
-adicionais, sem selo, sem marca d'agua, sem duplicar embalagem, sem pose adulta, sem suor em
-destaque, sem mostrar axila e sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Hidrapele Gestante e Lactante com Ação Repelente" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Hidrapele Gestante e Lactante com Ação Repelente", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, apresente todos os ingredientes em natureza-morta botânica: sebo bovino clarificado como creme branco em tigela artesanal, óleo de coco, calêndula, camomila alemã, resina de copaíba, óleo de semente de uva, lavanda, melaleuca, cravo e citronela, sem animais e sem carne. No lado direito, mostre uma gestante adulta caminhando lentamente para a esquerda por um jardim, rosto voltado para a direita e mão segurando um chapéu junto ao corpo; envolva-a por completo com uma bolha protetora translúcida dourada, claramente visível, enquanto poucos mosquitos discretos permanecem fora e são desviados pela superfície. Use mulher, rosto, penteado e pose diferentes das outras imagens; ela deve vestir vestido longo de mangas e gola discreta, conforme modéstia católica, sem decote e com ombros, colo, joelhos e pernas cobertos. Luz de fim de tarde e vegetação desfocada. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, nudez, insetos dentro da bolha, picadas, vermelhidão ou imagem clínica.
 ```
 
-## 12. Desodorante adulto masculino e feminino
+## 12. Desodorante Infantil
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Desodorante adulto masculino e feminino no centro da
-composicao, em primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia.
-Nao redesenhe o rotulo e nao invente texto. A direita, mostre duas pessoas adultas, uma mulher e
-um homem, com aparencia natural, roupa casual elegante e expressao leve, representando uso
-unissex. A esquerda, componha folhas verdes frescas, tecido de algodao branco e elementos
-botanicos genericos discretos. Esses elementos sao linguagem visual de frescor natural, sem
-afirmar ingredientes especificos. Fundo creme claro, luz natural lateral, paleta limpa e organica.
-Produto deve ser protagonista absoluto. Sem textos adicionais, sem selo, sem marca d'agua, sem
-duplicar embalagem, sem suor em destaque, sem mostrar axila e sem imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Desodorante Infantil" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Desodorante Infantil", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, componha uma natureza-morta fresca com todos os ingredientes: sebo bovino clarificado como creme branco em tigela artesanal, óleo de coco, calêndula, camomila alemã, resina de copaíba, óleo de rosa-mosqueta, sementes de uva, lavanda, melaleuca, cedro, orégano, dolamita, bicarbonato e magnésio, sem animais e sem carne. No lado direito, mostre uma menina em idade escolar, cerca de dez anos, colocando uma mochila no ombro e olhando alegremente para a esquerda, em ambiente familiar claro; roupa infantil comportada com mangas e saia abaixo dos joelhos, rosto e pose diferentes de todas as outras personagens, sem gesto adulto. Fundo bege muito claro, luz matinal e paleta limpa. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, suor em destaque, axila visível, pose sensual ou imagem clínica.
 ```
 
-## 13. Desodorante gestante lactante
+## 13. Desodorante
 
 ```text
-Use a foto de produto anexada como referencia obrigatoria e crie uma imagem publicitaria quadrada
-1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosmeticos naturais artesanais.
-Mantenha exatamente a embalagem real do Desodorante gestante lactante no centro da composicao, em
-primeiro plano, com rotulo, cores, formato, tampa e proporcoes fieis a referencia. Nao redesenhe o
-rotulo e nao invente texto. A direita, mostre uma gestante adulta serena, com roupa leve em tons
-neutros, em ambiente claro e acolhedor. A esquerda, componha folhas verdes suaves, tecido de
-algodao branco e elementos botanicos genericos discretos. Esses elementos sao linguagem visual de
-frescor natural, sem afirmar ingredientes especificos. Fundo creme claro, luz natural suave,
-paleta limpa e organica. Produto deve ser protagonista absoluto. Sem textos adicionais, sem selo,
-sem marca d'agua, sem duplicar embalagem, sem nudez, sem suor em destaque, sem mostrar axila e sem
-imagem clinica.
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Desodorante" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Desodorante", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, apresente todos os ingredientes em natureza-morta elegante: sebo bovino clarificado como creme branco em tigela artesanal, óleo de coco, calêndula, camomila alemã, sementes de uva, óleo de rosa-mosqueta, resina de copaíba, lavanda, melaleuca, cedro, eucalipto, orégano, magnésio e bicarbonato, sem animais e sem carne. No lado direito, mostre duas pessoas adultas de aparências distintas, um homem de pé olhando para a direita e uma mulher sentada olhando para a esquerda, ambos com expressão leve e natural para comunicar uso unissex; evite rostos e poses usados nos outros anúncios. A mulher deve vestir blusa de mangas sem decote e saia longa cobrindo joelhos e pernas, conforme modéstia católica; o homem deve usar camisa casual discreta. Fundo creme claro, luz natural lateral e paleta limpa. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, suor em destaque, axilas visíveis, poses sensuais ou imagem clínica.
 ```
 
+## 14. Desodorante Gestante e Lactante
+
+```text
+Use a foto de produto anexada como referência obrigatória e crie uma imagem publicitária quadrada 1:1, fotorrealista, sofisticada e acolhedora para ecommerce de cosméticos naturais artesanais. Posicione a embalagem real do produto com o nome de "Desodorante Gestante e Lactante" exatamente no centro geométrico da imagem, literalmente no meio da composição, ereta, em primeiro plano e como protagonista absoluto, com rótulo frontal perfeitamente legível, cores, formato, tampa e proporções fiéis à referência; preserve integralmente o design, a tipografia, as cores, a posição e todos os demais elementos e textos do rótulo, modificando apenas o título existente para "Desodorante Gestante e Lactante", com essa grafia exata, sem alterar nem inventar qualquer outro texto. No lado esquerdo, componha uma natureza-morta fresca com todos os ingredientes: sebo bovino clarificado como creme branco em tigela de cerâmica, óleo de coco, calêndula, camomila alemã, sementes de uva, óleo de rosa-mosqueta, resina de copaíba, lavanda, melaleuca, eucalipto, bicarbonato de sódio e magnésio PA, sem animais e sem carne. No lado direito, mostre uma mãe adulta lactante em pé, segurando o bebê vestido junto ao ombro e olhando suavemente para a câmera, com rosto, cabelo, enquadramento e gesto diferentes das demais mulheres; ela deve usar vestido longo de mangas e gola discreta em tom rosado suave, conforme modéstia católica, sem decote e cobrindo ombros, colo, joelhos e pernas. Ambiente claro e acolhedor, luz difusa e paleta creme-rosada. Sem textos adicionais, selos, marca-d'água, embalagem duplicada, nudez, amamentação exposta, suor em destaque, axila visível ou imagem clínica.
+```
