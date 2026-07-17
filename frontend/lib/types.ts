@@ -225,6 +225,27 @@ export type User = {
     addresses?: Address[];
 };
 
+export type ShippingQuoteItemInput = {
+    productUuid: string;
+    productSize: string;
+    quantity: number;
+};
+
+export type ShippingQuoteService = {
+    serviceCode: number;
+    serviceName: string;
+    priceInCents: number;
+    deliveryDays: number | null;
+    deliveryRange: {
+        min: number | null;
+        max: number | null;
+    };
+};
+
+export type ShippingQuotePayload = {
+    quotedServices: ShippingQuoteService[];
+};
+
 export type OrderItem = {
     uuid: string;
     productSize: string;

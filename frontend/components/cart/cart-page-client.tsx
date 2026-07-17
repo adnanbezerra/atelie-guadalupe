@@ -1,6 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useState } from "react";
+import {
+    ShippingQuotePanel,
+    type CartShippingOption,
+} from "@/components/cart/shipping-quote-panel";
 import { ProductImage } from "@/components/shared/product-image";
 import {
     Dialog,
@@ -48,7 +53,10 @@ function getItemPromotionDiscountInCents(item: CartItem) {
     );
 }
 
-function buildCartWhatsappMessage(cart: Cart | null) {
+function buildCartWhatsappMessage(
+    cart: Cart | null,
+    shippingOption: CartShippingOption | null,
+) {
     if (!cart?.items.length) {
         return "Olá, vim pelo website e gostaria de pedir um orçamento.";
     }
@@ -81,6 +89,24 @@ function buildCartWhatsappMessage(cart: Cart | null) {
         itemLines,
         discounts,
         `Total estimado dos produtos: ${formatCurrency(cart.summary.totalInCents)}`,
+        shippingOption
+            ? [
+                  `Forma de recebimento: ${shippingOption.name}`,
+                  shippingOption.destinationLabel
+                      ? `Destino: ${shippingOption.destinationLabel}`
+                      : null,
+                  shippingOption.priceInCents > 0
+                      ? `Frete: ${formatCurrency(shippingOption.priceInCents)}`
+                      : "Frete: grátis",
+              ]
+                  .filter(Boolean)
+                  .join("\n")
+            : null,
+        shippingOption
+            ? `Total estimado com frete: ${formatCurrency(
+                  cart.summary.totalInCents + shippingOption.priceInCents,
+              )}`
+            : null,
     ]
         .filter(Boolean)
         .join("\n\n");
@@ -88,6 +114,8 @@ function buildCartWhatsappMessage(cart: Cart | null) {
 
 export function CartPageClient({ initialCart }: CartPageClientProps) {
     const cart = useCart(initialCart);
+    const [shippingOption, setShippingOption] =
+        useState<CartShippingOption | null>(null);
     const total = cart.data?.summary.totalInCents ?? 0;
     const couponDiscount = cart.data?.summary.couponDiscountInCents ?? 0;
     const backendPromotionDiscount =
@@ -103,7 +131,16 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
         (cart.data?.summary.subtotalInCents ?? 0) +
         (backendPromotionDiscount === undefined ? promotionDiscount : 0);
     const hasItems = Boolean(cart.data?.items.length);
-    const whatsappLink = buildWhatsappLink(buildCartWhatsappMessage(cart.data));
+    const orderTotal = total + (shippingOption?.priceInCents ?? 0);
+    const whatsappLink = buildWhatsappLink(
+        buildCartWhatsappMessage(cart.data, shippingOption),
+    );
+    const handleShippingSelection = useCallback(
+        (option: CartShippingOption | null) => {
+            setShippingOption(option);
+        },
+        [],
+    );
 
     const cartItems = cart.data?.items ?? [];
     const beautyItems = cartItems.filter(
@@ -259,8 +296,16 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     ) : null}
                 </div>
 
-                <aside className="flex flex-col gap-6">
-                    <div className="sticky top-24 rounded-2xl border border-primary/10 bg-white p-6 shadow-lg">
+                <aside className="flex flex-col gap-6 self-start lg:sticky lg:top-24">
+                    {hasItems ? (
+                        <ShippingQuotePanel
+                            items={cartItems}
+                            onSelectionChange={handleShippingSelection}
+                            selectedOption={shippingOption}
+                        />
+                    ) : null}
+
+                    <div className="rounded-2xl border border-primary/10 bg-white p-6 shadow-lg">
                         <h4 className="mb-6 font-display text-xl font-bold text-slate-900">
                             Resumo do Pedido
                         </h4>
@@ -307,21 +352,45 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                             </span>
                                         </div>
                                     ) : null}
+                                    {shippingOption ? (
+                                        <div className="flex justify-between gap-4 text-sm">
+                                            <span className="text-slate-500">
+                                                {shippingOption.name}
+                                            </span>
+                                            <span className="text-right font-medium">
+                                                {shippingOption.priceInCents > 0
+                                                    ? formatCurrency(
+                                                          shippingOption.priceInCents,
+                                                      )
+                                                    : "Grátis"}
+                                            </span>
+                                        </div>
+                                    ) : null}
                                 </div>
                                 <div className="mb-8 border-t border-slate-100 pt-4">
                                     <div className="flex items-baseline justify-between">
                                         <span className="font-display text-lg font-bold text-slate-900">
-                                            Total
+                                            Total estimado
                                         </span>
                                         <span className="text-2xl font-black text-primary">
-                                            {formatCurrency(total)}
+                                            {formatCurrency(orderTotal)}
                                         </span>
                                     </div>
+                                    {shippingOption?.kind === "delivery" ? (
+                                        <p className="mt-2 text-right text-xs leading-5 text-slate-500">
+                                            Frete confirmado ao finalizar o
+                                            pedido.
+                                        </p>
+                                    ) : null}
                                 </div>
                                 <a
-                                    aria-disabled={!hasItems}
+                                    aria-disabled={!hasItems || !shippingOption}
                                     className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-bold text-white shadow-md shadow-primary/20 transition hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-60"
-                                    href={hasItems ? whatsappLink : undefined}
+                                    href={
+                                        hasItems && shippingOption
+                                            ? whatsappLink
+                                            : undefined
+                                    }
                                     rel="noopener noreferrer"
                                     target="_blank"
                                 >
@@ -330,6 +399,12 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         arrow_forward
                                     </span>
                                 </a>
+                                {hasItems && !shippingOption ? (
+                                    <p className="mb-4 text-center text-xs font-semibold leading-5 text-slate-500">
+                                        Calcule e escolha como receber antes de
+                                        finalizar.
+                                    </p>
+                                ) : null}
                                 <button
                                     className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700"
                                     disabled={

@@ -14,6 +14,8 @@ import type {
     ProductLine,
     ProductListResponse,
     ProductQuery,
+    ShippingQuoteItemInput,
+    ShippingQuotePayload,
     Testimonial,
     TestimonialsPayload,
     CreateTestimonialInput,
@@ -348,6 +350,17 @@ export function getMyOrders(
 
 export function getCurrentUser(token: string) {
     return request<{ user: User }>("/users/me", { token });
+}
+
+/** Preview do carrinho; não confirma nem persiste frete no pedido. */
+export function previewShippingQuote(
+    zipCode: string,
+    items: ShippingQuoteItemInput[],
+) {
+    return request<ShippingQuotePayload>("/shipping/quote", {
+        method: "POST",
+        body: { zipCode, items },
+    });
 }
 
 export function updateCurrentUser(token: string, body: UpdateCurrentUserInput) {
