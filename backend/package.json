@@ -9,6 +9,7 @@
     },
     "scripts": {
         "test": "pnpm run build:ts && tsc -p test/tsconfig.json && c8 node --test -r ts-node/register \"test/**/*.ts\"",
+        "test:e2e": "RUN_E2E=true node --test --test-reporter=tap -r dotenv/config -r ts-node/register test/e2e/shipping-quote-flow.e2e.test.ts",
         "start": "pnpm run build:ts && fastify start -l info dist/app.js",
         "build:ts": "tsc",
         "lint": "pnpm exec eslint .",
