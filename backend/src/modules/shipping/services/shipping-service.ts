@@ -1,10 +1,18 @@
 import { Prisma } from "../../../generated/prisma/client";
-import { ProductCategory, RoleName, ShippingStatus } from "../../../generated/prisma/enums";
+import {
+    ProductCategory,
+    ProductSize,
+    RoleName,
+    ShippingStatus
+} from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { slugify } from "../../../core/utils/slug";
 import { createUuid } from "../../../core/utils/uuid";
 import { PlatformRepository } from "../../platforms/repositories/platform-repository";
+import { ProductRepository } from "../../products/repositories/product-repository";
+import { calculateProductPriceInCents } from "../../products/services/product-pricing";
+import { hasAvailableStock } from "../../products/services/product-stock";
 import { ShippingRepository } from "../repositories/shipping-repository";
 import { presentShipment, presentShippingBox } from "./shipping-presenter";
 import { buildPackagingPlan } from "./shipping-packaging";
@@ -39,6 +47,15 @@ type QuoteOrderInput = {
     useInsuranceValue?: boolean;
     insuranceValueInCents?: number;
     refresh?: boolean;
+};
+
+type QuoteCartInput = {
+    zipCode: string;
+    items: Array<{
+        productUuid: string;
+        productSize: ProductSize;
+        quantity: number;
+    }>;
 };
 
 type ShippingOrder = NonNullable<Awaited<ReturnType<ShippingRepository["findOrderForShipping"]>>>;
@@ -249,7 +266,8 @@ export class ShippingService {
     public constructor(
         private readonly shippingRepository: ShippingRepository,
         private readonly platformRepository: PlatformRepository,
-        private readonly superFreteClient: SuperFreteClient
+        private readonly superFreteClient: SuperFreteClient,
+        private readonly productRepository: ProductRepository
     ) {}
 
     public async listBoxes(): Promise<
@@ -355,6 +373,100 @@ export class ShippingService {
         return right(this.presentOrderShipment(order.value));
     }
 
+    public async quoteCart(
+        input: QuoteCartInput
+    ): Promise<Either<AppError, { quotedServices: Array<Omit<QuotedService, "raw">> }>> {
+        const productUuids = [...new Set(input.items.map((item) => item.productUuid))];
+        const products = await Promise.all(
+            productUuids.map(async (productUuid) => {
+                return [productUuid, await this.productRepository.findByUuid(productUuid)] as const;
+            })
+        );
+        const productsByUuid = new Map(products);
+        const quantitiesByProductUuid = new Map<string, number>();
+
+        for (const item of input.items) {
+            const product = productsByUuid.get(item.productUuid);
+            if (!product || !product.isActive) {
+                return left(AppError.notFound("Produto nao encontrado"));
+            }
+
+            quantitiesByProductUuid.set(
+                item.productUuid,
+                (quantitiesByProductUuid.get(item.productUuid) ?? 0) + item.quantity
+            );
+        }
+
+        for (const [productUuid, quantity] of quantitiesByProductUuid) {
+            const product = productsByUuid.get(productUuid)!;
+            if (!hasAvailableStock(product.category, product.stock, quantity)) {
+                return left(
+                    AppError.validation("Quantidade solicitada maior que o estoque disponivel")
+                );
+            }
+        }
+
+        const packagingItems = input.items.map((item, index) => {
+            const product = productsByUuid.get(item.productUuid)!;
+
+            return {
+                uuid: `${item.productUuid}:${item.productSize}:${index}`,
+                productSize: item.productSize,
+                quantity: item.quantity,
+                productNameSnapshot: product.name,
+                unitPriceInCents: calculateProductPriceInCents(product.line, item.productSize),
+                product: {
+                    category: product.category,
+                    shippingWeightGrams: product.shippingWeightGrams
+                }
+            };
+        });
+        const boxes = await this.shippingRepository.listActiveBoxes();
+        const packaging = buildPackagingPlan(packagingItems, boxes);
+        const platformResult = await this.loadPlatform();
+        if (!platformResult.success) {
+            return platformResult;
+        }
+
+        const subtotalInCents = packagingItems.reduce(
+            (total, item) => total + item.unitPriceInCents * item.quantity,
+            0
+        );
+        const calculatorPayload = this.buildCalculatorPayload(
+            input.zipCode,
+            subtotalInCents,
+            packaging,
+            {},
+            this.buildSenderSnapshot(platformResult.value)
+        );
+
+        let calculatorResponse: unknown;
+        try {
+            calculatorResponse = await this.superFreteClient.calculateQuote(calculatorPayload);
+        } catch (error) {
+            if (error instanceof AppError && error.code === "SERVICE_UNAVAILABLE") {
+                return left(AppError.serviceUnavailable("SuperFrete indisponivel no momento"));
+            }
+
+            throw error;
+        }
+
+        const quotedServices = extractQuotedServices(calculatorResponse);
+        if (quotedServices.length === 0) {
+            return left(AppError.business("Nenhuma opcao de frete foi retornada pelo SuperFrete"));
+        }
+
+        return right({
+            quotedServices: quotedServices.map((service) => ({
+                serviceCode: service.serviceCode,
+                serviceName: service.serviceName,
+                priceInCents: service.priceInCents,
+                deliveryDays: service.deliveryDays,
+                deliveryRange: service.deliveryRange
+            }))
+        });
+    }
+
     public async quoteOrder(
         currentUser: CurrentUser,
         orderUuid: string,
@@ -417,7 +529,8 @@ export class ShippingService {
         } else {
             const senderSnapshot = this.buildSenderSnapshot(platform);
             const calculatorPayload = this.buildCalculatorPayload(
-                order,
+                order.address.zipCode,
+                order.subtotalInCents,
                 packaging,
                 input,
                 senderSnapshot
@@ -739,7 +852,8 @@ export class ShippingService {
     }
 
     private buildCalculatorPayload(
-        order: ShippingOrder,
+        destinationZipCode: string,
+        subtotalInCents: number,
         packaging: ReturnType<typeof buildPackagingPlan>,
         input: QuoteOrderInput,
         senderSnapshot: SenderSnapshot
@@ -749,13 +863,13 @@ export class ShippingService {
                 postal_code: String(senderSnapshot.address.postalCode).replace(/\D/g, "")
             },
             to: {
-                postal_code: order.address!.zipCode.replace(/\D/g, "")
+                postal_code: destinationZipCode.replace(/\D/g, "")
             },
             services: process.env.SUPERFRETE_SERVICE_CODES ?? "1,2,17",
             options: {
                 own_hand: input.ownHand ?? false,
                 receipt: input.receipt ?? false,
-                insurance_value: (input.insuranceValueInCents ?? order.subtotalInCents) / 100,
+                insurance_value: (input.insuranceValueInCents ?? subtotalInCents) / 100,
                 use_insurance_value: input.useInsuranceValue ?? false
             },
             package: {

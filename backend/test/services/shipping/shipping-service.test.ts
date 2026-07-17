@@ -185,7 +185,8 @@ test("shipping service keeps the stored shipment when freight is already confirm
         {
             findDefaultActive: async () => createPlatform()
         } as never,
-        client as never
+        client as never,
+        {} as never
     );
     const result = await service.quoteOrder(
         {
@@ -226,7 +227,8 @@ test("shipping service rejects changing the service after freight confirmation",
         {
             findDefaultActive: async () => createPlatform()
         } as never,
-        client as never
+        client as never,
+        {} as never
     );
     const result = await service.quoteOrder(
         {
@@ -385,7 +387,8 @@ test("shipping service recalculates quote when quote-affecting options change", 
         {
             findDefaultActive: async () => createPlatform()
         } as never,
-        client as never
+        client as never,
+        {} as never
     );
     const result = await service.quoteOrder(
         {

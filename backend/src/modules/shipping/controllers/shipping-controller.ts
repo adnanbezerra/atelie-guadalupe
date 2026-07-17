@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { sendEither } from "../../../core/http/send-either";
 import {
     createShippingBoxSchema,
+    quoteCartShippingSchema,
     quoteOrderShipmentSchema,
     shippingBoxParamSchema,
     shippingOrderParamSchema,
@@ -47,6 +48,11 @@ export class ShippingController {
                 params.orderUuid
             )
         );
+    };
+
+    public quoteCart = async (request: FastifyRequest, reply: FastifyReply) => {
+        const input = this.fastify.validateSchema(quoteCartShippingSchema, request.body);
+        return sendEither(reply, await this.shippingService.quoteCart(input));
     };
 
     public quoteOrder = async (request: FastifyRequest, reply: FastifyReply) => {

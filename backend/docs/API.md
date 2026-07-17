@@ -2227,7 +2227,84 @@ Resposta `200`:
 }
 ```
 
-## 17.2 Frete por pedido
+## 17.2 Preview de frete no carrinho
+
+### `POST /shipping/quote`
+
+Autenticacao:
+
+- opcional
+- visitante e usuario autenticado recebem a mesma resposta e seguem as mesmas regras
+
+Uso:
+
+- calcula opcoes de frete antes da criacao do pedido
+- nao cria pedido, nao altera ou esvazia carrinho e nao persiste cotacao ou servico escolhido
+- usa a plataforma padrao ativa como remetente
+- busca produto, categoria, preco, peso logistico, estoque e caixas no backend
+- ignora qualquer dado adicional de preco, peso ou dimensoes enviado pelo cliente
+- usa as mesmas regras de empacotamento da cotacao persistente por pedido
+
+Request:
+
+```json
+{
+    "zipCode": "01001000",
+    "items": [
+        {
+            "productUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b401",
+            "productSize": "GRAMS_70",
+            "quantity": 2
+        }
+    ]
+}
+```
+
+Validacoes:
+
+- `zipCode`: string com exatamente 8 digitos, sem mascara
+- `items`: array com ao menos um item
+- `productUuid`: UUID de produto existente e ativo
+- `productSize`: `GRAMS_70` ou `GRAMS_100`
+- `quantity`: inteiro positivo; para produtos com controle de estoque, a soma das quantidades do mesmo produto nao pode ultrapassar o estoque disponivel
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "quotedServices": [
+            {
+                "serviceCode": 1,
+                "serviceName": "PAC",
+                "priceInCents": 3526,
+                "deliveryDays": 7,
+                "deliveryRange": {
+                    "min": null,
+                    "max": null
+                }
+            }
+        ]
+    }
+}
+```
+
+Erros:
+
+- `400 BUSINESS_RULE_ERROR`: produto sem peso logistico, caixas incompativeis ou nenhuma transportadora disponivel
+- `404 RESOURCE_NOT_FOUND`: produto inexistente ou inativo
+- `422 VALIDATION_ERROR`: CEP, itens, tamanho ou quantidade invalidos; inclui estoque insuficiente
+- `503 SERVICE_UNAVAILABLE`: SuperFrete indisponivel, com mensagem publica `SuperFrete indisponivel no momento`
+
+Importante:
+
+- esta cotacao serve apenas como preview e nao deve ser usada como fonte de verdade para cobranca
+- ao confirmar a compra, o frontend cria o pedido e chama a cotacao persistente com o `serviceCode`; o backend recalcula e valida o valor
+
+Contrato dedicado para o frontend: [`docs/SHIPPING_QUOTE_FRONTEND.md`](./SHIPPING_QUOTE_FRONTEND.md).
+
+## 17.3 Frete por pedido
 
 Fluxo esperado:
 

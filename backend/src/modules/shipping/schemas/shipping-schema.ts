@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const productCategorySchema = z.enum(["SELFCARE", "ARTISANAL"]);
+const productSizeSchema = z.enum(["GRAMS_70", "GRAMS_100"]);
 
 export const shippingOrderParamSchema = z.object({
     orderUuid: z.uuid()
@@ -43,4 +44,17 @@ export const quoteOrderShipmentSchema = z.object({
     useInsuranceValue: z.boolean().optional(),
     insuranceValueInCents: z.number().int().min(0).optional(),
     refresh: z.boolean().optional()
+});
+
+export const quoteCartShippingSchema = z.object({
+    zipCode: z.string().regex(/^\d{8}$/),
+    items: z
+        .array(
+            z.object({
+                productUuid: z.uuid(),
+                productSize: productSizeSchema,
+                quantity: z.number().int().positive()
+            })
+        )
+        .min(1)
 });
