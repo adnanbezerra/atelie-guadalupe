@@ -2126,9 +2126,9 @@ As caixas sao configuradas no banco e usadas pelo modulo de frete para decidir o
 
 Caixas seeded por padrao:
 
-- `SELFCARE`: `11.5 x 6.5 x 6.5` com capacidade ate `2` itens
-- `SELFCARE`: `21 x 12.5 x 12.5` com capacidade ate `4` itens
-- `ARTISANAL`: `95 x 50 x 17` com capacidade ate `1` item
+- `SELFCARE`: `11.5 x 6.5 x 6.5`, peso vazio de `30 g` e capacidade ate `2` itens
+- `SELFCARE`: `21 x 12.5 x 12.5`, peso vazio de `100 g` e capacidade ate `4` itens
+- `ARTISANAL`: `95 x 50 x 17`, peso vazio de `1000 g` e capacidade ate `1` item
 
 ### `GET /shipping/boxes`
 
@@ -2153,7 +2153,7 @@ Resposta `200`:
                     "width": 6.5,
                     "length": 6.5
                 },
-                "emptyWeightGrams": 0,
+                "emptyWeightGrams": 30,
                 "maxItems": 2,
                 "isActive": true,
                 "createdAt": "2026-03-12T12:00:00.000Z",
@@ -2180,7 +2180,7 @@ Request:
     "outerHeightCm": 95,
     "outerWidthCm": 50,
     "outerLengthCm": 17,
-    "emptyWeightGrams": 0,
+    "emptyWeightGrams": 1000,
     "maxItems": 1,
     "isActive": true
 }
@@ -2316,9 +2316,61 @@ Resposta `200`:
             "trackingCode": null,
             "labelUrl": null,
             "senderSnapshot": {},
-            "quotedServices": [],
+            "quotedServices": [
+                {
+                    "serviceCode": 1,
+                    "serviceName": "PAC",
+                    "priceInCents": 3526,
+                    "deliveryDays": 7,
+                    "deliveryRange": {
+                        "min": null,
+                        "max": null
+                    },
+                    "raw": {}
+                },
+                {
+                    "serviceCode": 2,
+                    "serviceName": "SEDEX",
+                    "priceInCents": 7257,
+                    "deliveryDays": 3,
+                    "deliveryRange": {
+                        "min": null,
+                        "max": null
+                    },
+                    "raw": {}
+                }
+            ],
             "packaging": {
-                "selectedBoxes": []
+                "selectedBoxes": [
+                    {
+                        "boxUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b777",
+                        "boxName": "Caixa Grande",
+                        "boxSlug": "caixa-grande",
+                        "category": "SELFCARE",
+                        "quantity": 1,
+                        "maxItemsPerBox": 4,
+                        "dimensionsCm": {
+                            "height": 21,
+                            "width": 12.5,
+                            "length": 12.5
+                        },
+                        "emptyWeightGrams": 100,
+                        "totalCapacity": 4
+                    }
+                ],
+                "itemCounts": {
+                    "selfcareUnits": 3,
+                    "artisanalUnits": 0,
+                    "totalUnits": 3
+                },
+                "consolidatedPackage": {
+                    "heightCm": 21,
+                    "widthCm": 12.5,
+                    "lengthCm": 12.5,
+                    "weightKg": 0.454
+                },
+                "itemsWeightGrams": 354,
+                "boxesWeightGrams": 100
             },
             "quotedAt": "2026-03-12T12:00:00.000Z",
             "confirmedAt": "2026-03-12T12:00:00.000Z",
