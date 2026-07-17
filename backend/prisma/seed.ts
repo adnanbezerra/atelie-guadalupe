@@ -270,7 +270,7 @@ const shippingBoxesSeed = [
         outerHeightCm: "11.50",
         outerWidthCm: "6.50",
         outerLengthCm: "6.50",
-        emptyWeightGrams: 0,
+        emptyWeightGrams: 30,
         maxItems: 2
     },
     {
@@ -280,7 +280,7 @@ const shippingBoxesSeed = [
         outerHeightCm: "21.00",
         outerWidthCm: "12.50",
         outerLengthCm: "12.50",
-        emptyWeightGrams: 0,
+        emptyWeightGrams: 100,
         maxItems: 4
     },
     {
@@ -290,7 +290,7 @@ const shippingBoxesSeed = [
         outerHeightCm: "95.00",
         outerWidthCm: "50.00",
         outerLengthCm: "17.00",
-        emptyWeightGrams: 0,
+        emptyWeightGrams: 1000,
         maxItems: 1
     }
 ] as const;
