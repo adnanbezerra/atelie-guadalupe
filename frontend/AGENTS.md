@@ -6,6 +6,10 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 - Whenever you try to find data from a backend endpoint, always check at docs/API.md first. In case the endpoint you're looking for doesn't exist, inform me and write down a .md on the contract which you need it to have.
 
+## 0. Logs de erro e de sucesso
+
+Este é relacionado um pouco a design e um pouco a como estruturar o site. **Nunca**, *jamais*, coloque mensagens de sucesso ou erro escritas no HTML ou qualquer coisa que seja. Deve ser **sempre** através de modais, e repare que já temos um modal configurado para o site. Use-o.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**

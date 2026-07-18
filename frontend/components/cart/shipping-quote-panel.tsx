@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SavedAddressEditDialog } from "@/components/cart/saved-address-edit-dialog";
 import {
     fetchViaCepAddress,
     formatCep,
@@ -343,7 +344,9 @@ export function ShippingQuotePanel({
                             </span>
                             <div className="min-w-0">
                                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">
-                                    Endereço encontrado
+                                    {savedAddressPreview
+                                        ? "Endereço salvo"
+                                        : "Endereço encontrado"}
                                 </p>
                                 {addressPreview.street ? (
                                     <p className="mt-1 font-bold text-slate-900">
@@ -365,6 +368,12 @@ export function ShippingQuotePanel({
                                 <p className="mt-1 text-sm font-semibold text-slate-500">
                                     CEP {formatCep(addressPreview.zipCode)}
                                 </p>
+                                {savedAddressPreview && savedAddress ? (
+                                    <SavedAddressEditDialog
+                                        address={savedAddress}
+                                        onSaved={resetQuote}
+                                    />
+                                ) : null}
                             </div>
                         </div>
                     </div>
@@ -404,7 +413,7 @@ export function ShippingQuotePanel({
                             Escolha uma opção
                         </legend>
 
-                        <label className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 bg-white p-4 transition has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/15">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/15">
                             <input
                                 checked={selectedOption?.id === pickupOption.id}
                                 className="mt-1 accent-[#1940b3]"
@@ -436,7 +445,7 @@ export function ShippingQuotePanel({
 
                             return (
                                 <label
-                                    className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 bg-white p-4 transition has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/15"
+                                    className="items-center flex cursor-pointer gap-3 rounded-xl border border-slate-200 bg-white p-4 transition has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/15"
                                     key={service.serviceCode}
                                 >
                                     <input
@@ -473,8 +482,8 @@ export function ShippingQuotePanel({
 
                         {quotedServices.length ? (
                             <p className="px-1 text-xs leading-5 text-slate-500">
-                                Valores de entrega são estimativas. O frete será
-                                recalculado e confirmado ao finalizar o pedido.
+                                A entregadora pode ter que recalcular o seu
+                                frete no momento da finalização do pedido.
                             </p>
                         ) : null}
                     </fieldset>
