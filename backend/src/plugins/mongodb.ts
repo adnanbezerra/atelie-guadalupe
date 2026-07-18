@@ -14,7 +14,10 @@ export default fp(async (fastify) => {
     let mongoVideoBucket: GridFSBucket | null = null;
 
     if (mongoUrl && dbName) {
-        mongoClient = new MongoClient(mongoUrl);
+        mongoClient = new MongoClient(mongoUrl, {
+            connectTimeoutMS: 5_000,
+            serverSelectionTimeoutMS: 8_000
+        });
         await mongoClient.connect();
         mongoDb = mongoClient.db(dbName);
         mongoBucket = new GridFSBucket(mongoDb, {

@@ -17,6 +17,8 @@ function config() {
         process.env.DATABASE_URL ??
         "postgresql://postgres:postgres@localhost:5432/atelie_guadalupe";
     process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-secret";
+    process.env.MONGODB_URL = "";
+    process.env.MONGODB_DB_NAME = "";
 
     return {
         skipOverride: true // Register our application with fastify-plugin
