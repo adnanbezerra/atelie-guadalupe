@@ -79,10 +79,7 @@ test("product service creates slug from product name", async () => {
 
     if (result.success) {
         assert.equal(result.value.product.slug, "sabonete-artesanal-de-lavanda");
-        assert.equal(
-            result.value.product.imageUrl,
-            "/media/images/507f1f77bcf86cd799439011"
-        );
+        assert.equal(result.value.product.imageUrl, "/media/images/507f1f77bcf86cd799439011");
     }
 });
 
