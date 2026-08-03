@@ -74,6 +74,28 @@ enum FulfillmentJobStatus {
   COMPLETED
 }
 
+enum EmailJobType {
+  WELCOME
+  ORDER_CREATED
+  PAYMENT_CONFIRMED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+}
+
+enum EmailJobStatus {
+  PENDING
+  PROCESSING
+  RETRY_SCHEDULED
+  SENT
+  FAILED
+}
+
+enum EmailDeliveryStatus {
+  STARTED
+  ACCEPTED
+  FAILED
+}
+
 enum PromotionScope {
   ALL_PRODUCTS
   CATEGORY
@@ -365,6 +387,55 @@ model FulfillmentJob {
   @@index([status, nextAttemptAt])
 }
 
+model EmailJob {
+  id                Int                @id @default(autoincrement())
+  uuid              String             @unique @db.Uuid
+  type              EmailJobType
+  recipient         String
+  payload           Json
+  deduplicationKey  String             @unique
+  status            EmailJobStatus     @default(PENDING)
+  attempts          Int                @default(0)
+  nextAttemptAt     DateTime           @default(now())
+  lockedAt          DateTime?
+  lastError         String?
+  providerMessageId String?
+  sentAt            DateTime?
+  deliveryLogs      EmailDeliveryLog[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([recipient])
+  @@index([type])
+}
+
+model EmailDeliveryLog {
+  id                Int                 @id @default(autoincrement())
+  uuid              String              @unique @db.Uuid
+  emailJobId        Int
+  attemptNumber     Int
+  provider          String              @default("RESEND")
+  emailType         EmailJobType
+  recipient         String
+  subject           String
+  idempotencyKey    String
+  status            EmailDeliveryStatus @default(STARTED)
+  providerMessageId String?
+  errorCode         String?
+  errorMessage      String?
+  startedAt         DateTime            @default(now())
+  completedAt       DateTime?
+  emailJob          EmailJob            @relation(fields: [emailJobId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([emailJobId, attemptNumber])
+  @@index([status])
+  @@index([recipient])
+  @@index([emailType])
+}
+
 model OrderItem {
   id                  Int         @id @default(autoincrement())
   uuid                String      @unique @db.Uuid
@@ -488,36 +559,45 @@ model Promotion {
 }
 
 model OrderShipment {
-  id                   Int            @id @default(autoincrement())
-  uuid                 String         @unique @db.Uuid
-  orderId              Int            @unique
-  status               ShippingStatus @default(DRAFT)
-  quoteFingerprint     String?
-  selectedServiceCode  Int?
-  selectedServiceName  String?
-  shippingPriceInCents Int?
-  superfreteOrderId    String?        @unique
-  superfreteProtocol   String?
-  trackingCode         String?
-  labelUrl             String?
-  senderSnapshot       Json?
-  calculatorPayload    Json?
-  calculatorResponse   Json?
-  quotedServices       Json?
-  packagingSnapshot    Json?
-  cartPayload          Json?
-  cartResponse         Json?
-  checkoutResponse     Json?
-  cancellationResponse Json?
-  quotedAt             DateTime?
-  confirmedAt          DateTime?
-  checkoutRequestedAt  DateTime?
-  purchasedAt          DateTime?
-  cancelledAt          DateTime?
-  order                Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  id                    Int            @id @default(autoincrement())
+  uuid                  String         @unique @db.Uuid
+  orderId               Int            @unique
+  status                ShippingStatus @default(DRAFT)
+  quoteFingerprint      String?
+  selectedServiceCode   Int?
+  selectedServiceName   String?
+  shippingPriceInCents  Int?
+  superfreteOrderId     String?        @unique
+  superfreteProtocol    String?
+  trackingCode          String?
+  superfreteStatus      String?
+  labelUrl              String?
+  senderSnapshot        Json?
+  calculatorPayload     Json?
+  calculatorResponse    Json?
+  quotedServices        Json?
+  packagingSnapshot     Json?
+  cartPayload           Json?
+  cartResponse          Json?
+  checkoutResponse      Json?
+  cancellationResponse  Json?
+  quotedAt              DateTime?
+  confirmedAt           DateTime?
+  checkoutRequestedAt   DateTime?
+  purchasedAt           DateTime?
+  postedAt              DateTime?
+  deliveredAt           DateTime?
+  trackingLastCheckedAt DateTime?
+  trackingNextCheckAt   DateTime?
+  trackingAttempts      Int            @default(0)
+  trackingLastError     String?
+  trackingLockedAt      DateTime?
+  cancelledAt           DateTime?
+  order                 Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   @@index([uuid])
   @@index([status])
+  @@index([status, trackingNextCheckAt])
 }
