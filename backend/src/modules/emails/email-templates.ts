@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { EmailJobType } from "../../generated/prisma/enums";
 
 export type RenderedEmail = {
@@ -7,6 +9,16 @@ export type RenderedEmail = {
 };
 
 type Payload = Record<string, unknown>;
+type TemplateValues = Record<string, string>;
+
+const templateDirectory = resolve(__dirname, "../../../src/modules/emails/templates");
+const templates = {
+    welcome: readFileSync(resolve(templateDirectory, "welcome.html"), "utf8"),
+    orderCreated: readFileSync(resolve(templateDirectory, "order-created.html"), "utf8"),
+    paymentConfirmed: readFileSync(resolve(templateDirectory, "payment-confirmed.html"), "utf8"),
+    orderShipped: readFileSync(resolve(templateDirectory, "order-shipped.html"), "utf8"),
+    orderDelivered: readFileSync(resolve(templateDirectory, "order-delivered.html"), "utf8")
+};
 
 function record(value: unknown): Payload {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -47,6 +59,23 @@ function currency(value: number) {
     }).format(value / 100);
 }
 
+function replaceValues(template: string, values: TemplateValues) {
+    return template.replace(/{{([a-zA-Z][a-zA-Z0-9]*)}}/g, (_match, key: string) => {
+        const value = values[key];
+        if (value === undefined) throw new Error(`Variavel de template ausente: ${key}`);
+        return escapeHtml(value);
+    });
+}
+
+function renderTemplate(template: string, values: TemplateValues, items: TemplateValues[] = []) {
+    const withItems = template.replace(
+        /{{#each items}}([\s\S]*?){{\/each}}/g,
+        (_match, itemTemplate: string) =>
+            items.map((item) => replaceValues(itemTemplate, item)).join("")
+    );
+    return replaceValues(withItems, values);
+}
+
 function orderData(payloadValue: unknown) {
     const payload = record(payloadValue);
     const rawItems = payload.items;
@@ -71,39 +100,6 @@ function orderData(payloadValue: unknown) {
     };
 }
 
-function layout(
-    title: string,
-    greeting: string,
-    content: string,
-    cta?: { label: string; url: string }
-) {
-    return `<!doctype html>
-<html lang="pt-BR">
-<body style="margin:0;background:#f7f3ed;font-family:Arial,sans-serif;color:#3b3028">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:32px 16px">
-<table role="presentation" width="100%" style="max-width:600px;background:#fff;border-radius:12px" cellspacing="0" cellpadding="0">
-<tr><td style="padding:32px"><p style="margin:0 0 8px;color:#8a6f57">Atelie Guadalupe</p>
-<h1 style="font-size:26px;margin:0 0 24px">${escapeHtml(title)}</h1>
-<p>${escapeHtml(greeting)}</p>${content}
-${cta ? `<p style="margin-top:28px"><a href="${escapeHtml(cta.url)}" style="background:#6b4f3a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block">${escapeHtml(cta.label)}</a></p>` : ""}
-</td></tr></table></td></tr></table></body></html>`;
-}
-
-function orderSummary(data: ReturnType<typeof orderData>) {
-    const items = data.items
-        .map(
-            (item) =>
-                `<li>${escapeHtml(item.name)} x ${item.quantity} - ${escapeHtml(currency(item.totalInCents))}</li>`
-        )
-        .join("");
-    return `<p>Pedido <strong>#${escapeHtml(data.orderUuid)}</strong></p>
-<ul>${items}</ul>
-<p>Subtotal: ${escapeHtml(currency(data.subtotalInCents))}<br>
-Frete: ${escapeHtml(data.shippingInCents > 0 ? currency(data.shippingInCents) : "a confirmar")}<br>
-Desconto: ${escapeHtml(currency(data.discountInCents))}<br>
-<strong>Total atual: ${escapeHtml(currency(data.totalInCents))}</strong></p>`;
-}
-
 function orderText(data: ReturnType<typeof orderData>) {
     const items = data.items
         .map((item) => `- ${item.name} x ${item.quantity}: ${currency(item.totalInCents)}`)
@@ -124,7 +120,10 @@ export function renderEmail(
             "Sua conta foi criada com sucesso. Esperamos que voce aproveite nossos produtos.";
         return {
             subject,
-            html: layout(subject, `Ola, ${name}!`, `<p>${message}</p>`),
+            html: renderTemplate(templates.welcome, {
+                customerName: name,
+                frontendUrl: frontendUrl.replace(/\/$/, "")
+            }),
             text: `Ola, ${name}!\n\n${message}`
         };
     }
@@ -132,18 +131,28 @@ export function renderEmail(
     const data = orderData(payloadValue);
     const orderUrl = `${frontendUrl.replace(/\/$/, "")}/pedidos/${encodeURIComponent(data.orderUuid)}`;
     const greeting = `Ola, ${data.customerName}!`;
-    const summary = orderSummary(data);
     const baseText = orderText(data);
+    const templateValues = {
+        customerName: data.customerName,
+        orderUuid: data.orderUuid,
+        subtotal: currency(data.subtotalInCents),
+        shipping: data.shippingInCents > 0 ? currency(data.shippingInCents) : "a confirmar",
+        discount: currency(data.discountInCents),
+        total: currency(data.totalInCents),
+        orderUrl
+    };
+    const templateItems = data.items.map((item) => ({
+        name: item.name,
+        quantity: String(item.quantity),
+        total: currency(item.totalInCents)
+    }));
 
     if (type === EmailJobType.ORDER_CREATED) {
         const subject = "Recebemos seu pedido";
         const message = "O frete e o total final serao confirmados antes da criacao do pagamento.";
         return {
             subject,
-            html: layout(subject, greeting, `<p>${message}</p>${summary}`, {
-                label: "Ver pedido",
-                url: orderUrl
-            }),
+            html: renderTemplate(templates.orderCreated, templateValues, templateItems),
             text: `${greeting}\n\n${message}\n\n${baseText}\n\n${orderUrl}`
         };
     }
@@ -153,10 +162,7 @@ export function renderEmail(
         const message = "Recebemos seu pagamento e seu pedido agora esta em preparacao.";
         return {
             subject,
-            html: layout(subject, greeting, `<p>${message}</p>${summary}`, {
-                label: "Acompanhar pedido",
-                url: orderUrl
-            }),
+            html: renderTemplate(templates.paymentConfirmed, templateValues, templateItems),
             text: `${greeting}\n\n${message}\n\n${baseText}\n\n${orderUrl}`
         };
     }
@@ -167,12 +173,10 @@ export function renderEmail(
         const message = `Codigo de rastreamento: ${tracking}`;
         return {
             subject,
-            html: layout(
-                subject,
-                greeting,
-                `<p>Seu pedido esta a caminho.</p><p><strong>${escapeHtml(message)}</strong></p>`,
-                { label: "Acompanhar pedido", url: orderUrl }
-            ),
+            html: renderTemplate(templates.orderShipped, {
+                ...templateValues,
+                trackingCode: tracking
+            }),
             text: `${greeting}\n\nSeu pedido esta a caminho.\n${message}\n\n${orderUrl}`
         };
     }
@@ -182,10 +186,7 @@ export function renderEmail(
         const message = "A entrega foi confirmada. Esperamos que voce aproveite sua compra.";
         return {
             subject,
-            html: layout(subject, greeting, `<p>${message}</p>`, {
-                label: "Ver pedido",
-                url: orderUrl
-            }),
+            html: renderTemplate(templates.orderDelivered, templateValues),
             text: `${greeting}\n\n${message}\n\n${orderUrl}`
         };
     }

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
+        <title>Pagamento confirmado</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Noto+Serif:wght@700&display=swap");
+
+            @media only screen and (max-width: 620px) {
+                .email-shell { width: 100% !important; border-radius: 0 !important; }
+                .email-padding { padding-left: 24px !important; padding-right: 24px !important; }
+                .email-title { font-size: 30px !important; line-height: 36px !important; }
+                .email-button { display: block !important; text-align: center !important; }
+            }
+        </style>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f6f6f8">
+        <!--
+        THESIS: confirmação serena e inequívoca, com o pagamento tratado como marco real do pedido.
+        OWN-WORLD: azul Guadalupe, ouro artesanal, verde reservado ao estado confirmado e resumo linear.
+        STORY: a cliente reconhece o pagamento, entende que o preparo começou e pode acompanhar o pedido.
+        FIRST VIEWPORT: marca, faixa verde de confirmação, título e próximo passo antes dos valores.
+        FORM: extensão precisa do sistema existente; email-note-v1.
+        FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+        -->
+        <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent">
+            O pagamento do pedido #{{orderUuid}} foi confirmado e o preparo já começou.
+        </div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #f6f6f8">
+            <tr><td align="center" style="padding: 32px 12px">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" class="email-shell" style="width: 100%; max-width: 600px; overflow: hidden; background-color: #ffffff; border-radius: 14px">
+                    <tr><td class="email-padding" style="padding: 28px 40px; background-color: #1940b3"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="font-family: 'Noto Serif', Georgia, 'Times New Roman', serif; font-size: 20px; font-weight: 700; line-height: 26px; letter-spacing: -0.02em; color: #ffffff">Ateliê Guadalupe</td><td align="right"><table role="presentation" cellspacing="0" cellpadding="0"><tr><td align="center" valign="middle" width="58" height="58" style="width: 58px; height: 58px; background-color: #ffffff; border-radius: 50%"><img src="https://atelieguadalupe.adnanbezerra.tech/logo-empty.png" height="44" alt="Logo do Ateliê Guadalupe" style="display: block; width: auto; height: 44px; max-width: 88px; margin: 0 auto; border: 0" /></td></tr></table></td></tr></table></td></tr>
+                    <tr><td style="height: 4px; background-color: #d1a054; font-size: 0">&nbsp;</td></tr>
+                    <tr><td class="email-padding" style="padding: 34px 40px 14px">
+                        <table role="presentation" cellspacing="0" cellpadding="0" style="margin-bottom: 18px"><tr><td style="padding: 7px 11px; border-radius: 6px; background-color: #e9f6ef; font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 700; color: #167a45">PAGAMENTO CONFIRMADO</td></tr></table>
+                        <h1 class="email-title" style="margin: 0 0 18px; font-family: 'Noto Serif', Georgia, 'Times New Roman', serif; font-size: 36px; line-height: 42px; color: #1f2937">Tudo certo, {{customerName}}.</h1>
+                        <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 17px; line-height: 28px; color: #1f2937">Recebemos seu pagamento e seu pedido agora está em preparação.</p>
+                    </td></tr>
+                    <tr><td class="email-padding" style="padding: 24px 40px 36px">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                            <tr><td style="padding-bottom: 14px; border-bottom: 1px solid #e7e0d4; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #667085">Pedido</td><td align="right" style="padding-bottom: 14px; border-bottom: 1px solid #e7e0d4; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 700; color: #1f2937">#{{orderUuid}}</td></tr>
+                            {{#each items}}
+                            <tr><td style="padding: 15px 12px 15px 0; border-bottom: 1px solid #e7e0d4; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 22px; color: #1f2937">{{name}} <span style="color: #667085">× {{quantity}}</span></td><td align="right" style="padding: 15px 0; border-bottom: 1px solid #e7e0d4; font-family: Arial, Helvetica, sans-serif; font-size: 15px; white-space: nowrap; color: #1f2937">{{total}}</td></tr>
+                            {{/each}}
+                            <tr><td style="padding: 16px 0 6px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #667085">Subtotal</td><td align="right" style="padding: 16px 0 6px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #1f2937">{{subtotal}}</td></tr>
+                            <tr><td style="padding: 6px 0; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #667085">Frete</td><td align="right" style="padding: 6px 0; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #1f2937">{{shipping}}</td></tr>
+                            <tr><td style="padding: 6px 0 18px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #667085">Desconto</td><td align="right" style="padding: 6px 0 18px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #1f2937">{{discount}}</td></tr>
+                            <tr><td style="padding: 18px 0 26px; border-top: 2px solid #1940b3; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 700; color: #1f2937">Total pago</td><td align="right" style="padding: 18px 0 26px; border-top: 2px solid #1940b3; font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 700; color: #1940b3">{{total}}</td></tr>
+                        </table>
+                        <table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="border-radius: 8px; background-color: #1940b3"><a href="{{orderUrl}}" class="email-button" style="display: inline-block; padding: 14px 22px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 700; color: #ffffff; text-decoration: none">Acompanhar pedido</a></td></tr></table>
+                    </td></tr>
+                    <tr><td class="email-padding" style="padding: 22px 40px; background-color: #faf9f6"><p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 21px; color: #667085">Avisaremos você novamente quando o pedido estiver a caminho.</p></td></tr>
+                </table>
+            </td></tr>
+        </table>
+    </body>
+</html>

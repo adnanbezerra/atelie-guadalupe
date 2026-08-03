@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
+        <meta name="supported-color-schemes" content="light" />
+        <title>Boas-vindas ao Ateliê Guadalupe</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Noto+Serif:wght@700&display=swap");
+
+            @media only screen and (max-width: 620px) {
+                .email-shell {
+                    width: 100% !important;
+                    border-radius: 0 !important;
+                }
+                .email-padding {
+                    padding-left: 24px !important;
+                    padding-right: 24px !important;
+                }
+                .email-title {
+                    font-size: 30px !important;
+                    line-height: 36px !important;
+                }
+                .email-button {
+                    display: block !important;
+                    text-align: center !important;
+                }
+            }
+        </style>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f6f6f8">
+        <!--
+        THESIS: um bilhete de boas-vindas feito pelo ateliê, sem aparência de campanha genérica.
+        OWN-WORLD: azul Guadalupe, ouro artesanal, superfícies claras e tipografia editorial só nos títulos.
+        STORY: a cliente reconhece que a conta foi criada, sente acolhimento e sabe onde entrar na loja.
+        FIRST VIEWPORT: marca e selo no cabeçalho azul; saudação, mensagem curta e ação direta logo abaixo.
+        FORM: extensão precisa do sistema existente; email-note-v1.
+        FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+        -->
+        <div
+            style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent"
+        >
+            Sua conta foi criada. Que bom ter você conosco.
+        </div>
+        <table
+            role="presentation"
+            width="100%"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            style="width: 100%; background-color: #f6f6f8"
+        >
+            <tr>
+                <td align="center" style="padding: 32px 12px">
+                    <table
+                        role="presentation"
+                        width="600"
+                        cellspacing="0"
+                        cellpadding="0"
+                        border="0"
+                        class="email-shell"
+                        style="
+                            width: 100%;
+                            max-width: 600px;
+                            overflow: hidden;
+                            background-color: #ffffff;
+                            border-radius: 14px;
+                        "
+                    >
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="padding: 28px 40px; background-color: #1940b3"
+                            >
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td
+                                            style="
+                                                font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
+                                                font-size: 20px;
+                                                font-weight: 700;
+                                                line-height: 26px;
+                                                letter-spacing: -0.02em;
+                                                color: #ffffff;
+                                            "
+                                        >
+                                            Ateliê Guadalupe
+                                        </td>
+                                        <td align="right">
+                                            <table role="presentation" cellspacing="0" cellpadding="0">
+                                                <tr>
+                                                    <td
+                                                        align="center"
+                                                        valign="middle"
+                                                        width="58"
+                                                        height="58"
+                                                        style="
+                                                            width: 58px;
+                                                            height: 58px;
+                                                            background-color: #ffffff;
+                                                            border-radius: 50%;
+                                                        "
+                                                    >
+                                                        <img
+                                                            src="https://atelieguadalupe.adnanbezerra.tech/logo-empty.png"
+                                                            height="44"
+                                                            alt="Logo do Ateliê Guadalupe"
+                                                            style="
+                                                                display: block;
+                                                                width: auto;
+                                                                height: 44px;
+                                                                max-width: 88px;
+                                                                margin: 0 auto;
+                                                                border: 0;
+                                                            "
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 4px; background-color: #d1a054; font-size: 0">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td class="email-padding" style="padding: 42px 40px 40px">
+                                <h1
+                                    class="email-title"
+                                    style="
+                                        margin: 0 0 20px;
+                                        font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
+                                        font-size: 36px;
+                                        line-height: 42px;
+                                        color: #1f2937;
+                                    "
+                                >
+                                    Boas-vindas, {{customerName}}.
+                                </h1>
+                                <p
+                                    style="
+                                        margin: 0 0 16px;
+                                        font-family: 'Noto Sans', Arial, Helvetica, sans-serif;
+                                        font-size: 17px;
+                                        line-height: 28px;
+                                        color: #1f2937;
+                                    "
+                                >
+                                    Sua conta foi criada com sucesso. Que bom ter você conosco.
+                                </p>
+                                <p
+                                    style="
+                                        margin: 0 0 28px;
+                                        font-family: 'Noto Sans', Arial, Helvetica, sans-serif;
+                                        font-size: 16px;
+                                        line-height: 26px;
+                                        color: #667085;
+                                    "
+                                >
+                                    No Ateliê Guadalupe você encontra produtos naturais feitos com cuidado
+                                    e artigos artesanais escolhidos para o dia a dia.
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td style="border-radius: 8px; background-color: #1940b3">
+                                            <a
+                                                href="{{frontendUrl}}"
+                                                class="email-button"
+                                                style="
+                                                    display: inline-block;
+                                                    padding: 14px 22px;
+                                                    font-family: 'Noto Sans', Arial, Helvetica, sans-serif;
+                                                    font-size: 16px;
+                                                    font-weight: 700;
+                                                    line-height: 20px;
+                                                    color: #ffffff;
+                                                    text-decoration: none;
+                                                "
+                                            >Abrir a loja</a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="padding: 22px 40px; background-color: #faf9f6"
+                            >
+                                <p
+                                    style="
+                                        margin: 0;
+                                        font-family: Arial, Helvetica, sans-serif;
+                                        font-size: 13px;
+                                        line-height: 21px;
+                                        color: #667085;
+                                    "
+                                >
+                                    Você recebeu este e-mail porque criou uma conta no Ateliê Guadalupe.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
