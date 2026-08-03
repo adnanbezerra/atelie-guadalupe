@@ -1,4 +1,9 @@
-import { OrderStatus, PaymentMethod, RoleName } from "../../../generated/prisma/enums";
+import {
+    EmailJobType,
+    OrderStatus,
+    PaymentMethod,
+    RoleName
+} from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
@@ -12,6 +17,7 @@ import {
 import { calculateProductPriceInCents } from "../../products/services/product-pricing";
 import { hasAvailableStock } from "../../products/services/product-stock";
 import { UserRepository } from "../../users/repositories/user-repository";
+import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
 import { OrderRepository } from "../repositories/order-repository";
 import { presentOrder } from "./order-presenter";
 
@@ -195,7 +201,25 @@ export class OrderService {
                           userId: user.id,
                           maxUses: cart.coupon.maxUses
                       }
-                    : undefined
+                    : undefined,
+                createEmailJob({
+                    type: EmailJobType.ORDER_CREATED,
+                    recipient: user.email,
+                    deduplicationKey: `order-created:${orderInput.uuid}`,
+                    payload: orderEmailPayload({
+                        customerName: user.name,
+                        orderUuid: orderInput.uuid,
+                        items: orderInput.items.map((item) => ({
+                            name: item.productNameSnapshot,
+                            quantity: item.quantity,
+                            totalInCents: item.totalPriceInCents
+                        })),
+                        subtotalInCents: orderInput.subtotalInCents,
+                        shippingInCents: orderInput.shippingInCents,
+                        discountInCents: orderInput.discountInCents,
+                        totalInCents: orderInput.totalInCents
+                    })
+                })
             );
         } catch (error) {
             if (error instanceof AppError) {

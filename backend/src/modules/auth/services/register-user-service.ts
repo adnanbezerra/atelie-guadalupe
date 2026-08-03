@@ -4,7 +4,8 @@ import { hashPassword, verifyPassword } from "../../../core/security/password";
 import { normalizeDocument } from "../../../core/utils/document";
 import { normalizeEmail } from "../../../core/utils/email";
 import { createUuid } from "../../../core/utils/uuid";
-import { RoleName } from "../../../generated/prisma/enums";
+import { EmailJobType, RoleName } from "../../../generated/prisma/enums";
+import { createEmailJob } from "../../emails/email-job";
 import { RoleRepository } from "../../roles/repositories/role-repository";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { presentUser } from "../../users/services/user-presenter";
@@ -52,14 +53,25 @@ export class RegisterUserService {
 
         const passwordHash = await hashPassword(input.password);
 
-        const user = await this.userRepository.create({
-            uuid: createUuid(),
-            name: input.name.trim(),
-            email,
-            document,
-            passwordHash,
-            roleId: userRole.id
-        });
+        const userUuid = createUuid();
+        const user = await this.userRepository.create(
+            {
+                uuid: userUuid,
+                name: input.name.trim(),
+                email,
+                document,
+                passwordHash,
+                roleId: userRole.id
+            },
+            createEmailJob({
+                type: EmailJobType.WELCOME,
+                recipient: email,
+                deduplicationKey: `welcome:${userUuid}`,
+                payload: {
+                    customerName: input.name.trim()
+                }
+            })
+        );
 
         return right({
             user: presentUser(user)

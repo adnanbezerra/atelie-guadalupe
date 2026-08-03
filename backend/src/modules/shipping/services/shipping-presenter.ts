@@ -24,6 +24,7 @@ type OrderShipmentEntity = {
     superfreteOrderId: string | null;
     superfreteProtocol: string | null;
     trackingCode: string | null;
+    superfreteStatus: string | null;
     labelUrl: string | null;
     senderSnapshot: unknown;
     quotedServices: unknown;
@@ -32,6 +33,8 @@ type OrderShipmentEntity = {
     confirmedAt: Date | null;
     checkoutRequestedAt: Date | null;
     purchasedAt: Date | null;
+    postedAt: Date | null;
+    deliveredAt: Date | null;
     cancelledAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -70,6 +73,7 @@ export function presentShipment(shipment: OrderShipmentEntity) {
         superfreteOrderId: shipment.superfreteOrderId,
         superfreteProtocol: shipment.superfreteProtocol,
         trackingCode: shipment.trackingCode,
+        superfreteStatus: shipment.superfreteStatus,
         labelUrl: shipment.labelUrl,
         senderSnapshot: shipment.senderSnapshot,
         quotedServices: shipment.quotedServices,
@@ -78,6 +82,8 @@ export function presentShipment(shipment: OrderShipmentEntity) {
         confirmedAt: shipment.confirmedAt,
         checkoutRequestedAt: shipment.checkoutRequestedAt,
         purchasedAt: shipment.purchasedAt,
+        postedAt: shipment.postedAt,
+        deliveredAt: shipment.deliveredAt,
         cancelledAt: shipment.cancelledAt,
         createdAt: shipment.createdAt,
         updatedAt: shipment.updatedAt

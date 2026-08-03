@@ -74,12 +74,13 @@ type QuotedService = {
     raw: Record<string, unknown>;
 };
 
-type SuperFreteOrderInfo = {
+export type SuperFreteOrderInfo = {
     orderId: string;
     protocol: string | null;
     status: string | null;
     trackingCode: string | null;
     labelUrl: string | null;
+    postedAt: Date | null;
     raw: unknown;
 };
 
@@ -238,7 +239,10 @@ function extractCreatedSuperFreteOrderId(payload: unknown): string | null {
     );
 }
 
-function extractSuperFreteOrderInfo(payload: unknown, fallbackId: string): SuperFreteOrderInfo {
+export function extractSuperFreteOrderInfo(
+    payload: unknown,
+    fallbackId: string
+): SuperFreteOrderInfo {
     const record = getRecord(payload);
     if (!record) {
         return {
@@ -247,6 +251,7 @@ function extractSuperFreteOrderInfo(payload: unknown, fallbackId: string): Super
             status: null,
             trackingCode: null,
             labelUrl: null,
+            postedAt: null,
             raw: payload
         };
     }
@@ -259,6 +264,12 @@ function extractSuperFreteOrderInfo(payload: unknown, fallbackId: string): Super
         status: getString(record.status),
         trackingCode: getString(record.tracking),
         labelUrl: getString(print?.url),
+        postedAt: (() => {
+            const value = getString(record.posted_at);
+            if (!value) return null;
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? null : date;
+        })(),
         raw: payload
     };
 }
@@ -717,7 +728,12 @@ export class ShippingService {
                 purchasedAt: new Date(),
                 superfreteProtocol: orderInfo.protocol,
                 trackingCode: orderInfo.trackingCode,
-                labelUrl: orderInfo.labelUrl
+                superfreteStatus: orderInfo.status,
+                labelUrl: orderInfo.labelUrl,
+                trackingLastCheckedAt: new Date(),
+                trackingNextCheckAt: new Date(
+                    Date.now() + Number(process.env.SHIPPING_TRACKING_POLL_INTERVAL_MS ?? 600000)
+                )
             }
         );
 
@@ -1012,8 +1028,7 @@ export class ShippingService {
                 city: order.address!.city,
                 stateAbbr: order.address!.state,
                 postalCode: order.address!.zipCode,
-                document: order.address!.document ?? order.user.document ?? "",
-                email: order.user.email
+                document: order.address!.document ?? order.user.document ?? ""
             }),
             service: shipment.selectedServiceCode!,
             products: order.items.map((item) => ({

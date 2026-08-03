@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../../generated/prisma/client";
+import { Prisma, PrismaClient } from "../../../generated/prisma/client";
 import { RoleName } from "../../../generated/prisma/enums";
 
 type CreateUserInput = {
@@ -70,12 +70,25 @@ export class UserRepository {
         });
     }
 
-    public create(input: CreateUserInput) {
-        return this.prisma.user.create({
-            data: input,
-            include: {
-                role: true
-            }
+    public create(input: CreateUserInput, emailJob?: Prisma.EmailJobCreateInput) {
+        if (!emailJob) {
+            return this.prisma.user.create({
+                data: input,
+                include: {
+                    role: true
+                }
+            });
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: input,
+                include: {
+                    role: true
+                }
+            });
+            await tx.emailJob.create({ data: emailJob });
+            return user;
         });
     }
 

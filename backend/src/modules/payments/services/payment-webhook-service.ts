@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Prisma, PrismaClient } from "../../../generated/prisma/client";
-import { OrderStatus, PaymentStatus } from "../../../generated/prisma/enums";
+import { EmailJobType, OrderStatus, PaymentStatus } from "../../../generated/prisma/enums";
+import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 
@@ -61,7 +62,14 @@ export class PaymentWebhookService {
             }
             const payment = await this.prisma.orderPayment.findUnique({
                 where: { providerCheckoutId: checkout.id },
-                include: { order: true }
+                include: {
+                    order: {
+                        include: {
+                            user: true,
+                            items: true
+                        }
+                    }
+                }
             });
             if (!payment || payment.order.uuid !== checkout.externalId) {
                 throw AppError.notFound("Pagamento do webhook nao encontrado");
@@ -91,6 +99,30 @@ export class PaymentWebhookService {
                     await tx.fulfillmentJob.upsert({
                         where: { orderId: payment.orderId },
                         create: { uuid: createUuid(), orderId: payment.orderId },
+                        update: {}
+                    });
+                    await tx.emailJob.upsert({
+                        where: {
+                            deduplicationKey: `payment-paid:${payment.order.uuid}`
+                        },
+                        create: createEmailJob({
+                            type: EmailJobType.PAYMENT_CONFIRMED,
+                            recipient: payment.order.user.email,
+                            deduplicationKey: `payment-paid:${payment.order.uuid}`,
+                            payload: orderEmailPayload({
+                                customerName: payment.order.user.name,
+                                orderUuid: payment.order.uuid,
+                                items: payment.order.items.map((item) => ({
+                                    name: item.productNameSnapshot,
+                                    quantity: item.quantity,
+                                    totalInCents: item.totalPriceInCents
+                                })),
+                                subtotalInCents: payment.order.subtotalInCents,
+                                shippingInCents: payment.order.shippingInCents,
+                                discountInCents: payment.order.discountInCents,
+                                totalInCents: payment.order.totalInCents
+                            })
+                        }),
                         update: {}
                     });
                     await tx.paymentWebhookEvent.update({
