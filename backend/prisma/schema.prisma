@@ -57,6 +57,23 @@ enum ShippingStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  CREATING
+  PENDING
+  PAID
+  REFUND_PENDING
+  REFUNDED
+  DISPUTED
+  LOST
+}
+
+enum FulfillmentJobStatus {
+  PENDING
+  PROCESSING
+  RETRY_SCHEDULED
+  COMPLETED
+}
+
 enum PromotionScope {
   ALL_PRODUCTS
   CATEGORY
@@ -254,6 +271,7 @@ model Order {
   notes                    String?
   checkoutProvider         String?
   checkoutReference        String?
+  paymentIdempotencyKey    String            @unique @db.Uuid
   placedAt                 DateTime?
   user                     User              @relation(fields: [userId], references: [id])
   address                  Address?          @relation(fields: [addressId], references: [id])
@@ -264,6 +282,8 @@ model Order {
   couponDiscountInCents    Int               @default(0)
   items                    OrderItem[]
   shipment                 OrderShipment?
+  payment                  OrderPayment?
+  fulfillmentJob           FulfillmentJob?
   couponRedemption         CouponRedemption?
   createdAt                DateTime          @default(now())
   updatedAt                DateTime          @updatedAt
@@ -273,6 +293,76 @@ model Order {
   @@index([status])
   @@index([uuid])
   @@index([couponId])
+}
+
+model OrderPayment {
+  id                    Int           @id @default(autoincrement())
+  uuid                  String        @unique @db.Uuid
+  orderId               Int           @unique
+  provider              String        @default("ABACATEPAY")
+  status                PaymentStatus @default(CREATING)
+  idempotencyKey        String        @unique @db.Uuid
+  providerCheckoutId    String?       @unique
+  checkoutUrl           String?
+  expectedAmountInCents Int
+  paidAmountInCents     Int?
+  providerMethod        String?
+  providerResponse      Json?
+  refundPublicId        String?       @unique
+  refundReason          String?
+  paidAt                DateTime?
+  refundedAt            DateTime?
+  disputedAt            DateTime?
+  lostAt                DateTime?
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([status])
+  @@index([providerCheckoutId])
+}
+
+model PaymentCatalogProduct {
+  id                Int      @id @default(autoincrement())
+  externalId        String   @unique
+  providerProductId String   @unique
+  name              String
+  priceInCents      Int
+  providerResponse  Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PaymentWebhookEvent {
+  id          Int       @id @default(autoincrement())
+  provider    String    @default("ABACATEPAY")
+  eventId     String    @unique
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([eventType])
+  @@index([processedAt])
+}
+
+model FulfillmentJob {
+  id            Int                  @id @default(autoincrement())
+  uuid          String               @unique @db.Uuid
+  orderId       Int                  @unique
+  status        FulfillmentJobStatus @default(PENDING)
+  attempts      Int                  @default(0)
+  nextAttemptAt DateTime             @default(now())
+  lastError     String?
+  lockedAt      DateTime?
+  completedAt   DateTime?
+  order         Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([status, nextAttemptAt])
 }
 
 model OrderItem {
