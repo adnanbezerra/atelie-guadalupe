@@ -1,5 +1,6 @@
 import { Prisma } from "../../../generated/prisma/client";
 import {
+    OrderStatus,
     ProductCategory,
     ProductSize,
     RoleName,
@@ -641,6 +642,11 @@ export class ShippingService {
         }
 
         const order = orderResult.value;
+        if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.PROCESSING) {
+            return left(
+                AppError.business("A etiqueta so pode ser comprada apos a confirmacao do pagamento")
+            );
+        }
         if (!order.address) {
             return left(AppError.business("Pedido precisa ter endereco para gerar a etiqueta"));
         }
@@ -687,11 +693,21 @@ export class ShippingService {
             );
         }
 
-        const checkoutResponse = await this.superFreteClient.checkout([superfreteOrderId]);
-        const orderInfo = extractSuperFreteOrderInfo(
+        let checkoutResponse: unknown = order.shipment.checkoutResponse;
+        let orderInfo = extractSuperFreteOrderInfo(
             await this.superFreteClient.getOrderInfo(superfreteOrderId),
             superfreteOrderId
         );
+        const alreadyPurchased = Boolean(
+            orderInfo.protocol || orderInfo.trackingCode || orderInfo.labelUrl
+        );
+        if (!alreadyPurchased) {
+            checkoutResponse = await this.superFreteClient.checkout([superfreteOrderId]);
+            orderInfo = extractSuperFreteOrderInfo(
+                await this.superFreteClient.getOrderInfo(superfreteOrderId),
+                superfreteOrderId
+            );
+        }
 
         await this.shippingRepository.updateShipmentStatusByOrderId(
             order.id,

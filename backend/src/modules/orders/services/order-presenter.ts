@@ -26,6 +26,7 @@ type AddressEntity = {
 
 type OrderEntity = {
     uuid: string;
+    paymentIdempotencyKey: string;
     status: OrderStatus;
     subtotalInCents: number;
     shippingInCents: number;
@@ -41,6 +42,19 @@ type OrderEntity = {
     updatedAt: Date;
     items: OrderItemEntity[];
     address?: AddressEntity | null;
+    payment?: {
+        status: string;
+        providerCheckoutId: string | null;
+        checkoutUrl: string | null;
+        paidAmountInCents: number | null;
+    } | null;
+    shipment?: { status: string; trackingCode: string | null; labelUrl: string | null } | null;
+    fulfillmentJob?: {
+        status: string;
+        attempts: number;
+        lastError: string | null;
+        nextAttemptAt: Date;
+    } | null;
 };
 
 function presentOrderItem(item: OrderItemEntity) {
@@ -78,6 +92,7 @@ function presentAddress(address: AddressEntity | null | undefined) {
 export function presentOrder(order: OrderEntity) {
     return {
         uuid: order.uuid,
+        paymentIdempotencyKey: order.paymentIdempotencyKey,
         status: order.status,
         subtotalInCents: order.subtotalInCents,
         shippingInCents: order.shippingInCents,
@@ -92,6 +107,9 @@ export function presentOrder(order: OrderEntity) {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         address: presentAddress(order.address),
+        payment: order.payment ?? null,
+        shipment: order.shipment ?? null,
+        fulfillment: order.fulfillmentJob ?? null,
         items: order.items.map((item) => presentOrderItem(item))
     };
 }

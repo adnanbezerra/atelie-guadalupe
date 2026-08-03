@@ -4,6 +4,7 @@ import { OrderStatus, PaymentMethod, ProductSize } from "../../../generated/pris
 
 type CreateOrderInput = {
     uuid: string;
+    paymentIdempotencyKey: string;
     userId: number;
     addressId?: number;
     status: OrderStatus;
@@ -44,6 +45,7 @@ export class OrderRepository {
         return this.prisma.order.create({
             data: {
                 uuid: input.uuid,
+                paymentIdempotencyKey: input.paymentIdempotencyKey,
                 userId: input.userId,
                 addressId: input.addressId,
                 status: input.status,
@@ -64,7 +66,10 @@ export class OrderRepository {
             },
             include: {
                 items: true,
-                address: true
+                address: true,
+                payment: true,
+                shipment: true,
+                fulfillmentJob: true
             }
         });
     }
@@ -109,6 +114,7 @@ export class OrderRepository {
                 const order = await tx.order.create({
                     data: {
                         uuid: input.uuid,
+                        paymentIdempotencyKey: input.paymentIdempotencyKey,
                         userId: input.userId,
                         addressId: input.addressId,
                         status: input.status,
@@ -129,7 +135,10 @@ export class OrderRepository {
                     },
                     include: {
                         items: true,
-                        address: true
+                        address: true,
+                        payment: true,
+                        shipment: true,
+                        fulfillmentJob: true
                     }
                 });
 
@@ -174,7 +183,10 @@ export class OrderRepository {
             },
             include: {
                 items: true,
-                address: true
+                address: true,
+                payment: true,
+                shipment: true,
+                fulfillmentJob: true
             },
             orderBy: {
                 createdAt: "desc"
@@ -190,7 +202,10 @@ export class OrderRepository {
                 },
                 include: {
                     items: true,
-                    address: true
+                    address: true,
+                    payment: true,
+                    shipment: true,
+                    fulfillmentJob: true
                 },
                 orderBy: {
                     createdAt: "desc"
@@ -216,6 +231,9 @@ export class OrderRepository {
             include: {
                 items: true,
                 address: true,
+                payment: true,
+                shipment: true,
+                fulfillmentJob: true,
                 user: {
                     include: {
                         role: true
@@ -236,6 +254,9 @@ export class OrderRepository {
             include: {
                 items: true,
                 address: true,
+                payment: true,
+                shipment: true,
+                fulfillmentJob: true,
                 user: {
                     include: {
                         role: true
@@ -256,6 +277,9 @@ export class OrderRepository {
             include: {
                 items: true,
                 address: true,
+                payment: true,
+                shipment: true,
+                fulfillmentJob: true,
                 user: {
                     include: {
                         role: true

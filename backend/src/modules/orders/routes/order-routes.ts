@@ -3,6 +3,10 @@ import { AddressRepository } from "../../addresses/repositories/address-reposito
 import { CartRepository } from "../../carts/repositories/cart-repository";
 import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
 import { UserRepository } from "../../users/repositories/user-repository";
+import { PaymentController } from "../../payments/controllers/payment-controller";
+import { AbacatePayClient } from "../../payments/services/abacatepay-client";
+import { FulfillmentService } from "../../payments/services/fulfillment-service";
+import { PaymentService } from "../../payments/services/payment-service";
 import { OrderController } from "../controllers/order-controller";
 import { OrderRepository } from "../repositories/order-repository";
 import { OrderService } from "../services/order-service";
@@ -21,6 +25,12 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
         marketingRepository
     );
     const controller = new OrderController(fastify, orderService);
+    const fulfillmentService = new FulfillmentService(fastify.prisma);
+    const paymentController = new PaymentController(
+        fastify,
+        new PaymentService(fastify.prisma, AbacatePayClient.fromEnv()),
+        fulfillmentService
+    );
 
     fastify.post(
         "/",
@@ -30,6 +40,21 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
         controller.create
     );
 
+    fastify.post(
+        "/:orderUuid/payment",
+        {
+            preHandler: [fastify.authenticate]
+        },
+        paymentController.createCheckout
+    );
+
+    fastify.post(
+        "/:orderUuid/fulfillment/retry",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
+        },
+        paymentController.retryFulfillment
+    );
     fastify.get(
         "/",
         {

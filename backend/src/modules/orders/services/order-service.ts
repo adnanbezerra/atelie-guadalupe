@@ -34,18 +34,14 @@ type PaginationInput = {
 const allowedStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
     PENDING: ["AWAITING_PAYMENT", "CANCELLED"],
     AWAITING_PAYMENT: ["PAID", "CANCELLED"],
-    PAID: ["PROCESSING", "CANCELLED"],
+    PAID: ["PROCESSING"],
     PROCESSING: ["SHIPPED"],
     SHIPPED: ["DELIVERED"],
     DELIVERED: [],
     CANCELLED: []
 };
 
-const userCancellableStatuses: OrderStatus[] = [
-    OrderStatus.PENDING,
-    OrderStatus.AWAITING_PAYMENT,
-    OrderStatus.PAID
-];
+const userCancellableStatuses: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.AWAITING_PAYMENT];
 
 export class OrderService {
     public constructor(
@@ -65,6 +61,9 @@ export class OrderService {
             return left(AppError.notFound("Usuario nao encontrado"));
         }
 
+        if (!input.addressUuid) {
+            return left(AppError.business("Endereco e obrigatorio para criar o pedido"));
+        }
         let addressId: number | undefined;
         if (input.addressUuid) {
             const address = await this.addressRepository.findByUuid(input.addressUuid);
@@ -142,6 +141,7 @@ export class OrderService {
 
         const orderInput = {
             uuid: createUuid(),
+            paymentIdempotencyKey: createUuid(),
             userId: user.id,
             addressId,
             status: OrderStatus.PENDING,
@@ -300,6 +300,11 @@ export class OrderService {
         orderUuid: string,
         nextStatus: OrderStatus
     ): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
+        if (nextStatus === OrderStatus.PAID) {
+            return left(
+                AppError.business("Status PAID so pode ser definido pela confirmacao do provedor")
+            );
+        }
         const order = await this.orderRepository.findByUuid(orderUuid);
         if (!order) {
             return left(AppError.notFound("Pedido nao encontrado"));

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createOrderSchema = z.object({
-    addressUuid: z.uuid().optional(),
+    addressUuid: z.uuid(),
     paymentMethod: z.enum(["PIX", "CREDIT_CARD", "DEBIT_CARD"]).optional(),
     notes: z.string().trim().max(500).optional()
 });
