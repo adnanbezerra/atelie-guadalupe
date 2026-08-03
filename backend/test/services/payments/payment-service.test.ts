@@ -93,6 +93,11 @@ test("checkout.completed marks payment paid and enqueues fulfillment atomically"
                 calls.push("fulfillment-enqueued");
             }
         },
+        emailJob: {
+            upsert: async () => {
+                calls.push("email-enqueued");
+            }
+        },
         paymentWebhookEvent: {
             update: async () => {
                 calls.push("event-processed");
@@ -110,7 +115,15 @@ test("checkout.completed marks payment paid and enqueues fulfillment atomically"
                 orderId: 7,
                 expectedAmountInCents: 5000,
                 paidAt: null,
-                order: { uuid: "order-1" }
+                order: {
+                    uuid: "order-1",
+                    subtotalInCents: 5000,
+                    shippingInCents: 0,
+                    discountInCents: 0,
+                    totalInCents: 5000,
+                    user: { name: "Maria", email: "maria@example.com" },
+                    items: []
+                }
             })
         },
         $transaction: async (callback: (tx: typeof transactionClient) => Promise<unknown>) =>
@@ -136,6 +149,7 @@ test("checkout.completed marks payment paid and enqueues fulfillment atomically"
         "payment-paid",
         "order-paid",
         "fulfillment-enqueued",
+        "email-enqueued",
         "event-processed"
     ]);
     assert.deepStrictEqual(result, { processed: true, orderUuid: "order-1" });

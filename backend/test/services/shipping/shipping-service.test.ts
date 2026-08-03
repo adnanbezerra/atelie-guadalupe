@@ -1,6 +1,23 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
 import { ShippingService } from "../../../src/modules/shipping/services/shipping-service";
+import { normalizeSuperFreteRecipient } from "../../../src/modules/shipping/services/superfrete-client";
+
+test("SuperFrete recipient payload omits email so only branded tracking emails are sent", () => {
+    const recipient = normalizeSuperFreteRecipient({
+        name: "Maria da Silva",
+        address: "Rua A",
+        number: "10",
+        district: "Centro",
+        city: "Sao Paulo",
+        stateAbbr: "SP",
+        postalCode: "01001-000",
+        document: "123.456.789-01"
+    });
+    const serialized = JSON.parse(JSON.stringify(recipient)) as Record<string, unknown>;
+
+    assert.equal("email" in serialized, false);
+});
 
 function createPlatform() {
     return {

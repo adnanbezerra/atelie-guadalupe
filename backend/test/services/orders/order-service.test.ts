@@ -1,13 +1,20 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import { OrderStatus, PaymentMethod, RoleName } from "../../../src/generated/prisma/enums";
+import {
+    EmailJobType,
+    OrderStatus,
+    PaymentMethod,
+    RoleName
+} from "../../../src/generated/prisma/enums";
 import { OrderService } from "../../../src/modules/orders/services/order-service";
 
 test("order service blocks order creation with empty cart", async () => {
     const userRepository = {
         findByUuid: async () => ({
             id: 1,
-            uuid: "user-1"
+            uuid: "user-1",
+            name: "Maria",
+            email: "maria@example.com"
         })
     };
 
@@ -41,11 +48,14 @@ test("order service blocks order creation with empty cart", async () => {
 
 test("order service creates order from cart snapshot", async () => {
     const deletedItems: string[] = [];
+    let queuedEmail: Record<string, unknown> | undefined;
 
     const userRepository = {
         findByUuid: async () => ({
             id: 1,
-            uuid: "user-1"
+            uuid: "user-1",
+            name: "Maria",
+            email: "maria@example.com"
         })
     };
 
@@ -95,7 +105,14 @@ test("order service creates order from cart snapshot", async () => {
     };
 
     const orderRepository = {
-        createFromCart: async (input: Record<string, unknown>, cart: { itemUuids: string[] }) => {
+        createFromCart: async (
+            input: Record<string, unknown>,
+            cart: { itemUuids: string[] },
+            _couponRedemption?: unknown,
+            _couponGuard?: unknown,
+            emailJob?: Record<string, unknown>
+        ) => {
+            queuedEmail = emailJob;
             deletedItems.push(...cart.itemUuids);
 
             return {
@@ -164,6 +181,9 @@ test("order service creates order from cart snapshot", async () => {
     }
 
     assert.deepStrictEqual(deletedItems, ["item-1"]);
+    assert.equal(queuedEmail?.type, EmailJobType.ORDER_CREATED);
+    assert.equal(queuedEmail?.recipient, "maria@example.com");
+    assert.match(String(queuedEmail?.deduplicationKey), /^order-created:/);
 });
 
 test("order service prevents invalid status transition", async () => {

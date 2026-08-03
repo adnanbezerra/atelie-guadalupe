@@ -1,6 +1,6 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import { RoleName } from "../../src/generated/prisma/enums";
+import { EmailJobType, RoleName } from "../../src/generated/prisma/enums";
 import {
     LoginService,
     RegisterUserService
@@ -14,10 +14,12 @@ test("register user service creates a default USER account", async () => {
     };
 
     const createdUsers: Array<Record<string, unknown>> = [];
+    let queuedEmail: Record<string, unknown> | undefined;
     const userRepository = {
         findByEmail: async () => null,
         findByDocument: async () => null,
-        create: async (input: Record<string, unknown>) => {
+        create: async (input: Record<string, unknown>, emailJob: Record<string, unknown>) => {
+            queuedEmail = emailJob;
             const createdUser = {
                 ...input,
                 createdAt: new Date(),
@@ -48,6 +50,9 @@ test("register user service creates a default USER account", async () => {
     }
 
     assert.equal(createdUsers.length, 1);
+    assert.equal(queuedEmail?.type, EmailJobType.WELCOME);
+    assert.equal(queuedEmail?.recipient, "maria@email.com");
+    assert.match(String(queuedEmail?.deduplicationKey), /^welcome:/);
 });
 
 test("register user service creates account without document", async () => {
