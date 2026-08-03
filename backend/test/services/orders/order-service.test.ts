@@ -100,6 +100,7 @@ test("order service creates order from cart snapshot", async () => {
 
             return {
                 uuid: input.uuid,
+                paymentIdempotencyKey: input.paymentIdempotencyKey,
                 id: 20,
                 status: input.status,
                 subtotalInCents: input.subtotalInCents,
@@ -156,6 +157,7 @@ test("order service creates order from cart snapshot", async () => {
 
     if (result.success) {
         assert.equal(result.value.order.status, OrderStatus.PENDING);
+        assert.match(result.value.order.paymentIdempotencyKey, /^[0-9a-f-]{36}$/);
         assert.equal(result.value.order.paymentMethod, PaymentMethod.PIX);
         assert.equal(result.value.order.totalInCents, 5180);
         assert.equal(result.value.order.items.length, 1);

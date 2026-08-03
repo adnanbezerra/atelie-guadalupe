@@ -23,7 +23,8 @@
         "prisma:migrate:dev": "pnpm exec prisma migrate dev",
         "prisma:migrate:deploy": "pnpm exec prisma migrate deploy",
         "prisma:seed": "ts-node prisma/seed.ts",
-        "prisma:update-products": "ts-node prisma/update-product-seed-data.ts"
+        "prisma:update-products": "ts-node prisma/update-product-seed-data.ts",
+        "test:e2e:checkout": "RUN_CHECKOUT_E2E=true node --test --test-reporter=tap -r dotenv/config -r ts-node/register test/e2e/checkout-payment-flow.e2e.test.ts"
     },
     "keywords": [],
     "author": "",
