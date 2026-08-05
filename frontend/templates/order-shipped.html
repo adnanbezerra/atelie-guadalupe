@@ -9,11 +9,25 @@
             @import url("https://fonts.googleapis.com/css2?family=Noto+Serif:wght@700&display=swap");
 
             @media only screen and (max-width: 620px) {
-                .email-shell { width: 100% !important; border-radius: 0 !important; }
-                .email-padding { padding-left: 24px !important; padding-right: 24px !important; }
-                .email-title { font-size: 30px !important; line-height: 36px !important; }
-                .email-button { display: block !important; text-align: center !important; }
-                .tracking-code { font-size: 18px !important; }
+                .email-shell {
+                    width: 100% !important;
+                    border-radius: 0 !important;
+                }
+                .email-padding {
+                    padding-left: 24px !important;
+                    padding-right: 24px !important;
+                }
+                .email-title {
+                    font-size: 30px !important;
+                    line-height: 36px !important;
+                }
+                .email-button {
+                    display: block !important;
+                    text-align: center !important;
+                }
+                .tracking-code {
+                    font-size: 18px !important;
+                }
             }
         </style>
     </head>
@@ -26,29 +40,282 @@
         FORM: extensão precisa do sistema existente; email-note-v1.
         FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
         -->
-        <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent">
-            O pedido #{{orderUuid}} está a caminho. Consulte o código de rastreamento.
+        <div
+            style="
+                display: none;
+                max-height: 0;
+                overflow: hidden;
+                opacity: 0;
+                color: transparent;
+            "
+        >
+            O pedido #{{orderUuid}} está a caminho. Consulte o código de
+            rastreamento.
         </div>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #f6f6f8">
-            <tr><td align="center" style="padding: 32px 12px">
-                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" class="email-shell" style="width: 100%; max-width: 600px; overflow: hidden; background-color: #ffffff; border-radius: 14px">
-                    <tr><td class="email-padding" style="padding: 28px 40px; background-color: #1940b3"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="font-family: 'Noto Serif', Georgia, 'Times New Roman', serif; font-size: 20px; font-weight: 700; line-height: 26px; letter-spacing: -0.02em; color: #ffffff">Ateliê Guadalupe</td><td align="right"><table role="presentation" cellspacing="0" cellpadding="0"><tr><td align="center" valign="middle" width="58" height="58" style="width: 58px; height: 58px; background-color: #ffffff; border-radius: 50%"><img src="https://atelieguadalupe.adnanbezerra.tech/logo-empty.png" height="44" alt="Logo do Ateliê Guadalupe" style="display: block; width: auto; height: 44px; max-width: 88px; margin: 0 auto; border: 0" /></td></tr></table></td></tr></table></td></tr>
-                    <tr><td style="height: 4px; background-color: #d1a054; font-size: 0">&nbsp;</td></tr>
-                    <tr><td class="email-padding" style="padding: 40px 40px 18px">
-                        <h1 class="email-title" style="margin: 0 0 18px; font-family: 'Noto Serif', Georgia, 'Times New Roman', serif; font-size: 36px; line-height: 42px; color: #1f2937">Seu pedido está a caminho.</h1>
-                        <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 17px; line-height: 28px; color: #1f2937">Olá, {{customerName}}! O pedido <strong>#{{orderUuid}}</strong> foi enviado.</p>
-                    </td></tr>
-                    <tr><td class="email-padding" style="padding: 14px 40px 36px">
-                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8f5ef; border-radius: 10px"><tr><td style="padding: 22px 24px">
-                            <p style="margin: 0 0 8px; font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 700; line-height: 20px; color: #4a3728">CÓDIGO DE RASTREAMENTO</p>
-                            <p class="tracking-code" style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; line-height: 30px; word-break: break-all; color: #1f2937">{{trackingCode}}</p>
-                        </td></tr></table>
-                        <p style="margin: 18px 0 26px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 23px; color: #667085">A atualização do rastreamento pode levar algumas horas depois da postagem.</p>
-                        <table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="border-radius: 8px; background-color: #1940b3"><a href="{{orderUrl}}" class="email-button" style="display: inline-block; padding: 14px 22px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 700; color: #ffffff; text-decoration: none">Acompanhar pedido</a></td></tr></table>
-                    </td></tr>
-                    <tr><td class="email-padding" style="padding: 22px 40px; background-color: #faf9f6"><p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 21px; color: #667085">Se o código ainda não estiver disponível, consulte os detalhes do pedido pelo botão acima.</p></td></tr>
-                </table>
-            </td></tr>
+        <table
+            role="presentation"
+            width="100%"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            style="width: 100%; background-color: #f6f6f8"
+        >
+            <tr>
+                <td align="center" style="padding: 32px 12px">
+                    <table
+                        role="presentation"
+                        width="600"
+                        cellspacing="0"
+                        cellpadding="0"
+                        border="0"
+                        class="email-shell"
+                        style="
+                            width: 100%;
+                            max-width: 600px;
+                            overflow: hidden;
+                            background-color: #ffffff;
+                            border-radius: 14px;
+                        "
+                    >
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="
+                                    padding: 28px 40px;
+                                    background-color: #1940b3;
+                                "
+                            >
+                                <table
+                                    role="presentation"
+                                    width="100%"
+                                    cellspacing="0"
+                                    cellpadding="0"
+                                >
+                                    <tr>
+                                        <td
+                                            style="
+                                                font-family:
+                                                    &quot;Noto Serif&quot;,
+                                                    Georgia,
+                                                    &quot;Times New Roman&quot;,
+                                                    serif;
+                                                font-size: 20px;
+                                                font-weight: 700;
+                                                line-height: 26px;
+                                                letter-spacing: -0.02em;
+                                                color: #ffffff;
+                                            "
+                                        >
+                                            Ateliê Guadalupe
+                                        </td>
+                                        <td align="right">
+                                            <table
+                                                role="presentation"
+                                                cellspacing="0"
+                                                cellpadding="0"
+                                            >
+                                                <tr>
+                                                    <td
+                                                        align="center"
+                                                        valign="middle"
+                                                        width="58"
+                                                        height="58"
+                                                        style="
+                                                            width: 58px;
+                                                            height: 58px;
+                                                            background-color: #ffffff;
+                                                            border-radius: 50%;
+                                                        "
+                                                    >
+                                                        <img
+                                                            src="https://atelieguadalupe.adnanbezerra.tech/logo-empty.png"
+                                                            height="44"
+                                                            alt="Logo do Ateliê Guadalupe"
+                                                            style="
+                                                                display: block;
+                                                                width: auto;
+                                                                height: 44px;
+                                                                max-width: 88px;
+                                                                margin: 0 auto;
+                                                                border: 0;
+                                                            "
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="
+                                    height: 4px;
+                                    background-color: #d1a054;
+                                    font-size: 0;
+                                "
+                            >
+                                &nbsp;
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="padding: 40px 40px 18px"
+                            >
+                                <h1
+                                    class="email-title"
+                                    style="
+                                        margin: 0 0 18px;
+                                        font-family:
+                                            &quot;Noto Serif&quot;, Georgia,
+                                            &quot;Times New Roman&quot;, serif;
+                                        font-size: 36px;
+                                        line-height: 42px;
+                                        color: #1f2937;
+                                    "
+                                >
+                                    Seu pedido está a caminho.
+                                </h1>
+                                <p
+                                    style="
+                                        margin: 0;
+                                        font-family:
+                                            Arial, Helvetica, sans-serif;
+                                        font-size: 17px;
+                                        line-height: 28px;
+                                        color: #1f2937;
+                                    "
+                                >
+                                    Olá, {{customerName}}! O pedido
+                                    <strong>#{{orderUuid}}</strong> foi enviado.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="padding: 14px 40px 36px"
+                            >
+                                <table
+                                    role="presentation"
+                                    width="100%"
+                                    cellspacing="0"
+                                    cellpadding="0"
+                                    style="
+                                        background-color: #f8f5ef;
+                                        border-radius: 10px;
+                                    "
+                                >
+                                    <tr>
+                                        <td style="padding: 22px 24px">
+                                            <p
+                                                style="
+                                                    margin: 0 0 8px;
+                                                    font-family:
+                                                        Arial, Helvetica,
+                                                        sans-serif;
+                                                    font-size: 13px;
+                                                    font-weight: 700;
+                                                    line-height: 20px;
+                                                    color: #4a3728;
+                                                "
+                                            >
+                                                CÓDIGO DE RASTREAMENTO
+                                            </p>
+                                            <p
+                                                class="tracking-code"
+                                                style="
+                                                    margin: 0;
+                                                    font-family:
+                                                        Arial, Helvetica,
+                                                        sans-serif;
+                                                    font-size: 22px;
+                                                    font-weight: 700;
+                                                    line-height: 30px;
+                                                    word-break: break-all;
+                                                    color: #1f2937;
+                                                "
+                                            >
+                                                {{trackingCode}}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p
+                                    style="
+                                        margin: 18px 0 26px;
+                                        font-family:
+                                            Arial, Helvetica, sans-serif;
+                                        font-size: 14px;
+                                        line-height: 23px;
+                                        color: #667085;
+                                    "
+                                >
+                                    A atualização do rastreamento pode levar
+                                    algumas horas depois da postagem.
+                                </p>
+                                <table
+                                    role="presentation"
+                                    cellspacing="0"
+                                    cellpadding="0"
+                                >
+                                    <tr>
+                                        <td
+                                            style="
+                                                border-radius: 8px;
+                                                background-color: #1940b3;
+                                            "
+                                        >
+                                            <a
+                                                href="{{orderUrl}}"
+                                                class="email-button"
+                                                style="
+                                                    display: inline-block;
+                                                    padding: 14px 22px;
+                                                    font-family:
+                                                        Arial, Helvetica,
+                                                        sans-serif;
+                                                    font-size: 16px;
+                                                    font-weight: 700;
+                                                    color: #ffffff;
+                                                    text-decoration: none;
+                                                "
+                                                >Acompanhar pedido</a
+                                            >
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="
+                                    padding: 22px 40px;
+                                    background-color: #faf9f6;
+                                "
+                            >
+                                <p
+                                    style="
+                                        margin: 0;
+                                        font-family:
+                                            Arial, Helvetica, sans-serif;
+                                        font-size: 13px;
+                                        line-height: 21px;
+                                        color: #667085;
+                                    "
+                                >
+                                    Se o código ainda não estiver disponível,
+                                    consulte os detalhes do pedido pelo botão
+                                    acima.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
         </table>
     </body>
 </html>
