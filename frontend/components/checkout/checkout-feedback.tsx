@@ -12,7 +12,11 @@ export type CheckoutError = { title: string; description: string };
 
 export function CheckoutLoading() {
     return (
-        <main className="min-h-[70vh] bg-[#f6f6f8] px-6 py-12 md:px-10">
+        <main
+            aria-busy="true"
+            aria-label="Carregando finalização da compra"
+            className="min-h-[70vh] bg-[#f6f6f8] px-4 py-10 sm:px-6 md:px-10 md:py-12"
+        >
             <div className="mx-auto max-w-6xl space-y-5">
                 <Skeleton className="h-12 w-72" />
                 <Skeleton className="h-24 w-full rounded-xl bg-white" />

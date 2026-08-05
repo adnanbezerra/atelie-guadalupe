@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -375,13 +376,22 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     }
 
     return (
-        <main className="min-h-screen bg-[#f6f6f8] px-5 py-10 text-[#1f2937] md:px-10 md:py-14">
+        <main className="min-h-screen bg-[#f6f6f8] px-4 py-8 text-[#1f2937] sm:px-6 md:px-10 md:py-12">
             <div className="mx-auto max-w-6xl">
                 <header className="max-w-3xl">
-                    <p className="font-public text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                        Compra segura
-                    </p>
-                    <h1 className="mt-3 font-display text-4xl font-bold leading-tight text-slate-950 md:text-5xl">
+                    <Link
+                        className="inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-bold text-primary hover:underline"
+                        href="/carrinho"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined text-lg"
+                        >
+                            arrow_back
+                        </span>
+                        Voltar ao carrinho
+                    </Link>
+                    <h1 className="mt-3 text-balance font-display text-3xl font-bold leading-tight text-slate-950 sm:text-4xl md:text-5xl">
                         Tudo certo antes de pagar.
                     </h1>
                     <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
@@ -404,7 +414,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                         pollingTimedOut={pollingTimedOut}
                     />
                 ) : (
-                    <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem]">
+                    <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
                         <div className="space-y-6">
                             <DeliveryAddress address={userContext.address} />
                             <OrderItems items={displayItems} />

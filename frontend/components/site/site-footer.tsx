@@ -4,10 +4,10 @@ import Image from "next/image";
 
 export function SiteFooter() {
     return (
-        <footer className="border-t border-white/5 bg-[#111521] px-4 py-16 text-slate-300 sm:px-6 lg:px-8 mt-4">
+        <footer className="mt-4 border-t border-white/5 bg-[#111521] px-4 py-14 text-slate-300 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-7xl">
-                <div className="mb-12 grid gap-12 md:grid-cols-4">
-                    <div>
+                <div className="mb-12 grid gap-10 md:grid-cols-[1.2fr_0.8fr_1fr]">
+                    <div className="max-w-sm">
                         <div className="mb-6 flex items-center gap-3">
                             <Image
                                 src={logo}
@@ -23,23 +23,25 @@ export function SiteFooter() {
                             terra em cada detalhe.
                         </p>
                     </div>
-                    <div>
+                    <nav aria-label="Links do rodapé" className="space-y-3">
                         <Link
-                            className="mb-6 text-white"
+                            className="block rounded-sm text-sm font-bold text-white hover:text-secondary"
                             href="/beleza-natural"
                         >
                             Beleza da Criação
                         </Link>
-                        <br className="mb-4"></br>
-                        <Link className="mb-6 text-white" href="/artesanato">
+                        <Link
+                            className="block rounded-sm text-sm font-bold text-white hover:text-secondary"
+                            href="/artesanato"
+                        >
                             Artesanato católico
                         </Link>
-                    </div>
+                    </nav>
                     <div>
-                        <h4 className="mb-6 text-white">
+                        <p className="max-w-sm text-sm leading-relaxed text-slate-300">
                             Artesanato católico e cremes terapêuticos
                             diretamente de Patos - Paraíba
-                        </h4>
+                        </p>
                     </div>
                 </div>
                 <div className="flex flex-col gap-6 border-t border-white/5 pt-8 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">

@@ -28,12 +28,12 @@ export function CheckoutSummary({
     total,
 }: CheckoutSummaryProps) {
     return (
-        <aside className="h-fit overflow-hidden rounded-xl border border-primary/15 bg-white shadow-lg lg:sticky lg:top-24">
+        <aside
+            aria-label="Resumo do pedido"
+            className="h-fit overflow-hidden rounded-xl bg-white shadow-lg lg:sticky lg:top-24"
+        >
             <div className="border-b border-slate-100 px-6 py-5">
-                <p className="font-public text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                    Comprovante do ateliê
-                </p>
-                <h2 className="mt-2 font-display text-2xl font-bold text-slate-950">
+                <h2 className="font-display text-2xl font-bold text-slate-950">
                     Resumo final
                 </h2>
             </div>
@@ -134,13 +134,19 @@ function SummaryButton({
 }) {
     return (
         <button
+            aria-busy={disabled && label.endsWith("...")}
             className="flex min-h-14 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-4 font-bold text-white shadow-md shadow-primary/20 focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:opacity-60"
             disabled={disabled}
             onClick={onClick}
             type="button"
         >
             {label}
-            <span className="material-symbols-outlined text-xl">{icon}</span>
+            <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-xl"
+            >
+                {icon}
+            </span>
         </button>
     );
 }

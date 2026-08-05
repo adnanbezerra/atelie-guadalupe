@@ -14,7 +14,10 @@ export function CatalogPagination({
     if (totalPages <= 1) return null;
 
     return (
-        <div className="mt-16 flex items-center justify-center gap-3">
+        <nav
+            aria-label="Paginação do catálogo"
+            className="mt-14 flex flex-wrap items-center justify-center gap-2"
+        >
             <PageButton
                 ariaLabel="Página anterior"
                 disabled={currentPage <= 1}
@@ -31,8 +34,8 @@ export function CatalogPagination({
                     }
                     className={
                         pageNumber === currentPage
-                            ? "flex h-10 w-10 items-center justify-center rounded-full bg-[#4A3728] font-bold text-white"
-                            : "flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200"
+                            ? "flex h-11 w-11 items-center justify-center rounded-lg bg-primary font-bold text-white"
+                            : "flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white font-bold text-slate-700 hover:border-primary hover:text-primary"
                     }
                     key={pageNumber}
                     onClick={() => onChange(pageNumber)}
@@ -50,7 +53,7 @@ export function CatalogPagination({
                     chevron_right
                 </span>
             </PageButton>
-        </div>
+        </nav>
     );
 }
 
@@ -68,7 +71,7 @@ function PageButton({
     return (
         <button
             aria-label={ariaLabel}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
             disabled={disabled}
             onClick={onClick}
             type="button"

@@ -17,8 +17,9 @@ export function ProductLineFilter({
     const name = isCraft ? "craft-product-line" : "product-line";
     const content = (
         <>
-            <label className="flex cursor-pointer items-center gap-3 text-sm">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-white">
                 <input
+                    className="size-4 accent-primary"
                     checked={!selectedUuid}
                     name={name}
                     onChange={() => onChange("")}
@@ -28,10 +29,11 @@ export function ProductLineFilter({
             </label>
             {lines.map((line) => (
                 <label
-                    className="flex cursor-pointer items-center gap-3 text-sm"
+                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-white"
                     key={line.uuid}
                 >
                     <input
+                        className="size-4 accent-primary"
                         checked={selectedUuid === line.uuid}
                         name={name}
                         onChange={() => onChange(line.uuid)}
@@ -52,24 +54,24 @@ export function ProductLineFilter({
 
     if (!isCraft) {
         return (
-            <div>
-                <h4 className="mb-4 border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-wider">
+            <fieldset>
+                <legend className="mb-2 w-full border-b border-slate-200 pb-3 text-sm font-bold">
                     Linhas de produtos
-                </h4>
-                <div className="space-y-2">{content}</div>
-            </div>
+                </legend>
+                <div className="space-y-1">{content}</div>
+            </fieldset>
         );
     }
 
     return (
-        <div>
-            <h3 className="mb-4 flex items-center gap-2 font-public font-semibold text-neutral-900">
-                <span className="material-symbols-outlined text-[#D4AF37]">
+        <fieldset>
+            <legend className="mb-2 flex w-full items-center gap-2 font-public font-semibold text-neutral-900">
+                <span className="material-symbols-outlined text-secondary">
                     filter_list
                 </span>
                 Linhas de produtos
-            </h3>
-            <div className="space-y-3">{content}</div>
-        </div>
+            </legend>
+            <div className="space-y-1">{content}</div>
+        </fieldset>
     );
 }

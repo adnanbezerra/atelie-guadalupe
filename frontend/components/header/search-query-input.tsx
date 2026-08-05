@@ -11,7 +11,7 @@ type SearchQueryInputProps = {
 
 export function SearchQueryInput({
     initialValue = "",
-    placeholder = "Buscar cremes...",
+    placeholder = "Buscar produtos...",
     searchPath,
 }: SearchQueryInputProps) {
     const router = useRouter();
@@ -65,12 +65,13 @@ export function SearchQueryInput({
     ]);
 
     return (
-        <div className="relative hidden w-full max-w-xs sm:flex">
-            <span className="material-symbols-outlined absolute top-1/2 left-3 -translate-y-1/2 text-lg text-slate-400">
+        <div className="relative flex min-w-0 w-full max-w-xs">
+            <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-lg text-slate-500">
                 search
             </span>
             <input
-                className="w-full rounded-lg bg-slate-100 py-2 pr-4 pl-10 text-sm outline-none"
+                aria-label="Buscar produtos"
+                className="min-h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-10 text-sm outline-none placeholder:text-slate-500 focus:border-primary focus:ring-4 focus:ring-primary/15"
                 onChange={(event) => {
                     setHasUserEdited(true);
                     setValue(event.target.value);

@@ -27,14 +27,14 @@ export function CartDialogButton() {
             <DialogTrigger asChild>
                 <button
                     aria-label="Abrir carrinho"
-                    className="relative rounded-lg bg-slate-100 p-2"
+                    className="relative flex size-11 items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50"
                     type="button"
                 >
                     <span className="material-symbols-outlined text-slate-700">
                         shopping_bag
                     </span>
                     {itemCount > 0 ? (
-                        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-white">
                             {itemCount}
                         </span>
                     ) : null}
@@ -124,7 +124,7 @@ export function CartDialogButton() {
                                                 <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
                                                     <button
                                                         aria-label={`Diminuir quantidade de ${item.name}`}
-                                                        className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                                        className="flex h-9 w-9 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                                                         disabled={
                                                             cart.isMutating
                                                         }
@@ -144,7 +144,7 @@ export function CartDialogButton() {
                                                     </span>
                                                     <button
                                                         aria-label={`Aumentar quantidade de ${item.name}`}
-                                                        className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                                        className="flex h-9 w-9 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                                                         disabled={
                                                             cart.isMutating
                                                         }
@@ -162,7 +162,7 @@ export function CartDialogButton() {
                                                 </div>
                                                 <button
                                                     aria-label={`Remover ${item.name} do carrinho`}
-                                                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                     disabled={cart.isMutating}
                                                     onClick={() =>
                                                         cart.removeItem(
@@ -171,7 +171,7 @@ export function CartDialogButton() {
                                                     }
                                                     type="button"
                                                 >
-                                                    <span className="material-symbols-outlined text-[18px]">
+                                                    <span className="material-symbols-outlined text-lg">
                                                         delete
                                                     </span>
                                                 </button>

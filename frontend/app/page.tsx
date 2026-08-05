@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
 import { SiteFooter } from "@/components/site/site-footer";
 import { fetchActiveTestimonials } from "@/lib/server-api";
@@ -18,7 +19,7 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
     const text = testimonial.text ?? "";
 
     return (
-        <article className="flex min-h-[22rem] w-[82vw] max-w-[23rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-primary/5 bg-white shadow-lg md:w-[31%] md:min-w-[20rem]">
+        <article className="flex min-h-[22rem] w-[82vw] max-w-[23rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-white shadow-lg md:w-[31%] md:min-w-[20rem]">
             {testimonial.type === "VIDEO" && testimonial.videoUrl ? (
                 <div className="h-48 min-h-48 max-h-60 overflow-hidden bg-slate-950 md:h-56">
                     <video
@@ -26,6 +27,7 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
                         controls
                         preload="metadata"
                         src={testimonial.videoUrl}
+                        title={title}
                     />
                 </div>
             ) : (
@@ -71,15 +73,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <ServerHeader search={search} />
 
             <main>
-                <section className="relative flex min-h-[80vh] items-center overflow-hidden">
-                    <div className="absolute inset-0 grid grid-cols-2">
+                <section className="relative flex min-h-[calc(100svh-8.5rem)] items-center overflow-hidden py-12 md:min-h-[78vh] md:py-20">
+                    <div className="absolute inset-0 grid md:grid-cols-2">
                         {["./creme-2.webp", "/crucifixo.webp"].map(
                             (image, index) => (
                                 <div
                                     key={image}
-                                    className="relative overflow-hidden"
+                                    className={`relative overflow-hidden ${index === 1 ? "hidden md:block" : "block"}`}
                                 >
-                                    <div className="absolute inset-0 z-10 bg-primary/20" />
+                                    <div className="absolute inset-0 z-10 bg-slate-950/30 md:bg-primary/20" />
                                     <div
                                         className={
                                             index === 1
@@ -105,14 +107,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         )}
                     </div>
                     <div className="relative z-20 mx-auto w-full max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-                        <div className="mx-auto max-w-2xl rounded-xl border border-primary/10 bg-white/90 p-8 shadow-2xl backdrop-blur-md md:p-12">
-                            <span className="mb-4 block text-xs font-bold uppercase tracking-[0.3em] text-primary">
-                                Tradição e Oração
-                            </span>
-                            <h1 className="font-display text-4xl font-bold text-slate-900 md:text-6xl">
+                        <div className="mx-auto max-w-2xl rounded-2xl bg-white/95 p-6 shadow-2xl sm:p-8 md:p-12">
+                            <h1 className="text-balance font-display text-3xl font-bold leading-[1.08] text-slate-950 sm:text-4xl md:text-6xl">
                                 A Harmonia da Criação como Dom de Deus
                             </h1>
-                            <p className="mt-6 text-lg leading-relaxed text-slate-600">
+                            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
                                 Cosméticos de puro sebo de boi e artesanato
                                 autoral que celebram a beleza da alma e o
                                 cuidado com o templo do Espírito.
@@ -120,13 +119,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
                                 <Link
                                     href="/beleza-natural"
-                                    className="rounded-lg bg-primary px-8 py-4 font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+                                    className="flex min-h-12 items-center justify-center rounded-lg bg-primary px-8 py-3 font-bold text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
                                 >
                                     Beleza Natural
                                 </Link>
                                 <Link
                                     href="/artesanato"
-                                    className="rounded-lg border-2 border-primary bg-white px-8 py-4 font-bold text-primary transition hover:bg-primary/5"
+                                    className="flex min-h-12 items-center justify-center rounded-lg border-2 border-primary bg-white px-8 py-3 font-bold text-primary hover:bg-primary/5"
                                 >
                                     Explorar Artesanato
                                 </Link>
@@ -135,8 +134,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     </div>
                 </section>
 
-                <section className="bg-white py-24">
-                    <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+                <section className="bg-white py-16 md:py-24">
+                    <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
                         <div className="relative">
                             <div className="absolute -left-4 -top-4 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
                             <div className="relative aspect-square overflow-hidden rounded-2xl shadow-2xl">
@@ -159,10 +158,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         </div>
                         <div className="flex flex-col gap-8">
                             <div>
-                                <span className="mb-4 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                                    CUIDADO COMO TEMPLO
-                                </span>
-                                <h2 className="font-display text-4xl font-bold leading-tight text-slate-900 md:text-5xl">
+                                <h2 className="text-balance font-display text-3xl font-bold leading-tight text-slate-950 sm:text-4xl md:text-5xl">
                                     Creme Personalizado: Unicidade de Cada
                                     Criatura
                                 </h2>
@@ -173,7 +169,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                 fórmulas de sebo bovino clarificado exclusivas
                                 que respeitam a identidade de sua pele.
                             </p>
-                            <ul className="space-y-4">
+                            <ul className="space-y-4" role="list">
                                 {[
                                     "Sebo de boi purificado para nutrir a sua pele",
                                     "Óleos essenciais que honram a natureza",
@@ -181,7 +177,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                 ].map((item) => (
                                     <li
                                         key={item}
-                                        className="flex items-center gap-3 text-slate-700"
+                                        className="flex items-start gap-3 text-slate-700"
                                     >
                                         <span className="material-symbols-outlined text-primary">
                                             check_circle
@@ -195,7 +191,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     </div>
                 </section>
 
-                <section className="bg-primary/5 py-20">
+                <section className="bg-primary/5 py-16 md:py-20">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                             <div className="max-w-3xl">
@@ -218,7 +214,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                 </span>
                             </Link>
                         </div>
-                        <div className="-mx-4 flex snap-x gap-6 overflow-x-auto px-4 pb-2">
+                        <div
+                            aria-label="Depoimentos de clientes"
+                            className="-mx-4 flex snap-x snap-mandatory gap-6 overflow-x-auto px-4 pb-4"
+                            role="region"
+                            tabIndex={0}
+                        >
                             {testimonials.length > 0 ? (
                                 testimonials.map((testimonial) => (
                                     <TestimonialCard
@@ -227,7 +228,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                     />
                                 ))
                             ) : (
-                                <div className="min-h-[18rem] w-full rounded-2xl border border-primary/5 bg-white p-8 shadow-lg">
+                                <div className="min-h-[18rem] w-full rounded-2xl bg-white p-8 shadow-lg">
                                     <span className="material-symbols-outlined text-4xl text-primary">
                                         format_quote
                                     </span>
@@ -245,15 +246,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     </div>
                 </section>
 
-                <section className="bg-[#fdfaf6] py-24">
+                <section className="bg-[#fdfaf6] py-16 md:py-24">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="grid items-center gap-12 lg:grid-cols-12">
                             <div className="relative lg:col-span-5">
                                 <div className="aspect-[4/5] overflow-hidden rounded-2xl shadow-2xl">
-                                    <img
+                                    <Image
                                         alt="Foto da Evilma Maria, fundadora do Ateliê Guadalupe"
-                                        src="./evilma.webp"
                                         className="h-full w-full object-cover object-[0%_25%]"
+                                        height={1200}
+                                        sizes="(min-width: 1024px) 40vw, 100vw"
+                                        src="/evilma.webp"
+                                        width={960}
                                     />
                                 </div>
                                 <div className="absolute -bottom-8 -left-8 hidden rounded-xl border border-primary/5 bg-white p-8 shadow-xl md:block">
@@ -273,15 +277,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             </div>
 
                             <div className="lg:col-span-7 lg:pl-12">
-                                <span className="mb-4 block text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                                    Nossa Essência
-                                </span>
-                                <h2 className="mb-8 font-display text-4xl font-bold leading-tight text-slate-900 md:text-5xl">
+                                <h2 className="mb-8 text-balance font-display text-3xl font-bold leading-tight text-slate-950 sm:text-4xl md:text-5xl">
                                     Nossa História: Uma Vocação de Amor
                                 </h2>
 
                                 <div className="space-y-6">
-                                    <p className="border-l-4 border-primary/20 py-2 pl-6 text-xl font-medium italic text-slate-700">
+                                    <p className="font-display text-xl font-medium leading-8 italic text-slate-700">
                                         &ldquo;Somos uma família católica que,
                                         sob o olhar da Providência Divina e
                                         inspirada pela beleza da Criação,

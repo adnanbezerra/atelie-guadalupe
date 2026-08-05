@@ -32,7 +32,7 @@ export function UserDialogButton() {
             <DialogTrigger asChild>
                 <button
                     aria-label="Abrir menu do usuário"
-                    className="rounded-lg bg-slate-100 p-2"
+                    className="flex size-11 items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50"
                     type="button"
                 >
                     <span className="material-symbols-outlined text-slate-700">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CatalogPagination } from "./catalog/catalog-pagination";
@@ -49,7 +50,6 @@ export function CollectionCatalog({
     initialSearch = "",
     lines: initialLines,
 }: CollectionCatalogProps) {
-    void config;
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -245,8 +245,14 @@ export function CollectionCatalog({
                     setSearch={handleSearchChange}
                 />
 
-                <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                    <nav className="mb-8 flex items-center gap-2 text-sm text-neutral-500">
+                <main
+                    aria-label={config.title}
+                    className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12"
+                >
+                    <nav
+                        aria-label="Navegação estrutural"
+                        className="mb-7 flex items-center gap-2 text-sm text-neutral-600"
+                    >
                         <Link href="/">Home</Link>
                         <span className="material-symbols-outlined text-xs">
                             chevron_right
@@ -256,11 +262,11 @@ export function CollectionCatalog({
                         </span>
                     </nav>
 
-                    <header className="mb-12">
-                        <h1 className="font-public text-4xl font-bold text-neutral-900">
+                    <header className="mb-10 max-w-4xl md:mb-12">
+                        <h1 className="text-balance font-display text-4xl font-bold leading-tight text-neutral-950 md:text-5xl">
                             Artesanato Autoral e Sacro
                         </h1>
-                        <p className="mt-4 max-w-3xl text-lg text-neutral-600">
+                        <p className="mt-4 max-w-3xl text-base leading-7 text-neutral-600 sm:text-lg sm:leading-8">
                             Peças exclusivas que unem a tradição da arte sacra
                             católica à delicadeza do fazer manual. Cada item é
                             criado com oração e técnica, transformando materiais
@@ -269,8 +275,8 @@ export function CollectionCatalog({
                         </p>
                     </header>
                     <div className="flex flex-col gap-12 lg:flex-row">
-                        <aside className="w-full lg:w-64 lg:flex-shrink-0">
-                            <div className="sticky top-28 space-y-8">
+                        <aside className="w-full rounded-xl bg-[#f8f5ef] p-4 lg:w-64 lg:flex-shrink-0 lg:self-start">
+                            <div className="space-y-8 lg:sticky lg:top-40">
                                 <ProductLineFilter
                                     lines={productLines}
                                     onChange={handleLineChange}
@@ -280,20 +286,36 @@ export function CollectionCatalog({
                             </div>
                         </aside>
 
-                        <div className="flex-1">
-                            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
-                                {filteredProducts.map((product) => (
-                                    <ProductCard
-                                        isPending={pendingProductUuidsRef.current.has(
-                                            product.uuid,
-                                        )}
-                                        key={product.uuid}
-                                        onBuy={handleRequestAddToCart}
-                                        product={product}
-                                        variant="crafts"
-                                    />
-                                ))}
-                            </div>
+                        <div className="min-w-0 flex-1">
+                            <CatalogStatus
+                                count={filteredProducts.length}
+                                isLoading={productsResource.isLoading}
+                            />
+                            {filteredProducts.length ? (
+                                <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
+                                    {filteredProducts.map((product) => (
+                                        <ProductCard
+                                            isPending={pendingProductUuidsRef.current.has(
+                                                product.uuid,
+                                            )}
+                                            key={product.uuid}
+                                            onBuy={handleRequestAddToCart}
+                                            product={product}
+                                            variant="crafts"
+                                        />
+                                    ))}
+                                </div>
+                            ) : !productsResource.isLoading ? (
+                                <CatalogEmpty
+                                    hasFilters={Boolean(
+                                        search.trim() || lineUuid,
+                                    )}
+                                    onClear={() => {
+                                        handleSearchChange("");
+                                        handleLineChange("");
+                                    }}
+                                />
+                            ) : null}
                             <CatalogPagination
                                 currentPage={page}
                                 onChange={handlePageChange}
@@ -330,8 +352,14 @@ export function CollectionCatalog({
                 search={search}
                 setSearch={handleSearchChange}
             />
-            <main className="mx-auto w-full max-w-7xl px-6 py-8 md:px-10">
-                <nav className="mb-8 flex items-center gap-2 text-sm text-slate-500">
+            <main
+                aria-label={config.title}
+                className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 md:px-10 lg:py-12"
+            >
+                <nav
+                    aria-label="Navegação estrutural"
+                    className="mb-7 flex items-center gap-2 text-sm text-slate-600"
+                >
                     <Link href="/">Home</Link>
                     <span className="material-symbols-outlined text-xs">
                         chevron_right
@@ -343,13 +371,13 @@ export function CollectionCatalog({
                     <span className="font-medium text-slate-900">Cremes</span>
                 </nav>
 
-                <section className="mb-12">
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <section className="mb-10 md:mb-12">
+                    <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-3">
                         <div className="flex flex-col justify-center lg:col-span-2">
-                            <h1 className="font-display text-5xl font-bold">
+                            <h1 className="text-balance font-display text-4xl font-bold leading-tight text-slate-950 md:text-5xl">
                                 Cremes de Sebo Bovino Clarificado
                             </h1>
-                            <p className="mt-4 max-w-xl text-lg text-slate-600">
+                            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
                                 Fórmulas de sebo clarificado feitos por uma
                                 especialista, sem odor e sem reações negativas,
                                 ricas em óleos essenciais puros. Hidratação
@@ -357,20 +385,23 @@ export function CollectionCatalog({
                                 sua pele.
                             </p>
                         </div>
-                        <div className="overflow-hidden rounded-xl bg-slate-100">
-                            <img
-                                alt="Beleza Natural"
-                                className="h-auto w-auto"
+                        <div className="aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 shadow-lg lg:aspect-square">
+                            <Image
+                                alt="Creme natural artesanal do Ateliê Guadalupe"
+                                className="h-full w-full object-cover"
+                                height={900}
+                                sizes="(min-width: 1024px) 30vw, 100vw"
                                 src="/banner.webp"
+                                width={1200}
                             />
                         </div>
                     </div>
                 </section>
 
                 <div className="flex flex-col gap-10 md:flex-row">
-                    <aside className="w-full space-y-8 md:w-64 md:flex-shrink-0">
+                    <aside className="w-full space-y-8 md:w-64 md:flex-shrink-0 md:self-start">
                         <div className="relative flex min-h-[300px] items-end overflow-hidden rounded-xl bg-primary p-6 md:min-h-[330px]">
-                            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.7)),url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlA75ZIl1MTF9dZEkw8ZGtS2qRo3TYuYP0CuYTOQk8Z-W2LDeQo-HR46KdtUBc2QJKagrRvuU7WUJIb-j-5SPkN7gQ-ziWitpDvK479fJiWYaET-A6PbOyS7Zu1SrdzFu131HDyAbJZwxj1YovX4SHJomGK-yZkX8gVhqX_Am41hncNcdje8k80OT8J0WXf-Kea2LLaGSzBcy0VofU8dJkJEggzkaFJOaIM_5cCluHjgrYPTShqlqC_a7o44zzlYLEz44zxXh5VMYN')] bg-cover bg-center" />
+                            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.08),rgba(15,23,42,0.86)),url('/personalizado.webp')] bg-cover bg-center" />
                             <div className="relative z-10 w-full">
                                 <h3 className="font-display text-xl leading-tight font-bold text-white">
                                     Crie seu Creme Personalizado
@@ -383,7 +414,7 @@ export function CollectionCatalog({
                                 <PersonalDiagnosisDialog
                                     trigger={
                                         <button
-                                            className="mt-5 block w-full rounded-lg bg-white px-3 py-3 text-center text-sm font-bold text-primary transition hover:bg-white/90"
+                                            className="mt-5 block min-h-12 w-full rounded-lg bg-white px-3 py-3 text-center text-sm font-bold text-primary hover:bg-white/90"
                                             type="button"
                                         >
                                             Falar com atendimento
@@ -400,36 +431,40 @@ export function CollectionCatalog({
                         />
                     </aside>
 
-                    <div className="flex-1">
-                        <div className="mb-6 flex items-center justify-between">
-                            <p className="text-sm text-slate-500">
-                                Mostrando{" "}
-                                <span className="font-bold text-slate-900">
-                                    {filteredProducts.length}
-                                </span>{" "}
-                                produtos
-                            </p>
-                            <div className="flex items-center gap-2">
-                                {productsResource.isLoading ? (
-                                    <span className="text-sm text-slate-500">
-                                        Atualizando...
-                                    </span>
-                                ) : null}
+                    <div className="min-w-0 flex-1">
+                        <CatalogStatus
+                            count={filteredProducts.length}
+                            isLoading={productsResource.isLoading}
+                        />
+                        {filteredProducts.length ? (
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+                                {filteredProducts.map((product) => (
+                                    <ProductCard
+                                        isPending={pendingProductUuidsRef.current.has(
+                                            product.uuid,
+                                        )}
+                                        key={product.uuid}
+                                        onBuy={handleRequestAddToCart}
+                                        product={product}
+                                        variant="beauty"
+                                    />
+                                ))}
                             </div>
-                        </div>
-                        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                            {filteredProducts.map((product) => (
-                                <ProductCard
-                                    isPending={pendingProductUuidsRef.current.has(
-                                        product.uuid,
-                                    )}
-                                    key={product.uuid}
-                                    onBuy={handleRequestAddToCart}
-                                    product={product}
-                                    variant="beauty"
-                                />
-                            ))}
-                        </div>
+                        ) : !productsResource.isLoading ? (
+                            <CatalogEmpty
+                                hasFilters={Boolean(search.trim() || lineUuid)}
+                                onClear={() => {
+                                    handleSearchChange("");
+                                    handleLineChange("");
+                                }}
+                            />
+                        ) : null}
+                        <CatalogPagination
+                            currentPage={page}
+                            onChange={handlePageChange}
+                            pageNumbers={pageNumbers}
+                            totalPages={totalPages}
+                        />
                     </div>
                 </div>
             </main>
@@ -450,5 +485,62 @@ export function CollectionCatalog({
                 product={sizeProduct}
             />
         </div>
+    );
+}
+
+function CatalogStatus({
+    count,
+    isLoading,
+}: {
+    count: number;
+    isLoading: boolean;
+}) {
+    return (
+        <div className="mb-6 flex min-h-6 items-center justify-between gap-4">
+            <p className="text-sm text-slate-600" role="status">
+                <span className="font-bold text-slate-950">{count}</span>{" "}
+                {count === 1 ? "produto encontrado" : "produtos encontrados"}
+            </p>
+            {isLoading ? (
+                <span className="text-sm font-medium text-primary">
+                    Atualizando catálogo...
+                </span>
+            ) : null}
+        </div>
+    );
+}
+
+function CatalogEmpty({
+    hasFilters,
+    onClear,
+}: {
+    hasFilters: boolean;
+    onClear: () => void;
+}) {
+    return (
+        <section className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+            <span className="material-symbols-outlined text-4xl text-primary">
+                inventory_2
+            </span>
+            <h2 className="mt-4 font-display text-2xl font-bold text-slate-950">
+                {hasFilters
+                    ? "Nenhum produto combina com sua busca"
+                    : "Novos produtos chegam em breve"}
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+                {hasFilters
+                    ? "Limpe a busca e os filtros para ver todo o catálogo disponível."
+                    : "O ateliê está preparando esta coleção. Volte em breve para conhecer as novidades."}
+            </p>
+            {hasFilters ? (
+                <button
+                    className="mt-6 min-h-11 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary/90"
+                    onClick={onClear}
+                    type="button"
+                >
+                    Limpar busca e filtros
+                </button>
+            ) : null}
+        </section>
     );
 }

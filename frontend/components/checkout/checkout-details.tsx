@@ -16,7 +16,10 @@ export function DeliveryAddress({ address }: { address: Address | null }) {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start gap-4">
-                <span className="material-symbols-outlined text-[#d1a054]">
+                <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-[#8a642e]"
+                >
                     home_pin
                 </span>
                 <div>
@@ -41,7 +44,7 @@ export function DeliveryAddress({ address }: { address: Address | null }) {
             </div>
             {!address ? (
                 <Link
-                    className="mt-5 inline-flex rounded-lg border border-primary px-4 py-2 text-sm font-bold text-primary"
+                    className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-primary px-4 py-2 text-sm font-bold text-primary hover:bg-primary/5"
                     href="/perfil"
                 >
                     Cadastrar endereço
@@ -60,12 +63,12 @@ export function OrderItems({ items }: { items: CheckoutDisplayItem[] }) {
             <div className="mt-5 divide-y divide-slate-100">
                 {items.map((item) => (
                     <article
-                        className="flex gap-4 py-4 first:pt-0 last:pb-0"
+                        className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4 py-4 sm:grid-cols-[5rem_minmax(0,1fr)_auto] first:pt-0 last:pb-0"
                         key={item.uuid}
                     >
                         <ProductImage
                             alt={item.name}
-                            className="size-20 shrink-0 rounded-lg object-cover"
+                            className="size-[4.5rem] shrink-0 rounded-lg object-cover sm:size-20"
                             src={item.imageUrl}
                         />
                         <div className="min-w-0 flex-1">
@@ -77,7 +80,7 @@ export function OrderItems({ items }: { items: CheckoutDisplayItem[] }) {
                                 {item.quantity} un.
                             </p>
                         </div>
-                        <p className="font-bold text-slate-950">
+                        <p className="col-start-2 font-bold text-slate-950 sm:col-start-3 sm:row-start-1">
                             {formatCurrency(item.totalPriceInCents)}
                         </p>
                     </article>
