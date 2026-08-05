@@ -58,7 +58,9 @@ function readToken(request: NextRequest) {
 export function proxy(request: NextRequest) {
     const token = readToken(request);
     const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-    const isProfileRoute = request.nextUrl.pathname.startsWith("/perfil");
+    const isProfileRoute =
+        request.nextUrl.pathname.startsWith("/perfil") ||
+        request.nextUrl.pathname.startsWith("/checkout");
     const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
 
     if (!token) {
@@ -91,5 +93,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/admin/:path*", "/perfil/:path*"],
+    matcher: ["/admin/:path*", "/perfil/:path*", "/checkout/:path*"],
 };

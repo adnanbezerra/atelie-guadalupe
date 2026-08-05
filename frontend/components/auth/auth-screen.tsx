@@ -135,7 +135,11 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             const adminTarget = nextPath?.startsWith("/admin")
                 ? nextPath
                 : "/admin";
-            router.push(isAdmin ? adminTarget : "/");
+            const userTarget =
+                nextPath?.startsWith("/") && !nextPath.startsWith("//")
+                    ? nextPath
+                    : "/";
+            router.push(isAdmin ? adminTarget : userTarget);
             router.refresh();
         } catch (caughtError) {
             setError(
@@ -248,7 +252,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                             </div>
                             <Link
                                 className="block w-full rounded-lg border-2 border-[#F4F1ED] bg-white py-4 text-center font-bold text-[#1A2E44] transition-all hover:bg-[#F4F1ED]"
-                                href={isLogin ? "/cadastro" : "/login"}
+                                href={`${isLogin ? "/cadastro" : "/login"}${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
                             >
                                 {isLogin ? "Criar conta" : "Entrar"}
                             </Link>

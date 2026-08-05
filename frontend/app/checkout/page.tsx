@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { CheckoutPageClient } from "@/components/checkout/checkout-page-client";
 import { ServerHeader } from "@/components/header/server";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -13,7 +14,9 @@ export default async function CheckoutPage() {
     return (
         <>
             <ServerHeader searchPath="/beleza-natural" />
-            <CheckoutPageClient initialCart={cart} />
+            <Suspense>
+                <CheckoutPageClient initialCart={cart} />
+            </Suspense>
             <SiteFooter />
         </>
     );

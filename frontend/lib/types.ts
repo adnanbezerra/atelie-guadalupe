@@ -30,6 +30,29 @@ export type OrderStatus =
     | "CANCELLED"
     | string;
 
+export type PaymentStatus =
+    | "CREATING"
+    | "PENDING"
+    | "PAID"
+    | "REFUND_PENDING"
+    | "REFUNDED"
+    | "DISPUTED"
+    | "LOST";
+
+export type ShippingStatus =
+    | "DRAFT"
+    | "QUOTED"
+    | "CONFIRMED"
+    | "CHECKOUT_REQUESTED"
+    | "LABEL_PURCHASED"
+    | "CANCELLED";
+
+export type FulfillmentStatus =
+    | "PENDING"
+    | "PROCESSING"
+    | "RETRY_SCHEDULED"
+    | "COMPLETED";
+
 export type ProductLine = {
     uuid: string;
     slug: string;
@@ -260,6 +283,7 @@ export type OrderItem = {
 export type Order = {
     uuid: string;
     status: string;
+    paymentIdempotencyKey?: string;
     paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | string | null;
     subtotalInCents: number;
     shippingInCents: number;
@@ -274,6 +298,46 @@ export type Order = {
     updatedAt: string;
     address: Address | null;
     items: OrderItem[];
+    payment?: {
+        status: PaymentStatus;
+        providerCheckoutId: string | null;
+        checkoutUrl: string | null;
+        paidAmountInCents: number | null;
+    } | null;
+    shipment?: {
+        status: ShippingStatus;
+        trackingCode: string | null;
+        labelUrl: string | null;
+    } | null;
+    fulfillment?: {
+        status: FulfillmentStatus;
+        attempts: number;
+        lastError: string | null;
+        nextAttemptAt: string | null;
+    } | null;
+};
+
+export type OrderShippingPayload = {
+    order: Order;
+    shipment: {
+        status: ShippingStatus;
+        selectedServiceCode: number | null;
+        selectedServiceName: string | null;
+        shippingPriceInCents: number | null;
+    } | null;
+    orderTotals?: {
+        subtotalInCents: number;
+        shippingInCents: number;
+        discountInCents: number;
+        totalInCents: number;
+    };
+};
+
+export type CheckoutPaymentPayload = {
+    paymentStatus: PaymentStatus;
+    checkoutId: string;
+    checkoutUrl: string;
+    amountInCents: number;
 };
 
 export type OrdersResponse = {

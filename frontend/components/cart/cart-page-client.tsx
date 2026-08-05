@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
+import { useUser } from "@/hooks/use-user";
 import { Cart } from "@/lib/types";
 import { buildWhatsappLink } from "@/lib/whatsapp";
 import {
@@ -114,6 +115,7 @@ function buildCartWhatsappMessage(
 
 export function CartPageClient({ initialCart }: CartPageClientProps) {
     const cart = useCart(initialCart);
+    const userContext = useUser();
     const [shippingOption, setShippingOption] =
         useState<CartShippingOption | null>(null);
     const total = cart.data?.summary.totalInCents ?? 0;
@@ -135,6 +137,19 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
     const whatsappLink = buildWhatsappLink(
         buildCartWhatsappMessage(cart.data, shippingOption),
     );
+    const checkoutHref = (() => {
+        if (!hasItems || !shippingOption) return undefined;
+        if (shippingOption.kind === "pickup") return whatsappLink;
+        if (!userContext.isAuthenticated) return "/login?next=%2Fcarrinho";
+
+        const params = new URLSearchParams({
+            serviceCode: String(shippingOption.serviceCode),
+            serviceName: shippingOption.name,
+            shippingPriceInCents: String(shippingOption.priceInCents),
+        });
+
+        return `/checkout?${params.toString()}`;
+    })();
     const handleShippingSelection = useCallback(
         (option: CartShippingOption | null) => {
             setShippingOption(option);
@@ -383,26 +398,30 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         </p>
                                     ) : null}
                                 </div>
-                                <a
+                                <Link
                                     aria-disabled={!hasItems || !shippingOption}
                                     className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-bold text-white shadow-md shadow-primary/20 transition hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-60"
-                                    href={
-                                        hasItems && shippingOption
-                                            ? whatsappLink
-                                            : undefined
-                                    }
-                                    rel="noopener noreferrer"
-                                    target="_blank"
+                                    href={checkoutHref ?? "/carrinho"}
                                 >
-                                    Finalizar Compra
+                                    {shippingOption?.kind === "pickup"
+                                        ? "Combinar retirada"
+                                        : userContext.isAuthenticated
+                                          ? "Continuar para pagamento"
+                                          : "Entrar para continuar"}
                                     <span className="material-symbols-outlined text-[18px]">
                                         arrow_forward
                                     </span>
-                                </a>
+                                </Link>
                                 {hasItems && !shippingOption ? (
                                     <p className="mb-4 text-center text-xs font-semibold leading-5 text-slate-500">
                                         Calcule e escolha como receber antes de
                                         finalizar.
+                                    </p>
+                                ) : null}
+                                {shippingOption?.kind === "pickup" ? (
+                                    <p className="mb-4 text-center text-xs font-semibold leading-5 text-slate-500">
+                                        A retirada é combinada diretamente com o
+                                        ateliê pelo WhatsApp.
                                     </p>
                                 ) : null}
                                 <button

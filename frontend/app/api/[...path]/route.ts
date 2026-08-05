@@ -23,6 +23,7 @@ async function proxyRequest(request: NextRequest, path: string[]) {
         );
     const contentType = request.headers.get("content-type");
     const accept = request.headers.get("accept");
+    const idempotencyKey = request.headers.get("idempotency-key");
 
     const body =
         request.method === "GET" || request.method === "HEAD"
@@ -36,6 +37,9 @@ async function proxyRequest(request: NextRequest, path: string[]) {
             headers: {
                 ...(accept ? { accept } : {}),
                 ...(contentType ? { "content-type": contentType } : {}),
+                ...(idempotencyKey
+                    ? { "idempotency-key": idempotencyKey }
+                    : {}),
                 ...(token
                     ? {
                           authorization: token.startsWith("Bearer ")

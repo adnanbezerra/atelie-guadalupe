@@ -10,6 +10,7 @@ import type {
     MarketingPromotion,
     OrdersResponse,
     Order,
+    OrderShippingPayload,
     Product,
     ProductLine,
     ProductListResponse,
@@ -25,6 +26,7 @@ import type {
     UpdateTestimonialInput,
     UpdateCurrentUserInput,
     User,
+    CheckoutPaymentPayload,
 } from "@/lib/types";
 import {
     clearAuthSession,
@@ -49,6 +51,8 @@ type RequestOptions = {
     body?: unknown;
     token?: string | null;
     query?: Record<string, string | number | boolean | undefined>;
+    headers?: Record<string, string>;
+    signal?: AbortSignal;
 };
 
 type UploadProgressOptions = {
@@ -172,9 +176,11 @@ async function request<T>(path: string, options: RequestOptions = {}) {
             ...(options.token
                 ? { Authorization: `Bearer ${options.token}` }
                 : {}),
+            ...(options.headers ?? {}),
         },
         body,
         cache: "no-store",
+        signal: options.signal,
     });
 
     const payload = (await response.json()) as ApiEnvelope<T>;
@@ -399,6 +405,44 @@ export function createOrder(
         method: "POST",
         token,
         body,
+    });
+}
+
+export function getOrder(
+    token: string,
+    orderUuid: string,
+    signal?: AbortSignal,
+) {
+    return request<{ order: Order }>(`/orders/${orderUuid}`, {
+        token,
+        signal,
+    });
+}
+
+export function confirmOrderShipping(
+    token: string,
+    orderUuid: string,
+    serviceCode: number,
+) {
+    return request<OrderShippingPayload>(
+        `/shipping/orders/${orderUuid}/quote`,
+        {
+            method: "POST",
+            token,
+            body: { serviceCode },
+        },
+    );
+}
+
+export function createOrderPayment(
+    token: string,
+    orderUuid: string,
+    idempotencyKey: string,
+) {
+    return request<CheckoutPaymentPayload>(`/orders/${orderUuid}/payment`, {
+        method: "POST",
+        token,
+        headers: { "Idempotency-Key": idempotencyKey },
     });
 }
 
