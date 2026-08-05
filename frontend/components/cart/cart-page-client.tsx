@@ -191,15 +191,15 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     {items.map((item) => (
                         <div
                             key={item.uuid}
-                            className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                            className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm sm:grid-cols-[5rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4"
                         >
                             <ProductImage
                                 alt={item.name}
-                                className="size-20 shrink-0 rounded-lg object-cover"
+                                className="size-[4.5rem] shrink-0 rounded-lg object-cover sm:size-20"
                                 src={item.imageUrl}
                             />
-                            <div className="grow">
-                                <p className="font-display text-base font-bold text-slate-900">
+                            <div className="min-w-0">
+                                <p className="break-words font-display text-base font-bold text-slate-900">
                                     {item.name}
                                 </p>
                                 <p className="text-xs text-slate-500">
@@ -210,9 +210,10 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     {formatCurrency(item.totalPriceInCents)}
                                 </p>
                             </div>
-                            <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-1">
+                            <div className="col-span-2 flex w-fit items-center gap-1 rounded-lg bg-slate-50 p-1 sm:col-span-1">
                                 <button
-                                    className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-white"
+                                    aria-label={`Diminuir quantidade de ${item.name}`}
+                                    className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={
                                         cart.isPending || item.quantity <= 1
                                     }
@@ -226,11 +227,12 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                 >
                                     -
                                 </button>
-                                <span className="w-4 text-center text-sm font-medium">
+                                <span className="min-w-8 text-center text-sm font-bold">
                                     {item.quantity}
                                 </span>
                                 <button
-                                    className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-white"
+                                    aria-label={`Aumentar quantidade de ${item.name}`}
+                                    className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={cart.isPending}
                                     onClick={() =>
                                         cart.updateItem(
@@ -251,7 +253,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
     }
 
     return (
-        <main className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
             <div className="mb-10 flex flex-col gap-2">
                 <h1 className="font-display text-4xl font-black tracking-tight text-slate-900">
                     Meu Carrinho
@@ -472,7 +474,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     </DialogHeader>
                     <div className="mt-6 flex justify-end">
                         <button
-                            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
+                            className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
                             onClick={() => cart.dismissError()}
                             type="button"
                         >

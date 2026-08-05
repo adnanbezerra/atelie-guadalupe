@@ -183,7 +183,7 @@ export function SavedAddressEditDialog({
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-2xl flex-col overflow-hidden">
                 <DialogClose
                     aria-label="Fechar edição do endereço"
-                    className="absolute right-5 top-5 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/10 bg-white text-slate-500 shadow-sm transition hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/20"
+                    className="absolute right-5 top-5 z-10 inline-flex size-11 items-center justify-center rounded-full border border-primary/10 bg-white text-slate-500 shadow-sm transition hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/20"
                 >
                     <span
                         aria-hidden="true"

@@ -23,7 +23,10 @@ export function CatalogPagination({
                 disabled={currentPage <= 1}
                 onClick={() => onChange(currentPage - 1)}
             >
-                <span className="material-symbols-outlined text-sm">
+                <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-sm"
+                >
                     chevron_left
                 </span>
             </PageButton>
@@ -34,8 +37,8 @@ export function CatalogPagination({
                     }
                     className={
                         pageNumber === currentPage
-                            ? "flex h-11 w-11 items-center justify-center rounded-lg bg-primary font-bold text-white"
-                            : "flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white font-bold text-slate-700 hover:border-primary hover:text-primary"
+                            ? "flex size-11 items-center justify-center rounded-lg bg-primary font-bold text-white"
+                            : "flex size-11 items-center justify-center rounded-lg border border-slate-200 bg-white font-bold text-slate-700 hover:border-primary hover:text-primary"
                     }
                     key={pageNumber}
                     onClick={() => onChange(pageNumber)}
@@ -49,7 +52,10 @@ export function CatalogPagination({
                 disabled={currentPage >= totalPages}
                 onClick={() => onChange(currentPage + 1)}
             >
-                <span className="material-symbols-outlined text-sm">
+                <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-sm"
+                >
                     chevron_right
                 </span>
             </PageButton>
@@ -71,7 +77,7 @@ function PageButton({
     return (
         <button
             aria-label={ariaLabel}
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex size-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
             disabled={disabled}
             onClick={onClick}
             type="button"

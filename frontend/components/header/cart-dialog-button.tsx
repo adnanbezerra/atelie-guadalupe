@@ -30,7 +30,10 @@ export function CartDialogButton() {
                     className="relative flex size-11 items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50"
                     type="button"
                 >
-                    <span className="material-symbols-outlined text-slate-700">
+                    <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined text-slate-700"
+                    >
                         shopping_bag
                     </span>
                     {itemCount > 0 ? (
@@ -40,11 +43,14 @@ export function CartDialogButton() {
                     ) : null}
                 </button>
             </DialogTrigger>
-            <DialogContent className="!left-auto !right-6 !top-[76px] max-h-[calc(100vh-96px)] w-[calc(100vw-3rem)] max-w-sm !translate-x-0 !translate-y-0 overflow-hidden rounded-xl bg-white p-0 shadow-2xl md:!right-10 lg:!right-[max(2.5rem,calc((100vw-80rem)/2))]">
-                <div className="max-h-[calc(100vh-96px)] overflow-y-auto">
+            <DialogContent className="!bottom-[max(1rem,env(safe-area-inset-bottom))] !left-4 !right-4 !top-auto max-h-[calc(100dvh-2rem)] w-auto max-w-none !translate-x-0 !translate-y-0 overflow-hidden rounded-xl bg-white p-0 shadow-2xl sm:!bottom-auto sm:!left-auto sm:!right-6 sm:!top-[132px] sm:max-h-[calc(100dvh-152px)] sm:w-[calc(100vw-3rem)] sm:max-w-sm md:!right-10 md:!top-[76px] md:max-h-[calc(100dvh-96px)] lg:!right-[max(2.5rem,calc((100vw-80rem)/2))]">
+                <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-h-[calc(100dvh-152px)] md:max-h-[calc(100dvh-96px)]">
                     <DialogHeader className="border-b border-slate-100 p-5">
                         <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
-                            <span className="material-symbols-outlined text-primary">
+                            <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-primary"
+                            >
                                 shopping_bag
                             </span>
                             Meu carrinho
@@ -97,7 +103,7 @@ export function CartDialogButton() {
                             <div className="divide-y divide-slate-100">
                                 {items.map((item) => (
                                     <div
-                                        className="flex gap-3 p-5"
+                                        className="grid grid-cols-[4rem_minmax(0,1fr)] gap-3 p-4 sm:p-5"
                                         key={item.uuid}
                                     >
                                         <ProductImage
@@ -120,62 +126,57 @@ export function CartDialogButton() {
                                                     item.totalPriceInCents,
                                                 )}
                                             </p>
-                                            <div className="mt-3 flex items-center gap-2">
-                                                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
-                                                    <button
-                                                        aria-label={`Diminuir quantidade de ${item.name}`}
-                                                        className="flex h-9 w-9 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                                                        disabled={
-                                                            cart.isMutating
-                                                        }
-                                                        onClick={() =>
-                                                            cart.updateItem(
-                                                                item.uuid,
-                                                                item.quantity -
-                                                                    1,
-                                                            )
-                                                        }
-                                                        type="button"
-                                                    >
-                                                        -
-                                                    </button>
-                                                    <span className="w-7 text-center text-xs font-black text-slate-900">
-                                                        {item.quantity}
-                                                    </span>
-                                                    <button
-                                                        aria-label={`Aumentar quantidade de ${item.name}`}
-                                                        className="flex h-9 w-9 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                                                        disabled={
-                                                            cart.isMutating
-                                                        }
-                                                        onClick={() =>
-                                                            cart.updateItem(
-                                                                item.uuid,
-                                                                item.quantity +
-                                                                    1,
-                                                            )
-                                                        }
-                                                        type="button"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
+                                        </div>
+                                        <div className="col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:col-start-2 sm:justify-start">
+                                            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
                                                 <button
-                                                    aria-label={`Remover ${item.name} do carrinho`}
-                                                    className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    aria-label={`Diminuir quantidade de ${item.name}`}
+                                                    className="flex size-11 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                                                     disabled={cart.isMutating}
                                                     onClick={() =>
-                                                        cart.removeItem(
+                                                        cart.updateItem(
                                                             item.uuid,
+                                                            item.quantity - 1,
                                                         )
                                                     }
                                                     type="button"
                                                 >
-                                                    <span className="material-symbols-outlined text-lg">
-                                                        delete
-                                                    </span>
+                                                    -
+                                                </button>
+                                                <span className="min-w-8 text-center text-sm font-black text-slate-900">
+                                                    {item.quantity}
+                                                </span>
+                                                <button
+                                                    aria-label={`Aumentar quantidade de ${item.name}`}
+                                                    className="flex size-11 items-center justify-center rounded-md text-sm font-black text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                                    disabled={cart.isMutating}
+                                                    onClick={() =>
+                                                        cart.updateItem(
+                                                            item.uuid,
+                                                            item.quantity + 1,
+                                                        )
+                                                    }
+                                                    type="button"
+                                                >
+                                                    +
                                                 </button>
                                             </div>
+                                            <button
+                                                aria-label={`Remover ${item.name} do carrinho`}
+                                                className="flex size-11 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                disabled={cart.isMutating}
+                                                onClick={() =>
+                                                    cart.removeItem(item.uuid)
+                                                }
+                                                type="button"
+                                            >
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="material-symbols-outlined text-lg"
+                                                >
+                                                    delete
+                                                </span>
+                                            </button>
                                         </div>
                                     </div>
                                 ))}

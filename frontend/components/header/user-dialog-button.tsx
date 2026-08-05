@@ -40,7 +40,7 @@ export function UserDialogButton() {
                     </span>
                 </button>
             </DialogTrigger>
-            <DialogContent className="!left-auto !right-6 !top-[76px] w-[calc(100vw-3rem)] max-w-xs !translate-x-0 !translate-y-0 overflow-hidden rounded-xl bg-white p-0 shadow-2xl md:!right-10 lg:!right-[max(2.5rem,calc((100vw-80rem)/2))]">
+            <DialogContent className="!bottom-[max(1rem,env(safe-area-inset-bottom))] !left-4 !right-4 !top-auto w-auto max-w-none !translate-x-0 !translate-y-0 overflow-hidden rounded-xl bg-white p-0 shadow-2xl sm:!bottom-auto sm:!left-auto sm:!right-6 sm:!top-[132px] sm:w-[calc(100vw-3rem)] sm:max-w-xs md:!right-10 md:!top-[76px] lg:!right-[max(2.5rem,calc((100vw-80rem)/2))]">
                 <DialogHeader className="border-b border-slate-100 p-5">
                     <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
                         <span className="material-symbols-outlined text-primary">
