@@ -119,7 +119,9 @@ export function useProducts(
     const [error, setError] = useState<string | null>(null);
     const queryKey = JSON.stringify(query);
     const queryRef = useRef(query);
-    const skipClientFetch = Boolean(options.skipClientFetch && initialData);
+    const initialQueryKeyRef = useRef(queryKey);
+    const hasDepartedFromInitialQueryRef = useRef(false);
+    const canUseInitialData = Boolean(options.skipClientFetch && initialData);
     queryRef.current = query;
 
     useEffect(() => {
@@ -147,9 +149,15 @@ export function useProducts(
     }, []);
 
     useEffect(() => {
-        if (skipClientFetch) {
+        if (
+            canUseInitialData &&
+            !hasDepartedFromInitialQueryRef.current &&
+            queryKey === initialQueryKeyRef.current
+        ) {
             return;
         }
+
+        hasDepartedFromInitialQueryRef.current = true;
 
         let cancelled = false;
 
@@ -181,7 +189,7 @@ export function useProducts(
         return () => {
             cancelled = true;
         };
-    }, [skipClientFetch, queryKey]);
+    }, [canUseInitialData, queryKey]);
 
     return { data, isLoading, error, refresh, isPending: isLoading };
 }

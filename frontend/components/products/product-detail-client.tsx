@@ -88,6 +88,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                         <ProductImage
                             alt={product.name}
                             className="aspect-[4/5] w-full object-cover"
+                            priority
+                            sizes="(min-width: 1024px) 45vw, calc(100vw - 3rem)"
                             src={product.imageUrl}
                         />
                     </div>

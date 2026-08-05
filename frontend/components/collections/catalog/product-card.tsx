@@ -30,6 +30,11 @@ export function ProductCard({
                     <ProductImage
                         alt={product.name}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        sizes={
+                            isCraft
+                                ? "(max-width: 639px) calc(100vw - 2rem), (max-width: 1279px) 50vw, 33vw"
+                                : "(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) 50vw, 33vw"
+                        }
                         src={product.imageUrl}
                     />
                 </Link>

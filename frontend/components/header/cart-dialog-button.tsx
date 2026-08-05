@@ -109,6 +109,7 @@ export function CartDialogButton() {
                                         <ProductImage
                                             alt={item.name}
                                             className="h-16 w-16 rounded-lg bg-slate-100 object-cover"
+                                            sizes="64px"
                                             src={item.imageUrl}
                                         />
                                         <div className="min-w-0 flex-1">

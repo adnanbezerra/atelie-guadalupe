@@ -74,13 +74,19 @@ export function CollectionCatalog({
         skipClientFetch: true,
         category,
     });
-    const productsResource = useProducts(initialCatalog, {
-        page,
-        pageSize: 24,
-        category,
-        search,
-        lineUuid: lineUuid || undefined,
-    });
+    const productsResource = useProducts(
+        initialCatalog,
+        {
+            page,
+            pageSize: 24,
+            category,
+            search,
+            lineUuid: lineUuid || undefined,
+        },
+        {
+            skipClientFetch: true,
+        },
+    );
     const productLines = linesResource.lines;
     const resourceError = productsResource.error ?? linesResource.error;
     const pagination = productsResource.data?.pagination;

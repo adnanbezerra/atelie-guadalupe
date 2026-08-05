@@ -256,6 +256,7 @@ export function AdminProductsClient({
                                                         <ProductImage
                                                             alt={product.name}
                                                             className="h-full w-full object-cover"
+                                                            sizes="80px"
                                                             src={
                                                                 product.imageUrl
                                                             }

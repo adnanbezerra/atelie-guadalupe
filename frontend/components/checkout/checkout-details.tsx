@@ -69,6 +69,7 @@ export function OrderItems({ items }: { items: CheckoutDisplayItem[] }) {
                         <ProductImage
                             alt={item.name}
                             className="size-[4.5rem] shrink-0 rounded-lg object-cover sm:size-20"
+                            sizes="(max-width: 639px) 72px, 80px"
                             src={item.imageUrl}
                         />
                         <div className="min-w-0 flex-1">
