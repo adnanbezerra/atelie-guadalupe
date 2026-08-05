@@ -2737,6 +2737,154 @@ Requer autenticacao. Envie `serviceCode` para confirmar uma das opcoes recalcula
 
 O checkout de pagamento nao pode ser criado antes desta confirmacao.
 
+### Links de pagamento personalizados
+
+Links personalizados sao cobrancas avulsas, sem vinculo com pedido, carrinho, estoque ou frete. O valor e informado em centavos.
+
+#### `POST /payment-links`
+
+Cria uma cobranca personalizada. Requer autenticacao com papel `ADMIN` ou `SUBADMIN`.
+
+Body:
+
+```json
+{
+    "amountInCents": 12500,
+    "description": "Encomenda personalizada para Maria",
+    "expiresAt": "2026-08-15T23:59:59-03:00"
+}
+```
+
+Regras:
+
+- `amountInCents` deve ser um inteiro positivo;
+- `description` e obrigatoria e aceita de 1 a 500 caracteres;
+- `expiresAt` e opcional, deve ser uma data/hora ISO 8601 futura e pode conter offset;
+- a cobranca e o produto correspondente sao criados uma unica vez na AbacatePay;
+- configure `PAYMENT_LINK_PUBLIC_BASE_URL` com a URL publica do frontend, sem o UUID final. Exemplo: `https://atelie.guadalupe/checkout/manual`.
+
+Resposta `201`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "paymentLink": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "amountInCents": 12500,
+            "description": "Encomenda personalizada para Maria",
+            "expiresAt": "2026-08-16T02:59:59.000Z",
+            "status": "ACTIVE",
+            "paymentUrl": "https://atelie.guadalupe/checkout/manual/0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "paymentPath": "/payment-links/0195f4aa-7f18-7db5-9f32-06f4a9a2b411/payment",
+            "providerCheckoutId": null,
+            "checkoutUrl": null,
+            "paidAmountInCents": null,
+            "providerMethod": null,
+            "refundPublicId": null,
+            "refundReason": null,
+            "paidAt": null,
+            "refundedAt": null,
+            "disputedAt": null,
+            "lostAt": null,
+            "createdBy": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b410",
+                "name": "Admin Guadalupe",
+                "email": "admin@atelieguadalupe.com.br"
+            },
+            "createdAt": "2026-08-05T14:00:00.000Z",
+            "updatedAt": "2026-08-05T14:00:00.000Z"
+        }
+    }
+}
+```
+
+Se `PAYMENT_LINK_PUBLIC_BASE_URL` nao estiver configurada, `paymentUrl` sera `null`; o frontend pode montar a URL publica usando o `uuid`.
+
+#### `POST /payment-links/:uuid/payment`
+
+Endpoint publico usado pela pagina compartilhada para criar ou recuperar o checkout hospedado. Nao recebe body e retorna sempre o mesmo checkout depois que ele foi criado.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "checkoutUrl": "https://app.abacatepay.com/pay/bill_abc123",
+        "paymentLink": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "amountInCents": 12500,
+            "description": "Encomenda personalizada para Maria",
+            "expiresAt": "2026-08-16T02:59:59.000Z",
+            "status": "PENDING"
+        }
+    }
+}
+```
+
+Erros relevantes:
+
+- `404` quando o UUID nao existe;
+- `400` quando o link expirou, ja foi pago ou nao esta disponivel;
+- `409` quando outra requisicao ainda esta criando o checkout;
+- `503` quando a AbacatePay estiver indisponivel.
+
+A expiracao bloqueia este endpoint e altera o status local para `EXPIRED`. A API de checkout hospedado da AbacatePay nao oferece expiracao propria: se o cliente ja tiver obtido a URL direta do provedor antes do prazo, essa URL pode continuar acessivel. Um pagamento posteriormente confirmado pelo webhook prevalece e altera o status para `PAID`.
+
+#### `GET /payment-links`
+
+Lista o historico de cobrancas para auditoria. Requer autenticacao com papel `ADMIN` ou `SUBADMIN`.
+
+Query params:
+
+- `page`: pagina, padrao `1`;
+- `pageSize`: itens por pagina, padrao `20`, maximo `100`;
+- `status`: filtro opcional (`ACTIVE`, `CREATING`, `PENDING`, `PAID`, `EXPIRED`, `REFUNDED`, `DISPUTED` ou `LOST`).
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "items": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+                "amountInCents": 12500,
+                "description": "Encomenda personalizada para Maria",
+                "expiresAt": null,
+                "status": "PAID",
+                "providerCheckoutId": "bill_abc123",
+                "paidAmountInCents": 12500,
+                "providerMethod": "PIX",
+                "refundPublicId": null,
+                "refundReason": null,
+                "paidAt": "2026-08-05T14:10:00.000Z",
+                "refundedAt": null,
+                "disputedAt": null,
+                "lostAt": null,
+                "createdBy": {
+                    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b410",
+                    "name": "Admin Guadalupe",
+                    "email": "admin@atelieguadalupe.com.br"
+                },
+                "createdAt": "2026-08-05T14:00:00.000Z",
+                "updatedAt": "2026-08-05T14:10:00.000Z"
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 1,
+            "totalPages": 1
+        }
+    }
+}
+```
+
+O historico e ordenado do mais recente para o mais antigo e inclui o administrador que criou cada cobranca. Os webhooks `checkout.completed`, `checkout.refunded`, `checkout.disputed` e `checkout.lost` atualizam os estados financeiros e seus respectivos timestamps.
+
 ### `POST /orders/:orderUuid/payment`
 
 Cria ou recupera o checkout hospedado da AbacatePay.

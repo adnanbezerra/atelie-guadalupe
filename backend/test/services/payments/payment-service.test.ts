@@ -1,7 +1,7 @@
 import * as assert from "node:assert";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
-import { PaymentStatus } from "../../../src/generated/prisma/enums";
+import { PaymentLinkStatus, PaymentStatus } from "../../../src/generated/prisma/enums";
 import { PaymentService } from "../../../src/modules/payments/services/payment-service";
 import {
     PaymentWebhookService,
@@ -172,4 +172,51 @@ test("processed webhook delivery is ignored without repeating effects", async ()
 
     assert.deepStrictEqual(result, { duplicate: true });
     assert.equal(paymentLookup, false);
+});
+
+test("checkout.completed records payment for a personalized payment link", async () => {
+    const calls: string[] = [];
+    const prisma = {
+        paymentWebhookEvent: {
+            upsert: async () => ({ processedAt: null }),
+            update: async () => {
+                calls.push("event-processed");
+            }
+        },
+        orderPayment: { findUnique: async () => null },
+        paymentLink: {
+            findUnique: async () => ({
+                id: 9,
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b499",
+                amountInCents: 7500,
+                paidAt: null
+            }),
+            update: async ({ data }: { data: { status: PaymentLinkStatus } }) => {
+                assert.equal(data.status, PaymentLinkStatus.PAID);
+                calls.push("payment-link-paid");
+            }
+        },
+        $transaction: async (operations: Promise<unknown>[]) => Promise.all(operations)
+    };
+    const service = new PaymentWebhookService(prisma as never);
+
+    const result = await service.process({
+        id: "evt_payment_link_1",
+        event: "checkout.completed",
+        data: {
+            checkout: {
+                id: "bill_link_1",
+                externalId: "payment-link:0195f4aa-7f18-7db5-9f32-06f4a9a2b499",
+                amount: 7500,
+                paidAmount: 7500
+            },
+            payerInformation: { method: "PIX" }
+        }
+    });
+
+    assert.deepStrictEqual(calls, ["payment-link-paid", "event-processed"]);
+    assert.deepStrictEqual(result, {
+        processed: true,
+        paymentLinkUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b499"
+    });
 });

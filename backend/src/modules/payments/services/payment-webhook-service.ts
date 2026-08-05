@@ -1,6 +1,11 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Prisma, PrismaClient } from "../../../generated/prisma/client";
-import { EmailJobType, OrderStatus, PaymentStatus } from "../../../generated/prisma/enums";
+import {
+    EmailJobType,
+    OrderStatus,
+    PaymentLinkStatus,
+    PaymentStatus
+} from "../../../generated/prisma/enums";
 import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
@@ -71,7 +76,16 @@ export class PaymentWebhookService {
                     }
                 }
             });
-            if (!payment || payment.order.uuid !== checkout.externalId) {
+            if (!payment) {
+                const paymentLink = await this.prisma.paymentLink.findUnique({
+                    where: { providerCheckoutId: checkout.id }
+                });
+                if (!paymentLink || checkout.externalId !== `payment-link:${paymentLink.uuid}`) {
+                    throw AppError.notFound("Pagamento do webhook nao encontrado");
+                }
+                return await this.processPaymentLink(payload, checkout, paymentLink);
+            }
+            if (payment.order.uuid !== checkout.externalId) {
                 throw AppError.notFound("Pagamento do webhook nao encontrado");
             }
 
@@ -174,6 +188,73 @@ export class PaymentWebhookService {
         if (event === "checkout.refunded") return { status: PaymentStatus.REFUNDED };
         if (event === "checkout.disputed") return { status: PaymentStatus.DISPUTED };
         if (event === "checkout.lost") return { status: PaymentStatus.LOST };
+        return null;
+    }
+
+    private async processPaymentLink(
+        payload: AbacateWebhookPayload,
+        checkout: { id?: string; externalId?: string; amount?: number; paidAmount?: number },
+        paymentLink: {
+            id: number;
+            uuid: string;
+            amountInCents: number;
+            paidAt: Date | null;
+        }
+    ) {
+        if (payload.event === "checkout.completed") {
+            if (
+                checkout.amount !== paymentLink.amountInCents ||
+                checkout.paidAmount !== paymentLink.amountInCents
+            ) {
+                throw AppError.conflict("Valor pago diverge do total esperado");
+            }
+            await this.prisma.$transaction([
+                this.prisma.paymentLink.update({
+                    where: { id: paymentLink.id },
+                    data: {
+                        status: PaymentLinkStatus.PAID,
+                        paidAmountInCents: checkout.paidAmount,
+                        providerMethod: payload.data?.payerInformation?.method,
+                        paidAt: paymentLink.paidAt ?? new Date()
+                    }
+                }),
+                this.prisma.paymentWebhookEvent.update({
+                    where: { eventId: payload.id },
+                    data: { processedAt: new Date(), error: null }
+                })
+            ]);
+            return { processed: true, paymentLinkUuid: paymentLink.uuid };
+        }
+
+        const status = this.paymentLinkEventState(payload.event);
+        if (status) {
+            await this.prisma.$transaction([
+                this.prisma.paymentLink.update({
+                    where: { id: paymentLink.id },
+                    data: {
+                        status,
+                        refundPublicId: payload.data?.refundPublicId,
+                        refundReason: payload.data?.reason,
+                        refundedAt: status === PaymentLinkStatus.REFUNDED ? new Date() : undefined,
+                        disputedAt: status === PaymentLinkStatus.DISPUTED ? new Date() : undefined,
+                        lostAt: status === PaymentLinkStatus.LOST ? new Date() : undefined
+                    }
+                }),
+                this.prisma.paymentWebhookEvent.update({
+                    where: { eventId: payload.id },
+                    data: { processedAt: new Date(), error: null }
+                })
+            ]);
+        } else {
+            await this.markProcessed(payload.id);
+        }
+        return { processed: true, paymentLinkUuid: paymentLink.uuid };
+    }
+
+    private paymentLinkEventState(event: string) {
+        if (event === "checkout.refunded") return PaymentLinkStatus.REFUNDED;
+        if (event === "checkout.disputed") return PaymentLinkStatus.DISPUTED;
+        if (event === "checkout.lost") return PaymentLinkStatus.LOST;
         return null;
     }
 

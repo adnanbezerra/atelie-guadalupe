@@ -67,6 +67,17 @@ enum PaymentStatus {
   LOST
 }
 
+enum PaymentLinkStatus {
+  ACTIVE
+  CREATING
+  PENDING
+  PAID
+  EXPIRED
+  REFUNDED
+  DISPUTED
+  LOST
+}
+
 enum FulfillmentJobStatus {
   PENDING
   PROCESSING
@@ -130,6 +141,7 @@ model User {
   cart         Cart?
   orders       Order[]
   couponUses   CouponRedemption[]
+  paymentLinks PaymentLink[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -353,6 +365,38 @@ model PaymentCatalogProduct {
   providerResponse  Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model PaymentLink {
+  id                       Int               @id @default(autoincrement())
+  uuid                     String            @unique @db.Uuid
+  createdById              Int
+  amountInCents            Int
+  description              String            @db.Text
+  expiresAt                DateTime?
+  status                   PaymentLinkStatus @default(ACTIVE)
+  provider                 String            @default("ABACATEPAY")
+  providerProductId        String            @unique
+  providerCheckoutId       String?           @unique
+  checkoutUrl              String?
+  paidAmountInCents        Int?
+  providerMethod           String?
+  providerProductResponse  Json?
+  providerCheckoutResponse Json?
+  refundPublicId           String?           @unique
+  refundReason             String?
+  paidAt                   DateTime?
+  refundedAt               DateTime?
+  disputedAt               DateTime?
+  lostAt                   DateTime?
+  createdBy                User              @relation(fields: [createdById], references: [id])
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  @@index([createdById])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([createdAt])
 }
 
 model PaymentWebhookEvent {
