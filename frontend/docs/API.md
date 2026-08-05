@@ -2227,7 +2227,84 @@ Resposta `200`:
 }
 ```
 
-## 17.2 Frete por pedido
+## 17.2 Preview de frete no carrinho
+
+### `POST /shipping/quote`
+
+Autenticacao:
+
+- opcional
+- visitante e usuario autenticado recebem a mesma resposta e seguem as mesmas regras
+
+Uso:
+
+- calcula opcoes de frete antes da criacao do pedido
+- nao cria pedido, nao altera ou esvazia carrinho e nao persiste cotacao ou servico escolhido
+- usa a plataforma padrao ativa como remetente
+- busca produto, categoria, preco, peso logistico, estoque e caixas no backend
+- ignora qualquer dado adicional de preco, peso ou dimensoes enviado pelo cliente
+- usa as mesmas regras de empacotamento da cotacao persistente por pedido
+
+Request:
+
+```json
+{
+    "zipCode": "01001000",
+    "items": [
+        {
+            "productUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b401",
+            "productSize": "GRAMS_70",
+            "quantity": 2
+        }
+    ]
+}
+```
+
+Validacoes:
+
+- `zipCode`: string com exatamente 8 digitos, sem mascara
+- `items`: array com ao menos um item
+- `productUuid`: UUID de produto existente e ativo
+- `productSize`: `GRAMS_70` ou `GRAMS_100`
+- `quantity`: inteiro positivo; para produtos com controle de estoque, a soma das quantidades do mesmo produto nao pode ultrapassar o estoque disponivel
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "quotedServices": [
+            {
+                "serviceCode": 1,
+                "serviceName": "PAC",
+                "priceInCents": 3526,
+                "deliveryDays": 7,
+                "deliveryRange": {
+                    "min": null,
+                    "max": null
+                }
+            }
+        ]
+    }
+}
+```
+
+Erros:
+
+- `400 BUSINESS_RULE_ERROR`: produto sem peso logistico, caixas incompativeis ou nenhuma transportadora disponivel
+- `404 RESOURCE_NOT_FOUND`: produto inexistente ou inativo
+- `422 VALIDATION_ERROR`: CEP, itens, tamanho ou quantidade invalidos; inclui estoque insuficiente
+- `503 SERVICE_UNAVAILABLE`: SuperFrete indisponivel, com mensagem publica `SuperFrete indisponivel no momento`
+
+Importante:
+
+- esta cotacao serve apenas como preview e nao deve ser usada como fonte de verdade para cobranca
+- ao confirmar a compra, o frontend cria o pedido e chama a cotacao persistente com o `serviceCode`; o backend recalcula e valida o valor
+
+Contrato dedicado para o frontend: [`docs/SHIPPING_QUOTE_FRONTEND.md`](./SHIPPING_QUOTE_FRONTEND.md).
+
+## 17.3 Frete por pedido
 
 Fluxo esperado:
 
@@ -2605,3 +2682,342 @@ Comportamento:
 - `GET /media/videos/:id` responde com stream binario, entao `videoUrl` pode ser usado direto em `<video src="...">`.
 - Para produtos `ARTISANAL`, envie tambem `shippingWeightGrams` em gramas no create/update.
 - O `.env` nao carrega mais endereco de expedicao; esses dados ficam na `Platform` padrao cadastrada no banco.
+
+---
+
+## Checkout, pagamento e fulfillment
+
+Todos os valores monetarios desta secao estao em centavos.
+
+### Estado do pedido
+
+O fluxo financeiro valido e:
+
+```text
+PENDING -> AWAITING_PAYMENT -> PAID -> PROCESSING -> SHIPPED -> DELIVERED
+```
+
+`PAID` nao pode ser definido por `PATCH /orders/:uuid/status`: somente um webhook valido da AbacatePay pode realizar essa transicao.
+
+A resposta publica de pedido agora inclui:
+
+```json
+{
+    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
+    "paymentIdempotencyKey": "0195f4aa-7f18-7db5-9f32-06f4a9a2b401",
+    "status": "AWAITING_PAYMENT",
+    "subtotalInCents": 5180,
+    "shippingInCents": 2500,
+    "discountInCents": 0,
+    "totalInCents": 7680,
+    "payment": {
+        "status": "PENDING",
+        "providerCheckoutId": "bill_abc123",
+        "checkoutUrl": "https://app.abacatepay.com/pay/bill_abc123",
+        "paidAmountInCents": null
+    },
+    "shipment": {
+        "status": "CONFIRMED",
+        "trackingCode": null,
+        "labelUrl": null
+    },
+    "fulfillment": null
+}
+```
+
+`payment`, `shipment` e `fulfillment` podem ser `null`.
+
+### `POST /orders`
+
+Requer autenticacao e agora exige `addressUuid`. O backend gera `paymentIdempotencyKey`, cria o pedido em `PENDING` e devolve a chave na resposta. A chave nao e credencial e deve ser guardada para criar ou recuperar o checkout.
+
+### `POST /shipping/orders/:orderUuid/quote`
+
+Requer autenticacao. Envie `serviceCode` para confirmar uma das opcoes recalculadas pela API. A confirmacao persiste o frete e atualiza `shippingInCents` e `totalInCents` atomicamente. Um shipment `CONFIRMED`, `CHECKOUT_REQUESTED` ou `LABEL_PURCHASED` nao aceita troca de servico.
+
+O checkout de pagamento nao pode ser criado antes desta confirmacao.
+
+### Links de pagamento personalizados
+
+Links personalizados sao cobrancas avulsas, sem vinculo com pedido, carrinho, estoque ou frete. O valor e informado em centavos.
+
+#### `POST /payment-links`
+
+Cria uma cobranca personalizada. Requer autenticacao com papel `ADMIN` ou `SUBADMIN`.
+
+Body:
+
+```json
+{
+    "amountInCents": 12500,
+    "description": "Encomenda personalizada para Maria",
+    "expiresAt": "2026-08-15T23:59:59-03:00"
+}
+```
+
+Regras:
+
+- `amountInCents` deve ser um inteiro positivo;
+- `description` e obrigatoria e aceita de 1 a 500 caracteres;
+- `expiresAt` e opcional, deve ser uma data/hora ISO 8601 futura e pode conter offset;
+- a cobranca e o produto correspondente sao criados uma unica vez na AbacatePay;
+- configure `PAYMENT_LINK_PUBLIC_BASE_URL` com a URL publica do frontend, sem o UUID final. Exemplo: `https://atelie.guadalupe/checkout/manual`.
+
+Resposta `201`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "paymentLink": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "amountInCents": 12500,
+            "description": "Encomenda personalizada para Maria",
+            "expiresAt": "2026-08-16T02:59:59.000Z",
+            "status": "ACTIVE",
+            "paymentUrl": "https://atelie.guadalupe/checkout/manual/0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "paymentPath": "/payment-links/0195f4aa-7f18-7db5-9f32-06f4a9a2b411/payment",
+            "providerCheckoutId": null,
+            "checkoutUrl": null,
+            "paidAmountInCents": null,
+            "providerMethod": null,
+            "refundPublicId": null,
+            "refundReason": null,
+            "paidAt": null,
+            "refundedAt": null,
+            "disputedAt": null,
+            "lostAt": null,
+            "createdBy": {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b410",
+                "name": "Admin Guadalupe",
+                "email": "admin@atelieguadalupe.com.br"
+            },
+            "createdAt": "2026-08-05T14:00:00.000Z",
+            "updatedAt": "2026-08-05T14:00:00.000Z"
+        }
+    }
+}
+```
+
+Se `PAYMENT_LINK_PUBLIC_BASE_URL` nao estiver configurada, `paymentUrl` sera `null`; o frontend pode montar a URL publica usando o `uuid`.
+
+#### `POST /payment-links/:uuid/payment`
+
+Endpoint publico usado pela pagina compartilhada para criar ou recuperar o checkout hospedado. Nao recebe body e retorna sempre o mesmo checkout depois que ele foi criado.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "checkoutUrl": "https://app.abacatepay.com/pay/bill_abc123",
+        "paymentLink": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "amountInCents": 12500,
+            "description": "Encomenda personalizada para Maria",
+            "expiresAt": "2026-08-16T02:59:59.000Z",
+            "status": "PENDING"
+        }
+    }
+}
+```
+
+Erros relevantes:
+
+- `404` quando o UUID nao existe;
+- `400` quando o link expirou, ja foi pago ou nao esta disponivel;
+- `409` quando outra requisicao ainda esta criando o checkout;
+- `503` quando a AbacatePay estiver indisponivel.
+
+A expiracao bloqueia este endpoint e altera o status local para `EXPIRED`. A API de checkout hospedado da AbacatePay nao oferece expiracao propria: se o cliente ja tiver obtido a URL direta do provedor antes do prazo, essa URL pode continuar acessivel. Um pagamento posteriormente confirmado pelo webhook prevalece e altera o status para `PAID`.
+
+#### `GET /payment-links`
+
+Lista o historico de cobrancas para auditoria. Requer autenticacao com papel `ADMIN` ou `SUBADMIN`.
+
+Query params:
+
+- `page`: pagina, padrao `1`;
+- `pageSize`: itens por pagina, padrao `20`, maximo `100`;
+- `status`: filtro opcional (`ACTIVE`, `CREATING`, `PENDING`, `PAID`, `EXPIRED`, `REFUNDED`, `DISPUTED` ou `LOST`).
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "items": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+                "amountInCents": 12500,
+                "description": "Encomenda personalizada para Maria",
+                "expiresAt": null,
+                "status": "PAID",
+                "providerCheckoutId": "bill_abc123",
+                "paidAmountInCents": 12500,
+                "providerMethod": "PIX",
+                "refundPublicId": null,
+                "refundReason": null,
+                "paidAt": "2026-08-05T14:10:00.000Z",
+                "refundedAt": null,
+                "disputedAt": null,
+                "lostAt": null,
+                "createdBy": {
+                    "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b410",
+                    "name": "Admin Guadalupe",
+                    "email": "admin@atelieguadalupe.com.br"
+                },
+                "createdAt": "2026-08-05T14:00:00.000Z",
+                "updatedAt": "2026-08-05T14:10:00.000Z"
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 1,
+            "totalPages": 1
+        }
+    }
+}
+```
+
+O historico e ordenado do mais recente para o mais antigo e inclui o administrador que criou cada cobranca. Os webhooks `checkout.completed`, `checkout.refunded`, `checkout.disputed` e `checkout.lost` atualizam os estados financeiros e seus respectivos timestamps.
+
+### `POST /orders/:orderUuid/payment`
+
+Cria ou recupera o checkout hospedado da AbacatePay.
+
+Headers:
+
+```http
+Authorization: Bearer <jwt>
+Idempotency-Key: <paymentIdempotencyKey retornada pelo pedido>
+```
+
+Nao ha body.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "paymentStatus": "PENDING",
+        "checkoutId": "bill_abc123",
+        "checkoutUrl": "https://app.abacatepay.com/pay/bill_abc123",
+        "amountInCents": 7680
+    }
+}
+```
+
+Regras:
+
+- o pedido deve pertencer ao usuario autenticado;
+- endereco e frete precisam estar confirmados;
+- a chave precisa ser a chave gerada para o pedido;
+- pedido e pagamento possuem relacao 1:1;
+- repetir a requisicao retorna o checkout existente;
+- produtos, descontos distribuidos e frete precisam somar exatamente `totalInCents`;
+- depois da criacao, o pedido fica `AWAITING_PAYMENT` e seus valores/frete permanecem bloqueados.
+
+Erros relevantes:
+
+| HTTP | Codigo                | Situacao                                                            |
+| ---- | --------------------- | ------------------------------------------------------------------- |
+| 400  | `BUSINESS_RULE_ERROR` | Frete nao confirmado, pedido em estado invalido ou total divergente |
+| 404  | `RESOURCE_NOT_FOUND`  | Pedido inexistente ou pertencente a outro usuario                   |
+| 409  | `CONFLICT`            | Chave nao pertence ao pedido                                        |
+| 422  | `VALIDATION_ERROR`    | UUID da rota ou header invalido/ausente                             |
+| 503  | `SERVICE_UNAVAILABLE` | AbacatePay indisponivel ou nao configurada                          |
+
+### `POST /webhooks/abacatepay`
+
+Endpoint publico, cadastrado na AbacatePay como:
+
+```text
+https://api.exemplo.com/webhooks/abacatepay?webhookSecret=<secret>
+```
+
+Headers obrigatorios:
+
+```http
+Content-Type: application/json
+X-Webhook-Signature: <HMAC-SHA256 em base64>
+```
+
+A assinatura e calculada sobre os bytes exatos do body usando `ABACATEPAY_WEBHOOK_HMAC_KEY`. A query string deve coincidir com `ABACATEPAY_WEBHOOK_SECRET`.
+
+Eventos processados:
+
+| Evento               | Efeito                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `checkout.completed` | Confere checkout, pedido e valores; marca pagamento/pedido como pagos; agenda fulfillment |
+| `checkout.refunded`  | Marca o pagamento como `REFUNDED`                                                         |
+| `checkout.disputed`  | Marca o pagamento como `DISPUTED`                                                         |
+| `checkout.lost`      | Marca o pagamento como `LOST`                                                             |
+
+Cada `event.id` e persistido com restricao unica. Reentregas processadas respondem `200` sem repetir efeitos. Eventos validos que nao pertencem ao fluxo de checkout sao registrados e ignorados.
+
+A `completionUrl` da AbacatePay nao comprova pagamento. A fonte de verdade e o pedido consultado nesta API depois do processamento do webhook.
+
+### Estados financeiros
+
+```text
+CREATING | PENDING | PAID | REFUND_PENDING | REFUNDED | DISPUTED | LOST
+```
+
+O cliente AbacatePay ja oferece a operacao interna de reembolso integral, mas esta versao nao publica endpoint administrativo para inicia-la. O webhook de reembolso ja e processado.
+
+### Fulfillment Superfrete
+
+Depois de `checkout.completed`, uma tarefa persistente e unica por pedido compra a etiqueta. Falhas nao revertem o pagamento; geram nova tentativa com backoff.
+
+Estados da tarefa:
+
+```text
+PENDING | PROCESSING | RETRY_SCHEDULED | COMPLETED
+```
+
+O fluxo consulta a operacao existente na Superfrete antes de repetir o checkout. Ao concluir, persiste protocolo, rastreio e URL da etiqueta e muda o pedido de `PAID` para `PROCESSING`.
+
+### `POST /orders/:orderUuid/fulfillment/retry`
+
+Requer `ADMIN` ou `SUBADMIN`. Reagenda imediatamente a compra/reconciliacao da etiqueta. A operacao e idempotente.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": { "scheduled": true }
+}
+```
+
+### Variaveis de ambiente
+
+```env
+ABACATEPAY_BASE_URL=https://api.abacatepay.com/v2
+ABACATEPAY_API_KEY=
+ABACATEPAY_RETURN_URL=https://loja.exemplo.com/checkout
+ABACATEPAY_COMPLETION_URL=https://loja.exemplo.com/checkout/success
+ABACATEPAY_WEBHOOK_SECRET=
+ABACATEPAY_WEBHOOK_HMAC_KEY=
+ABACATEPAY_TIMEOUT_MS=15000
+FULFILLMENT_WORKER_ENABLED=true
+FULFILLMENT_WORKER_INTERVAL_MS=30000
+FULFILLMENT_WORKER_LOCK_TIMEOUT_MS=300000
+```
+
+As configuracoes existentes `SUPERFRETE_*` continuam obrigatorias para cotacao e compra da etiqueta.
+
+### E2E completo do checkout em sandbox
+
+A suite opt-in `test/e2e/checkout-payment-flow.e2e.test.ts` valida pedido, cotacao e confirmacao de frete, idempotencia do checkout, checkout AbacatePay em `devMode`, webhook HMAC idempotente e compra da etiqueta no sandbox Superfrete.
+
+```bash
+pnpm run test:e2e:checkout
+```
+
+O teste exige `RUN_CHECKOUT_E2E=true` (definido pelo script), credenciais sandbox dos dois provedores e um administrador de seed com endereco completo. Ele recusa a URL de producao da Superfrete e um checkout AbacatePay sem `devMode`. Preparacao e diagnostico: [CHECKOUT_E2E.md](./CHECKOUT_E2E.md).

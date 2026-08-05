@@ -27,6 +27,11 @@ import type {
     UpdateCurrentUserInput,
     User,
     CheckoutPaymentPayload,
+    CreatePaymentLinkInput,
+    PaymentLink,
+    PaymentLinkCheckoutPayload,
+    PaymentLinkStatus,
+    PaymentLinksPayload,
 } from "@/lib/types";
 import {
     clearAuthSession,
@@ -444,6 +449,32 @@ export function createOrderPayment(
         token,
         headers: { "Idempotency-Key": idempotencyKey },
     });
+}
+
+export function getPaymentLinks(
+    token: string,
+    query: {
+        page?: number;
+        pageSize?: number;
+        status?: PaymentLinkStatus;
+    } = {},
+) {
+    return request<PaymentLinksPayload>("/payment-links", { token, query });
+}
+
+export function createPaymentLink(token: string, body: CreatePaymentLinkInput) {
+    return request<{ paymentLink: PaymentLink }>("/payment-links", {
+        method: "POST",
+        token,
+        body,
+    });
+}
+
+export function openPaymentLink(paymentLinkUuid: string) {
+    return request<PaymentLinkCheckoutPayload>(
+        `/payment-links/${encodeURIComponent(paymentLinkUuid)}/payment`,
+        { method: "POST" },
+    );
 }
 
 export function createProduct(token: string, body: CreateProductInput) {

@@ -7,6 +7,7 @@ import {
     MarketingPayload,
     MarketingPromotion,
     Order,
+    PaymentLinksPayload,
     ProductLine,
     Product,
     ProductsPayload,
@@ -85,6 +86,15 @@ export async function fetchCart() {
 
 export async function fetchOrders() {
     return serverApi<{ orders: Order[] }>("/orders");
+}
+
+export async function fetchPaymentLinks(params?: {
+    page?: number;
+    pageSize?: number;
+}) {
+    const query = buildQuery(params ?? {});
+    const suffix = query ? `?${query}` : "";
+    return serverApi<PaymentLinksPayload>(`/payment-links${suffix}`);
 }
 
 export async function fetchUsers() {

@@ -1,21 +1,14 @@
 import { AdminBillingClient } from "@/components/admin/admin-billing-client";
-import { fetchOrders, fetchProducts } from "@/lib/server-api";
+import { fetchPaymentLinks } from "@/lib/server-api";
 
 export default async function AdminBillingPage() {
-    const [ordersResult, productsResult] = await Promise.allSettled([
-        fetchOrders(),
-        fetchProducts({ page: 1, pageSize: 24 }),
+    const paymentLinksResult = await Promise.allSettled([
+        fetchPaymentLinks({ page: 1, pageSize: 8 }),
     ]);
+    const initialPaymentLinks =
+        paymentLinksResult[0].status === "fulfilled"
+            ? paymentLinksResult[0].value.items
+            : [];
 
-    const initialOrders =
-        ordersResult.status === "fulfilled" ? ordersResult.value.orders : [];
-    const initialProducts =
-        productsResult.status === "fulfilled" ? productsResult.value.items : [];
-
-    return (
-        <AdminBillingClient
-            initialOrders={initialOrders}
-            initialProducts={initialProducts}
-        />
-    );
+    return <AdminBillingClient initialPaymentLinks={initialPaymentLinks} />;
 }

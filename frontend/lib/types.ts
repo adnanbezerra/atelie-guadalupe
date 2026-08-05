@@ -340,6 +340,62 @@ export type CheckoutPaymentPayload = {
     amountInCents: number;
 };
 
+export type PaymentLinkStatus =
+    | "ACTIVE"
+    | "CREATING"
+    | "PENDING"
+    | "PAID"
+    | "EXPIRED"
+    | "REFUNDED"
+    | "DISPUTED"
+    | "LOST";
+
+export type PaymentLink = {
+    uuid: string;
+    amountInCents: number;
+    description: string;
+    expiresAt: string | null;
+    status: PaymentLinkStatus;
+    paymentUrl?: string | null;
+    paymentPath?: string;
+    providerCheckoutId: string | null;
+    checkoutUrl?: string | null;
+    paidAmountInCents: number | null;
+    providerMethod: string | null;
+    refundPublicId: string | null;
+    refundReason: string | null;
+    paidAt: string | null;
+    refundedAt: string | null;
+    disputedAt: string | null;
+    lostAt: string | null;
+    createdBy: {
+        uuid: string;
+        name: string;
+        email: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type PaymentLinksPayload = {
+    items: PaymentLink[];
+    pagination: Pagination;
+};
+
+export type CreatePaymentLinkInput = {
+    amountInCents: number;
+    description: string;
+    expiresAt?: string;
+};
+
+export type PaymentLinkCheckoutPayload = {
+    checkoutUrl: string;
+    paymentLink: Pick<
+        PaymentLink,
+        "uuid" | "amountInCents" | "description" | "expiresAt" | "status"
+    >;
+};
+
 export type OrdersResponse = {
     orders: Order[];
     pagination?: Pagination;
