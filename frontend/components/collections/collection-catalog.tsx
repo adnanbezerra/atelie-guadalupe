@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
-import { ProductImage } from "@/components/shared/product-image";
+import { CatalogPagination } from "./catalog/catalog-pagination";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    ConsultationDialog,
+    SizeSelectionDialog,
+} from "./catalog/catalog-dialogs";
+import { ProductCard } from "./catalog/product-card";
+import { ProductLineFilter } from "./catalog/product-line-filter";
+import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
 import { useCart } from "@/hooks/use-cart";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
@@ -22,13 +21,7 @@ import {
     ProductLine,
     ProductsPayload,
 } from "@/lib/types";
-import {
-    applyProductDiscount,
-    formatProductSizeLabel,
-    formatCurrency,
-    getLowestPriceOption,
-    normalizeDiscountPercent,
-} from "@/lib/utils";
+import { getLowestPriceOption } from "@/lib/utils";
 import { buildWhatsappLink } from "@/lib/whatsapp";
 import { toast } from "sonner";
 import Header from "../header";
@@ -237,128 +230,6 @@ export function CollectionCatalog({
         }
     }
 
-    function renderPrice(product: (typeof filteredProducts)[number]) {
-        const lowestPriceOption = getLowestPriceOption(product.priceOptions);
-        const originalPriceInCents = lowestPriceOption?.priceInCents ?? 0;
-        const discountPercent = normalizeDiscountPercent(
-            product.promotionDiscountPercent,
-        );
-        const finalPriceInCents = applyProductDiscount(
-            originalPriceInCents,
-            discountPercent,
-        );
-
-        if (originalPriceInCents <= 0) {
-            return <span>Sob consulta</span>;
-        }
-
-        return (
-            <span className="flex flex-col leading-tight">
-                <span className="mb-1 text-xs font-semibold text-slate-500">
-                    A partir de
-                </span>
-                <span className="text-red">
-                    {formatCurrency(finalPriceInCents)}
-                </span>
-                {discountPercent > 0 ? (
-                    <span className="mt-1 flex items-center gap-2 text-xs font-semibold">
-                        <span className="text-neutral-400 line-through">
-                            {formatCurrency(originalPriceInCents)}
-                        </span>
-                        <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
-                            {discountPercent}% OFF
-                        </span>
-                    </span>
-                ) : null}
-            </span>
-        );
-    }
-
-    function renderSizeDialog() {
-        const product = sizeProduct;
-        const discountPercent = normalizeDiscountPercent(
-            product?.promotionDiscountPercent,
-        );
-        const priceOptions = [...(product?.priceOptions ?? [])]
-            .filter((option) => option.priceInCents > 0)
-            .sort((a, b) => a.grams - b.grams);
-
-        return (
-            <Dialog
-                onOpenChange={(open) => {
-                    if (!open) setSizeProduct(null);
-                }}
-                open={product != null}
-            >
-                <DialogContent className="max-w-md rounded-xl bg-white p-6">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">
-                            Escolha o tamanho
-                        </DialogTitle>
-                        <DialogDescription className="text-sm leading-6 text-slate-600">
-                            {product?.name} tem valores por tamanho. Selecione
-                            uma opção para adicionar ao carrinho.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="mt-5 grid gap-3">
-                        {priceOptions.map((option) => {
-                            const finalPrice = applyProductDiscount(
-                                option.priceInCents,
-                                discountPercent,
-                            );
-
-                            return (
-                                <button
-                                    className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
-                                    disabled={
-                                        !product ||
-                                        pendingProductUuidsRef.current.has(
-                                            product.uuid,
-                                        )
-                                    }
-                                    key={option.size}
-                                    onClick={() =>
-                                        product
-                                            ? void handleAddToCart(
-                                                  product,
-                                                  option,
-                                              )
-                                            : undefined
-                                    }
-                                    type="button"
-                                >
-                                    <span>
-                                        <span className="block text-sm font-black uppercase tracking-widest text-slate-900">
-                                            {formatProductSizeLabel(
-                                                option.grams,
-                                            )}
-                                        </span>
-                                        <span className="mt-1 block text-xs text-slate-500">
-                                            Tamanho escolhido no carrinho e no
-                                            pedido
-                                        </span>
-                                    </span>
-                                    <span className="text-right">
-                                        {discountPercent > 0 ? (
-                                            <span className="block text-xs font-semibold text-slate-400 line-through">
-                                                {formatCurrency(
-                                                    option.priceInCents,
-                                                )}
-                                            </span>
-                                        ) : null}
-                                        <span className="block text-base font-black text-primary">
-                                            {formatCurrency(finalPrice)}
-                                        </span>
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </DialogContent>
-            </Dialog>
-        );
-    }
-
     const whatsappLink = buildWhatsappLink(
         consultProductName
             ? `Olá, vim pelo website e gostaria de consultar o produto ${consultProductName}.`
@@ -400,206 +271,54 @@ export function CollectionCatalog({
                     <div className="flex flex-col gap-12 lg:flex-row">
                         <aside className="w-full lg:w-64 lg:flex-shrink-0">
                             <div className="sticky top-28 space-y-8">
-                                <div>
-                                    <h3 className="mb-4 flex items-center gap-2 font-public font-semibold text-neutral-900">
-                                        <span className="material-symbols-outlined text-[#D4AF37]">
-                                            filter_list
-                                        </span>
-                                        Linhas de produtos
-                                    </h3>
-                                    <ul className="space-y-3">
-                                        <li>
-                                            <label className="flex cursor-pointer items-center gap-3 text-sm">
-                                                <input
-                                                    checked={!lineUuid}
-                                                    name="craft-product-line"
-                                                    onChange={() =>
-                                                        handleLineChange("")
-                                                    }
-                                                    type="radio"
-                                                />
-                                                Todas as linhas
-                                            </label>
-                                        </li>
-                                        {productLines.map((line) => (
-                                            <li key={line.uuid}>
-                                                <label className="flex cursor-pointer items-center gap-3 text-sm">
-                                                    <input
-                                                        checked={
-                                                            lineUuid ===
-                                                            line.uuid
-                                                        }
-                                                        name="craft-product-line"
-                                                        onChange={() =>
-                                                            handleLineChange(
-                                                                line.uuid,
-                                                            )
-                                                        }
-                                                        type="radio"
-                                                    />
-                                                    {line.name}
-                                                </label>
-                                            </li>
-                                        ))}
-                                        {productLines.length === 0 ? (
-                                            <li className="text-sm text-neutral-500">
-                                                Nenhuma linha cadastrada.
-                                            </li>
-                                        ) : null}
-                                    </ul>
-                                </div>
+                                <ProductLineFilter
+                                    lines={productLines}
+                                    onChange={handleLineChange}
+                                    selectedUuid={lineUuid}
+                                    variant="crafts"
+                                />
                             </div>
                         </aside>
 
                         <div className="flex-1">
                             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
                                 {filteredProducts.map((product) => (
-                                    <div className="group" key={product.uuid}>
-                                        <div className="relative mb-4 aspect-[4/5] overflow-hidden rounded-lg bg-neutral-100">
-                                            <Link
-                                                aria-label={`Ver ${product.name}`}
-                                                href={`/produto/${product.slug}`}
-                                            >
-                                                <ProductImage
-                                                    alt={product.name}
-                                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                    src={product.imageUrl}
-                                                />
-                                            </Link>
-                                            <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 text-[10px] font-bold tracking-widest uppercase text-[#4A3728]">
-                                                {product.line.name}
-                                            </div>
-                                        </div>
-                                        <Link href={`/produto/${product.slug}`}>
-                                            <h4 className="font-public text-lg font-medium text-neutral-900 transition hover:text-[#4A3728]">
-                                                {product.name}
-                                            </h4>
-                                        </Link>
-                                        <p className="mt-1 text-sm text-neutral-500">
-                                            {product.shortDescription}
-                                        </p>
-                                        <div className="mt-3 flex items-center justify-between">
-                                            <span className="text-xl font-bold text-[#4A3728]">
-                                                {renderPrice(product)}
-                                            </span>
-                                            <button
-                                                className="rounded bg-[#4A3728] px-4 py-2 text-xs font-medium tracking-wider text-white uppercase disabled:cursor-not-allowed disabled:opacity-60"
-                                                disabled={
-                                                    pendingProductUuidsRef.current.has(
-                                                        product.uuid,
-                                                    ) ||
-                                                    product.priceOptions
-                                                        .length === 0
-                                                }
-                                                onClick={() =>
-                                                    handleRequestAddToCart(
-                                                        product,
-                                                    )
-                                                }
-                                                type="button"
-                                            >
-                                                {pendingProductUuidsRef.current.has(
-                                                    product.uuid,
-                                                )
-                                                    ? "Adicionando"
-                                                    : "Comprar"}
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <ProductCard
+                                        isPending={pendingProductUuidsRef.current.has(
+                                            product.uuid,
+                                        )}
+                                        key={product.uuid}
+                                        onBuy={handleRequestAddToCart}
+                                        product={product}
+                                        variant="crafts"
+                                    />
                                 ))}
                             </div>
-
-                            {totalPages > 1 ? (
-                                <div className="mt-16 flex items-center justify-center gap-3">
-                                    <button
-                                        aria-label="Página anterior"
-                                        className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 disabled:cursor-not-allowed disabled:opacity-40"
-                                        disabled={page <= 1}
-                                        onClick={() =>
-                                            handlePageChange(page - 1)
-                                        }
-                                        type="button"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">
-                                            chevron_left
-                                        </span>
-                                    </button>
-                                    {pageNumbers.map((pageNumber) => (
-                                        <button
-                                            aria-current={
-                                                pageNumber === page
-                                                    ? "page"
-                                                    : undefined
-                                            }
-                                            className={
-                                                pageNumber === page
-                                                    ? "flex h-10 w-10 items-center justify-center rounded-full bg-[#4A3728] font-bold text-white"
-                                                    : "flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200"
-                                            }
-                                            key={pageNumber}
-                                            onClick={() =>
-                                                handlePageChange(pageNumber)
-                                            }
-                                            type="button"
-                                        >
-                                            {pageNumber}
-                                        </button>
-                                    ))}
-                                    <button
-                                        aria-label="Próxima página"
-                                        className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 disabled:cursor-not-allowed disabled:opacity-40"
-                                        disabled={page >= totalPages}
-                                        onClick={() =>
-                                            handlePageChange(page + 1)
-                                        }
-                                        type="button"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">
-                                            chevron_right
-                                        </span>
-                                    </button>
-                                </div>
-                            ) : null}
+                            <CatalogPagination
+                                currentPage={page}
+                                onChange={handlePageChange}
+                                pageNumbers={pageNumbers}
+                                totalPages={totalPages}
+                            />
                         </div>
                     </div>
                 </main>
-                <Dialog
-                    onOpenChange={(open) => {
-                        if (!open) setConsultProductName(null);
-                    }}
-                    open={consultProductName != null}
-                >
-                    <DialogContent className="max-w-md rounded-xl bg-white p-6">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-neutral-900">
-                                Atendimento pelo WhatsApp
-                            </DialogTitle>
-                            <DialogDescription className="text-sm leading-6 text-neutral-600">
-                                {consultProductName} está com preço sob consulta
-                                e é tratado diretamente pelo WhatsApp. Deseja
-                                abrir a conversa agora?
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                            <button
-                                className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700"
-                                onClick={() => setConsultProductName(null)}
-                                type="button"
-                            >
-                                Agora não
-                            </button>
-                            <a
-                                className="rounded-lg bg-emerald-600 px-4 py-2 text-center text-sm font-semibold text-white"
-                                href={whatsappLink}
-                                rel="noopener noreferrer"
-                                target="_blank"
-                            >
-                                Abrir WhatsApp
-                            </a>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-                {renderSizeDialog()}
+                <ConsultationDialog
+                    onClose={() => setConsultProductName(null)}
+                    productName={consultProductName}
+                    whatsappLink={whatsappLink}
+                />
+                <SizeSelectionDialog
+                    isPending={Boolean(
+                        sizeProduct &&
+                        pendingProductUuidsRef.current.has(sizeProduct.uuid),
+                    )}
+                    onAdd={(product, option) =>
+                        void handleAddToCart(product, option)
+                    }
+                    onClose={() => setSizeProduct(null)}
+                    product={sizeProduct}
+                />
             </div>
         );
     }
@@ -673,43 +392,12 @@ export function CollectionCatalog({
                                 />
                             </div>
                         </div>
-                        <div>
-                            <h4 className="mb-4 border-b border-slate-200 pb-2 text-sm font-bold uppercase tracking-wider">
-                                Linhas de produtos
-                            </h4>
-                            <div className="space-y-2">
-                                <label className="flex cursor-pointer items-center gap-3 text-sm">
-                                    <input
-                                        checked={!lineUuid}
-                                        name="product-line"
-                                        onChange={() => handleLineChange("")}
-                                        type="radio"
-                                    />
-                                    Todas as linhas
-                                </label>
-                                {productLines.map((line) => (
-                                    <label
-                                        className="flex cursor-pointer items-center gap-3 text-sm"
-                                        key={line.uuid}
-                                    >
-                                        <input
-                                            checked={lineUuid === line.uuid}
-                                            name="product-line"
-                                            onChange={() =>
-                                                handleLineChange(line.uuid)
-                                            }
-                                            type="radio"
-                                        />
-                                        {line.name}
-                                    </label>
-                                ))}
-                                {productLines.length === 0 ? (
-                                    <p className="text-sm text-slate-500">
-                                        Nenhuma linha cadastrada.
-                                    </p>
-                                ) : null}
-                            </div>
-                        </div>
+                        <ProductLineFilter
+                            lines={productLines}
+                            onChange={handleLineChange}
+                            selectedUuid={lineUuid}
+                            variant="beauty"
+                        />
                     </aside>
 
                     <div className="flex-1">
@@ -731,100 +419,36 @@ export function CollectionCatalog({
                         </div>
                         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
                             {filteredProducts.map((product) => (
-                                <div className="group" key={product.uuid}>
-                                    <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                        <Link
-                                            aria-label={`Ver ${product.name}`}
-                                            href={`/produto/${product.slug}`}
-                                        >
-                                            <ProductImage
-                                                alt={product.name}
-                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                src={product.imageUrl}
-                                            />
-                                        </Link>
-                                        <div className="absolute bottom-3 left-3">
-                                            <span className="rounded bg-white/90 px-2 py-1 text-[10px] font-bold tracking-widest text-primary uppercase">
-                                                {product.line.name}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <Link href={`/produto/${product.slug}`}>
-                                        <h3 className="font-display text-lg font-bold transition hover:text-primary">
-                                            {product.name}
-                                        </h3>
-                                    </Link>
-                                    <p className="mb-3 text-sm text-slate-500">
-                                        {product.shortDescription}
-                                    </p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-lg font-bold">
-                                            {renderPrice(product)}
-                                        </span>
-                                        <button
-                                            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
-                                            disabled={
-                                                pendingProductUuidsRef.current.has(
-                                                    product.uuid,
-                                                ) ||
-                                                product.priceOptions.length ===
-                                                    0
-                                            }
-                                            onClick={() =>
-                                                handleRequestAddToCart(product)
-                                            }
-                                            type="button"
-                                        >
-                                            {pendingProductUuidsRef.current.has(
-                                                product.uuid,
-                                            )
-                                                ? "Adicionando"
-                                                : "Comprar"}
-                                        </button>
-                                    </div>
-                                </div>
+                                <ProductCard
+                                    isPending={pendingProductUuidsRef.current.has(
+                                        product.uuid,
+                                    )}
+                                    key={product.uuid}
+                                    onBuy={handleRequestAddToCart}
+                                    product={product}
+                                    variant="beauty"
+                                />
                             ))}
                         </div>
                     </div>
                 </div>
             </main>
-            <Dialog
-                onOpenChange={(open) => {
-                    if (!open) setConsultProductName(null);
-                }}
-                open={consultProductName != null}
-            >
-                <DialogContent className="max-w-md rounded-xl bg-white p-6">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">
-                            Atendimento pelo WhatsApp
-                        </DialogTitle>
-                        <DialogDescription className="text-sm leading-6 text-slate-600">
-                            {consultProductName} está com preço sob consulta e é
-                            tratado diretamente pelo WhatsApp. Deseja abrir a
-                            conversa agora?
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                        <button
-                            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
-                            onClick={() => setConsultProductName(null)}
-                            type="button"
-                        >
-                            Agora não
-                        </button>
-                        <a
-                            className="rounded-lg bg-emerald-600 px-4 py-2 text-center text-sm font-semibold text-white"
-                            href={whatsappLink}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                        >
-                            Abrir WhatsApp
-                        </a>
-                    </div>
-                </DialogContent>
-            </Dialog>
-            {renderSizeDialog()}
+            <ConsultationDialog
+                onClose={() => setConsultProductName(null)}
+                productName={consultProductName}
+                whatsappLink={whatsappLink}
+            />
+            <SizeSelectionDialog
+                isPending={Boolean(
+                    sizeProduct &&
+                    pendingProductUuidsRef.current.has(sizeProduct.uuid),
+                )}
+                onAdd={(product, option) =>
+                    void handleAddToCart(product, option)
+                }
+                onClose={() => setSizeProduct(null)}
+                product={sizeProduct}
+            />
         </div>
     );
 }
