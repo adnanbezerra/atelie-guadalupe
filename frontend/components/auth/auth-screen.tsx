@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
@@ -171,27 +172,13 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         {fields[mode].map((field) => (
                             <div key={field.id}>
-                                <div
-                                    className={
-                                        field.id === "password" && isLogin
-                                            ? "mb-2 flex items-center justify-between"
-                                            : undefined
-                                    }
-                                >
+                                <div>
                                     <label
                                         className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#4A3B2E]"
                                         htmlFor={field.id}
                                     >
                                         {field.label}
                                     </label>
-                                    {field.id === "password" && isLogin ? (
-                                        <a
-                                            className="text-xs font-semibold text-[#8C6D4F] transition-colors hover:text-[#1A2E44]"
-                                            href="#"
-                                        >
-                                            Esqueci minha senha
-                                        </a>
-                                    ) : null}
                                 </div>
                                 <div className="relative">
                                     <span
@@ -268,9 +255,12 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
                 <div className="relative hidden w-1/2 lg:block">
                     <div className="absolute inset-0 z-10 bg-[#1A2E44]/20" />
-                    <img
+                    <Image
                         alt="Atmosfera Ateliê Guadalupe"
                         className="absolute inset-0 h-full w-full object-cover"
+                        fill
+                        priority
+                        sizes="50vw"
                         src="/auth-guadalupe.webp"
                     />
                     <div className="absolute inset-0 z-20 flex flex-col justify-end bg-gradient-to-t from-[#1A2E44]/80 via-transparent to-transparent p-16">

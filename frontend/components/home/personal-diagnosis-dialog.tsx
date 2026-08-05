@@ -84,13 +84,10 @@ export function PersonalDiagnosisDialog({
 
                         <div className="space-y-8 pr-10">
                             <DialogHeader className="space-y-4">
-                                <span className="inline-flex w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-primary">
-                                    Diagnóstico pessoal
-                                </span>
                                 <DialogTitle asChild>
-                                    <h1 className="font-display text-3xl font-bold leading-tight text-slate-900 md:text-4xl">
+                                    <h2 className="font-display text-3xl font-bold leading-tight text-slate-900 md:text-4xl">
                                         Diagnóstico pessoal personalizado
-                                    </h1>
+                                    </h2>
                                 </DialogTitle>
                                 <DialogDescription asChild>
                                     <h2 className="text-base font-medium leading-relaxed text-slate-600 md:text-lg">
@@ -112,7 +109,7 @@ export function PersonalDiagnosisDialog({
                                 href={WHATSAPP_LINK}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#25D366] px-6 py-4 text-base font-bold text-white shadow-[0_18px_40px_-20px_rgba(37,211,102,0.95)] transition hover:brightness-105"
+                                className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#25D366] px-6 py-4 text-base font-bold text-slate-950 shadow-[0_18px_40px_-20px_rgba(37,211,102,0.95)] transition hover:brightness-95"
                             >
                                 <WhatsAppIcon />
                                 Falar no WhatsApp

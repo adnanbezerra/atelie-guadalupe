@@ -27,7 +27,6 @@ type ProfileDataViewProps = {
     calendarMonth: Date;
     isBirthCalendarOpen: boolean;
     isCepLoading: boolean;
-    cepError: string | null;
     profileFormRef: RefObject<HTMLFormElement | null>;
     birthCalendarRef: RefObject<HTMLDivElement | null>;
     onSubmit: FormEventHandler<HTMLFormElement>;
@@ -46,7 +45,6 @@ export function ProfileDataView({
     calendarMonth,
     isBirthCalendarOpen,
     isCepLoading,
-    cepError,
     profileFormRef,
     birthCalendarRef,
     onSubmit,
@@ -354,11 +352,6 @@ export function ProfileDataView({
                                 placeholder="01001-000"
                                 type="text"
                             />
-                            {cepError ? (
-                                <p className="px-1 text-xs font-semibold text-red-500">
-                                    {cepError}
-                                </p>
-                            ) : null}
                         </div>
 
                         <AddressInput

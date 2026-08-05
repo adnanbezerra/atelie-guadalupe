@@ -30,7 +30,6 @@ export function ProfilePageClient() {
     const [calendarMonth, setCalendarMonth] = useState(new Date());
     const [isBirthCalendarOpen, setIsBirthCalendarOpen] = useState(false);
     const [isCepLoading, setIsCepLoading] = useState(false);
-    const [cepError, setCepError] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{
         title: string;
         description: string;
@@ -128,8 +127,6 @@ export function ProfilePageClient() {
 
     async function handleZipCodeChange(value: string) {
         const cepLimpo = onlyDigits(value, 8);
-        setCepError(null);
-
         if (cepLimpo.length !== 8) {
             lastCepRequestRef.current = "";
             setIsCepLoading(false);
@@ -147,7 +144,11 @@ export function ProfilePageClient() {
             }
 
             if (!payload) {
-                setCepError("CEP não encontrado.");
+                setFeedback({
+                    title: "CEP não encontrado",
+                    description:
+                        "Confira os números informados e tente novamente.",
+                });
                 return;
             }
 
@@ -158,7 +159,11 @@ export function ProfilePageClient() {
             setAddressField("country", "Brasil");
         } catch {
             if (lastCepRequestRef.current === cepLimpo) {
-                setCepError("Não foi possível consultar o CEP.");
+                setFeedback({
+                    title: "Não foi possível consultar o CEP",
+                    description:
+                        "Confira sua conexão e tente novamente em instantes.",
+                });
             }
         } finally {
             if (lastCepRequestRef.current === cepLimpo) {
@@ -248,7 +253,6 @@ export function ProfilePageClient() {
                             birthCalendarRef={birthCalendarRef}
                             birthDate={birthDate}
                             calendarMonth={calendarMonth}
-                            cepError={cepError}
                             isBirthCalendarOpen={isBirthCalendarOpen}
                             isCepLoading={isCepLoading}
                             isLoading={profile.isLoading}

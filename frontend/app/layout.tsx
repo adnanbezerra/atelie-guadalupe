@@ -22,9 +22,9 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-    title: "Atelie Guadalupe",
+    title: "Ateliê Guadalupe",
     description:
-        "Cosmeticos botanicos e artesanato autoral com experiencia publica e painel administrativo.",
+        "Cosméticos naturais à base de sebo e artesanato autoral feitos à mão no Ateliê Guadalupe.",
 };
 
 export default function RootLayout({
