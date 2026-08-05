@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { ProfileDataView } from "@/components/profile/profile-data-view";
 import { ProfileOrdersView } from "@/components/profile/profile-orders-view";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     buildDirtyProfilePayload,
     fetchViaCepAddress,
@@ -31,9 +31,15 @@ export function ProfilePageClient() {
     const [isBirthCalendarOpen, setIsBirthCalendarOpen] = useState(false);
     const [isCepLoading, setIsCepLoading] = useState(false);
     const [cepError, setCepError] = useState<string | null>(null);
+    const [feedback, setFeedback] = useState<{
+        title: string;
+        description: string;
+    } | null>(null);
+    const [dismissedError, setDismissedError] = useState<string | null>(null);
     const profileFormRef = useRef<HTMLFormElement | null>(null);
     const birthCalendarRef = useRef<HTMLDivElement | null>(null);
     const lastCepRequestRef = useRef("");
+    const resourceError = profile.error ?? orders.error;
 
     useEffect(() => {
         setActiveView(getInitialView());
@@ -88,6 +94,7 @@ export function ProfilePageClient() {
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setDismissedError(null);
         const formData = new FormData(event.currentTarget);
         const payload = buildDirtyProfilePayload(
             formData,
@@ -101,8 +108,13 @@ export function ProfilePageClient() {
 
         const updatedUser = await profile.updateProfile(payload);
 
-        if (updatedUser && payload.address) {
-            toast.success("Endereço atualizado com sucesso.");
+        if (updatedUser) {
+            setFeedback({
+                title: "Dados atualizados",
+                description: payload.address
+                    ? "Seus dados e endereço foram atualizados com sucesso."
+                    : "Seus dados foram atualizados com sucesso.",
+            });
         }
     }
 
@@ -186,6 +198,7 @@ export function ProfilePageClient() {
                                 onClick={() => setActiveView(item.view)}
                             >
                                 <span
+                                    aria-hidden="true"
                                     className="material-symbols-outlined text-[20px]"
                                     style={
                                         item.view === activeView
@@ -215,7 +228,10 @@ export function ProfilePageClient() {
                                 onClick={handleLogout}
                                 type="button"
                             >
-                                <span className="material-symbols-outlined text-[20px]">
+                                <span
+                                    aria-hidden="true"
+                                    className="material-symbols-outlined text-[20px]"
+                                >
                                     logout
                                 </span>
                                 <span className="text-sm font-medium">
@@ -233,7 +249,6 @@ export function ProfilePageClient() {
                             birthDate={birthDate}
                             calendarMonth={calendarMonth}
                             cepError={cepError}
-                            error={profile.error}
                             isBirthCalendarOpen={isBirthCalendarOpen}
                             isCepLoading={isCepLoading}
                             isLoading={profile.isLoading}
@@ -253,13 +268,29 @@ export function ProfilePageClient() {
 
                     {activeView === "pedidos" ? (
                         <ProfileOrdersView
-                            error={orders.error}
                             isLoading={orders.isLoading}
                             orders={orders.data}
                         />
                     ) : null}
                 </section>
             </div>
+            <FeedbackDialog
+                description={feedback?.description ?? resourceError ?? ""}
+                onOpenChange={(open) => {
+                    if (open) return;
+
+                    if (feedback) {
+                        setFeedback(null);
+                    } else {
+                        setDismissedError(resourceError);
+                    }
+                }}
+                open={
+                    Boolean(feedback) ||
+                    Boolean(resourceError && resourceError !== dismissedError)
+                }
+                title={feedback?.title ?? "Não foi possível carregar os dados"}
+            />
         </main>
     );
 }

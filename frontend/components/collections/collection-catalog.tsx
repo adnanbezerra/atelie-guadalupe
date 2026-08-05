@@ -12,6 +12,7 @@ import {
 import { ProductCard } from "./catalog/product-card";
 import { ProductLineFilter } from "./catalog/product-line-filter";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { useCart } from "@/hooks/use-cart";
 import { useProductLines, useProducts } from "@/hooks/use-products";
 import { filterProductsByCollection } from "@/lib/catalog";
@@ -24,7 +25,6 @@ import {
 } from "@/lib/types";
 import { getLowestPriceOption } from "@/lib/utils";
 import { buildWhatsappLink } from "@/lib/whatsapp";
-import { toast } from "sonner";
 import Header from "../header";
 
 type CollectionCatalogProps = {
@@ -62,6 +62,11 @@ export function CollectionCatalog({
         null,
     );
     const [sizeProduct, setSizeProduct] = useState<Product | null>(null);
+    const [feedback, setFeedback] = useState<{
+        title: string;
+        description: string;
+    } | null>(null);
+    const [dismissedError, setDismissedError] = useState<string | null>(null);
     const [, startTransition] = useTransition();
     const cart = useCart();
     const category = collectionKey === "beauty" ? "BELEZA" : "ARTESANATO";
@@ -77,6 +82,7 @@ export function CollectionCatalog({
         lineUuid: lineUuid || undefined,
     });
     const productLines = linesResource.lines;
+    const resourceError = productsResource.error ?? linesResource.error;
     const pagination = productsResource.data?.pagination;
     const totalPages = pagination?.totalPages ?? 0;
     const pageNumbers = useMemo(() => {
@@ -162,11 +168,13 @@ export function CollectionCatalog({
     ]);
 
     function handleSearchChange(value: string) {
+        setDismissedError(null);
         setSearch(value);
         setPage(1);
     }
 
     function handleLineChange(value: string) {
+        setDismissedError(null);
         setLineUuid(value);
         setPage(1);
     }
@@ -178,6 +186,7 @@ export function CollectionCatalog({
             return;
         }
 
+        setDismissedError(null);
         setPage(nextPage);
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -218,7 +227,8 @@ export function CollectionCatalog({
             });
 
             if (errorMessage) {
-                toast.error("Não foi possível adicionar ao carrinho.", {
+                setFeedback({
+                    title: "Não foi possível adicionar ao carrinho",
                     description: errorMessage,
                 });
             } else {
@@ -234,6 +244,25 @@ export function CollectionCatalog({
         consultProductName
             ? `Olá, vim pelo website e gostaria de consultar o produto ${consultProductName}.`
             : "Olá, vim pelo website e gostaria de consultar um produto.",
+    );
+    const feedbackDialog = (
+        <FeedbackDialog
+            description={feedback?.description ?? resourceError ?? ""}
+            onOpenChange={(open) => {
+                if (open) return;
+
+                if (feedback) {
+                    setFeedback(null);
+                } else {
+                    setDismissedError(resourceError);
+                }
+            }}
+            open={
+                Boolean(feedback) ||
+                Boolean(resourceError && resourceError !== dismissedError)
+            }
+            title={feedback?.title ?? "Não foi possível carregar o catálogo"}
+        />
     );
 
     if (collectionKey === "crafts") {
@@ -254,7 +283,10 @@ export function CollectionCatalog({
                         className="mb-7 flex items-center gap-2 text-sm text-neutral-600"
                     >
                         <Link href="/">Home</Link>
-                        <span className="material-symbols-outlined text-xs">
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined text-xs"
+                        >
                             chevron_right
                         </span>
                         <span className="font-medium text-[#4A3728]">
@@ -341,6 +373,7 @@ export function CollectionCatalog({
                     onClose={() => setSizeProduct(null)}
                     product={sizeProduct}
                 />
+                {feedbackDialog}
             </div>
         );
     }
@@ -361,11 +394,17 @@ export function CollectionCatalog({
                     className="mb-7 flex items-center gap-2 text-sm text-slate-600"
                 >
                     <Link href="/">Home</Link>
-                    <span className="material-symbols-outlined text-xs">
+                    <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined text-xs"
+                    >
                         chevron_right
                     </span>
                     <Link href="/beleza-natural">Beleza Natural</Link>
-                    <span className="material-symbols-outlined text-xs">
+                    <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined text-xs"
+                    >
                         chevron_right
                     </span>
                     <span className="font-medium text-slate-900">Cremes</span>
@@ -484,6 +523,7 @@ export function CollectionCatalog({
                 onClose={() => setSizeProduct(null)}
                 product={sizeProduct}
             />
+            {feedbackDialog}
         </div>
     );
 }
@@ -519,7 +559,10 @@ function CatalogEmpty({
 }) {
     return (
         <section className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-            <span className="material-symbols-outlined text-4xl text-primary">
+            <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-4xl text-primary"
+            >
                 inventory_2
             </span>
             <h2 className="mt-4 font-display text-2xl font-bold text-slate-950">

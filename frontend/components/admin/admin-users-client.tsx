@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { toast } from "sonner";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     Dialog,
     DialogClose,
@@ -29,12 +29,13 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
         password: "",
         role: "USER" as UserRole,
     });
-    const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [feedback, setFeedback] = useState<{
+        title: string;
+        description: string;
+    } | null>(null);
 
     async function handleCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        setStatusMessage(null);
-
         try {
             await users.createUser(formState);
             setFormState({
@@ -44,11 +45,18 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                 role: "SUBADMIN",
             });
             setIsCreateDialogOpen(false);
-            toast.success("Usuário criado com sucesso.");
+            setFeedback({
+                title: "Usuário criado",
+                description: "O acesso foi criado com sucesso.",
+            });
         } catch (reason) {
-            setStatusMessage(
-                reason instanceof Error ? reason.message : "Falha ao criar.",
-            );
+            setFeedback({
+                title: "Não foi possível criar o usuário",
+                description:
+                    reason instanceof Error
+                        ? reason.message
+                        : "Tente novamente em alguns instantes.",
+            });
         }
     }
 
@@ -57,7 +65,10 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
             <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
                 <div className="flex items-center gap-2 text-slate-500">
                     <span className="text-sm">Painel de Controle</span>
-                    <span className="material-symbols-outlined text-sm">
+                    <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined text-sm"
+                    >
                         chevron_right
                     </span>
                     <span className="text-sm font-bold text-slate-900">
@@ -65,14 +76,26 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                     </span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <button className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100">
-                        <span className="material-symbols-outlined">
+                    <button
+                        aria-label="Ver notificações"
+                        className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined"
+                        >
                             notifications
                         </span>
                         <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
                     </button>
-                    <button className="rounded-full p-2 text-slate-500 hover:bg-slate-100">
-                        <span className="material-symbols-outlined">
+                    <button
+                        aria-label="Abrir busca"
+                        className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined"
+                        >
                             search
                         </span>
                     </button>
@@ -95,12 +118,14 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                             open={isCreateDialogOpen}
                             onOpenChange={(open) => {
                                 setIsCreateDialogOpen(open);
-                                setStatusMessage(null);
                             }}
                         >
                             <DialogTrigger asChild>
                                 <button className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90">
-                                    <span className="material-symbols-outlined text-xl">
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined text-xl"
+                                    >
                                         person_add
                                     </span>
                                     <span>Cadastrar Usuário</span>
@@ -112,7 +137,10 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                         aria-label="Fechar"
                                         className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                                     >
-                                        <span className="material-symbols-outlined text-xl">
+                                        <span
+                                            aria-hidden="true"
+                                            className="material-symbols-outlined text-xl"
+                                        >
                                             close
                                         </span>
                                     </button>
@@ -130,6 +158,7 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                     onSubmit={handleCreate}
                                 >
                                     <input
+                                        aria-label="Nome"
                                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
                                         onChange={(event) =>
                                             setFormState((current) => ({
@@ -141,6 +170,7 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                         value={formState.name}
                                     />
                                     <input
+                                        aria-label="E-mail"
                                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
                                         onChange={(event) =>
                                             setFormState((current) => ({
@@ -152,6 +182,7 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                         value={formState.email}
                                     />
                                     <input
+                                        aria-label="Senha temporária"
                                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
                                         onChange={(event) =>
                                             setFormState((current) => ({
@@ -164,6 +195,7 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                         value={formState.password}
                                     />
                                     <select
+                                        aria-label="Cargo ou função"
                                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
                                         onChange={(event) =>
                                             setFormState((current) => ({
@@ -188,11 +220,6 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                     >
                                         Criar
                                     </button>
-                                    {statusMessage ? (
-                                        <p className="text-sm text-slate-600">
-                                            {statusMessage}
-                                        </p>
-                                    ) : null}
                                 </form>
                             </DialogContent>
                         </Dialog>
@@ -200,16 +227,23 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
 
                     <div className="mb-6 flex flex-col gap-4 sm:flex-row">
                         <div className="relative flex-1">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                            >
                                 search
                             </span>
                             <input
+                                aria-label="Pesquisar usuários"
                                 className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm"
                                 placeholder="Pesquisar por nome, cargo ou e-mail..."
                             />
                         </div>
                         <button className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium">
-                            <span className="material-symbols-outlined">
+                            <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined"
+                            >
                                 filter_list
                             </span>
                             <span>Filtros</span>
@@ -283,8 +317,14 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="text-slate-400 transition-colors hover:text-primary">
-                                                    <span className="material-symbols-outlined">
+                                                <button
+                                                    aria-label={`Abrir ações de ${user.name}`}
+                                                    className="text-slate-400 transition-colors hover:text-primary"
+                                                >
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="material-symbols-outlined"
+                                                    >
                                                         more_vert
                                                     </span>
                                                 </button>
@@ -297,6 +337,14 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                     </div>
                 </div>
             </div>
+            <FeedbackDialog
+                description={feedback?.description ?? ""}
+                onOpenChange={(open) => {
+                    if (!open) setFeedback(null);
+                }}
+                open={Boolean(feedback)}
+                title={feedback?.title ?? ""}
+            />
         </div>
     );
 }

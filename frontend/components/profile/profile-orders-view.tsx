@@ -13,13 +13,11 @@ import {
 
 type ProfileOrdersViewProps = {
     orders: Order[];
-    error: string | null;
     isLoading: boolean;
 };
 
 export function ProfileOrdersView({
     orders,
-    error,
     isLoading,
 }: ProfileOrdersViewProps) {
     return (
@@ -40,12 +38,6 @@ export function ProfileOrdersView({
                     </span>
                 </div>
 
-                {error ? (
-                    <p className="rounded-2xl bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-600">
-                        {error}
-                    </p>
-                ) : null}
-
                 {isLoading ? (
                     <div className="space-y-4">
                         {[0, 1, 2].map((item) => (
@@ -59,7 +51,10 @@ export function ProfileOrdersView({
 
                 {!isLoading && !orders.length ? (
                     <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
-                        <span className="material-symbols-outlined text-4xl text-slate-300">
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined text-4xl text-slate-300"
+                        >
                             shopping_bag
                         </span>
                         <h3 className="mt-4 text-lg font-extrabold text-slate-900">

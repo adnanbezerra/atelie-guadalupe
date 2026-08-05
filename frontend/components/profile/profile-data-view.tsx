@@ -21,7 +21,6 @@ import {
 type ProfileDataViewProps = {
     user: User | null;
     primaryAddress: Address | null;
-    error: string | null;
     isLoading: boolean;
     isSubmitting: boolean;
     birthDate?: Date;
@@ -41,7 +40,6 @@ type ProfileDataViewProps = {
 export function ProfileDataView({
     user,
     primaryAddress,
-    error,
     isLoading,
     isSubmitting,
     birthDate,
@@ -69,12 +67,6 @@ export function ProfileDataView({
                     </p>
                 </div>
             </div>
-
-            {error ? (
-                <p className="mb-8 rounded-2xl bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-600">
-                    {error}
-                </p>
-            ) : null}
 
             <form
                 className="space-y-8"
@@ -176,7 +168,10 @@ export function ProfileDataView({
                                 >
                                     {formatDateLabel(birthDate) || "12/08/1988"}
                                 </span>
-                                <span className="material-symbols-outlined text-slate-400">
+                                <span
+                                    aria-hidden="true"
+                                    className="material-symbols-outlined text-slate-400"
+                                >
                                     calendar_today
                                 </span>
                             </button>
@@ -204,7 +199,10 @@ export function ProfileDataView({
                                             }
                                             type="button"
                                         >
-                                            <span className="material-symbols-outlined">
+                                            <span
+                                                aria-hidden="true"
+                                                className="material-symbols-outlined"
+                                            >
                                                 chevron_left
                                             </span>
                                         </button>
@@ -275,7 +273,10 @@ export function ProfileDataView({
                                             }
                                             type="button"
                                         >
-                                            <span className="material-symbols-outlined">
+                                            <span
+                                                aria-hidden="true"
+                                                className="material-symbols-outlined"
+                                            >
                                                 chevron_right
                                             </span>
                                         </button>

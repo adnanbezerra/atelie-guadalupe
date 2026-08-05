@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { notifyAuthSessionChanged } from "@/lib/auth-session";
 
 type AuthMode = "login" | "register";
@@ -193,7 +194,10 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                                     ) : null}
                                 </div>
                                 <div className="relative">
-                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#334155]/40">
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#334155]/40"
+                                    >
                                         {field.icon}
                                     </span>
                                     <input
@@ -223,12 +227,6 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                                     Lembrar de mim
                                 </label>
                             </div>
-                        ) : null}
-
-                        {error ? (
-                            <p className="rounded-lg bg-[#F4F1ED] px-4 py-3 text-sm font-semibold text-[#4A3B2E]">
-                                {error}
-                            </p>
                         ) : null}
 
                         <div className="space-y-4 pt-2">
@@ -278,6 +276,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     <div className="absolute inset-0 z-20 flex flex-col justify-end bg-gradient-to-t from-[#1A2E44]/80 via-transparent to-transparent p-16">
                         <div className="max-w-md">
                             <span
+                                aria-hidden="true"
                                 className="material-symbols-outlined mb-6 text-4xl text-white/80"
                                 style={{
                                     fontVariationSettings:
@@ -299,6 +298,14 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     </div>
                 </div>
             </main>
+            <FeedbackDialog
+                description={error}
+                onOpenChange={(open) => {
+                    if (!open) setError("");
+                }}
+                open={Boolean(error)}
+                title="Não foi possível continuar"
+            />
         </div>
     );
 }

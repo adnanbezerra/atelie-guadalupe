@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     Dialog,
     DialogContent,
@@ -57,7 +57,34 @@ export function AdminTestimonialsClient({
         "ALL",
     );
     const [open, setOpen] = useState(false);
-    const [feedback, setFeedback] = useState<string | null>(null);
+    const [feedback, setFeedback] = useState<{
+        title: string;
+        description: string;
+    } | null>(null);
+    const [dismissedError, setDismissedError] = useState<string | null>(null);
+
+    async function handleTestimonialAction(
+        action: () => Promise<void>,
+        successDescription: string,
+    ) {
+        setDismissedError(null);
+
+        try {
+            await action();
+            setFeedback({
+                title: "Alteração concluída",
+                description: successDescription,
+            });
+        } catch (error) {
+            setFeedback({
+                title: "Não foi possível concluir a alteração",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Tente novamente em alguns instantes.",
+            });
+        }
+    }
 
     const filteredItems = useMemo(() => {
         if (typeFilter === "ALL") {
@@ -89,8 +116,14 @@ export function AdminTestimonialsClient({
                     </h2>
                 </div>
                 <div className="flex items-center gap-4">
-                    <button className="relative rounded-full p-2 text-slate-500">
-                        <span className="material-symbols-outlined">
+                    <button
+                        aria-label="Ver notificações"
+                        className="relative rounded-full p-2 text-slate-500"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined"
+                        >
                             notifications
                         </span>
                         <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
@@ -118,7 +151,10 @@ export function AdminTestimonialsClient({
                     >
                         <DialogTrigger asChild>
                             <button className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white">
-                                <span className="material-symbols-outlined">
+                                <span
+                                    aria-hidden="true"
+                                    className="material-symbols-outlined"
+                                >
                                     add
                                 </span>
                                 Novo Testemunho
@@ -135,24 +171,28 @@ export function AdminTestimonialsClient({
                                 </DialogDescription>
                             </DialogHeader>
                             <TestimonialForm
-                                feedback={feedback}
                                 onSubmit={async (payload, options) => {
                                     try {
                                         setFeedback(null);
+                                        setDismissedError(null);
                                         await testimonials.createTestimonial(
                                             payload,
                                             options,
                                         );
                                         setOpen(false);
-                                        toast.success(
-                                            "Testemunho criado com sucesso.",
-                                        );
+                                        setFeedback({
+                                            title: "Testemunho criado",
+                                            description:
+                                                "O testemunho foi salvo com sucesso.",
+                                        });
                                     } catch (error) {
-                                        setFeedback(
-                                            error instanceof Error
-                                                ? error.message
-                                                : "Falha ao salvar testemunho.",
-                                        );
+                                        setFeedback({
+                                            title: "Não foi possível salvar o testemunho",
+                                            description:
+                                                error instanceof Error
+                                                    ? error.message
+                                                    : "Tente novamente em alguns instantes.",
+                                        });
                                         throw error;
                                     }
                                 }}
@@ -195,7 +235,10 @@ export function AdminTestimonialsClient({
                             <div
                                 className={`flex size-12 items-center justify-center rounded-lg ${item.tone}`}
                             >
-                                <span className="material-symbols-outlined">
+                                <span
+                                    aria-hidden="true"
+                                    className="material-symbols-outlined"
+                                >
                                     {item.icon}
                                 </span>
                             </div>
@@ -237,11 +280,6 @@ export function AdminTestimonialsClient({
                                 </button>
                             ))}
                         </div>
-                        {testimonials.error ? (
-                            <p className="text-sm text-red-600">
-                                {testimonials.error}
-                            </p>
-                        ) : null}
                     </div>
 
                     <div className="overflow-x-auto">
@@ -312,29 +350,45 @@ export function AdminTestimonialsClient({
                                             <div className="flex items-center justify-end gap-2">
                                                 {testimonial.isActive ? (
                                                     <button
+                                                        aria-label="Desativar testemunho"
                                                         className="rounded-lg p-2 transition-colors hover:bg-amber-100 hover:text-amber-600"
-                                                        onClick={() =>
-                                                            void testimonials.deactivateTestimonial(
-                                                                testimonial.uuid,
-                                                            )
-                                                        }
+                                                        onClick={() => {
+                                                            void handleTestimonialAction(
+                                                                () =>
+                                                                    testimonials.deactivateTestimonial(
+                                                                        testimonial.uuid,
+                                                                    ),
+                                                                "O testemunho foi desativado.",
+                                                            );
+                                                        }}
                                                         type="button"
                                                     >
-                                                        <span className="material-symbols-outlined text-lg">
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="material-symbols-outlined text-lg"
+                                                        >
                                                             visibility_off
                                                         </span>
                                                     </button>
                                                 ) : null}
                                                 <button
+                                                    aria-label="Excluir testemunho"
                                                     className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600"
-                                                    onClick={() =>
-                                                        void testimonials.deleteTestimonial(
-                                                            testimonial.uuid,
-                                                        )
-                                                    }
+                                                    onClick={() => {
+                                                        void handleTestimonialAction(
+                                                            () =>
+                                                                testimonials.deleteTestimonial(
+                                                                    testimonial.uuid,
+                                                                ),
+                                                            "O testemunho foi excluído.",
+                                                        );
+                                                    }}
                                                     type="button"
                                                 >
-                                                    <span className="material-symbols-outlined text-lg">
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="material-symbols-outlined text-lg"
+                                                    >
                                                         delete
                                                     </span>
                                                 </button>
@@ -357,15 +411,36 @@ export function AdminTestimonialsClient({
                     </div>
                 </div>
             </div>
+            <FeedbackDialog
+                description={feedback?.description ?? testimonials.error ?? ""}
+                onOpenChange={(nextOpen) => {
+                    if (nextOpen) return;
+
+                    if (feedback) {
+                        setFeedback(null);
+                    } else {
+                        setDismissedError(testimonials.error);
+                    }
+                }}
+                open={
+                    Boolean(feedback) ||
+                    Boolean(
+                        testimonials.error &&
+                        testimonials.error !== dismissedError,
+                    )
+                }
+                title={
+                    feedback?.title ??
+                    "Não foi possível carregar os testemunhos"
+                }
+            />
         </div>
     );
 }
 
 function TestimonialForm({
-    feedback,
     onSubmit,
 }: {
-    feedback: string | null;
     onSubmit: (
         payload: CreateTestimonialInput,
         options?: { onUploadProgress?: (progress: number) => void },
@@ -492,7 +567,10 @@ function TestimonialForm({
                         ) : (
                             <Field label="Vídeo">
                                 <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-slate-500 transition hover:border-primary hover:text-primary">
-                                    <span className="material-symbols-outlined">
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined"
+                                    >
                                         upload_file
                                     </span>
                                     <span className="text-xs font-bold uppercase">
@@ -597,15 +675,9 @@ function TestimonialForm({
                     </label>
                 </section>
 
-                {formError || feedback ? (
-                    <p
-                        className={
-                            formError
-                                ? "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
-                                : "rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
-                        }
-                    >
-                        {formError ?? feedback}
+                {formError ? (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                        {formError}
                     </p>
                 ) : null}
 
@@ -614,7 +686,10 @@ function TestimonialForm({
                     disabled={isSubmitting}
                     type="submit"
                 >
-                    <span className="material-symbols-outlined text-sm">
+                    <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined text-sm"
+                    >
                         {isSubmitting ? "progress_activity" : "save"}
                     </span>
                     {isSubmitting ? "Enviando..." : "Cadastrar Testemunho"}
@@ -663,7 +738,10 @@ function TypeOption({
                 onChange={onChange}
                 type="radio"
             />
-            <span className="material-symbols-outlined ml-3 text-primary">
+            <span
+                aria-hidden="true"
+                className="material-symbols-outlined ml-3 text-primary"
+            >
                 {icon}
             </span>
             <span className="ml-3">

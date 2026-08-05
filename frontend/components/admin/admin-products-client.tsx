@@ -66,10 +66,14 @@ export function AdminProductsClient({
             <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
                 <div className="flex max-w-md flex-1 items-center">
                     <div className="relative w-full">
-                        <span className="material-symbols-outlined absolute top-1/2 left-3 -translate-y-1/2 text-slate-400">
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+                        >
                             search
                         </span>
                         <input
+                            aria-label="Buscar produtos"
                             className="w-full rounded-lg bg-slate-100 py-2 pr-4 pl-10 text-sm outline-none"
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder="Buscar produtos, categorias ou SKU..."
@@ -78,8 +82,14 @@ export function AdminProductsClient({
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <button className="relative rounded-full p-2 text-slate-500">
-                        <span className="material-symbols-outlined">
+                    <button
+                        aria-label="Ver notificações"
+                        className="relative rounded-full p-2 text-slate-500"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined"
+                        >
                             notifications
                         </span>
                         <span className="absolute top-2 right-2 size-2 rounded-full bg-red-500" />
@@ -102,7 +112,12 @@ export function AdminProductsClient({
                         className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white"
                         href="/admin/produtos/novo"
                     >
-                        <span className="material-symbols-outlined">add</span>
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined"
+                        >
+                            add
+                        </span>
                         Adicionar Novo Produto
                     </Link>
                 </div>
@@ -141,7 +156,10 @@ export function AdminProductsClient({
                             <div
                                 className={`flex size-12 items-center justify-center rounded-lg ${item.tone}`}
                             >
-                                <span className="material-symbols-outlined">
+                                <span
+                                    aria-hidden="true"
+                                    className="material-symbols-outlined"
+                                >
                                     {item.icon}
                                 </span>
                             </div>
@@ -176,7 +194,10 @@ export function AdminProductsClient({
                                 }
                                 type="button"
                             >
-                                <span className="material-symbols-outlined text-sm">
+                                <span
+                                    aria-hidden="true"
+                                    className="material-symbols-outlined text-sm"
+                                >
                                     priority_high
                                 </span>
                                 Estoque Baixo
@@ -305,15 +326,25 @@ export function AdminProductsClient({
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Link
+                                                        aria-label={`Editar ${product.name}`}
                                                         className="rounded-lg p-2 transition-colors hover:bg-primary/10 hover:text-primary"
                                                         href={`/admin/produtos/${product.uuid}`}
                                                     >
-                                                        <span className="material-symbols-outlined text-lg">
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="material-symbols-outlined text-lg"
+                                                        >
                                                             edit
                                                         </span>
                                                     </Link>
-                                                    <button className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600">
-                                                        <span className="material-symbols-outlined text-lg">
+                                                    <button
+                                                        aria-label={`Excluir ${product.name}`}
+                                                        className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600"
+                                                    >
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="material-symbols-outlined text-lg"
+                                                        >
                                                             delete
                                                         </span>
                                                     </button>
