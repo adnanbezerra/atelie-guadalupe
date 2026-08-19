@@ -1,8 +1,10 @@
 # Product
 
-## Register
+<!-- impeccable:product-schema 1 -->
 
-brand
+## Platform
+
+web
 
 ## Users
 
@@ -16,19 +18,21 @@ Atelie Guadalupe is a public storefront for natural tallow products and artisana
 
 Success means the public experience makes the purpose of the store obvious, presents products with enough context for low-tech shoppers, and moves people confidently toward purchase. When a decision needs personal guidance, the interface should make WhatsApp consultation feel direct and expected.
 
-## Brand Personality
+## Brand Commitments
+
+### Brand Personality
 
 Devout, artisanal, and healthy. The voice should feel rooted in faith, real craft, and care for the body without becoming abstract or overly polished.
 
 The brand should feel like a store with a founder, a history, and products made by real hands. It should speak plainly, with warmth and conviction, so customers can understand what they are buying and why it matters.
 
-## Anti-references
+### Anti-references
 
 This should not look or feel like generic ecommerce, a luxury boutique, a dropshipping storefront, or a soulless corporate shop with no story and nothing to care about.
 
 Avoid anonymous marketplace patterns, over-polished wellness-spa aesthetics, vague lifestyle copy, and interfaces that hide the product purpose behind decoration.
 
-## Design Principles
+## Product Principles
 
 1. Make the product purpose unmistakable. Visitors should quickly understand that the store sells natural tallow products and artisanal goods.
 2. Lead with trust before polish. Founder story, real product imagery, plain ingredients, testimonials, and clear buying steps matter more than decorative flourish.
