@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { PaymentLinkStatus, PaymentStatus } from "../../../src/generated/prisma/enums";
 import { PaymentService } from "../../../src/modules/payments/services/payment-service";
 import {
+    ABACATEPAY_WEBHOOK_PUBLIC_KEY,
     PaymentWebhookService,
     verifyAbacateWebhook
 } from "../../../src/modules/payments/services/payment-webhook-service";
@@ -68,11 +69,12 @@ test("payment service rejects checkout before shipping confirmation", async () =
 
 test("abacate webhook signature uses the exact raw body", () => {
     const body = Buffer.from('{"id":"evt_1","event":"checkout.completed"}');
-    const secret = "webhook-public-key";
-    const signature = createHmac("sha256", secret).update(body).digest("base64");
+    const signature = createHmac("sha256", ABACATEPAY_WEBHOOK_PUBLIC_KEY)
+        .update(body)
+        .digest("base64");
 
-    assert.equal(verifyAbacateWebhook(body, signature, secret), true);
-    assert.equal(verifyAbacateWebhook(Buffer.from("{}"), signature, secret), false);
+    assert.equal(verifyAbacateWebhook(body, signature), true);
+    assert.equal(verifyAbacateWebhook(Buffer.from("{}"), signature), false);
 });
 
 test("checkout.completed marks payment paid and enqueues fulfillment atomically", async () => {

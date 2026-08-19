@@ -2947,7 +2947,7 @@ Content-Type: application/json
 X-Webhook-Signature: <HMAC-SHA256 em base64>
 ```
 
-A assinatura e calculada sobre os bytes exatos do body usando `ABACATEPAY_WEBHOOK_HMAC_KEY`. A query string deve coincidir com `ABACATEPAY_WEBHOOK_SECRET`.
+A assinatura e calculada sobre os bytes exatos do body usando a chave publica oficial da AbacatePay. A query string deve coincidir com `ABACATEPAY_WEBHOOK_SECRET`.
 
 Eventos processados:
 
@@ -3003,7 +3003,6 @@ ABACATEPAY_API_KEY=
 ABACATEPAY_RETURN_URL=https://loja.exemplo.com/checkout
 ABACATEPAY_COMPLETION_URL=https://loja.exemplo.com/checkout/success
 ABACATEPAY_WEBHOOK_SECRET=
-ABACATEPAY_WEBHOOK_HMAC_KEY=
 ABACATEPAY_TIMEOUT_MS=15000
 FULFILLMENT_WORKER_ENABLED=true
 FULFILLMENT_WORKER_INTERVAL_MS=30000

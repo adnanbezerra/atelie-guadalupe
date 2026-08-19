@@ -15,17 +15,12 @@ export class PaymentWebhookController {
         const rawBody = request.body as Buffer;
         const query = request.query as WebhookQuery;
         const expectedSecret = process.env.ABACATEPAY_WEBHOOK_SECRET ?? "";
-        const signatureKey = process.env.ABACATEPAY_WEBHOOK_HMAC_KEY ?? "";
         const signature = request.headers["x-webhook-signature"];
 
         if (!expectedSecret || query.webhookSecret !== expectedSecret) {
             throw AppError.unauthorized("Secret de webhook invalido");
         }
-        if (
-            !signatureKey ||
-            typeof signature !== "string" ||
-            !verifyAbacateWebhook(rawBody, signature, signatureKey)
-        ) {
+        if (typeof signature !== "string" || !verifyAbacateWebhook(rawBody, signature)) {
             throw AppError.unauthorized("Assinatura de webhook invalida");
         }
 

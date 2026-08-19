@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
 import { FastifyInstance } from "fastify";
+import { ABACATEPAY_WEBHOOK_PUBLIC_KEY } from "../../src/modules/payments/services/payment-webhook-service";
 import { build } from "../helper";
 
 type ApiResponse<T> = {
@@ -79,7 +80,6 @@ const requiredEnvironment = [
     "SEED_ADMIN_PASSWORD",
     "ABACATEPAY_API_KEY",
     "ABACATEPAY_WEBHOOK_SECRET",
-    "ABACATEPAY_WEBHOOK_HMAC_KEY",
     "SUPERFRETE_TOKEN",
     "SUPERFRETE_USER_AGENT"
 ];
@@ -109,7 +109,6 @@ test(
         const password = process.env.SEED_ADMIN_PASSWORD!;
         const abacateApiKey = process.env.ABACATEPAY_API_KEY!;
         const webhookSecret = process.env.ABACATEPAY_WEBHOOK_SECRET!;
-        const webhookHmacKey = process.env.ABACATEPAY_WEBHOOK_HMAC_KEY!;
 
         const mongoUrl = process.env.MONGODB_URL;
         const mongoDbName = process.env.MONGODB_DB_NAME;
@@ -281,7 +280,7 @@ test(
             }
         };
         const rawBody = JSON.stringify(event);
-        const signature = createHmac("sha256", webhookHmacKey)
+        const signature = createHmac("sha256", ABACATEPAY_WEBHOOK_PUBLIC_KEY)
             .update(Buffer.from(rawBody))
             .digest("base64");
         const webhookRequest = {
