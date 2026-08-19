@@ -58,14 +58,15 @@ function readToken(request: NextRequest) {
 export function proxy(request: NextRequest) {
     const token = readToken(request);
     const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-    const isPublicPaymentLinkRoute =
-        request.nextUrl.pathname.startsWith("/checkout/manual/");
+    const isPublicCheckoutRoute =
+        request.nextUrl.pathname.startsWith("/checkout/manual/") ||
+        request.nextUrl.pathname === "/checkout/success";
     const isProfileRoute =
         request.nextUrl.pathname.startsWith("/perfil") ||
         request.nextUrl.pathname.startsWith("/checkout");
     const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
 
-    if (isPublicPaymentLinkRoute) {
+    if (isPublicCheckoutRoute) {
         return NextResponse.next();
     }
 
