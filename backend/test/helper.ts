@@ -13,6 +13,7 @@ const AppPath = path.join(__dirname, "..", "src", "app.ts");
 // Fill in this config with all the configurations
 // needed for testing the application
 function config() {
+    process.env.NODE_ENV = "test";
     process.env.DATABASE_URL =
         process.env.DATABASE_URL ??
         "postgresql://postgres:postgres@localhost:5432/atelie_guadalupe";
