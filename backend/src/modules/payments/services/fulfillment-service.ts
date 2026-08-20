@@ -62,7 +62,7 @@ export class FulfillmentService {
         const order = await this.prisma.order.findUnique({ where: { uuid: orderUuid } });
         if (!order) return false;
         await this.enqueue(order.id);
-        await this.prisma.fulfillmentJob.update({
+        const job = await this.prisma.fulfillmentJob.update({
             where: { orderId: order.id },
             data: {
                 status: FulfillmentJobStatus.PENDING,
@@ -70,7 +70,7 @@ export class FulfillmentService {
                 lastError: null
             }
         });
-        await this.processDue(1);
+        await this.processJob(job.id, orderUuid);
         return true;
     }
 

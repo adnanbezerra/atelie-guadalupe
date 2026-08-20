@@ -74,7 +74,7 @@ export class OrderRepository {
         });
     }
 
-    public createFromCart(
+    public async createFromCart(
         input: CreateOrderInput,
         cart: {
             id: number;
@@ -84,24 +84,22 @@ export class OrderRepository {
         couponGuard?: CouponRedemptionGuard,
         emailJob?: Prisma.EmailJobCreateInput
     ) {
-        return this.prisma.$transaction(
+        const orderId = await this.prisma.$transaction(
             async (tx) => {
                 if (couponGuard) {
-                    const [usedCount, existingUse] = await Promise.all([
-                        tx.couponRedemption.count({
-                            where: {
-                                couponId: couponGuard.couponId
+                    const usedCount = await tx.couponRedemption.count({
+                        where: {
+                            couponId: couponGuard.couponId
+                        }
+                    });
+                    const existingUse = await tx.couponRedemption.findUnique({
+                        where: {
+                            couponId_userId: {
+                                couponId: couponGuard.couponId,
+                                userId: couponGuard.userId
                             }
-                        }),
-                        tx.couponRedemption.findUnique({
-                            where: {
-                                couponId_userId: {
-                                    couponId: couponGuard.couponId,
-                                    userId: couponGuard.userId
-                                }
-                            }
-                        })
-                    ]);
+                        }
+                    });
 
                     if (usedCount >= couponGuard.maxUses) {
                         throw AppError.business("Cupom atingiu o limite de usos");
@@ -129,18 +127,15 @@ export class OrderRepository {
                         totalInCents: input.totalInCents,
                         paymentMethod: input.paymentMethod,
                         notes: input.notes,
-                        placedAt: input.placedAt,
-                        items: {
-                            create: input.items
-                        }
-                    },
-                    include: {
-                        items: true,
-                        address: true,
-                        payment: true,
-                        shipment: true,
-                        fulfillmentJob: true
+                        placedAt: input.placedAt
                     }
+                });
+
+                await tx.orderItem.createMany({
+                    data: input.items.map((item) => ({
+                        ...item,
+                        orderId: order.id
+                    }))
                 });
 
                 if (couponRedemption) {
@@ -173,12 +168,23 @@ export class OrderRepository {
                     await tx.emailJob.create({ data: emailJob });
                 }
 
-                return order;
+                return order.id;
             },
             {
                 isolationLevel: "Serializable"
             }
         );
+
+        return this.prisma.order.findUniqueOrThrow({
+            where: { id: orderId },
+            include: {
+                items: true,
+                address: true,
+                payment: true,
+                shipment: true,
+                fulfillmentJob: true
+            }
+        });
     }
 
     public listByUserId(userId: number) {

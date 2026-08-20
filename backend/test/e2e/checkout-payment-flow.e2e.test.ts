@@ -60,8 +60,9 @@ async function getProviderCheckout(checkoutId: string, apiKey: string) {
     const response = await fetch(`${baseUrl}/checkouts/list`, {
         headers: { Authorization: `Bearer ${apiKey}` }
     });
-    assert.equal(response.status, 200, await response.text());
-    const payload = (await response.json()) as {
+    const rawBody = await response.text();
+    assert.equal(response.status, 200, rawBody);
+    const payload = JSON.parse(rawBody) as {
         success: boolean;
         data: Array<{
             id: string;
@@ -78,6 +79,7 @@ const requiredEnvironment = [
     "DATABASE_URL",
     "SEED_ADMIN_EMAIL",
     "SEED_ADMIN_PASSWORD",
+    "SEED_ADMIN_DOCUMENT",
     "ABACATEPAY_API_KEY",
     "ABACATEPAY_WEBHOOK_SECRET",
     "SUPERFRETE_TOKEN",
@@ -104,9 +106,11 @@ test(
         );
         process.env.SUPERFRETE_BASE_URL = superFreteBaseUrl.replace(/\/$/, "");
         process.env.FULFILLMENT_WORKER_ENABLED = "false";
+        process.env.EMAIL_WORKER_ENABLED = "false";
 
         const email = process.env.SEED_ADMIN_EMAIL!;
         const password = process.env.SEED_ADMIN_PASSWORD!;
+        const document = process.env.SEED_ADMIN_DOCUMENT!;
         const abacateApiKey = process.env.ABACATEPAY_API_KEY!;
         const webhookSecret = process.env.ABACATEPAY_WEBHOOK_SECRET!;
 
@@ -136,6 +140,21 @@ test(
             200
         );
         assert.ok(me.user.address, "Usuario E2E precisa ter endereco completo");
+        parseResponse(
+            await app.inject({
+                method: "PATCH",
+                url: "/users/me",
+                headers,
+                payload: {
+                    document,
+                    address: {
+                        uuid: me.user.address.uuid,
+                        document
+                    }
+                }
+            }),
+            200
+        );
 
         const product = parseResponse<{ product: { uuid: string } }>(
             await app.inject({ method: "GET", url: "/products/slug/hidrapele-adulto" }),
@@ -191,6 +210,9 @@ test(
             201
         );
         assert.match(created.order.paymentIdempotencyKey, /^[0-9a-f-]{36}$/);
+        await app.prisma.emailJob.deleteMany({
+            where: { deduplicationKey: `order-created:${created.order.uuid}` }
+        });
 
         const quoted = parseResponse<{
             shipment: {
@@ -298,6 +320,9 @@ test(
             200
         );
         assert.equal(duplicate.duplicate, true);
+        await app.prisma.emailJob.deleteMany({
+            where: { deduplicationKey: `payment-paid:${created.order.uuid}` }
+        });
 
         const paid = parseResponse<OrderResponse>(
             await app.inject({
