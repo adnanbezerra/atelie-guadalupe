@@ -76,7 +76,8 @@ function createSelfcareBox() {
         outerWidthCm: "6.50",
         outerLengthCm: "6.50",
         emptyWeightGrams: 30,
-        maxItems: 2
+        maxItems: 2,
+        updatedAt: new Date("2026-01-01T00:00:00.000Z")
     };
 }
 
@@ -156,6 +157,105 @@ test("cart shipping quote uses backend product data and does not persist a shipm
             weight: 0.128
         }
     });
+});
+
+test("order shipping preparation confirms the selected current quote", async () => {
+    const service = new ShippingService(
+        {
+            listActiveBoxes: async () => [createSelfcareBox()]
+        } as never,
+        {
+            findDefaultActive: async () => createPlatform()
+        } as never,
+        {
+            calculateQuote: async () => [
+                {
+                    id: 1,
+                    name: "PAC",
+                    price: 35.26,
+                    delivery_time: 7
+                }
+            ]
+        } as never,
+        {} as never
+    );
+
+    const result = await service.prepareOrderShipping({
+        orderUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b404",
+        addressUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b405",
+        destinationZipCode: "01001000",
+        subtotalInCents: 3000,
+        serviceCode: 1,
+        expectedPriceInCents: 3526,
+        items: [
+            {
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b406",
+                productId: 1,
+                productSize: "GRAMS_70",
+                quantity: 1,
+                productNameSnapshot: "Hidrapele",
+                unitPriceInCents: 3000,
+                totalPriceInCents: 3000,
+                product: {
+                    category: "SELFCARE",
+                    shippingWeightGrams: null
+                }
+            }
+        ]
+    });
+
+    assert.equal(result.success, true);
+    if (result.success) {
+        assert.equal(result.value.shippingInCents, 3526);
+        assert.equal(result.value.serviceName, "PAC");
+        assert.equal(result.value.shipment.status, "CONFIRMED");
+        assert.equal(result.value.shipment.selectedServiceCode, 1);
+    }
+});
+
+test("order shipping preparation rejects a changed quote price", async () => {
+    const service = new ShippingService(
+        {
+            listActiveBoxes: async () => [createSelfcareBox()]
+        } as never,
+        {
+            findDefaultActive: async () => createPlatform()
+        } as never,
+        {
+            calculateQuote: async () => [{ id: 1, name: "PAC", price: 35.26 }]
+        } as never,
+        {} as never
+    );
+
+    const result = await service.prepareOrderShipping({
+        orderUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b404",
+        addressUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b405",
+        destinationZipCode: "01001000",
+        subtotalInCents: 3000,
+        serviceCode: 1,
+        expectedPriceInCents: 3000,
+        items: [
+            {
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b406",
+                productId: 1,
+                productSize: "GRAMS_70",
+                quantity: 1,
+                productNameSnapshot: "Hidrapele",
+                unitPriceInCents: 3000,
+                totalPriceInCents: 3000,
+                product: {
+                    category: "SELFCARE",
+                    shippingWeightGrams: null
+                }
+            }
+        ]
+    });
+
+    assert.equal(result.success, false);
+    if (!result.success) {
+        assert.equal(result.value.code, "CONFLICT");
+        assert.equal(result.value.statusCode, 409);
+    }
 });
 
 test("cart shipping quote returns not found for a missing product", async () => {

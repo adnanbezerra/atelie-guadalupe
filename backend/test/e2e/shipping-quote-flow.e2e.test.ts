@@ -34,7 +34,7 @@ async function clearCart(app: FastifyInstance, token: string) {
 }
 
 test(
-    "login, add creams, create order, quote shipping and clear cart",
+    "login, add creams, quote shipping and create a confirmed order",
     { skip: process.env.RUN_E2E !== "true", timeout: 180_000 },
     async (t) => {
         const email = process.env.SEED_ADMIN_EMAIL;
@@ -64,7 +64,9 @@ test(
         await clearCart(app, login.token);
 
         const meResponse = await app.inject({ method: "GET", url: "/users/me", headers });
-        const me = parseResponse<{ user: { address: { uuid: string } | null } }>(meResponse, 200);
+        const me = parseResponse<{
+            user: { address: { uuid: string; zipCode: string } | null };
+        }>(meResponse, 200);
         assert.ok(me.user.address, "Usuario de teste precisa ter endereco");
 
         const productResponse = await app.inject({
@@ -101,38 +103,73 @@ test(
         assert.equal(cartData.cart.items.length, 2);
         assert.equal(cartData.cart.summary.itemsCount, 3);
 
+        const quoteResponse = await app.inject({
+            method: "POST",
+            url: "/shipping/quote",
+            payload: {
+                zipCode: me.user.address.zipCode.replace(/\D/g, ""),
+                items: [
+                    {
+                        productUuid: product.product.uuid,
+                        productSize: "GRAMS_100",
+                        quantity: 2
+                    },
+                    {
+                        productUuid: product.product.uuid,
+                        productSize: "GRAMS_70",
+                        quantity: 1
+                    }
+                ]
+            }
+        });
+        const quoteData = parseResponse<{
+            quotedServices: Array<{ serviceCode: number; priceInCents: number }>;
+        }>(quoteResponse, 200);
+        assert.ok(quoteData.quotedServices.length > 0);
+        assert.ok(quoteData.quotedServices.every((quote) => quote.priceInCents > 0));
+        const selectedService = quoteData.quotedServices[0];
+
         const orderResponse = await app.inject({
             method: "POST",
             url: "/orders",
             headers,
             payload: {
                 addressUuid: me.user.address.uuid,
+                shipping: {
+                    serviceCode: selectedService.serviceCode,
+                    priceInCents: selectedService.priceInCents
+                },
                 paymentMethod: "PIX",
                 notes: "Pedido criado pelo teste E2E de cotacao"
             }
         });
-        const orderData = parseResponse<{ order: { uuid: string } }>(orderResponse, 201);
-
-        const quoteResponse = await app.inject({
-            method: "POST",
-            url: `/shipping/orders/${orderData.order.uuid}/quote`,
-            headers,
-            payload: { refresh: true }
-        });
-        const quoteData = parseResponse<{
-            shipment: {
+        const orderData = parseResponse<{
+            order: {
+                uuid: string;
                 status: string;
-                quotedServices: Array<{ serviceCode: number; priceInCents: number }>;
-                packaging: {
-                    consolidatedPackage: { weightKg: number };
+                shippingInCents: number;
+                totalInCents: number;
+                shipment: {
+                    status: string;
+                    selectedServiceCode: number;
+                    packaging: {
+                        consolidatedPackage: { weightKg: number };
+                    };
                 };
             };
-        }>(quoteResponse, 200);
+        }>(orderResponse, 201);
 
-        assert.equal(quoteData.shipment.status, "QUOTED");
-        assert.ok(quoteData.shipment.quotedServices.length > 0);
-        assert.ok(quoteData.shipment.quotedServices.every((quote) => quote.priceInCents > 0));
-        assert.equal(quoteData.shipment.packaging.consolidatedPackage.weightKg, 0.454);
+        assert.equal(orderData.order.status, "AWAITING_PAYMENT");
+        assert.equal(orderData.order.shippingInCents, selectedService.priceInCents);
+        assert.equal(orderData.order.shipment.status, "CONFIRMED");
+        assert.equal(
+            orderData.order.shipment.selectedServiceCode,
+            selectedService.serviceCode
+        );
+        assert.equal(
+            orderData.order.shipment.packaging.consolidatedPackage.weightKg,
+            0.454
+        );
 
         await clearCart(app, login.token);
 

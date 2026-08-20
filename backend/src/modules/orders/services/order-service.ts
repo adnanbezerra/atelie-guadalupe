@@ -1,4 +1,9 @@
-import { OrderStatus, PaymentMethod, RoleName } from "../../../generated/prisma/enums";
+import {
+    EmailJobType,
+    OrderStatus,
+    PaymentMethod,
+    RoleName
+} from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
@@ -11,12 +16,18 @@ import {
 } from "../../marketing/services/discounts";
 import { calculateProductPriceInCents } from "../../products/services/product-pricing";
 import { hasAvailableStock } from "../../products/services/product-stock";
+import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
+import { ShippingService } from "../../shipping/services/shipping-service";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { OrderRepository } from "../repositories/order-repository";
 import { presentOrder } from "./order-presenter";
 
 type CreateOrderInput = {
-    addressUuid?: string;
+    addressUuid: string;
+    shipping: {
+        serviceCode: number;
+        priceInCents: number;
+    };
     paymentMethod?: PaymentMethod;
     notes?: string;
 };
@@ -29,6 +40,14 @@ type CurrentUser = {
 type PaginationInput = {
     page: number;
     pageSize: number;
+};
+
+type CartWithItems = NonNullable<Awaited<ReturnType<CartRepository["findByUserId"]>>>;
+type PricedCartItem = {
+    item: CartWithItems["items"][number];
+    baseUnitPriceInCents: number;
+    unitPriceInCents: number;
+    promotionDiscountInCents: number;
 };
 
 const allowedStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
@@ -49,7 +68,8 @@ export class OrderService {
         private readonly addressRepository: AddressRepository,
         private readonly cartRepository: CartRepository,
         private readonly orderRepository: OrderRepository,
-        private readonly marketingRepository: MarketingRepository
+        private readonly marketingRepository: MarketingRepository,
+        private readonly shippingService: ShippingService
     ) {}
 
     public async createFromCart(
@@ -61,16 +81,9 @@ export class OrderService {
             return left(AppError.notFound("Usuario nao encontrado"));
         }
 
-        if (!input.addressUuid) {
-            return left(AppError.business("Endereco e obrigatorio para criar o pedido"));
-        }
-        let addressId: number | undefined;
-        if (input.addressUuid) {
-            const address = await this.addressRepository.findByUuid(input.addressUuid);
-            if (!address || address.userId !== user.id) {
-                return left(AppError.notFound("Endereco nao encontrado"));
-            }
-            addressId = address.id;
+        const address = await this.addressRepository.findByUuid(input.addressUuid);
+        if (!address || address.userId !== user.id) {
+            return left(AppError.notFound("Endereco nao encontrado"));
         }
 
         const cart = await this.cartRepository.findByUserId(user.id);
@@ -88,7 +101,7 @@ export class OrderService {
             }
         }
 
-        const pricedItems = [];
+        const pricedItems: PricedCartItem[] = [];
         for (const item of cart.items) {
             const baseUnitPriceInCents = calculateProductPriceInCents(
                 item.product.line,
@@ -135,16 +148,48 @@ export class OrderService {
         const couponDiscountInCents = cart.coupon
             ? calculatePercentDiscountInCents(promotedSubtotalInCents, cart.coupon.discountPercent)
             : 0;
-        const shippingInCents = 0;
         const discountInCents = promotionDiscountInCents + couponDiscountInCents;
+        const orderUuid = createUuid();
+        const orderItems = pricedItems.map((pricedItem) => {
+            const item = pricedItem.item;
+            return {
+                uuid: createUuid(),
+                productId: item.product.id,
+                productSize: item.productSize,
+                productNameSnapshot: item.product.name,
+                imageUrlSnapshot: item.product.imageUrl,
+                quantity: item.quantity,
+                unitPriceInCents: pricedItem.unitPriceInCents,
+                totalPriceInCents: pricedItem.unitPriceInCents * item.quantity
+            };
+        });
+        const shippingResult = await this.shippingService.prepareOrderShipping({
+            orderUuid,
+            addressUuid: address.uuid,
+            destinationZipCode: address.zipCode,
+            subtotalInCents,
+            serviceCode: input.shipping.serviceCode,
+            expectedPriceInCents: input.shipping.priceInCents,
+            items: orderItems.map((item, index) => ({
+                ...item,
+                product: {
+                    category: pricedItems[index].item.product.category,
+                    shippingWeightGrams: pricedItems[index].item.product.shippingWeightGrams
+                }
+            }))
+        });
+        if (!shippingResult.success) {
+            return shippingResult;
+        }
+        const shippingInCents = shippingResult.value.shippingInCents;
         const totalInCents = subtotalInCents + shippingInCents - discountInCents;
 
         const orderInput = {
-            uuid: createUuid(),
+            uuid: orderUuid,
             paymentIdempotencyKey: createUuid(),
             userId: user.id,
-            addressId,
-            status: OrderStatus.PENDING,
+            addressId: address.id,
+            status: OrderStatus.AWAITING_PAYMENT,
             subtotalInCents,
             shippingInCents,
             discountInCents,
@@ -156,19 +201,7 @@ export class OrderService {
             paymentMethod: input.paymentMethod,
             notes: input.notes?.trim(),
             placedAt: new Date(),
-            items: pricedItems.map((pricedItem) => {
-                const item = pricedItem.item;
-                return {
-                    uuid: createUuid(),
-                    productId: item.product.id,
-                    productSize: item.productSize,
-                    productNameSnapshot: item.product.name,
-                    imageUrlSnapshot: item.product.imageUrl,
-                    quantity: item.quantity,
-                    unitPriceInCents: pricedItem.unitPriceInCents,
-                    totalPriceInCents: pricedItem.unitPriceInCents * item.quantity
-                };
-            })
+            items: orderItems
         };
 
         let order: Awaited<ReturnType<OrderRepository["createFromCart"]>>;
@@ -195,7 +228,29 @@ export class OrderService {
                           userId: user.id,
                           maxUses: cart.coupon.maxUses
                       }
-                    : undefined
+                    : undefined,
+                {
+                    shipment: shippingResult.value.shipment,
+                    emailJob: createEmailJob({
+                        type: EmailJobType.ORDER_CREATED,
+                        recipient: user.email,
+                        deduplicationKey: `order-created:${orderInput.uuid}`,
+                        payload: orderEmailPayload({
+                            customerName: user.name,
+                            orderUuid: orderInput.uuid,
+                            items: orderInput.items.map((item) => ({
+                                name: item.productNameSnapshot,
+                                quantity: item.quantity,
+                                totalInCents: item.totalPriceInCents
+                            })),
+                            subtotalInCents: orderInput.subtotalInCents,
+                            shippingInCents: orderInput.shippingInCents,
+                            shippingServiceName: shippingResult.value.serviceName,
+                            discountInCents: orderInput.discountInCents,
+                            totalInCents: orderInput.totalInCents
+                        })
+                    })
+                }
             );
         } catch (error) {
             if (error instanceof AppError) {

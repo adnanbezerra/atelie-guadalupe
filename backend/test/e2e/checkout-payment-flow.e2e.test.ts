@@ -23,6 +23,9 @@ type OrderResponse = {
         };
         shipment: null | {
             status: string;
+            selectedServiceCode: number | null;
+            selectedServiceName: string | null;
+            shippingPriceInCents: number | null;
             superfreteProtocol: string | null;
             trackingCode: string | null;
             labelUrl: string | null;
@@ -195,6 +198,8 @@ test(
             200
         );
         assert.ok(preview.quotedServices.length > 0);
+        const selectedService = preview.quotedServices[0];
+        assert.ok(selectedService);
 
         const created = parseResponse<OrderResponse>(
             await app.inject({
@@ -203,6 +208,10 @@ test(
                 headers,
                 payload: {
                     addressUuid: me.user.address.uuid,
+                    shipping: {
+                        serviceCode: selectedService.serviceCode,
+                        priceInCents: selectedService.priceInCents
+                    },
                     paymentMethod: "PIX",
                     notes: "Fluxo completo sandbox"
                 }
@@ -210,41 +219,10 @@ test(
             201
         );
         assert.match(created.order.paymentIdempotencyKey, /^[0-9a-f-]{36}$/);
-        const emailBeforeShipping = await app.prisma.emailJob.findUnique({
-            where: { deduplicationKey: `order-created:${created.order.uuid}` }
-        });
-        assert.equal(emailBeforeShipping, null);
-
-        const quoted = parseResponse<{
-            shipment: {
-                quotedServices: Array<{ serviceCode: number; priceInCents: number }>;
-            };
-        }>(
-            await app.inject({
-                method: "POST",
-                url: `/shipping/orders/${created.order.uuid}/quote`,
-                headers,
-                payload: { refresh: true }
-            }),
-            200
-        );
-        const selectedService = quoted.shipment.quotedServices[0];
-        assert.ok(selectedService);
-
-        const confirmed = parseResponse<{
-            shipment: { status: string; selectedServiceCode: number };
-            orderTotals: { totalInCents: number; shippingInCents: number };
-        }>(
-            await app.inject({
-                method: "POST",
-                url: `/shipping/orders/${created.order.uuid}/quote`,
-                headers,
-                payload: { serviceCode: selectedService.serviceCode }
-            }),
-            200
-        );
-        assert.equal(confirmed.shipment.status, "CONFIRMED");
-        assert.equal(confirmed.orderTotals.shippingInCents, selectedService.priceInCents);
+        assert.equal(created.order.status, "AWAITING_PAYMENT");
+        assert.equal(created.order.shipment?.status, "CONFIRMED");
+        assert.equal(created.order.shipment?.selectedServiceCode, selectedService.serviceCode);
+        assert.equal(created.order.shipment?.shippingPriceInCents, selectedService.priceInCents);
 
         const orderReceivedEmail = await app.prisma.emailJob.findUniqueOrThrow({
             where: { deduplicationKey: `order-created:${created.order.uuid}` }
@@ -265,9 +243,9 @@ test(
         assert.ok(orderReceivedPayload.shippingServiceName);
         assert.equal(
             orderReceivedPayload.shippingInCents,
-            confirmed.orderTotals.shippingInCents
+            created.order.shipment?.shippingPriceInCents
         );
-        assert.equal(orderReceivedPayload.totalInCents, confirmed.orderTotals.totalInCents);
+        assert.equal(orderReceivedPayload.totalInCents, created.order.totalInCents);
 
         const paymentHeaders = {
             ...headers,
@@ -287,7 +265,7 @@ test(
             200
         );
         assert.equal(checkout.paymentStatus, "PENDING");
-        assert.equal(checkout.amountInCents, confirmed.orderTotals.totalInCents);
+        assert.equal(checkout.amountInCents, created.order.totalInCents);
 
         const repeatedCheckout = parseResponse<typeof checkout>(
             await app.inject({

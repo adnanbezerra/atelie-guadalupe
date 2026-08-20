@@ -1553,15 +1553,15 @@ Resposta:
 ```json
 {
     "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b501",
-    "status": "PENDING",
+    "status": "AWAITING_PAYMENT",
     "subtotalInCents": 5180,
-    "shippingInCents": 0,
+    "shippingInCents": 1590,
     "discountInCents": 777,
     "paymentMethod": "PIX",
     "promotionDiscountInCents": 259,
     "couponDiscountInCents": 518,
     "couponCode": "BEMVINDA",
-    "totalInCents": 4403,
+    "totalInCents": 5993,
     "notes": "Entregar em horario comercial",
     "placedAt": "2026-03-12T12:00:00.000Z",
     "createdAt": "2026-03-12T12:00:00.000Z",
@@ -1608,6 +1608,10 @@ Request:
 ```json
 {
     "addressUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+    "shipping": {
+        "serviceCode": 1,
+        "priceInCents": 1590
+    },
     "paymentMethod": "PIX",
     "notes": "Entregar em horario comercial"
 }
@@ -1615,13 +1619,16 @@ Request:
 
 Observacoes:
 
-- `addressUuid` e opcional
+- `addressUuid` e obrigatorio
+- `shipping.serviceCode` e `shipping.priceInCents` devem vir do preview de `POST /shipping/quote`
+- o backend recalcula o frete; se o preco mudou, responde `409` sem criar o pedido
 - `paymentMethod` e opcional e aceita `PIX`, `CREDIT_CARD` ou `DEBIT_CARD`
 - `paymentMethod` e apenas snapshot simples no pedido; metodos salvos/tokenizados ainda nao existem
 - o carrinho e esvaziado apos a criacao do pedido
 - os itens sao congelados como snapshot
 - cupom aplicado gera registro de uso e impede novo uso pelo mesmo cliente
 - promocoes vigentes sao recalculadas no fechamento do pedido
+- pedido, frete confirmado e email de recebimento sao criados na mesma transacao
 
 Resposta `201`:
 
@@ -1631,15 +1638,15 @@ Resposta `201`:
     "data": {
         "order": {
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b501",
-            "status": "PENDING",
+            "status": "AWAITING_PAYMENT",
             "subtotalInCents": 5180,
-            "shippingInCents": 0,
+            "shippingInCents": 1590,
             "discountInCents": 777,
             "paymentMethod": "PIX",
             "promotionDiscountInCents": 259,
             "couponDiscountInCents": 518,
             "couponCode": "BEMVINDA",
-            "totalInCents": 4403,
+            "totalInCents": 5993,
             "notes": "Entregar em horario comercial",
             "placedAt": "2026-03-12T12:00:00.000Z",
             "createdAt": "2026-03-12T12:00:00.000Z",
@@ -1680,6 +1687,8 @@ Possiveis erros:
 - `400` estoque insuficiente em produto `ARTISANAL`
 - `400` cupom expirado, cancelado, sem usos disponiveis, ja usado pelo usuario ou nao acumulavel com promocao vigente
 - `404` endereco nao encontrado
+- `409` preco do frete mudou desde o preview; refaca a cotacao
+- `503` SuperFrete indisponivel
 
 ## 14.3 `GET /orders`
 
@@ -2299,8 +2308,9 @@ Erros:
 
 Importante:
 
-- esta cotacao serve apenas como preview e nao deve ser usada como fonte de verdade para cobranca
-- ao confirmar a compra, o frontend cria o pedido e chama a cotacao persistente com o `serviceCode`; o backend recalcula e valida o valor
+- esta cotacao serve como preview; backend recalcula antes de criar o pedido
+- ao confirmar a compra, frontend envia `serviceCode` e `priceInCents` escolhidos no `POST /orders`
+- se preco mudou, backend responde `409` sem criar pedido
 
 Contrato dedicado para o frontend: [`docs/SHIPPING_QUOTE_FRONTEND.md`](./SHIPPING_QUOTE_FRONTEND.md).
 
@@ -2308,9 +2318,9 @@ Contrato dedicado para o frontend: [`docs/SHIPPING_QUOTE_FRONTEND.md`](./SHIPPIN
 
 Fluxo esperado:
 
-1. criar pedido com endereco
-2. cotar frete
-3. confirmar o servico de frete escolhido
+1. cotar frete do carrinho
+2. criar pedido com endereco e servico escolhido; pedido ja nasce com frete confirmado
+3. criar checkout de pagamento
 4. apos confirmacao do pagamento, chamar o checkout do frete para gerar a etiqueta
 
 ### `GET /shipping/orders/:orderUuid`
@@ -2331,13 +2341,18 @@ Resposta `200`:
     "data": {
         "order": {
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b999",
-            "status": "PENDING",
+            "status": "AWAITING_PAYMENT",
             "subtotalInCents": 34000,
-            "shippingInCents": 0,
+            "shippingInCents": 1590,
             "discountInCents": 0,
-            "totalInCents": 34000
+            "totalInCents": 35590
         },
-        "shipment": null
+        "shipment": {
+            "status": "CONFIRMED",
+            "selectedServiceCode": 1,
+            "selectedServiceName": "PAC",
+            "shippingPriceInCents": 1590
+        }
     }
 }
 ```
@@ -2350,6 +2365,7 @@ Autenticacao:
 
 Uso:
 
+- compatibilidade operacional para pedidos antigos criados sem shipment confirmado; novos checkouts nao usam esta rota
 - calcula frete no SuperFrete
 - salva o snapshot das opcoes retornadas
 - salva tambem o snapshot do remetente/plataforma usado na cotacao

@@ -5,6 +5,11 @@ import { MarketingRepository } from "../../marketing/repositories/marketing-repo
 import { OrderRepository } from "../../orders/repositories/order-repository";
 import { OrderService } from "../../orders/services/order-service";
 import { RoleRepository } from "../../roles/repositories/role-repository";
+import { PlatformRepository } from "../../platforms/repositories/platform-repository";
+import { ProductRepository } from "../../products/repositories/product-repository";
+import { ShippingRepository } from "../../shipping/repositories/shipping-repository";
+import { ShippingService } from "../../shipping/services/shipping-service";
+import { SuperFreteClient } from "../../shipping/services/superfrete-client";
 import { UserController } from "../controllers/user-controller";
 import { UserRepository } from "../repositories/user-repository";
 import { UserService } from "../services/user-service";
@@ -16,13 +21,20 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
     const cartRepository = new CartRepository(fastify.prisma);
     const marketingRepository = new MarketingRepository(fastify.prisma);
     const orderRepository = new OrderRepository(fastify.prisma);
+    const shippingService = new ShippingService(
+        new ShippingRepository(fastify.prisma),
+        new PlatformRepository(fastify.prisma),
+        SuperFreteClient.fromEnv(),
+        new ProductRepository(fastify.prisma)
+    );
     const userService = new UserService(userRepository, roleRepository, addressRepository);
     const orderService = new OrderService(
         userRepository,
         addressRepository,
         cartRepository,
         orderRepository,
-        marketingRepository
+        marketingRepository,
+        shippingService
     );
     const userController = new UserController(fastify, userService, orderService);
 

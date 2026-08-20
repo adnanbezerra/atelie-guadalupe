@@ -75,7 +75,7 @@ test("payment checkout does not subtract the promotion discount twice", async ()
         user: { uuid: "user-1" },
         paymentIdempotencyKey: key,
         payment: null,
-        status: "PENDING",
+        status: "AWAITING_PAYMENT",
         addressId: 2,
         subtotalInCents: 10000,
         shippingInCents: 1000,

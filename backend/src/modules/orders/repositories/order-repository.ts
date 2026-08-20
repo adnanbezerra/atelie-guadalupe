@@ -32,6 +32,7 @@ type CreateOrderInput = {
 };
 
 type CouponRedemptionInput = Omit<Prisma.CouponRedemptionUncheckedCreateInput, "orderId">;
+type CreateShipmentInput = Omit<Prisma.OrderShipmentUncheckedCreateInput, "orderId">;
 type CouponRedemptionGuard = {
     couponId: number;
     userId: number;
@@ -80,8 +81,12 @@ export class OrderRepository {
             id: number;
             itemUuids: string[];
         },
-        couponRedemption?: CouponRedemptionInput,
-        couponGuard?: CouponRedemptionGuard
+        couponRedemption: CouponRedemptionInput | undefined,
+        couponGuard: CouponRedemptionGuard | undefined,
+        checkout: {
+            shipment: CreateShipmentInput;
+            emailJob: Prisma.EmailJobCreateInput;
+        }
     ) {
         const orderId = await this.prisma.$transaction(
             async (tx) => {
@@ -162,6 +167,15 @@ export class OrderRepository {
                         couponId: null
                     }
                 });
+
+                await tx.orderShipment.create({
+                    data: {
+                        ...checkout.shipment,
+                        orderId: order.id
+                    }
+                });
+
+                await tx.emailJob.create({ data: checkout.emailJob });
 
                 return order.id;
             },

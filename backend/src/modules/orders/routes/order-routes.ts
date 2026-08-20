@@ -7,6 +7,11 @@ import { PaymentController } from "../../payments/controllers/payment-controller
 import { AbacatePayClient } from "../../payments/services/abacatepay-client";
 import { FulfillmentService } from "../../payments/services/fulfillment-service";
 import { PaymentService } from "../../payments/services/payment-service";
+import { PlatformRepository } from "../../platforms/repositories/platform-repository";
+import { ProductRepository } from "../../products/repositories/product-repository";
+import { ShippingRepository } from "../../shipping/repositories/shipping-repository";
+import { ShippingService } from "../../shipping/services/shipping-service";
+import { SuperFreteClient } from "../../shipping/services/superfrete-client";
 import { OrderController } from "../controllers/order-controller";
 import { OrderRepository } from "../repositories/order-repository";
 import { OrderService } from "../services/order-service";
@@ -17,12 +22,19 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
     const cartRepository = new CartRepository(fastify.prisma);
     const marketingRepository = new MarketingRepository(fastify.prisma);
     const orderRepository = new OrderRepository(fastify.prisma);
+    const shippingService = new ShippingService(
+        new ShippingRepository(fastify.prisma),
+        new PlatformRepository(fastify.prisma),
+        SuperFreteClient.fromEnv(),
+        new ProductRepository(fastify.prisma)
+    );
     const orderService = new OrderService(
         userRepository,
         addressRepository,
         cartRepository,
         orderRepository,
-        marketingRepository
+        marketingRepository,
+        shippingService
     );
     const controller = new OrderController(fastify, orderService);
     const fulfillmentService = new FulfillmentService(fastify.prisma);

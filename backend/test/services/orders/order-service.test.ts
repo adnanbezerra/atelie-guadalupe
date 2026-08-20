@@ -14,7 +14,12 @@ test("order service blocks order creation with empty cart", async () => {
     };
 
     const addressRepository = {
-        findByUuid: async () => null
+        findByUuid: async () => ({
+            id: 8,
+            uuid: "address-1",
+            userId: 1,
+            zipCode: "01001000"
+        })
     };
 
     const cartRepository = {
@@ -33,10 +38,14 @@ test("order service blocks order creation with empty cart", async () => {
         addressRepository as never,
         cartRepository as never,
         orderRepository as never,
-        marketingRepository as never
+        marketingRepository as never,
+        {} as never
     );
 
-    const result = await service.createFromCart("user-1", {});
+    const result = await service.createFromCart("user-1", {
+        addressUuid: "address-1",
+        shipping: { serviceCode: 1, priceInCents: 1590 }
+    });
 
     assert.equal(result.success, false);
 });
@@ -44,6 +53,7 @@ test("order service blocks order creation with empty cart", async () => {
 test("order service creates order from cart snapshot", async () => {
     const deletedItems: string[] = [];
     let queuedEmail: unknown;
+    let createdShipment: unknown;
 
     const userRepository = {
         findByUuid: async () => ({
@@ -58,7 +68,8 @@ test("order service creates order from cart snapshot", async () => {
         findByUuid: async () => ({
             id: 8,
             uuid: "address-1",
-            userId: 1
+            userId: 1,
+            zipCode: "01001000"
         })
     };
 
@@ -105,9 +116,10 @@ test("order service creates order from cart snapshot", async () => {
             cart: { itemUuids: string[] },
             _couponRedemption?: unknown,
             _couponGuard?: unknown,
-            emailJob?: unknown
+            checkout?: { shipment: unknown; emailJob: unknown }
         ) => {
-            queuedEmail = emailJob;
+            createdShipment = checkout?.shipment;
+            queuedEmail = checkout?.emailJob;
             deletedItems.push(...cart.itemUuids);
 
             return {
@@ -124,6 +136,7 @@ test("order service creates order from cart snapshot", async () => {
                 paymentMethod: input.paymentMethod,
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                shipment: checkout?.shipment,
                 address: {
                     uuid: "address-1",
                     zipCode: "01001000",
@@ -156,11 +169,30 @@ test("order service creates order from cart snapshot", async () => {
         addressRepository as never,
         cartRepository as never,
         orderRepository as never,
-        marketingRepository as never
+        marketingRepository as never,
+        {
+            prepareOrderShipping: async () => ({
+                success: true,
+                value: {
+                    shippingInCents: 1590,
+                    serviceName: "PAC",
+                    shipment: {
+                        uuid: "shipment-1",
+                        status: "CONFIRMED",
+                        selectedServiceCode: 1,
+                        selectedServiceName: "PAC",
+                        shippingPriceInCents: 1590,
+                        quotedAt: new Date(),
+                        confirmedAt: new Date()
+                    }
+                }
+            })
+        } as never
     );
 
     const result = await service.createFromCart("user-1", {
         addressUuid: "address-1",
+        shipping: { serviceCode: 1, priceInCents: 1590 },
         paymentMethod: PaymentMethod.PIX,
         notes: "Entregar em horario comercial"
     });
@@ -168,15 +200,33 @@ test("order service creates order from cart snapshot", async () => {
     assert.equal(result.success, true);
 
     if (result.success) {
-        assert.equal(result.value.order.status, OrderStatus.PENDING);
+        assert.equal(result.value.order.status, OrderStatus.AWAITING_PAYMENT);
         assert.match(result.value.order.paymentIdempotencyKey, /^[0-9a-f-]{36}$/);
         assert.equal(result.value.order.paymentMethod, PaymentMethod.PIX);
-        assert.equal(result.value.order.totalInCents, 5180);
+        assert.equal(result.value.order.shippingInCents, 1590);
+        assert.equal(result.value.order.totalInCents, 6770);
         assert.equal(result.value.order.items.length, 1);
     }
 
     assert.deepStrictEqual(deletedItems, ["item-1"]);
-    assert.equal(queuedEmail, undefined);
+    const shipment = createdShipment as Record<string, unknown>;
+    assert.equal(shipment.status, "CONFIRMED");
+    assert.equal(shipment.selectedServiceCode, 1);
+    assert.equal(shipment.selectedServiceName, "PAC");
+    assert.equal(shipment.shippingPriceInCents, 1590);
+    assert.deepStrictEqual((queuedEmail as { payload: unknown }).payload, {
+        customerName: "Maria",
+        orderUuid: (queuedEmail as { deduplicationKey: string }).deduplicationKey.replace(
+            "order-created:",
+            ""
+        ),
+        items: [{ name: "Sabonete", quantity: 2, totalInCents: 5180 }],
+        subtotalInCents: 5180,
+        shippingInCents: 1590,
+        shippingServiceName: "PAC",
+        discountInCents: 0,
+        totalInCents: 6770
+    });
 });
 
 test("order service prevents invalid status transition", async () => {
@@ -191,6 +241,7 @@ test("order service prevents invalid status transition", async () => {
                 status: OrderStatus.DELIVERED
             })
         } as never,
+        {} as never,
         {} as never
     );
 
@@ -216,6 +267,7 @@ test("order service restricts detail to order owner for USER role", async () => 
                 status: OrderStatus.PENDING
             })
         } as never,
+        {} as never,
         {} as never
     );
 
@@ -264,6 +316,7 @@ test("order service lists current user orders with pagination", async () => {
                 pageSize
             })
         } as never,
+        {} as never,
         {} as never
     );
 

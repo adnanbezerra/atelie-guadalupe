@@ -61,6 +61,34 @@ type QuoteCartInput = {
     }>;
 };
 
+export type PrepareOrderShippingInput = {
+    orderUuid: string;
+    addressUuid: string;
+    destinationZipCode: string;
+    subtotalInCents: number;
+    serviceCode: number;
+    expectedPriceInCents: number;
+    items: Array<{
+        uuid: string;
+        productId?: number;
+        productSize: ProductSize;
+        quantity: number;
+        productNameSnapshot: string;
+        unitPriceInCents: number;
+        totalPriceInCents: number;
+        product: {
+            category: ProductCategory;
+            shippingWeightGrams: number | null;
+        };
+    }>;
+};
+
+export type PreparedOrderShipping = {
+    shippingInCents: number;
+    serviceName: string;
+    shipment: Omit<Prisma.OrderShipmentUncheckedCreateInput, "orderId">;
+};
+
 type ShippingOrder = NonNullable<Awaited<ReturnType<ShippingRepository["findOrderForShipping"]>>>;
 type ShippingPlatform = NonNullable<Awaited<ReturnType<PlatformRepository["findDefaultActive"]>>>;
 
@@ -478,6 +506,87 @@ export class ShippingService {
                 deliveryDays: service.deliveryDays,
                 deliveryRange: service.deliveryRange
             }))
+        });
+    }
+
+    public async prepareOrderShipping(
+        input: PrepareOrderShippingInput
+    ): Promise<Either<AppError, PreparedOrderShipping>> {
+        const boxes = await this.shippingRepository.listActiveBoxes();
+        let packaging: ReturnType<typeof buildPackagingPlan>;
+        try {
+            packaging = buildPackagingPlan(input.items, boxes);
+        } catch (error) {
+            if (error instanceof AppError) return left(error);
+            throw error;
+        }
+
+        const platformResult = await this.loadPlatform();
+        if (!platformResult.success) return platformResult;
+        const senderSnapshot = this.buildSenderSnapshot(platformResult.value);
+        const calculatorPayload = this.buildCalculatorPayload(
+            input.destinationZipCode,
+            input.subtotalInCents,
+            packaging,
+            {},
+            senderSnapshot
+        );
+
+        let calculatorResponse: unknown;
+        try {
+            calculatorResponse = await this.superFreteClient.calculateQuote(calculatorPayload);
+        } catch (error) {
+            if (error instanceof AppError && error.code === "SERVICE_UNAVAILABLE") {
+                return left(AppError.serviceUnavailable("SuperFrete indisponivel no momento"));
+            }
+            throw error;
+        }
+
+        const quotedServices = extractQuotedServices(calculatorResponse);
+        const selectedService = quotedServices.find(
+            (service) => service.serviceCode === input.serviceCode
+        );
+        if (!selectedService) {
+            return left(AppError.business("Servico de frete nao encontrado na cotacao"));
+        }
+        if (selectedService.priceInCents !== input.expectedPriceInCents) {
+            return left(
+                AppError.conflict("A cotacao de frete mudou; calcule o frete novamente")
+            );
+        }
+
+        const now = new Date();
+        const quoteFingerprint = JSON.stringify({
+            orderUuid: input.orderUuid,
+            addressUuid: input.addressUuid,
+            items: input.items.map((item) => ({
+                uuid: item.uuid,
+                productId: item.productId,
+                quantity: item.quantity,
+                productSize: item.productSize
+            })),
+            boxes: boxes.map((box) => `${box.uuid}:${box.updatedAt.toISOString()}`),
+            services: process.env.SUPERFRETE_SERVICE_CODES ?? "1,2,17"
+        });
+
+        return right({
+            shippingInCents: selectedService.priceInCents,
+            serviceName: selectedService.serviceName,
+            shipment: {
+                uuid: createUuid(),
+                status: ShippingStatus.CONFIRMED,
+                quoteFingerprint,
+                selectedServiceCode: selectedService.serviceCode,
+                selectedServiceName: selectedService.serviceName,
+                shippingPriceInCents: selectedService.priceInCents,
+                senderSnapshot: senderSnapshot as Prisma.InputJsonValue,
+                calculatorPayload: calculatorPayload as Prisma.InputJsonValue,
+                calculatorResponse: calculatorResponse as Prisma.InputJsonValue,
+                quotedServices: quotedServices as Prisma.InputJsonValue,
+                packagingSnapshot: packaging as Prisma.InputJsonValue,
+                quotedAt: now,
+                confirmedAt: now
+            }
         });
     }
 
