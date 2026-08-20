@@ -162,14 +162,8 @@ test(
         assert.equal(orderData.order.status, "AWAITING_PAYMENT");
         assert.equal(orderData.order.shippingInCents, selectedService.priceInCents);
         assert.equal(orderData.order.shipment.status, "CONFIRMED");
-        assert.equal(
-            orderData.order.shipment.selectedServiceCode,
-            selectedService.serviceCode
-        );
-        assert.equal(
-            orderData.order.shipment.packaging.consolidatedPackage.weightKg,
-            0.454
-        );
+        assert.equal(orderData.order.shipment.selectedServiceCode, selectedService.serviceCode);
+        assert.equal(orderData.order.shipment.packaging.consolidatedPackage.weightKg, 0.454);
 
         await clearCart(app, login.token);
 

@@ -43,10 +43,7 @@ export class PaymentService {
         if (order.payment?.providerCheckoutId) {
             return right(paymentResponse(order.payment));
         }
-        if (
-            order.status !== OrderStatus.PENDING &&
-            order.status !== OrderStatus.AWAITING_PAYMENT
-        ) {
+        if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.AWAITING_PAYMENT) {
             return left(AppError.business("Pedido nao esta disponivel para iniciar pagamento"));
         }
         if (!order.addressId || order.shipment?.status !== ShippingStatus.CONFIRMED) {

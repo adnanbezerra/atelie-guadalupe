@@ -550,9 +550,7 @@ export class ShippingService {
             return left(AppError.business("Servico de frete nao encontrado na cotacao"));
         }
         if (selectedService.priceInCents !== input.expectedPriceInCents) {
-            return left(
-                AppError.conflict("A cotacao de frete mudou; calcule o frete novamente")
-            );
+            return left(AppError.conflict("A cotacao de frete mudou; calcule o frete novamente"));
         }
 
         const now = new Date();
