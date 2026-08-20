@@ -7,8 +7,8 @@ Este documento descreve o fluxo que o frontend deve seguir desde o carrinho ate 
 ```text
 Carrinho
   -> preview de frete
-  -> cria pedido PENDING e recebe paymentIdempotencyKey
-  -> confirma frete definitivo
+  -> escolhe servico
+  -> cria pedido AWAITING_PAYMENT com frete confirmado
   -> cria/recupera checkout AbacatePay
   -> redireciona usuario
   -> retorna ao site
@@ -46,11 +46,7 @@ type ShippingStatus =
     | "LABEL_PURCHASED"
     | "CANCELLED";
 
-type FulfillmentStatus =
-    | "PENDING"
-    | "PROCESSING"
-    | "RETRY_SCHEDULED"
-    | "COMPLETED";
+type FulfillmentStatus = "PENDING" | "PROCESSING" | "RETRY_SCHEDULED" | "COMPLETED";
 
 type Order = {
     uuid: string;
@@ -101,7 +97,7 @@ type ApiError = {
 
 ## 1. Preview do frete
 
-Use `POST /shipping/quote` sempre que CEP, produto, tamanho ou quantidade mudar. Guarde apenas o `serviceCode` escolhido; o preco do preview nao e o valor definitivo.
+Use `POST /shipping/quote` sempre que CEP, produto, tamanho ou quantidade mudar. Guarde `serviceCode` e `priceInCents` do servico escolhido. Backend recalcula ambos ao criar o pedido.
 
 ```ts
 const quote = await api("/shipping/quote", {
@@ -111,48 +107,39 @@ const quote = await api("/shipping/quote", {
         items: cartItems.map((item) => ({
             productUuid: item.productUuid,
             productSize: item.productSize,
-            quantity: item.quantity,
-        })),
-    }),
+            quantity: item.quantity
+        }))
+    })
 });
 ```
 
 ## 2. Criar o pedido
 
-`addressUuid` e obrigatorio.
+`addressUuid` e `shipping` sao obrigatorios.
 
 ```ts
-const created = await api<{ success: true; data: { order: Order } }>(
-    "/orders",
-    {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ addressUuid, notes }),
-    },
-);
+const created = await api<{ success: true; data: { order: Order } }>("/orders", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+        addressUuid,
+        shipping: {
+            serviceCode: selectedService.serviceCode,
+            priceInCents: selectedService.priceInCents
+        },
+        notes
+    })
+});
 
 const order = created.data.order;
-sessionStorage.setItem(
-    `checkout:${order.uuid}:key`,
-    order.paymentIdempotencyKey,
-);
+sessionStorage.setItem(`checkout:${order.uuid}:key`, order.paymentIdempotencyKey);
 ```
 
 Desabilite o botao enquanto a requisicao estiver em andamento. Depois de receber o pedido, nao crie outro automaticamente por timeout de uma etapa posterior.
 
-## 3. Confirmar o frete definitivo
+Se backend responder `409`, descarte selecao, refaca `POST /shipping/quote` e mostre novo preco. Nenhum pedido foi criado.
 
-```ts
-await api(`/shipping/orders/${order.uuid}/quote`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ serviceCode: selectedServiceCode }),
-});
-```
-
-Use os totais devolvidos por esta resposta. Se a cotacao mudou, mostre o novo valor antes de continuar.
-
-## 4. Criar ou recuperar o checkout
+## 3. Criar ou recuperar o checkout
 
 Sempre reutilize a chave criada pelo backend.
 
@@ -163,8 +150,8 @@ const checkout = await api<CheckoutResponse>(`/orders/${order.uuid}/payment`, {
     method: "POST",
     headers: {
         Authorization: `Bearer ${token}`,
-        "Idempotency-Key": key,
-    },
+        "Idempotency-Key": key
+    }
 });
 
 window.location.assign(checkout.data.checkoutUrl);
@@ -174,7 +161,7 @@ Duplo clique, retry de rede e refresh devem repetir essa mesma chamada com a mes
 
 Se a resposta do checkout for perdida, consulte `GET /orders/:uuid`. A resposta devolve a mesma chave e, quando existente, `payment.checkoutUrl`.
 
-## 5. Retorno da AbacatePay
+## 4. Retorno da AbacatePay
 
 Na pagina configurada como `completionUrl`:
 
@@ -192,22 +179,14 @@ async function waitForPayment(orderUuid: string, signal: AbortSignal) {
     while (Date.now() < deadline && !signal.aborted) {
         const response = await api<{ success: true; data: { order: Order } }>(
             `/orders/${orderUuid}`,
-            { headers: { Authorization: `Bearer ${token}` }, signal },
+            { headers: { Authorization: `Bearer ${token}` }, signal }
         );
         const order = response.data.order;
 
-        if (
-            ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(
-                order.status,
-            )
-        ) {
+        if (["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(order.status)) {
             return order;
         }
-        if (
-            ["REFUNDED", "DISPUTED", "LOST"].includes(
-                order.payment?.status ?? "",
-            )
-        ) {
+        if (["REFUNDED", "DISPUTED", "LOST"].includes(order.payment?.status ?? "")) {
             return order;
         }
         await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -225,7 +204,6 @@ Mostre pagamento e entrega separadamente:
 
 | Pedido/pagamento               | Mensagem sugerida                                  |
 | ------------------------------ | -------------------------------------------------- |
-| `PENDING`                      | Confirme o frete para continuar                    |
 | `AWAITING_PAYMENT` / `PENDING` | Aguardando pagamento                               |
 | `PAID`                         | Pagamento confirmado; preparando envio             |
 | `REFUNDED`                     | Pagamento reembolsado                              |
@@ -250,7 +228,7 @@ Nao mostre `lastError` diretamente ao cliente; ele e diagnostico operacional.
 | `401` | Renovar sessao ou solicitar login                                 |
 | `403` | Bloquear acesso ao pedido                                         |
 | `404` | Informar que o pedido nao foi encontrado                          |
-| `409` | Recarregar o pedido e usar a chave retornada pelo backend         |
+| `409` | Refazer cotacao; preco do frete escolhido mudou                   |
 | `422` | Corrigir UUID, payload ou header ausente                          |
 | `503` | Manter pedido/chave e oferecer tentar novamente                   |
 
@@ -270,8 +248,7 @@ Nao mostre `lastError` diretamente ao cliente; ele e diagnostico operacional.
 - [ ] Configurar AbacatePay e Superfrete em sandbox.
 - [ ] Adicionar saldo na carteira sandbox da Superfrete.
 - [ ] Criar carrinho e obter preview de frete.
-- [ ] Criar pedido e conferir a chave retornada.
-- [ ] Confirmar frete e conferir o novo total.
+- [ ] Criar pedido com servico escolhido e conferir frete, total e chave retornados.
 - [ ] Chamar pagamento duas vezes com a mesma chave e conferir o mesmo `checkoutId`.
 - [ ] Simular/concluir o pagamento na AbacatePay.
 - [ ] Conferir pedido `PAID` ou `PROCESSING` após o webhook.

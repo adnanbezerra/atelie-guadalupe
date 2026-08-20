@@ -25,11 +25,12 @@ import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/hooks/use-user";
 import {
     ApiError,
-    confirmOrderShipping,
     createOrderPayment,
     getOrder,
+    previewShippingQuote,
 } from "@/lib/api";
 import type { Cart, Order } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 
 type CheckoutPageClientProps = {
     initialCart: Cart | null;
@@ -47,18 +48,19 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isShippingConfirmed, setIsShippingConfirmed] = useState(false);
+    const [quotedShipping, setQuotedShipping] = useState(() => ({
+        serviceCode: Number(searchParams.get("serviceCode")),
+        serviceName: searchParams.get("serviceName") ?? "Entrega",
+        priceInCents: Number(searchParams.get("shippingPriceInCents") ?? 0),
+    }));
     const [pollingTimedOut, setPollingTimedOut] = useState(false);
     const [checkoutError, setCheckoutError] = useState<CheckoutError | null>(
         null,
     );
 
-    const serviceCode = Number(searchParams.get("serviceCode"));
-    const serviceName = searchParams.get("serviceName") ?? "Entrega";
-    const estimatedShipping = Number(
-        searchParams.get("shippingPriceInCents") ?? 0,
-    );
     const hasValidServiceCode =
-        Number.isInteger(serviceCode) && serviceCode > 0;
+        Number.isInteger(quotedShipping.serviceCode) &&
+        quotedShipping.serviceCode > 0;
     const paymentConfirmed = Boolean(
         order &&
         (PAYMENT_CONFIRMED_STATUSES.has(order.status) ||
@@ -237,38 +239,77 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             if (!currentOrder) {
                 currentOrder = await cart.checkout(
                     userContext.address.uuid,
+                    {
+                        serviceCode: quotedShipping.serviceCode,
+                        priceInCents: quotedShipping.priceInCents,
+                    },
                     notes.trim() || undefined,
                 );
                 storeOrder(currentOrder);
                 setOrder(currentOrder);
             }
-
-            const shipping = await confirmOrderShipping(
-                token,
-                currentOrder.uuid,
-                serviceCode,
-            );
-            const confirmedOrder: Order = {
-                ...currentOrder,
-                ...shipping.order,
-                ...(shipping.orderTotals ?? {}),
-                shipment: shipping.shipment
-                    ? {
-                          status: shipping.shipment.status,
-                          trackingCode: null,
-                          labelUrl: null,
-                      }
-                    : currentOrder.shipment,
-            };
-
-            storeOrder(confirmedOrder);
-            setOrder(confirmedOrder);
             setIsShippingConfirmed(true);
         } catch (error) {
-            showError(
-                error,
-                "Não foi possível criar o pedido e confirmar o frete.",
-            );
+            if (error instanceof ApiError && error.status === 409) {
+                const quoteItems = (cart.data?.items ?? []).map((item) => ({
+                    productUuid: item.productUuid,
+                    productSize: item.productSize,
+                    quantity: item.quantity,
+                }));
+
+                try {
+                    const quote = await previewShippingQuote(
+                        userContext.address.zipCode.replace(/\D/g, ""),
+                        quoteItems,
+                    );
+                    const updatedService = quote.quotedServices.find(
+                        (service) =>
+                            service.serviceCode === quotedShipping.serviceCode,
+                    );
+
+                    if (
+                        updatedService &&
+                        updatedService.priceInCents !==
+                            quotedShipping.priceInCents
+                    ) {
+                        const previousPrice = quotedShipping.priceInCents;
+                        setQuotedShipping({
+                            serviceCode: updatedService.serviceCode,
+                            serviceName: updatedService.serviceName,
+                            priceInCents: updatedService.priceInCents,
+                        });
+                        setCheckoutError({
+                            title: "Frete atualizado",
+                            description: `${updatedService.serviceName} passou de ${formatCurrency(previousPrice)} para ${formatCurrency(updatedService.priceInCents)}. Confira o novo total e confirme o pedido novamente.`,
+                        });
+                        return;
+                    }
+
+                    if (updatedService) {
+                        setCheckoutError({
+                            title: "Não foi possível confirmar o frete",
+                            description:
+                                "A transportadora recusou a confirmação, mas a nova cotação manteve o mesmo valor. Tente confirmar o pedido novamente.",
+                        });
+                        return;
+                    }
+                } catch {
+                    // O modal abaixo orienta nova cotação sem esconder o conflito.
+                }
+
+                setQuotedShipping((current) => ({
+                    ...current,
+                    serviceCode: Number.NaN,
+                }));
+                setCheckoutError({
+                    title: "Frete atualizado",
+                    description:
+                        "A opção escolhida não está mais disponível. Volte ao carrinho para calcular e escolher outro frete.",
+                });
+                return;
+            }
+
+            showError(error, "Não foi possível criar o pedido.");
         } finally {
             setIsPreparing(false);
         }
@@ -361,7 +402,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const shipping = order
         ? order.shippingInCents
         : hasValidServiceCode
-          ? estimatedShipping
+          ? quotedShipping.priceInCents
           : 0;
     const total = order?.totalInCents ?? subtotal + shipping;
     const currentStep =
@@ -435,7 +476,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             isShippingConfirmed={isShippingConfirmed}
                             onOpenPayment={() => void openPayment()}
                             onPrepareOrder={() => void prepareOrder()}
-                            serviceName={serviceName}
+                            serviceName={quotedShipping.serviceName}
                             shipping={shipping}
                             subtotal={subtotal}
                             total={total}

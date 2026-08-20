@@ -111,19 +111,23 @@ Envie o CEP sem mascara. Envie somente UUID, tamanho e quantidade dos itens. Pre
 
 - A rota nao cria pedido, nao altera o carrinho e nao salva a opcao escolhida.
 - Uma nova chamada deve ser feita quando CEP, produto, tamanho ou quantidade mudar.
-- O frontend deve guardar `serviceCode` apenas como escolha temporaria do checkout.
-- Nao use `priceInCents` do preview como valor definitivo da cobranca.
+- O frontend deve guardar `serviceCode` e `priceInCents` como escolha temporaria do checkout.
+- Backend recalcula servico e preco ao criar o pedido; preview nunca define valor cobrado sozinho.
 
 ## Continuidade ao criar o pedido
 
-1. Criar o pedido com `POST /orders`.
-2. Confirmar o frete com `POST /shipping/orders/:orderUuid/quote`, enviando o `serviceCode` escolhido.
-3. Usar o valor recalculado e persistido retornado pelo backend como fonte de verdade.
+Crie o pedido com `POST /orders`, enviando opcao escolhida:
 
 Exemplo da confirmacao:
 
 ```json
 {
-    "serviceCode": 1
+    "addressUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
+    "shipping": {
+        "serviceCode": 1,
+        "priceInCents": 3526
+    }
 }
 ```
+
+Backend repete cotacao usando carrinho e endereco atuais. Pedido ja nasce `AWAITING_PAYMENT`, com shipment `CONFIRMED` e total final. Se preco mudou, retorna `409`; frontend deve refazer preview e pedir nova confirmacao ao usuario.

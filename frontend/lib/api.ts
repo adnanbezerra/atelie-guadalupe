@@ -10,7 +10,6 @@ import type {
     MarketingPromotion,
     OrdersResponse,
     Order,
-    OrderShippingPayload,
     Product,
     ProductLine,
     ProductListResponse,
@@ -401,7 +400,11 @@ export function createAdminUser(
 export function createOrder(
     token: string,
     body: {
-        addressUuid?: string;
+        addressUuid: string;
+        shipping: {
+            serviceCode: number;
+            priceInCents: number;
+        };
         notes?: string;
         paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
     },
@@ -422,21 +425,6 @@ export function getOrder(
         token,
         signal,
     });
-}
-
-export function confirmOrderShipping(
-    token: string,
-    orderUuid: string,
-    serviceCode: number,
-) {
-    return request<OrderShippingPayload>(
-        `/shipping/orders/${orderUuid}/quote`,
-        {
-            method: "POST",
-            token,
-            body: { serviceCode },
-        },
-    );
 }
 
 export function createOrderPayment(

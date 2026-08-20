@@ -317,22 +317,6 @@ export type Order = {
     } | null;
 };
 
-export type OrderShippingPayload = {
-    order: Order;
-    shipment: {
-        status: ShippingStatus;
-        selectedServiceCode: number | null;
-        selectedServiceName: string | null;
-        shippingPriceInCents: number | null;
-    } | null;
-    orderTotals?: {
-        subtotalInCents: number;
-        shippingInCents: number;
-        discountInCents: number;
-        totalInCents: number;
-    };
-};
-
 export type CheckoutPaymentPayload = {
     paymentStatus: PaymentStatus;
     checkoutId: string;

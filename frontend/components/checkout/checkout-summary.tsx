@@ -66,7 +66,7 @@ export function CheckoutSummary({
                     >
                         {isShippingConfirmed
                             ? "Frete e total confirmados pelo ateliê."
-                            : "Confirmamos o frete antes de abrir o pagamento. Se o valor mudar, você verá aqui primeiro."}
+                            : "Confira os valores antes de confirmar o pedido."}
                     </p>
                 </div>
             </div>

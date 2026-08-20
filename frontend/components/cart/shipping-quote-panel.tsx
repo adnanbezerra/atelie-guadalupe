@@ -479,13 +479,6 @@ export function ShippingQuotePanel({
                                 </label>
                             );
                         })}
-
-                        {quotedServices.length ? (
-                            <p className="px-1 text-xs leading-5 text-slate-500">
-                                A entregadora pode ter que recalcular o seu
-                                frete no momento da finalização do pedido.
-                            </p>
-                        ) : null}
                     </fieldset>
                 ) : null}
             </div>
