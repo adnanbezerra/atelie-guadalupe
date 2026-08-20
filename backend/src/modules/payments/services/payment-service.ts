@@ -159,7 +159,7 @@ export class PaymentService {
     private async buildCheckoutItems(order: {
         uuid: string;
         shippingInCents: number;
-        discountInCents: number;
+        couponDiscountInCents: number;
         totalInCents: number;
         items: Array<{
             uuid: string;
@@ -168,7 +168,7 @@ export class PaymentService {
             totalPriceInCents: number;
         }>;
     }) {
-        let remainingDiscount = order.discountInCents;
+        let remainingDiscount = order.couponDiscountInCents;
         const priced = order.items.map((item) => {
             const discount = Math.min(remainingDiscount, Math.max(0, item.totalPriceInCents - 1));
             remainingDiscount -= discount;

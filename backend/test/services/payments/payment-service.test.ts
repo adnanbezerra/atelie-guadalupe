@@ -67,6 +67,77 @@ test("payment service rejects checkout before shipping confirmation", async () =
     assert.equal(result.success, false);
 });
 
+test("payment checkout does not subtract the promotion discount twice", async () => {
+    const productPrices: number[] = [];
+    const order = {
+        id: 1,
+        uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
+        user: { uuid: "user-1" },
+        paymentIdempotencyKey: key,
+        payment: null,
+        status: "PENDING",
+        addressId: 2,
+        subtotalInCents: 10000,
+        shippingInCents: 1000,
+        promotionDiscountInCents: 1000,
+        couponDiscountInCents: 500,
+        discountInCents: 1500,
+        totalInCents: 9500,
+        shipment: { status: "CONFIRMED" },
+        items: [
+            {
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b403",
+                productNameSnapshot: "Produto em promocao",
+                productSize: "GRAMS_70",
+                totalPriceInCents: 9000
+            }
+        ]
+    };
+    const transactionClient = {
+        orderPayment: {
+            update: async () => ({
+                status: PaymentStatus.PENDING,
+                providerCheckoutId: "bill_1",
+                checkoutUrl: "https://pay.example/bill_1",
+                expectedAmountInCents: order.totalInCents
+            })
+        },
+        order: { update: async () => undefined }
+    };
+    const prisma = {
+        order: { findUnique: async () => order },
+        orderPayment: {
+            create: async () => ({ orderId: order.id, status: PaymentStatus.CREATING })
+        },
+        paymentCatalogProduct: {
+            findUnique: async () => null,
+            upsert: async ({ create }: { create: { providerProductId: string } }) => create
+        },
+        $transaction: async (callback: (tx: typeof transactionClient) => Promise<unknown>) =>
+            callback(transactionClient)
+    };
+    const client = {
+        createProduct: async (input: { externalId: string; price: number }) => {
+            productPrices.push(input.price);
+            return { id: `provider:${input.externalId}` };
+        },
+        createCheckout: async () => ({
+            id: "bill_1",
+            url: "https://pay.example/bill_1",
+            amount: order.totalInCents
+        })
+    };
+
+    const result = await new PaymentService(prisma as never, client as never).createCheckout(
+        "user-1",
+        order.uuid,
+        key
+    );
+
+    assert.equal(result.success, true);
+    assert.deepStrictEqual(productPrices, [8500, 1000]);
+});
+
 test("abacate webhook signature uses the exact raw body", () => {
     const body = Buffer.from('{"id":"evt_1","event":"checkout.completed"}');
     const signature = createHmac("sha256", ABACATEPAY_WEBHOOK_PUBLIC_KEY)
