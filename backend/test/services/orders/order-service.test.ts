@@ -1,11 +1,6 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import {
-    EmailJobType,
-    OrderStatus,
-    PaymentMethod,
-    RoleName
-} from "../../../src/generated/prisma/enums";
+import { OrderStatus, PaymentMethod, RoleName } from "../../../src/generated/prisma/enums";
 import { OrderService } from "../../../src/modules/orders/services/order-service";
 
 test("order service blocks order creation with empty cart", async () => {
@@ -48,7 +43,7 @@ test("order service blocks order creation with empty cart", async () => {
 
 test("order service creates order from cart snapshot", async () => {
     const deletedItems: string[] = [];
-    let queuedEmail: Record<string, unknown> | undefined;
+    let queuedEmail: unknown;
 
     const userRepository = {
         findByUuid: async () => ({
@@ -110,7 +105,7 @@ test("order service creates order from cart snapshot", async () => {
             cart: { itemUuids: string[] },
             _couponRedemption?: unknown,
             _couponGuard?: unknown,
-            emailJob?: Record<string, unknown>
+            emailJob?: unknown
         ) => {
             queuedEmail = emailJob;
             deletedItems.push(...cart.itemUuids);
@@ -181,9 +176,7 @@ test("order service creates order from cart snapshot", async () => {
     }
 
     assert.deepStrictEqual(deletedItems, ["item-1"]);
-    assert.equal(queuedEmail?.type, EmailJobType.ORDER_CREATED);
-    assert.equal(queuedEmail?.recipient, "maria@example.com");
-    assert.match(String(queuedEmail?.deduplicationKey), /^order-created:/);
+    assert.equal(queuedEmail, undefined);
 });
 
 test("order service prevents invalid status transition", async () => {

@@ -136,7 +136,8 @@ export class ShippingRepository {
         shippingInCents: number,
         totalInCents: number,
         create: ShipmentUpsertInput,
-        update: ShipmentUpdateInput
+        update: ShipmentUpdateInput,
+        emailJob: Prisma.EmailJobCreateInput
     ) {
         return this.prisma.$transaction(async (tx) => {
             const shipment = await tx.orderShipment.upsert({
@@ -155,6 +156,14 @@ export class ShippingRepository {
                     shippingInCents,
                     totalInCents
                 }
+            });
+
+            await tx.emailJob.upsert({
+                where: {
+                    deduplicationKey: emailJob.deduplicationKey
+                },
+                create: emailJob,
+                update: {}
             });
 
             return shipment;

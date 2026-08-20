@@ -1,5 +1,6 @@
 import { Prisma } from "../../../generated/prisma/client";
 import {
+    EmailJobType,
     OrderStatus,
     ProductCategory,
     ProductSize,
@@ -10,6 +11,7 @@ import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { slugify } from "../../../core/utils/slug";
 import { createUuid } from "../../../core/utils/uuid";
+import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
 import { PlatformRepository } from "../../platforms/repositories/platform-repository";
 import { ProductRepository } from "../../products/repositories/product-repository";
 import { calculateProductPriceInCents } from "../../products/services/product-pricing";
@@ -597,10 +599,13 @@ export class ShippingService {
             return left(AppError.business("Servico de frete nao encontrado na cotacao"));
         }
 
+        const totalInCents =
+            order.subtotalInCents + selectedService.priceInCents - order.discountInCents;
+
         const shipment = await this.shippingRepository.confirmSelectedService(
             order.id,
             selectedService.priceInCents,
-            order.subtotalInCents + selectedService.priceInCents - order.discountInCents,
+            totalInCents,
             {
                 uuid: createUuid(),
                 orderId: order.id,
@@ -625,7 +630,26 @@ export class ShippingService {
                 quotedServices: quotedServices as Prisma.InputJsonValue,
                 packagingSnapshot: packaging as Prisma.InputJsonValue,
                 confirmedAt: new Date()
-            }
+            },
+            createEmailJob({
+                type: EmailJobType.ORDER_CREATED,
+                recipient: order.user.email,
+                deduplicationKey: `order-created:${order.uuid}`,
+                payload: orderEmailPayload({
+                    customerName: order.user.name,
+                    orderUuid: order.uuid,
+                    items: order.items.map((item) => ({
+                        name: item.productNameSnapshot,
+                        quantity: item.quantity,
+                        totalInCents: item.totalPriceInCents
+                    })),
+                    subtotalInCents: order.subtotalInCents,
+                    shippingInCents: selectedService.priceInCents,
+                    shippingServiceName: selectedService.serviceName,
+                    discountInCents: order.discountInCents,
+                    totalInCents
+                })
+            })
         );
 
         return right({
@@ -637,8 +661,7 @@ export class ShippingService {
                 subtotalInCents: order.subtotalInCents,
                 shippingInCents: selectedService.priceInCents,
                 discountInCents: order.discountInCents,
-                totalInCents:
-                    order.subtotalInCents + selectedService.priceInCents - order.discountInCents
+                totalInCents
             }
         });
     }

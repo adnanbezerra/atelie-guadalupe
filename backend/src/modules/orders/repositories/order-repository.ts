@@ -81,8 +81,7 @@ export class OrderRepository {
             itemUuids: string[];
         },
         couponRedemption?: CouponRedemptionInput,
-        couponGuard?: CouponRedemptionGuard,
-        emailJob?: Prisma.EmailJobCreateInput
+        couponGuard?: CouponRedemptionGuard
     ) {
         const orderId = await this.prisma.$transaction(
             async (tx) => {
@@ -163,10 +162,6 @@ export class OrderRepository {
                         couponId: null
                     }
                 });
-
-                if (emailJob) {
-                    await tx.emailJob.create({ data: emailJob });
-                }
 
                 return order.id;
             },

@@ -51,6 +51,32 @@ test("email templates escape dynamic values and build the order link", () => {
     assert.match(rendered.text, /AA123BR/);
 });
 
+test("order received email shows confirmed shipping and final totals", () => {
+    const rendered = renderEmail(
+        EmailJobType.ORDER_CREATED,
+        {
+            customerName: "Maria",
+            orderUuid: "order-1",
+            items: [{ name: "Sabonete", quantity: 1, totalInCents: 2500 }],
+            subtotalInCents: 2500,
+            shippingInCents: 1590,
+            shippingServiceName: "PAC",
+            discountInCents: 0,
+            totalInCents: 4090
+        },
+        "https://atelie.example"
+    );
+
+    assert.match(rendered.html, /Frete confirmado/);
+    assert.match(rendered.html, /PAC/);
+    assert.match(rendered.html, /R\$\s*15,90/);
+    assert.match(rendered.html, /Total do pedido/);
+    assert.match(rendered.html, /Ver pedido e pagar/);
+    assert.doesNotMatch(rendered.html, /a confirmar/i);
+    assert.match(rendered.text, /Frete \(PAC\): R\$\s*15,90/);
+    assert.match(rendered.text, /Total do pedido: R\$\s*40,90/);
+});
+
 test("email worker records acceptance and marks the job sent", async () => {
     const job = createJob();
     const logs: Array<Record<string, unknown>> = [];

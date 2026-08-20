@@ -29,6 +29,7 @@ export type OrderEmailPayload = {
     }>;
     subtotalInCents: number;
     shippingInCents: number;
+    shippingServiceName?: string;
     discountInCents: number;
     totalInCents: number;
     trackingCode?: string;

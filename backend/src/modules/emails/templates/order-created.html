@@ -30,13 +30,13 @@
         <!--
         THESIS: um comprovante de ateliê que torna o próximo passo explícito, sem imitar checkout genérico.
         OWN-WORLD: azul Guadalupe, ouro artesanal, superfícies claras e resumo de pedido sem cartões aninhados.
-        STORY: a cliente confirma o recebimento, entende que o frete ainda será definido e revisa os itens.
-        FIRST VIEWPORT: cabeçalho de marca, status de recebimento, título e aviso operacional antes do resumo.
+        STORY: a cliente confirma o recebimento, reconhece o frete escolhido e revisa os valores finais.
+        FIRST VIEWPORT: cabeçalho de marca, status de recebimento, título e confirmação do frete antes do resumo.
         FORM: extensão precisa do sistema existente; email-note-v1.
         FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
         -->
         <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent">
-            Pedido #{{orderUuid}} recebido. Frete e total final serão confirmados em seguida.
+            Pedido #{{orderUuid}} recebido com frete {{shippingServiceName}} confirmado.
         </div>
         <table
             role="presentation"
@@ -172,7 +172,8 @@
                                         color: #1f2937;
                                     "
                                 >
-                                    Recebemos seu pedido e já vamos cuidar dos próximos passos.
+                                    Recebemos seu pedido com o frete já confirmado. Confira os
+                                    valores antes de seguir para o pagamento.
                                 </p>
                                 <table
                                     role="presentation"
@@ -191,9 +192,8 @@
                                                 color: #4a3728;
                                             "
                                         >
-                                            <strong>O que acontece agora?</strong><br />O frete e o
-                                            total final serão confirmados antes da criação do
-                                            pagamento.
+                                            <strong>Frete confirmado</strong><br />{{shippingServiceName}}
+                                            · {{shipping}}
                                         </td>
                                     </tr>
                                 </table>
@@ -295,7 +295,7 @@
                                                 color: #667085;
                                             "
                                         >
-                                            Frete
+                                            Frete · {{shippingServiceName}}
                                         </td>
                                         <td
                                             align="right"
@@ -343,7 +343,7 @@
                                                 color: #1f2937;
                                             "
                                         >
-                                            Total atual
+                                            Total do pedido
                                         </td>
                                         <td
                                             align="right"
@@ -375,7 +375,7 @@
                                                     color: #ffffff;
                                                     text-decoration: none;
                                                 "
-                                                >Ver pedido</a
+                                                >Ver pedido e pagar</a
                                             >
                                         </td>
                                     </tr>

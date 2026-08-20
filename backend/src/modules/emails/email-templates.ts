@@ -86,6 +86,10 @@ function orderData(payloadValue: unknown) {
         orderUuid: stringValue(payload, "orderUuid"),
         subtotalInCents: numberValue(payload, "subtotalInCents"),
         shippingInCents: numberValue(payload, "shippingInCents"),
+        shippingServiceName:
+            typeof payload.shippingServiceName === "string" && payload.shippingServiceName.trim()
+                ? payload.shippingServiceName
+                : undefined,
         discountInCents: numberValue(payload, "discountInCents"),
         totalInCents: numberValue(payload, "totalInCents"),
         trackingCode: typeof payload.trackingCode === "string" ? payload.trackingCode : undefined,
@@ -104,7 +108,10 @@ function orderText(data: ReturnType<typeof orderData>) {
     const items = data.items
         .map((item) => `- ${item.name} x ${item.quantity}: ${currency(item.totalInCents)}`)
         .join("\n");
-    return `Pedido #${data.orderUuid}\n${items}\nSubtotal: ${currency(data.subtotalInCents)}\nFrete: ${data.shippingInCents > 0 ? currency(data.shippingInCents) : "a confirmar"}\nDesconto: ${currency(data.discountInCents)}\nTotal atual: ${currency(data.totalInCents)}`;
+    const shippingLabel = data.shippingServiceName
+        ? `Frete (${data.shippingServiceName})`
+        : "Frete";
+    return `Pedido #${data.orderUuid}\n${items}\nSubtotal: ${currency(data.subtotalInCents)}\n${shippingLabel}: ${currency(data.shippingInCents)}\nDesconto: ${currency(data.discountInCents)}\nTotal do pedido: ${currency(data.totalInCents)}`;
 }
 
 export function renderEmail(
@@ -136,7 +143,8 @@ export function renderEmail(
         customerName: data.customerName,
         orderUuid: data.orderUuid,
         subtotal: currency(data.subtotalInCents),
-        shipping: data.shippingInCents > 0 ? currency(data.shippingInCents) : "a confirmar",
+        shipping: currency(data.shippingInCents),
+        shippingServiceName: data.shippingServiceName ?? "",
         discount: currency(data.discountInCents),
         total: currency(data.totalInCents),
         orderUrl
@@ -148,8 +156,11 @@ export function renderEmail(
     }));
 
     if (type === EmailJobType.ORDER_CREATED) {
+        if (!data.shippingServiceName) {
+            throw new Error("Campo de email invalido: shippingServiceName");
+        }
         const subject = "Recebemos seu pedido";
-        const message = "O frete e o total final serao confirmados antes da criacao do pagamento.";
+        const message = "Frete confirmado. Seu pedido esta pronto para pagamento.";
         return {
             subject,
             html: renderTemplate(templates.orderCreated, templateValues, templateItems),

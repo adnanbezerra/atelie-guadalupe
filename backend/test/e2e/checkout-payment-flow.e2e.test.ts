@@ -210,9 +210,10 @@ test(
             201
         );
         assert.match(created.order.paymentIdempotencyKey, /^[0-9a-f-]{36}$/);
-        await app.prisma.emailJob.deleteMany({
+        const emailBeforeShipping = await app.prisma.emailJob.findUnique({
             where: { deduplicationKey: `order-created:${created.order.uuid}` }
         });
+        assert.equal(emailBeforeShipping, null);
 
         const quoted = parseResponse<{
             shipment: {
@@ -244,6 +245,29 @@ test(
         );
         assert.equal(confirmed.shipment.status, "CONFIRMED");
         assert.equal(confirmed.orderTotals.shippingInCents, selectedService.priceInCents);
+
+        const orderReceivedEmail = await app.prisma.emailJob.findUniqueOrThrow({
+            where: { deduplicationKey: `order-created:${created.order.uuid}` }
+        });
+        const orderReceivedPayload = orderReceivedEmail.payload as {
+            customerName: string;
+            orderUuid: string;
+            items: unknown[];
+            subtotalInCents: number;
+            shippingInCents: number;
+            shippingServiceName: string;
+            discountInCents: number;
+            totalInCents: number;
+        };
+        assert.equal(orderReceivedPayload.orderUuid, created.order.uuid);
+        assert.ok(orderReceivedPayload.customerName);
+        assert.ok(orderReceivedPayload.items.length > 0);
+        assert.ok(orderReceivedPayload.shippingServiceName);
+        assert.equal(
+            orderReceivedPayload.shippingInCents,
+            confirmed.orderTotals.shippingInCents
+        );
+        assert.equal(orderReceivedPayload.totalInCents, confirmed.orderTotals.totalInCents);
 
         const paymentHeaders = {
             ...headers,

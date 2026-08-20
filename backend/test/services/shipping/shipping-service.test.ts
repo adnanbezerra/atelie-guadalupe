@@ -264,6 +264,7 @@ test("shipping service rejects changing the service after freight confirmation",
 test("shipping service recalculates quote when quote-affecting options change", async () => {
     let calculateQuoteCalls = 0;
     let saveQuoteCalls = 0;
+    let queuedEmail: Record<string, unknown> | undefined;
     const itemUpdatedAt = new Date("2026-04-11T12:00:00.000Z");
     const boxUpdatedAt = new Date("2026-04-11T12:30:00.000Z");
 
@@ -382,6 +383,20 @@ test("shipping service recalculates quote when quote-affecting options change", 
         saveQuoteSnapshot: async () => {
             saveQuoteCalls += 1;
         },
+        confirmSelectedService: async (
+            _orderId: number,
+            _shippingInCents: number,
+            _totalInCents: number,
+            _create: Record<string, unknown>,
+            update: Record<string, unknown>,
+            emailJob: Record<string, unknown>
+        ) => {
+            queuedEmail = emailJob;
+            return {
+                ...quotedOrder.shipment,
+                ...update
+            };
+        },
         findOrderForShipping: async () => quotedOrder
     };
 
@@ -414,6 +429,7 @@ test("shipping service recalculates quote when quote-affecting options change", 
         },
         "order-1",
         {
+            serviceCode: 1,
             useInsuranceValue: true
         }
     );
@@ -421,4 +437,23 @@ test("shipping service recalculates quote when quote-affecting options change", 
     assert.equal(result.success, true);
     assert.equal(calculateQuoteCalls, 1);
     assert.equal(saveQuoteCalls, 1);
+    assert.equal(queuedEmail?.type, "ORDER_CREATED");
+    assert.equal(queuedEmail?.recipient, "maria@example.com");
+    assert.equal(queuedEmail?.deduplicationKey, "order-created:order-1");
+    assert.deepStrictEqual(queuedEmail?.payload, {
+        customerName: "Maria",
+        orderUuid: "order-1",
+        items: [
+            {
+                name: "Hidrapele",
+                quantity: 1,
+                totalInCents: 1000
+            }
+        ],
+        subtotalInCents: 10000,
+        shippingInCents: 1590,
+        shippingServiceName: "PAC",
+        discountInCents: 0,
+        totalInCents: 11590
+    });
 });
