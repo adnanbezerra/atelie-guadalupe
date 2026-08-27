@@ -4,6 +4,7 @@ import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import { AbacateCheckout, AbacatePayClient } from "./abacatepay-client";
+import { checkoutUnavailableError, isCheckoutCreationEnabled } from "./checkout-availability";
 
 function paymentResponse(payment: {
     status: PaymentStatus;
@@ -41,7 +42,34 @@ export class PaymentService {
             return left(AppError.conflict("Idempotency-Key nao pertence a este pedido"));
         }
         if (order.payment?.providerCheckoutId) {
+            if (order.status === OrderStatus.CANCELLED) {
+                return left(
+                    AppError.business(
+                        "Pedido cancelado possui checkout registrado e requer reconciliacao"
+                    )
+                );
+            }
             return right(paymentResponse(order.payment));
+        }
+        let payment = order.payment;
+        if (payment) {
+            const reconciled = await this.reconcileCreatingPayment(order.uuid, payment);
+            if (reconciled?.orderTransitioned) return right(paymentResponse(reconciled.payment));
+            if (reconciled) {
+                return left(
+                    AppError.business(
+                        "Pedido foi cancelado; checkout registrado para reconciliacao"
+                    )
+                );
+            }
+            return left(
+                AppError.conflict(
+                    "A criacao do pagamento ainda esta em andamento; repita com a mesma chave"
+                )
+            );
+        }
+        if (!isCheckoutCreationEnabled()) {
+            return left(checkoutUnavailableError());
         }
         if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.AWAITING_PAYMENT) {
             return left(AppError.business("Pedido nao esta disponivel para iniciar pagamento"));
@@ -53,7 +81,6 @@ export class PaymentService {
             return left(AppError.business("O total do pedido precisa ser positivo"));
         }
 
-        let payment = order.payment;
         let createdHere = false;
         if (!payment) {
             try {
@@ -79,7 +106,14 @@ export class PaymentService {
 
         if (!createdHere) {
             const reconciled = await this.reconcileCreatingPayment(order.uuid, payment);
-            if (reconciled) return right(paymentResponse(reconciled));
+            if (reconciled?.orderTransitioned) return right(paymentResponse(reconciled.payment));
+            if (reconciled) {
+                return left(
+                    AppError.business(
+                        "Pedido foi cancelado; checkout registrado para reconciliacao"
+                    )
+                );
+            }
             return left(
                 AppError.conflict(
                     "A criacao do pagamento ainda esta em andamento; repita com a mesma chave"
@@ -100,27 +134,13 @@ export class PaymentService {
             return left(AppError.business("O total retornado pela AbacatePay diverge do pedido"));
         }
 
-        const updated = await this.prisma.$transaction(async (tx) => {
-            const saved = await tx.orderPayment.update({
-                where: { orderId: order.id },
-                data: {
-                    status: PaymentStatus.PENDING,
-                    providerCheckoutId: checkout.id,
-                    checkoutUrl: checkout.url,
-                    providerResponse: checkout as unknown as Prisma.InputJsonValue
-                }
-            });
-            await tx.order.update({
-                where: { id: order.id },
-                data: {
-                    status: OrderStatus.AWAITING_PAYMENT,
-                    checkoutProvider: "ABACATEPAY",
-                    checkoutReference: checkout.id
-                }
-            });
-            return saved;
-        });
-        return right(paymentResponse(updated));
+        const updated = await this.saveReconciledCheckout(order.id, checkout);
+        if (!updated.orderTransitioned) {
+            return left(
+                AppError.business("Pedido foi cancelado; checkout registrado para reconciliacao")
+            );
+        }
+        return right(paymentResponse(updated.payment));
     }
 
     private async reconcileCreatingPayment(
@@ -135,6 +155,17 @@ export class PaymentService {
 
     private async saveReconciledCheckout(orderId: number, checkout: AbacateCheckout) {
         return this.prisma.$transaction(async (tx) => {
+            const orderTransition = await tx.order.updateMany({
+                where: {
+                    id: orderId,
+                    status: { in: [OrderStatus.PENDING, OrderStatus.AWAITING_PAYMENT] }
+                },
+                data: {
+                    status: OrderStatus.AWAITING_PAYMENT,
+                    checkoutProvider: "ABACATEPAY",
+                    checkoutReference: checkout.id
+                }
+            });
             const payment = await tx.orderPayment.update({
                 where: { orderId },
                 data: {
@@ -144,15 +175,7 @@ export class PaymentService {
                     providerResponse: checkout as unknown as Prisma.InputJsonValue
                 }
             });
-            await tx.order.update({
-                where: { id: orderId },
-                data: {
-                    status: OrderStatus.AWAITING_PAYMENT,
-                    checkoutProvider: "ABACATEPAY",
-                    checkoutReference: checkout.id
-                }
-            });
-            return payment;
+            return { payment, orderTransitioned: orderTransition.count === 1 };
         });
     }
 

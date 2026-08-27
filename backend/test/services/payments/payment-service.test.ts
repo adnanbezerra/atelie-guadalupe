@@ -67,6 +67,166 @@ test("payment service rejects checkout before shipping confirmation", async () =
     assert.equal(result.success, false);
 });
 
+test("payment service blocks a new checkout without calling the provider when disabled", async () => {
+    const previous = process.env.CHECKOUT_ENABLED;
+    process.env.CHECKOUT_ENABLED = "false";
+    let providerCalled = false;
+    const prisma = {
+        order: {
+            findUnique: async () => ({
+                id: 1,
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
+                user: { uuid: "user-1" },
+                paymentIdempotencyKey: key,
+                payment: null,
+                status: "AWAITING_PAYMENT",
+                addressId: 2,
+                totalInCents: 5000,
+                items: [],
+                shipment: { status: "CONFIRMED" }
+            })
+        }
+    };
+    const client = {
+        createProduct: async () => {
+            providerCalled = true;
+        },
+        createCheckout: async () => {
+            providerCalled = true;
+        },
+        findCheckoutByExternalId: async () => {
+            providerCalled = true;
+        }
+    };
+
+    try {
+        const result = await new PaymentService(prisma as never, client as never).createCheckout(
+            "user-1",
+            "order-1",
+            key
+        );
+
+        assert.equal(result.success, false);
+        if (!result.success) {
+            assert.equal(result.value.code, "SERVICE_UNAVAILABLE");
+            assert.equal(result.value.statusCode, 503);
+        }
+        assert.equal(providerCalled, false);
+    } finally {
+        if (previous === undefined) delete process.env.CHECKOUT_ENABLED;
+        else process.env.CHECKOUT_ENABLED = previous;
+    }
+});
+
+test("payment service reconciles a creating checkout without creating another while disabled", async () => {
+    const previous = process.env.CHECKOUT_ENABLED;
+    process.env.CHECKOUT_ENABLED = "false";
+    let findCalls = 0;
+    let createCalls = 0;
+    const payment = {
+        orderId: 1,
+        status: PaymentStatus.CREATING,
+        providerCheckoutId: null,
+        checkoutUrl: null,
+        expectedAmountInCents: 5000
+    };
+    const transactionClient = {
+        order: { updateMany: async () => ({ count: 1 }) },
+        orderPayment: {
+            update: async () => ({
+                ...payment,
+                status: PaymentStatus.PENDING,
+                providerCheckoutId: "bill_reconciled",
+                checkoutUrl: "https://pay.example/bill_reconciled"
+            })
+        }
+    };
+    const prisma = {
+        order: {
+            findUnique: async () => ({
+                id: 1,
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
+                user: { uuid: "user-1" },
+                paymentIdempotencyKey: key,
+                payment,
+                status: "AWAITING_PAYMENT",
+                addressId: 2,
+                totalInCents: 5000,
+                items: [],
+                shipment: { status: "CONFIRMED" }
+            })
+        },
+        $transaction: async (callback: (tx: typeof transactionClient) => Promise<unknown>) =>
+            callback(transactionClient)
+    };
+    const client = {
+        findCheckoutByExternalId: async () => {
+            findCalls += 1;
+            return {
+                id: "bill_reconciled",
+                url: "https://pay.example/bill_reconciled",
+                amount: 5000
+            };
+        },
+        createCheckout: async () => {
+            createCalls += 1;
+        }
+    };
+
+    try {
+        const result = await new PaymentService(prisma as never, client as never).createCheckout(
+            "user-1",
+            "order-1",
+            key
+        );
+
+        assert.equal(result.success, true);
+        assert.equal(findCalls, 1);
+        assert.equal(createCalls, 0);
+        if (result.success) assert.equal(result.value.checkoutId, "bill_reconciled");
+    } finally {
+        if (previous === undefined) delete process.env.CHECKOUT_ENABLED;
+        else process.env.CHECKOUT_ENABLED = previous;
+    }
+});
+
+test("payment service returns an existing checkout while new checkouts are disabled", async () => {
+    const previous = process.env.CHECKOUT_ENABLED;
+    process.env.CHECKOUT_ENABLED = "false";
+    const prisma = {
+        order: {
+            findUnique: async () => ({
+                id: 1,
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
+                user: { uuid: "user-1" },
+                paymentIdempotencyKey: key,
+                payment: {
+                    status: PaymentStatus.PENDING,
+                    providerCheckoutId: "bill_in_flight",
+                    checkoutUrl: "https://pay.example/bill_in_flight",
+                    expectedAmountInCents: 5000
+                },
+                items: [],
+                shipment: null
+            })
+        }
+    };
+
+    try {
+        const result = await new PaymentService(prisma as never, {} as never).createCheckout(
+            "user-1",
+            "order-1",
+            key
+        );
+
+        assert.equal(result.success, true);
+        if (result.success) assert.equal(result.value.checkoutId, "bill_in_flight");
+    } finally {
+        if (previous === undefined) delete process.env.CHECKOUT_ENABLED;
+        else process.env.CHECKOUT_ENABLED = previous;
+    }
+});
+
 test("payment checkout does not subtract the promotion discount twice", async () => {
     const productPrices: number[] = [];
     const order = {
@@ -102,7 +262,7 @@ test("payment checkout does not subtract the promotion discount twice", async ()
                 expectedAmountInCents: order.totalInCents
             })
         },
-        order: { update: async () => undefined }
+        order: { updateMany: async () => ({ count: 1 }) }
     };
     const prisma = {
         order: { findUnique: async () => order },
@@ -152,13 +312,15 @@ test("checkout.completed marks payment paid and enqueues fulfillment atomically"
     const calls: string[] = [];
     const transactionClient = {
         orderPayment: {
-            update: async () => {
+            updateMany: async () => {
                 calls.push("payment-paid");
+                return { count: 1 };
             }
         },
         order: {
             updateMany: async () => {
                 calls.push("order-paid");
+                return { count: 1 };
             }
         },
         fulfillmentJob: {
@@ -219,13 +381,231 @@ test("checkout.completed marks payment paid and enqueues fulfillment atomically"
     });
 
     assert.deepStrictEqual(calls, [
-        "payment-paid",
         "order-paid",
+        "payment-paid",
         "fulfillment-enqueued",
         "email-enqueued",
         "event-processed"
     ]);
     assert.deepStrictEqual(result, { processed: true, orderUuid: "order-1" });
+});
+
+test("checkout creation persists provider checkout without reviving a cancelled order", async () => {
+    let providerCalls = 0;
+    let persistedCheckoutId: string | null = null;
+    const order = {
+        id: 1,
+        uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
+        user: { uuid: "user-1" },
+        paymentIdempotencyKey: key,
+        payment: null,
+        status: "AWAITING_PAYMENT",
+        addressId: 2,
+        subtotalInCents: 5000,
+        shippingInCents: 0,
+        couponDiscountInCents: 0,
+        totalInCents: 5000,
+        shipment: { status: "CONFIRMED" },
+        items: [
+            {
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b403",
+                productNameSnapshot: "Produto",
+                productSize: "GRAMS_70",
+                totalPriceInCents: 5000
+            }
+        ]
+    };
+    const transactionClient = {
+        order: { updateMany: async () => ({ count: 0 }) },
+        orderPayment: {
+            update: async ({ data }: { data: { providerCheckoutId: string } }) => {
+                persistedCheckoutId = data.providerCheckoutId;
+                return {
+                    status: PaymentStatus.PENDING,
+                    providerCheckoutId: data.providerCheckoutId,
+                    checkoutUrl: "https://pay.example/bill_cancelled",
+                    expectedAmountInCents: 5000
+                };
+            }
+        }
+    };
+    const prisma = {
+        order: { findUnique: async () => order },
+        orderPayment: {
+            create: async () => ({ orderId: order.id, status: PaymentStatus.CREATING })
+        },
+        paymentCatalogProduct: {
+            findUnique: async () => ({ providerProductId: "product_1" })
+        },
+        $transaction: async (callback: (tx: typeof transactionClient) => Promise<unknown>) =>
+            callback(transactionClient)
+    };
+    const client = {
+        createCheckout: async () => {
+            providerCalls += 1;
+            return {
+                id: "bill_cancelled",
+                externalId: order.uuid,
+                url: "https://pay.example/bill_cancelled",
+                amount: 5000,
+                paidAmount: null,
+                status: "PENDING"
+            };
+        }
+    };
+
+    const result = await new PaymentService(prisma as never, client as never).createCheckout(
+        "user-1",
+        order.uuid,
+        key
+    );
+
+    assert.equal(result.success, false);
+    assert.equal(providerCalls, 1);
+    assert.equal(persistedCheckoutId, "bill_cancelled");
+});
+
+test("retry on cancelled order reconciles creating payment without a second checkout", async () => {
+    let checkoutCreations = 0;
+    let checkoutLookups = 0;
+    let persistedCheckoutId: string | null = null;
+    const transactionClient = {
+        order: { updateMany: async () => ({ count: 0 }) },
+        orderPayment: {
+            update: async ({ data }: { data: { providerCheckoutId: string } }) => {
+                persistedCheckoutId = data.providerCheckoutId;
+                return {
+                    status: PaymentStatus.PENDING,
+                    providerCheckoutId: data.providerCheckoutId,
+                    checkoutUrl: "https://pay.example/bill_existing",
+                    expectedAmountInCents: 5000
+                };
+            }
+        }
+    };
+    const prisma = {
+        order: {
+            findUnique: async () => ({
+                id: 1,
+                uuid: "order-cancelled",
+                user: { uuid: "user-1" },
+                paymentIdempotencyKey: key,
+                payment: { orderId: 1, status: PaymentStatus.CREATING },
+                status: "CANCELLED",
+                items: [],
+                shipment: null
+            })
+        },
+        $transaction: async (callback: (tx: typeof transactionClient) => Promise<unknown>) =>
+            callback(transactionClient)
+    };
+    const client = {
+        findCheckoutByExternalId: async () => {
+            checkoutLookups += 1;
+            return {
+                id: "bill_existing",
+                externalId: "order-cancelled",
+                url: "https://pay.example/bill_existing",
+                amount: 5000,
+                paidAmount: null,
+                status: "PENDING"
+            };
+        },
+        createCheckout: async () => {
+            checkoutCreations += 1;
+        }
+    };
+
+    const result = await new PaymentService(prisma as never, client as never).createCheckout(
+        "user-1",
+        "order-cancelled",
+        key
+    );
+
+    assert.equal(result.success, false);
+    assert.equal(checkoutLookups, 1);
+    assert.equal(checkoutCreations, 0);
+    assert.equal(persistedCheckoutId, "bill_existing");
+});
+
+test("late payment on cancelled order is recorded once without fulfillment or email", async () => {
+    const effects: string[] = [];
+    const alerts: unknown[] = [];
+    let firstFinancialTransition = true;
+    const transactionClient = {
+        order: {
+            updateMany: async () => ({ count: 0 }),
+            findUniqueOrThrow: async () => ({ status: "CANCELLED" })
+        },
+        orderPayment: {
+            updateMany: async ({ data }: { data: { status: PaymentStatus } }) => {
+                assert.equal(data.status, PaymentStatus.REFUND_PENDING);
+                const count = firstFinancialTransition ? 1 : 0;
+                firstFinancialTransition = false;
+                return { count };
+            }
+        },
+        fulfillmentJob: { upsert: async () => effects.push("fulfillment") },
+        emailJob: { upsert: async () => effects.push("email") },
+        paymentWebhookEvent: { update: async () => effects.push("event") }
+    };
+    const prisma = {
+        paymentWebhookEvent: { upsert: async () => ({ processedAt: null }) },
+        orderPayment: {
+            findUnique: async () => ({
+                id: 3,
+                orderId: 7,
+                expectedAmountInCents: 5000,
+                paidAt: null,
+                order: {
+                    uuid: "order-cancelled",
+                    subtotalInCents: 5000,
+                    shippingInCents: 0,
+                    discountInCents: 0,
+                    totalInCents: 5000,
+                    user: { name: "Maria", email: "maria@example.com" },
+                    items: []
+                }
+            })
+        },
+        $transaction: async (callback: (tx: typeof transactionClient) => Promise<unknown>) =>
+            callback(transactionClient)
+    };
+    const service = new PaymentWebhookService(prisma as never, async (alert) => {
+        alerts.push(alert);
+    });
+    const webhook = (id: string) =>
+        service.process({
+            id,
+            event: "checkout.completed",
+            data: {
+                checkout: {
+                    id: "bill_late",
+                    externalId: "order-cancelled",
+                    amount: 5000,
+                    paidAmount: 5000
+                },
+                payerInformation: { method: "PIX" }
+            }
+        });
+
+    const first = await webhook("evt_late_1");
+    const repeated = await webhook("evt_late_2");
+
+    assert.deepStrictEqual(first, {
+        processed: true,
+        orderUuid: "order-cancelled",
+        refundPending: true
+    });
+    assert.deepStrictEqual(repeated, { processed: true, orderUuid: "order-cancelled" });
+    assert.deepStrictEqual(effects, ["event", "event"]);
+    assert.deepStrictEqual(alerts, [
+        {
+            orderUuid: "order-cancelled",
+            providerCheckoutId: "bill_late",
+            paidAmountInCents: 5000
+        }
+    ]);
 });
 
 test("processed webhook delivery is ignored without repeating effects", async () => {

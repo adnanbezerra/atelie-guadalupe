@@ -5,6 +5,7 @@ import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import { CreatePaymentLinkInput, ListPaymentLinksInput } from "../payment-link-schema";
 import { AbacateCheckout, AbacatePayClient } from "./abacatepay-client";
+import { checkoutUnavailableError, isCheckoutCreationEnabled } from "./checkout-availability";
 
 const paymentLinkExternalId = (uuid: string) => `payment-link:${uuid}`;
 
@@ -124,11 +125,21 @@ export class PaymentLinkService {
         let paymentLink = await this.findByUuid(uuid);
         if (!paymentLink) return left(AppError.notFound("Link de pagamento nao encontrado"));
 
+        const expired = paymentLink.expiresAt !== null && paymentLink.expiresAt <= new Date();
+        if (expired && paymentLink.status === PaymentLinkStatus.CREATING) {
+            const checkout = await this.abacatePay.findCheckoutByExternalId(
+                paymentLinkExternalId(uuid)
+            );
+            if (checkout) return this.saveCheckout(paymentLink, checkout, true);
+            return left(
+                AppError.conflict(
+                    "Resultado da criacao do checkout ainda incerto; reconciliacao manual necessaria"
+                )
+            );
+        }
         if (
-            paymentLink.expiresAt &&
-            paymentLink.expiresAt <= new Date() &&
+            expired &&
             (paymentLink.status === PaymentLinkStatus.ACTIVE ||
-                paymentLink.status === PaymentLinkStatus.CREATING ||
                 paymentLink.status === PaymentLinkStatus.PENDING)
         ) {
             paymentLink = await this.prisma.paymentLink.update({
@@ -154,11 +165,15 @@ export class PaymentLinkService {
             const checkout = await this.abacatePay.findCheckoutByExternalId(
                 paymentLinkExternalId(uuid)
             );
-            if (checkout)
-                return this.saveCheckout(paymentLink.id, paymentLink.amountInCents, checkout);
+            if (checkout) return this.saveCheckout(paymentLink, checkout, false);
             return left(
-                AppError.conflict("A criacao do checkout ainda esta em andamento; tente novamente")
+                AppError.conflict(
+                    "Resultado da criacao do checkout ainda incerto; tente novamente ou encaminhe para reconciliacao manual"
+                )
             );
+        }
+        if (!isCheckoutCreationEnabled()) {
+            return left(checkoutUnavailableError());
         }
         if (paymentLink.status !== PaymentLinkStatus.ACTIVE) {
             return left(AppError.business("Link de pagamento nao esta disponivel"));
@@ -174,34 +189,27 @@ export class PaymentLinkService {
             );
         }
 
-        try {
-            const checkout = await this.abacatePay.createCheckout({
-                externalId: paymentLinkExternalId(uuid),
-                items: [{ id: paymentLink.providerProductId, quantity: 1 }],
-                methods: ["PIX", "CARD"],
-                returnUrl: process.env.ABACATEPAY_RETURN_URL,
-                completionUrl: process.env.ABACATEPAY_COMPLETION_URL,
-                metadata: { paymentLinkUuid: uuid }
-            });
-            return this.saveCheckout(paymentLink.id, paymentLink.amountInCents, checkout);
-        } catch (error) {
-            await this.prisma.paymentLink.updateMany({
-                where: { id: paymentLink.id, status: PaymentLinkStatus.CREATING },
-                data: { status: PaymentLinkStatus.ACTIVE }
-            });
-            throw error;
-        }
+        // Falha pode ter ocorrido depois da criacao: CREATING impede segunda cobranca no retry.
+        const checkout = await this.abacatePay.createCheckout({
+            externalId: paymentLinkExternalId(uuid),
+            items: [{ id: paymentLink.providerProductId, quantity: 1 }],
+            methods: ["PIX", "CARD"],
+            returnUrl: process.env.ABACATEPAY_RETURN_URL,
+            completionUrl: process.env.ABACATEPAY_COMPLETION_URL,
+            metadata: { paymentLinkUuid: uuid }
+        });
+        return this.saveCheckout(
+            paymentLink,
+            checkout,
+            paymentLink.expiresAt !== null && paymentLink.expiresAt <= new Date()
+        );
     }
 
     public async list(query: ListPaymentLinksInput) {
         await this.prisma.paymentLink.updateMany({
             where: {
                 status: {
-                    in: [
-                        PaymentLinkStatus.ACTIVE,
-                        PaymentLinkStatus.CREATING,
-                        PaymentLinkStatus.PENDING
-                    ]
+                    in: [PaymentLinkStatus.ACTIVE, PaymentLinkStatus.PENDING]
                 },
                 expiresAt: { lte: new Date() }
             },
@@ -239,28 +247,45 @@ export class PaymentLinkService {
     }
 
     private async saveCheckout(
-        paymentLinkId: number,
-        expectedAmount: number,
-        checkout: AbacateCheckout
+        paymentLink: {
+            id: number;
+            uuid: string;
+            amountInCents: number;
+        },
+        checkout: AbacateCheckout,
+        expired: boolean
     ) {
-        if (checkout.amount !== expectedAmount) {
+        if (
+            checkout.externalId !== paymentLinkExternalId(paymentLink.uuid) ||
+            checkout.amount !== paymentLink.amountInCents
+        ) {
             await this.prisma.paymentLink.update({
-                where: { id: paymentLinkId },
-                data: { status: PaymentLinkStatus.ACTIVE }
+                where: { id: paymentLink.id },
+                data: {
+                    status: PaymentLinkStatus.CREATING,
+                    providerCheckoutId: checkout.id,
+                    checkoutUrl: null,
+                    providerCheckoutResponse: checkout as unknown as Prisma.InputJsonValue
+                }
             });
-            return left(AppError.business("O total retornado pela AbacatePay diverge da cobranca"));
+            return left(
+                AppError.conflict(
+                    "Checkout reconciliado diverge da cobranca; acao manual necessaria"
+                )
+            );
         }
 
         const updated = await this.prisma.paymentLink.update({
-            where: { id: paymentLinkId },
+            where: { id: paymentLink.id },
             data: {
-                status: PaymentLinkStatus.PENDING,
+                status: expired ? PaymentLinkStatus.EXPIRED : PaymentLinkStatus.PENDING,
                 providerCheckoutId: checkout.id,
                 checkoutUrl: checkout.url,
                 providerCheckoutResponse: checkout as unknown as Prisma.InputJsonValue
             },
             include: { createdBy: { select: { uuid: true, name: true, email: true } } }
         });
+        if (expired) return left(AppError.business("Link de pagamento expirado"));
         return right({
             checkoutUrl: checkout.url,
             paymentLink: presentPublicPaymentLink(updated)
