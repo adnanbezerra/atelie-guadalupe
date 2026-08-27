@@ -330,6 +330,7 @@ test("valid late webhook audits an expired payment link as paid", async () => {
     const prisma = {
         paymentWebhookEvent: {
             upsert: async () => ({ processedAt: null }),
+            updateMany: async () => ({ count: 1 }),
             update: async ({ data }: { data: Record<string, unknown> }) => {
                 eventUpdate = data;
             }

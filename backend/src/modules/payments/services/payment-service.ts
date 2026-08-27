@@ -42,6 +42,13 @@ export class PaymentService {
             return left(AppError.conflict("Idempotency-Key nao pertence a este pedido"));
         }
         if (order.payment?.providerCheckoutId) {
+            if (order.payment.status === PaymentStatus.CREATING) {
+                return left(
+                    AppError.business(
+                        "Checkout divergente registrado e requer reconciliacao manual"
+                    )
+                );
+            }
             if (order.status === OrderStatus.CANCELLED) {
                 return left(
                     AppError.business(
@@ -121,7 +128,19 @@ export class PaymentService {
             );
         }
 
-        const items = await this.buildCheckoutItems(order);
+        let items: Array<{ id: string; quantity: number }>;
+        try {
+            items = await this.buildCheckoutItems(order);
+        } catch (error) {
+            await this.prisma.orderPayment.deleteMany({
+                where: {
+                    id: payment.id,
+                    status: PaymentStatus.CREATING,
+                    providerCheckoutId: null
+                }
+            });
+            throw error;
+        }
         const checkout = await this.abacatePay.createCheckout({
             externalId: order.uuid,
             items,
@@ -130,8 +149,14 @@ export class PaymentService {
             completionUrl: process.env.ABACATEPAY_COMPLETION_URL,
             metadata: { orderUuid: order.uuid, idempotencyKey }
         });
-        if (checkout.amount !== order.totalInCents) {
-            return left(AppError.business("O total retornado pela AbacatePay diverge do pedido"));
+        const checkoutMismatch = this.checkoutMismatch(
+            checkout,
+            order.uuid,
+            order.totalInCents
+        );
+        if (checkoutMismatch) {
+            await this.recordDivergentCheckout(order.id, checkout);
+            return left(checkoutMismatch);
         }
 
         const updated = await this.saveReconciledCheckout(order.id, checkout);
@@ -145,12 +170,47 @@ export class PaymentService {
 
     private async reconcileCreatingPayment(
         orderUuid: string,
-        payment: { orderId: number; status: PaymentStatus }
+        payment: { orderId: number; status: PaymentStatus; expectedAmountInCents: number }
     ) {
         if (payment.status !== PaymentStatus.CREATING) return null;
         const checkout = await this.abacatePay.findCheckoutByExternalId(orderUuid);
         if (!checkout) return null;
+        const mismatch = this.checkoutMismatch(
+            checkout,
+            orderUuid,
+            payment.expectedAmountInCents
+        );
+        if (mismatch) {
+            await this.recordDivergentCheckout(payment.orderId, checkout);
+            throw mismatch;
+        }
         return this.saveReconciledCheckout(payment.orderId, checkout);
+    }
+
+    private async recordDivergentCheckout(orderId: number, checkout: AbacateCheckout) {
+        await this.prisma.orderPayment.update({
+            where: { orderId },
+            data: {
+                status: PaymentStatus.CREATING,
+                providerCheckoutId: checkout.id,
+                checkoutUrl: null,
+                providerResponse: checkout as unknown as Prisma.InputJsonValue
+            }
+        });
+    }
+
+    private checkoutMismatch(
+        checkout: AbacateCheckout,
+        orderUuid: string,
+        expectedAmountInCents: number
+    ) {
+        if (checkout.externalId !== orderUuid) {
+            return AppError.business("O checkout retornado pela AbacatePay diverge do pedido");
+        }
+        if (checkout.amount !== expectedAmountInCents) {
+            return AppError.business("O total retornado pela AbacatePay diverge do pedido");
+        }
+        return null;
     }
 
     private async saveReconciledCheckout(orderId: number, checkout: AbacateCheckout) {

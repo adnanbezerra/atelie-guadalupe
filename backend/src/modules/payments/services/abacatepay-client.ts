@@ -3,6 +3,9 @@ import { AppError } from "../../../core/errors/app-error";
 type RequestOptions = { method: "GET" | "POST"; path: string; body?: unknown };
 
 type AbacateEnvelope<T> = { data: T; success: boolean; error: string | null };
+type AbacatePaginatedEnvelope<T> = AbacateEnvelope<T> & {
+    pagination?: { hasMore?: boolean; next?: string | null };
+};
 
 export type AbacateProduct = { id: string; externalId: string; name: string; price: number };
 export type AbacateCheckout = {
@@ -64,12 +67,27 @@ export class AbacatePayClient {
     }
 
     public async findCheckoutByExternalId(externalId: string) {
-        const data = await this.request<AbacateCheckout[] | { data?: AbacateCheckout[] }>({
-            method: "GET",
-            path: "/checkouts/list"
-        });
-        const checkouts = Array.isArray(data) ? data : (data.data ?? []);
-        return checkouts.find((checkout) => checkout.externalId === externalId) ?? null;
+        let after: string | null = null;
+        const visitedCursors = new Set<string>();
+        do {
+            const query = new URLSearchParams({ externalId, limit: "100" });
+            if (after) query.set("after", after);
+            const response = await this.requestEnvelope<AbacateCheckout[]>({
+                method: "GET",
+                path: `/checkouts/list?${query.toString()}`
+            });
+            const checkout = response.data.find((item) => item.externalId === externalId);
+            if (checkout) return checkout;
+            if (!response.pagination?.hasMore || !response.pagination.next) return null;
+            if (visitedCursors.has(response.pagination.next)) {
+                throw AppError.serviceUnavailable(
+                    "AbacatePay retornou cursor de paginacao repetido"
+                );
+            }
+            visitedCursors.add(response.pagination.next);
+            after = response.pagination.next;
+        } while (after);
+        return null;
     }
 
     public refundCheckout(id: string, reason?: string) {
@@ -81,6 +99,14 @@ export class AbacatePayClient {
     }
 
     private async request<T>({ method, path, body }: RequestOptions): Promise<T> {
+        return (await this.requestEnvelope<T>({ method, path, body })).data;
+    }
+
+    private async requestEnvelope<T>({
+        method,
+        path,
+        body
+    }: RequestOptions): Promise<AbacatePaginatedEnvelope<T>> {
         if (!this.config.apiKey) {
             throw AppError.serviceUnavailable("Configuracao da AbacatePay incompleta");
         }
@@ -100,7 +126,9 @@ export class AbacatePayClient {
             );
         });
 
-        const payload = (await response.json().catch(() => null)) as AbacateEnvelope<T> | null;
+        const payload = (await response.json().catch(() => null)) as
+            | AbacatePaginatedEnvelope<T>
+            | null;
         if (!response.ok || !payload?.success || payload.data === null) {
             throw AppError.serviceUnavailable(
                 `AbacatePay respondeu com erro ${response.status}: ${payload?.error ?? "resposta invalida"}`
@@ -112,7 +140,7 @@ export class AbacatePayClient {
                 "AbacatePay respondeu com dados de ambiente de desenvolvimento em producao"
             );
         }
-        return payload.data;
+        return payload;
     }
 
     private hasDevelopmentMode(value: unknown): boolean {

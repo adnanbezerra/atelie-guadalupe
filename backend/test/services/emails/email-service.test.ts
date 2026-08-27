@@ -185,3 +185,74 @@ test("email worker stops after the initial call and three retries", async () => 
     assert.equal(logs.length, 4);
     assert.ok(logs.every((log) => log.status === EmailDeliveryStatus.FAILED));
 });
+
+test("email provider outage does not undo an already committed payment", async () => {
+    const financialState = { orderStatus: "PAID", paymentStatus: "PAID" };
+    let financialWrites = 0;
+    const job = {
+        ...createJob(),
+        type: EmailJobType.PAYMENT_CONFIRMED,
+        payload: {
+            customerName: "Maria",
+            orderUuid: "order-1",
+            items: [],
+            subtotalInCents: 5000,
+            shippingInCents: 0,
+            discountInCents: 0,
+            totalInCents: 5000
+        }
+    };
+    const log = { id: 1, status: EmailDeliveryStatus.STARTED };
+    const prisma = {
+        order: {
+            update: async () => {
+                financialWrites += 1;
+            },
+            updateMany: async () => {
+                financialWrites += 1;
+            }
+        },
+        orderPayment: {
+            update: async () => {
+                financialWrites += 1;
+            },
+            updateMany: async () => {
+                financialWrites += 1;
+            }
+        },
+        emailJob: {
+            updateMany: async () => {
+                job.status = EmailJobStatus.PROCESSING;
+                job.attempts += 1;
+                return { count: 1 };
+            },
+            findMany: async () => [job],
+            findUniqueOrThrow: async () => job,
+            update: async ({ data }: { data: Partial<typeof job> }) => {
+                Object.assign(job, data);
+                return job;
+            }
+        },
+        emailDeliveryLog: {
+            create: async () => log,
+            update: async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(log, data);
+                return log;
+            }
+        },
+        $transaction: async (operations: Promise<unknown>[]) => Promise.all(operations)
+    };
+    const provider = {
+        send: async () => {
+            throw new Error("email provider unavailable");
+        }
+    };
+
+    await new EmailService(prisma as never, provider).processDue();
+
+    assert.deepStrictEqual(financialState, { orderStatus: "PAID", paymentStatus: "PAID" });
+    assert.equal(financialWrites, 0);
+    assert.equal(job.status, EmailJobStatus.RETRY_SCHEDULED);
+    assert.equal(job.lastError, "email provider unavailable");
+    assert.equal(log.status, EmailDeliveryStatus.FAILED);
+});

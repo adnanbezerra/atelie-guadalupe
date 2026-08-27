@@ -164,6 +164,7 @@ test("payment service reconciles a creating checkout without creating another wh
             findCalls += 1;
             return {
                 id: "bill_reconciled",
+                externalId: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
                 url: "https://pay.example/bill_reconciled",
                 amount: 5000
             };
@@ -283,6 +284,7 @@ test("payment checkout does not subtract the promotion discount twice", async ()
         },
         createCheckout: async () => ({
             id: "bill_1",
+            externalId: order.uuid,
             url: "https://pay.example/bill_1",
             amount: order.totalInCents
         })
@@ -342,6 +344,7 @@ test("checkout.completed marks payment paid and enqueues fulfillment atomically"
     const prisma = {
         paymentWebhookEvent: {
             upsert: async () => ({ processedAt: null }),
+            updateMany: async () => ({ count: 1 }),
             update: async () => undefined
         },
         orderPayment: {
@@ -490,7 +493,11 @@ test("retry on cancelled order reconciles creating payment without a second chec
                 uuid: "order-cancelled",
                 user: { uuid: "user-1" },
                 paymentIdempotencyKey: key,
-                payment: { orderId: 1, status: PaymentStatus.CREATING },
+                payment: {
+                    orderId: 1,
+                    status: PaymentStatus.CREATING,
+                    expectedAmountInCents: 5000
+                },
                 status: "CANCELLED",
                 items: [],
                 shipment: null
@@ -550,7 +557,10 @@ test("late payment on cancelled order is recorded once without fulfillment or em
         paymentWebhookEvent: { update: async () => effects.push("event") }
     };
     const prisma = {
-        paymentWebhookEvent: { upsert: async () => ({ processedAt: null }) },
+        paymentWebhookEvent: {
+            upsert: async () => ({ processedAt: null }),
+            updateMany: async () => ({ count: 1 })
+        },
         orderPayment: {
             findUnique: async () => ({
                 id: 3,
@@ -632,6 +642,7 @@ test("checkout.completed records payment for a personalized payment link", async
     const prisma = {
         paymentWebhookEvent: {
             upsert: async () => ({ processedAt: null }),
+            updateMany: async () => ({ count: 1 }),
             update: async () => {
                 calls.push("event-processed");
             }
