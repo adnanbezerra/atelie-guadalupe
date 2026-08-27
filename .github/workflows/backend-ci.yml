@@ -1,0 +1,46 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+        branches:
+            - main
+
+permissions:
+    contents: read
+
+defaults:
+    run:
+        working-directory: backend
+
+jobs:
+    quality:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install pnpm from packageManager
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.25.0
+
+            - name: Set up Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+                  cache-dependency-path: backend/pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build TypeScript
+              run: pnpm run build:ts
+
+            - name: Lint
+              run: pnpm run lint
+
+            - name: Test
+              run: pnpm test
