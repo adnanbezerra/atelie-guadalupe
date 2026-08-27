@@ -1,9 +1,11 @@
 import * as assert from "node:assert";
+import { execFileSync } from "node:child_process";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
 import { FastifyInstance } from "fastify";
 import { ABACATEPAY_WEBHOOK_PUBLIC_KEY } from "../../src/modules/payments/services/payment-webhook-service";
 import { build } from "../helper";
+import { assertCheckoutE2eSafety, checkoutE2eSkipReason } from "./checkout-e2e-guard";
 
 type ApiResponse<T> = {
     success: boolean;
@@ -27,6 +29,7 @@ type OrderResponse = {
             selectedServiceName: string | null;
             shippingPriceInCents: number | null;
             superfreteProtocol: string | null;
+            superfreteOrderId: string | null;
             trackingCode: string | null;
             labelUrl: string | null;
         };
@@ -78,36 +81,16 @@ async function getProviderCheckout(checkoutId: string, apiKey: string) {
     return payload.data.find((checkout) => checkout.id === checkoutId) ?? null;
 }
 
-const requiredEnvironment = [
-    "DATABASE_URL",
-    "SEED_ADMIN_EMAIL",
-    "SEED_ADMIN_PASSWORD",
-    "SEED_ADMIN_DOCUMENT",
-    "ABACATEPAY_API_KEY",
-    "ABACATEPAY_WEBHOOK_SECRET",
-    "SUPERFRETE_TOKEN",
-    "SUPERFRETE_USER_AGENT"
-];
-const missingEnvironment = requiredEnvironment.filter((name) => !process.env[name]);
 const enabled = process.env.RUN_CHECKOUT_E2E === "true";
-const skipReason = !enabled
-    ? "Defina RUN_CHECKOUT_E2E=true para executar integracoes sandbox"
-    : missingEnvironment.length > 0
-      ? `Variaveis ausentes: ${missingEnvironment.join(", ")}`
-      : false;
+const skipReason = checkoutE2eSkipReason(enabled);
 
 test(
     "checkout sandbox: pedido, frete, AbacatePay, webhook e etiqueta Superfrete",
     { skip: skipReason, timeout: 240_000 },
     async (t) => {
-        const superFreteBaseUrl =
-            process.env.SUPERFRETE_BASE_URL ?? "https://sandbox.superfrete.com/api/v0";
-        assert.match(
-            superFreteBaseUrl,
-            /^https:\/\/sandbox\.superfrete\.com\/api\/v0\/?$/,
-            "O E2E recusa SUPERFRETE_BASE_URL de producao"
-        );
-        process.env.SUPERFRETE_BASE_URL = superFreteBaseUrl.replace(/\/$/, "");
+        const { superFreteBaseUrl } = assertCheckoutE2eSafety(process.env);
+        const startedAt = Date.now();
+        process.env.SUPERFRETE_BASE_URL = superFreteBaseUrl;
         process.env.FULFILLMENT_WORKER_ENABLED = "false";
         process.env.EMAIL_WORKER_ENABLED = "false";
 
@@ -322,9 +305,26 @@ test(
             200
         );
         assert.equal(duplicate.duplicate, true);
-        await app.prisma.emailJob.deleteMany({
-            where: { deduplicationKey: `payment-paid:${created.order.uuid}` }
+        const persistedOrder = await app.prisma.order.findUniqueOrThrow({
+            where: { uuid: created.order.uuid },
+            select: { id: true }
         });
+        assert.equal(
+            await app.prisma.fulfillmentJob.count({ where: { orderId: persistedOrder.id } }),
+            1
+        );
+        assert.equal(
+            await app.prisma.emailJob.count({
+                where: { deduplicationKey: `payment-paid:${created.order.uuid}` }
+            }),
+            1
+        );
+        assert.equal(
+            await app.prisma.emailJob.count({
+                where: { deduplicationKey: `order-created:${created.order.uuid}` }
+            }),
+            1
+        );
 
         const paid = parseResponse<OrderResponse>(
             await app.inject({
@@ -362,11 +362,43 @@ test(
         );
         assert.equal(fulfilled.order.status, "PROCESSING");
         assert.equal(fulfilled.order.shipment?.status, "LABEL_PURCHASED");
+        assert.equal(fulfilled.order.fulfillment?.attempts, 1);
+        assert.equal(
+            await app.prisma.orderShipment.count({
+                where: {
+                    orderId: persistedOrder.id,
+                    status: "LABEL_PURCHASED",
+                    superfreteOrderId: { not: null }
+                }
+            }),
+            1
+        );
         assert.ok(
             fulfilled.order.shipment?.superfreteProtocol ||
                 fulfilled.order.shipment?.trackingCode ||
                 fulfilled.order.shipment?.labelUrl,
             "Superfrete nao retornou protocolo, rastreio nem etiqueta"
+        );
+        console.log(
+            JSON.stringify({
+                evidence: "checkout-e2e-sandbox",
+                executedAt: new Date().toISOString(),
+                commit:
+                    process.env.GITHUB_SHA ??
+                    process.env.CI_COMMIT_SHA ??
+                    execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+                        encoding: "utf8"
+                    }).trim(),
+                environment: "sandbox",
+                durationMs: Date.now() - startedAt,
+                devMode: providerCheckout.devMode,
+                orderUuid: created.order.uuid,
+                abacateCheckoutId: checkout.checkoutId,
+                superfreteOrderId: fulfilled.order.shipment?.superfreteOrderId,
+                fulfillmentAttempts: fulfilled.order.fulfillment?.attempts,
+                fulfillmentCount: 1,
+                paymentConfirmedEmailCount: 1
+            })
         );
     }
 );

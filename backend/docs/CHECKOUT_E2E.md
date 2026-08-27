@@ -41,11 +41,13 @@ O PostgreSQL deve estar migrado e o seed deve existir. O administrador de seed p
 
 ```env
 DATABASE_URL=postgresql://...
+CHECKOUT_E2E_ALLOW_DATABASE_WRITES=true
 SEED_ADMIN_EMAIL=admin@atelie.com
 SEED_ADMIN_PASSWORD=...
 ABACATEPAY_BASE_URL=https://api.abacatepay.com/v2
 ABACATEPAY_API_KEY=...
 ABACATEPAY_WEBHOOK_SECRET=...
+ABACATEPAY_EXPECTED_DEV_MODE=true
 SUPERFRETE_BASE_URL=https://sandbox.superfrete.com/api/v0
 SUPERFRETE_TOKEN=...
 SUPERFRETE_USER_AGENT=Atelie Guadalupe Backend (tech@atelieguadalupe.com)
@@ -58,6 +60,11 @@ pnpm run test:e2e:checkout
 ```
 
 A suite e opt-in. Nos testes normais ela aparece como ignorada e nao chama provedores externos. O comando dedicado define `RUN_CHECKOUT_E2E=true`.
+
+`CHECKOUT_E2E_ALLOW_DATABASE_WRITES=true` e uma confirmacao explicita de que `DATABASE_URL`
+aponta para banco descartavel de desenvolvimento, teste ou staging. A suite tambem recusa
+`NODE_ENV=production`, chave AbacatePay sem prefixo `abc_dev_` e qualquer URL Superfrete fora do
+sandbox antes de construir a aplicacao ou chamar provedores.
 
 ## Diagnostico de falhas
 
