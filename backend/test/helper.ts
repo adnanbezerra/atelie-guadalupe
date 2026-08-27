@@ -20,6 +20,9 @@ function config() {
     process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-secret";
     process.env.MONGODB_URL = "";
     process.env.MONGODB_DB_NAME = "";
+    process.env.FULFILLMENT_WORKER_ENABLED = "false";
+    process.env.EMAIL_WORKER_ENABLED = "false";
+    process.env.SHIPPING_TRACKING_WORKER_ENABLED = "false";
 
     return {
         skipOverride: true // Register our application with fastify-plugin
