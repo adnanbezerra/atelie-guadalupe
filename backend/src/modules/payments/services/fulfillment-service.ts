@@ -28,13 +28,27 @@ export class FulfillmentService {
     }
 
     public async processDue(limit = 10) {
+        const maxAttempts = this.maxAttempts();
         const staleBefore = new Date(
             Date.now() - Number(process.env.FULFILLMENT_WORKER_LOCK_TIMEOUT_MS ?? 300000)
         );
         await this.prisma.fulfillmentJob.updateMany({
             where: {
                 status: FulfillmentJobStatus.PROCESSING,
-                lockedAt: { lt: staleBefore }
+                lockedAt: { lt: staleBefore },
+                attempts: { gte: maxAttempts }
+            },
+            data: {
+                status: FulfillmentJobStatus.FAILED,
+                lockedAt: null,
+                lastError: "Limite de tentativas atingido apos interrupcao do processamento"
+            }
+        });
+        await this.prisma.fulfillmentJob.updateMany({
+            where: {
+                status: FulfillmentJobStatus.PROCESSING,
+                lockedAt: { lt: staleBefore },
+                attempts: { lt: maxAttempts }
             },
             data: {
                 status: FulfillmentJobStatus.RETRY_SCHEDULED,
@@ -43,12 +57,24 @@ export class FulfillmentService {
                 lastError: "Processamento interrompido; tarefa recuperada automaticamente"
             }
         });
+        await this.prisma.fulfillmentJob.updateMany({
+            where: {
+                status: { in: [FulfillmentJobStatus.PENDING, FulfillmentJobStatus.RETRY_SCHEDULED] },
+                attempts: { gte: maxAttempts }
+            },
+            data: {
+                status: FulfillmentJobStatus.FAILED,
+                lockedAt: null,
+                lastError: "Limite de tentativas de fulfillment atingido"
+            }
+        });
 
         const jobs = await this.prisma.fulfillmentJob.findMany({
             where: {
                 status: {
                     in: [FulfillmentJobStatus.PENDING, FulfillmentJobStatus.RETRY_SCHEDULED]
                 },
+                attempts: { lt: maxAttempts },
                 nextAttemptAt: { lte: new Date() }
             },
             include: { order: true },
@@ -66,7 +92,10 @@ export class FulfillmentService {
             where: { orderId: order.id },
             data: {
                 status: FulfillmentJobStatus.PENDING,
+                attempts: 0,
                 nextAttemptAt: new Date(),
+                lockedAt: null,
+                completedAt: null,
                 lastError: null
             }
         });
@@ -78,7 +107,8 @@ export class FulfillmentService {
         const claimed = await this.prisma.fulfillmentJob.updateMany({
             where: {
                 id: jobId,
-                status: { in: [FulfillmentJobStatus.PENDING, FulfillmentJobStatus.RETRY_SCHEDULED] }
+                status: { in: [FulfillmentJobStatus.PENDING, FulfillmentJobStatus.RETRY_SCHEDULED] },
+                attempts: { lt: this.maxAttempts() }
             },
             data: {
                 status: FulfillmentJobStatus.PROCESSING,
@@ -89,6 +119,22 @@ export class FulfillmentService {
         if (claimed.count === 0) return;
 
         try {
+            const order = await this.prisma.order.findUniqueOrThrow({
+                where: { uuid: orderUuid },
+                select: { status: true }
+            });
+            if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.PROCESSING) {
+                await this.prisma.fulfillmentJob.update({
+                    where: { id: jobId },
+                    data: {
+                        status: FulfillmentJobStatus.FAILED,
+                        lockedAt: null,
+                        lastError: `Pedido em estado ${order.status} nao pode ser processado`
+                    }
+                });
+                return;
+            }
+
             const result = await this.shippingService.checkoutOrder(
                 { sub: "system", role: RoleName.ADMIN },
                 orderUuid
@@ -113,11 +159,14 @@ export class FulfillmentService {
             const job = await this.prisma.fulfillmentJob.findUniqueOrThrow({
                 where: { id: jobId }
             });
+            const exhausted = job.attempts >= this.maxAttempts();
             const delaySeconds = Math.min(3600, 30 * 2 ** Math.min(job.attempts, 7));
             await this.prisma.fulfillmentJob.update({
                 where: { id: jobId },
                 data: {
-                    status: FulfillmentJobStatus.RETRY_SCHEDULED,
+                    status: exhausted
+                        ? FulfillmentJobStatus.FAILED
+                        : FulfillmentJobStatus.RETRY_SCHEDULED,
                     nextAttemptAt: new Date(Date.now() + delaySeconds * 1000),
                     lockedAt: null,
                     lastError:
@@ -125,5 +174,10 @@ export class FulfillmentService {
                 }
             });
         }
+    }
+
+    private maxAttempts() {
+        const configured = Number(process.env.FULFILLMENT_WORKER_MAX_ATTEMPTS ?? 8);
+        return Number.isInteger(configured) && configured > 0 ? configured : 8;
     }
 }

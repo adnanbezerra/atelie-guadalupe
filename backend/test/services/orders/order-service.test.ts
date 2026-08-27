@@ -338,3 +338,148 @@ test("order service lists current user orders with pagination", async () => {
         });
     }
 });
+
+test("order service cancels an unpaid order before checkout creation", async () => {
+    const now = new Date();
+    let cancellationCalled = false;
+    const cancelledOrder = {
+        uuid: "order-1",
+        paymentIdempotencyKey: "0195f4aa-7f18-7db5-9f32-06f4a9a2b401",
+        userId: 1,
+        status: OrderStatus.CANCELLED,
+        subtotalInCents: 1000,
+        shippingInCents: 0,
+        discountInCents: 0,
+        totalInCents: 1000,
+        notes: null,
+        placedAt: now,
+        createdAt: now,
+        updatedAt: now,
+        items: [],
+        payment: null
+    };
+    const service = new OrderService(
+        { findByUuid: async () => ({ id: 1, uuid: "user-1" }) } as never,
+        {} as never,
+        {} as never,
+        {
+            findByUuid: async () => ({ ...cancelledOrder, status: OrderStatus.AWAITING_PAYMENT }),
+            cancelIfNoActiveCheckout: async () => {
+                cancellationCalled = true;
+                return cancelledOrder;
+            }
+        } as never,
+        {} as never,
+        {} as never
+    );
+
+    const result = await service.cancelOwnOrder("user-1", "order-1");
+
+    assert.equal(result.success, true);
+    assert.equal(cancellationCalled, true);
+    if (result.success) assert.equal(result.value.order.status, OrderStatus.CANCELLED);
+});
+
+test("order service blocks cancellation after provider checkout creation", async () => {
+    let cancellationCalled = false;
+    const service = new OrderService(
+        { findByUuid: async () => ({ id: 1, uuid: "user-1" }) } as never,
+        {} as never,
+        {} as never,
+        {
+            findByUuid: async () => ({
+                userId: 1,
+                status: OrderStatus.AWAITING_PAYMENT,
+                payment: { providerCheckoutId: "bill_1" }
+            }),
+            cancelIfNoActiveCheckout: async () => {
+                cancellationCalled = true;
+            }
+        } as never,
+        {} as never,
+        {} as never
+    );
+
+    const result = await service.cancelOwnOrder("user-1", "order-1");
+
+    assert.equal(result.success, false);
+    assert.equal(cancellationCalled, false);
+});
+
+test("order service reports loss of cancellation race without overwriting payment state", async () => {
+    const service = new OrderService(
+        { findByUuid: async () => ({ id: 1, uuid: "user-1" }) } as never,
+        {} as never,
+        {} as never,
+        {
+            findByUuid: async () => ({
+                userId: 1,
+                status: OrderStatus.AWAITING_PAYMENT,
+                payment: { providerCheckoutId: null }
+            }),
+            cancelIfNoActiveCheckout: async () => null
+        } as never,
+        {} as never,
+        {} as never
+    );
+
+    const result = await service.cancelOwnOrder("user-1", "order-1");
+
+    assert.equal(result.success, false);
+});
+
+test("admin status update cannot cancel an order with active checkout", async () => {
+    let unconditionalUpdateCalled = false;
+    const service = new OrderService(
+        {} as never,
+        {} as never,
+        {} as never,
+        {
+            findByUuid: async () => ({
+                status: OrderStatus.AWAITING_PAYMENT,
+                payment: { providerCheckoutId: "bill_1" }
+            }),
+            updateStatus: async () => {
+                unconditionalUpdateCalled = true;
+            }
+        } as never,
+        {} as never,
+        {} as never
+    );
+
+    const result = await service.updateStatus("order-1", OrderStatus.CANCELLED);
+
+    assert.equal(result.success, false);
+    assert.equal(unconditionalUpdateCalled, false);
+});
+
+test("admin cancellation uses conditional update and reports a lost checkout race", async () => {
+    let unconditionalUpdateCalled = false;
+    let conditionalCancellationCalled = false;
+    const service = new OrderService(
+        {} as never,
+        {} as never,
+        {} as never,
+        {
+            findByUuid: async () => ({
+                status: OrderStatus.AWAITING_PAYMENT,
+                payment: { providerCheckoutId: null }
+            }),
+            cancelIfNoActiveCheckout: async () => {
+                conditionalCancellationCalled = true;
+                return null;
+            },
+            updateStatus: async () => {
+                unconditionalUpdateCalled = true;
+            }
+        } as never,
+        {} as never,
+        {} as never
+    );
+
+    const result = await service.updateStatus("order-1", OrderStatus.CANCELLED);
+
+    assert.equal(result.success, false);
+    assert.equal(conditionalCancellationCalled, true);
+    assert.equal(unconditionalUpdateCalled, false);
+});

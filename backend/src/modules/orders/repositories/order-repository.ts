@@ -308,4 +308,34 @@ export class OrderRepository {
             }
         });
     }
+
+    public async cancelIfNoActiveCheckout(uuid: string) {
+        return this.prisma.$transaction(async (tx) => {
+            const cancelled = await tx.order.updateMany({
+                where: {
+                    uuid,
+                    status: { in: [OrderStatus.PENDING, OrderStatus.AWAITING_PAYMENT] },
+                    checkoutReference: null,
+                    OR: [
+                        { payment: { is: null } },
+                        { payment: { is: { providerCheckoutId: null } } }
+                    ]
+                },
+                data: { status: OrderStatus.CANCELLED }
+            });
+            if (cancelled.count === 0) return null;
+
+            return tx.order.findUniqueOrThrow({
+                where: { uuid },
+                include: {
+                    items: true,
+                    address: true,
+                    payment: true,
+                    shipment: true,
+                    fulfillmentJob: true,
+                    user: { include: { role: true } }
+                }
+            });
+        });
+    }
 }

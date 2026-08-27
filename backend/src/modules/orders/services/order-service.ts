@@ -370,6 +370,25 @@ export class OrderService {
             return left(AppError.business("Transicao de status invalida"));
         }
 
+        if (nextStatus === OrderStatus.CANCELLED) {
+            if (order.payment?.providerCheckoutId) {
+                return left(
+                    AppError.business(
+                        "Pedido com checkout ativo nao pode ser cancelado por este fluxo"
+                    )
+                );
+            }
+            const cancelledOrder = await this.orderRepository.cancelIfNoActiveCheckout(orderUuid);
+            if (!cancelledOrder) {
+                return left(
+                    AppError.business(
+                        "Pedido nao pode ser cancelado porque o pagamento foi iniciado ou confirmado"
+                    )
+                );
+            }
+            return right({ order: presentOrder(cancelledOrder) });
+        }
+
         const updatedOrder = await this.orderRepository.updateStatus(orderUuid, nextStatus);
 
         return right({
@@ -394,11 +413,22 @@ export class OrderService {
         if (!userCancellableStatuses.includes(order.status)) {
             return left(AppError.business("Pedido nao pode mais ser cancelado"));
         }
+        if (order.payment?.providerCheckoutId) {
+            return left(
+                AppError.business(
+                    "Pedido com checkout ativo nao pode ser cancelado por este fluxo"
+                )
+            );
+        }
 
-        const updatedOrder = await this.orderRepository.updateStatus(
-            orderUuid,
-            OrderStatus.CANCELLED
-        );
+        const updatedOrder = await this.orderRepository.cancelIfNoActiveCheckout(orderUuid);
+        if (!updatedOrder) {
+            return left(
+                AppError.business(
+                    "Pedido nao pode ser cancelado porque o pagamento foi iniciado ou confirmado"
+                )
+            );
+        }
 
         return right({
             order: presentOrder(updatedOrder)

@@ -31,6 +31,12 @@ export type AbacateWebhookPayload = {
 export const ABACATEPAY_WEBHOOK_PUBLIC_KEY =
     "t9dXRhHHo3yDEj5pVDYz0frf7q6bMKyMRmxxCPIPp3RCplBfXRxqlC6ZpiWmOqj4L63qEaeUOtrCI8P0VMUgo6iIga2ri9ogaHFs0WIIywSMg0q7RmBfybe1E5XJcfC4IW3alNqym0tXoAKkzvfEjZxV6bE0oG2zJrNNYmUCKZyV0KZ3JS8Votf9EAWWYdiDkMkpbMdPggfh1EqHlVkMiTady6jOR3hyzGEHrIz2Ret0xHKMbiqkr9HS1JhNHDX9";
 
+export type LatePaymentAlert = {
+    orderUuid: string;
+    providerCheckoutId: string;
+    paidAmountInCents: number;
+};
+
 export function verifyAbacateWebhook(rawBody: Buffer, signature: string) {
     const expected = createHmac("sha256", ABACATEPAY_WEBHOOK_PUBLIC_KEY)
         .update(rawBody)
@@ -44,7 +50,10 @@ export function verifyAbacateWebhook(rawBody: Buffer, signature: string) {
 }
 
 export class PaymentWebhookService {
-    public constructor(private readonly prisma: PrismaClient) {}
+    public constructor(
+        private readonly prisma: PrismaClient,
+        private readonly alertLatePayment?: (alert: LatePaymentAlert) => void | Promise<void>
+    ) {}
 
     public async process(payload: AbacateWebhookPayload) {
         if (!payload.id || !payload.event) throw AppError.validation("Webhook sem id ou evento");
@@ -101,9 +110,53 @@ export class PaymentWebhookService {
                 ) {
                     throw AppError.conflict("Valor pago diverge do total esperado");
                 }
-                await this.prisma.$transaction(async (tx) => {
-                    await tx.orderPayment.update({
-                        where: { id: payment.id },
+                const result = await this.prisma.$transaction(async (tx) => {
+                    const orderTransition = await tx.order.updateMany({
+                        where: { id: payment.orderId, status: OrderStatus.AWAITING_PAYMENT },
+                        data: { status: OrderStatus.PAID }
+                    });
+
+                    if (orderTransition.count === 0) {
+                        const order = await tx.order.findUniqueOrThrow({
+                            where: { id: payment.orderId },
+                            select: { status: true }
+                        });
+                        let latePaymentRecorded = false;
+                        if (order.status === OrderStatus.CANCELLED) {
+                            const latePayment = await tx.orderPayment.updateMany({
+                                where: {
+                                    id: payment.id,
+                                    status: {
+                                        in: [
+                                            PaymentStatus.CREATING,
+                                            PaymentStatus.PENDING,
+                                            PaymentStatus.PAID
+                                        ]
+                                    }
+                                },
+                                data: {
+                                    status: PaymentStatus.REFUND_PENDING,
+                                    paidAmountInCents: checkout.paidAmount,
+                                    providerMethod: payload.data?.payerInformation?.method,
+                                    paidAt: payment.paidAt ?? new Date(),
+                                    refundReason:
+                                        "Pagamento confirmado depois do cancelamento; acao manual necessaria"
+                                }
+                            });
+                            latePaymentRecorded = latePayment.count === 1;
+                        }
+                        await tx.paymentWebhookEvent.update({
+                            where: { eventId: payload.id },
+                            data: { processedAt: new Date(), error: null }
+                        });
+                        return { latePaymentRecorded };
+                    }
+
+                    const paymentTransition = await tx.orderPayment.updateMany({
+                        where: {
+                            id: payment.id,
+                            status: { in: [PaymentStatus.CREATING, PaymentStatus.PENDING] }
+                        },
                         data: {
                             status: PaymentStatus.PAID,
                             paidAmountInCents: checkout.paidAmount,
@@ -111,10 +164,9 @@ export class PaymentWebhookService {
                             paidAt: payment.paidAt ?? new Date()
                         }
                     });
-                    await tx.order.updateMany({
-                        where: { id: payment.orderId, status: OrderStatus.AWAITING_PAYMENT },
-                        data: { status: OrderStatus.PAID }
-                    });
+                    if (paymentTransition.count !== 1) {
+                        throw AppError.conflict("Pagamento nao estava disponivel para confirmacao");
+                    }
                     await tx.fulfillmentJob.upsert({
                         where: { orderId: payment.orderId },
                         create: { uuid: createUuid(), orderId: payment.orderId },
@@ -148,7 +200,26 @@ export class PaymentWebhookService {
                         where: { eventId: payload.id },
                         data: { processedAt: new Date(), error: null }
                     });
+                    return { latePaymentRecorded: false };
                 });
+                if (result.latePaymentRecorded && this.alertLatePayment) {
+                    try {
+                        await this.alertLatePayment({
+                            orderUuid: payment.order.uuid,
+                            providerCheckoutId: checkout.id,
+                            paidAmountInCents: checkout.paidAmount
+                        });
+                    } catch {
+                        // Registro financeiro duravel nao pode ser revertido por falha do alerta.
+                    }
+                }
+                if (result.latePaymentRecorded) {
+                    return {
+                        processed: true,
+                        orderUuid: payment.order.uuid,
+                        refundPending: true
+                    };
+                }
                 return { processed: true, orderUuid: payment.order.uuid };
             }
 

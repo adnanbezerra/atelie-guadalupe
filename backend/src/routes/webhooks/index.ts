@@ -12,7 +12,14 @@ const webhookRoutes: FastifyPluginAsync = async (fastify) => {
         }
     );
 
-    const controller = new PaymentWebhookController(new PaymentWebhookService(fastify.prisma));
+    const controller = new PaymentWebhookController(
+        new PaymentWebhookService(fastify.prisma, (alert) => {
+            fastify.log.error(
+                { alertType: "late_payment_on_cancelled_order", ...alert },
+                "Pagamento recebido para pedido cancelado; reembolso manual necessario"
+            );
+        })
+    );
     fastify.post("/abacatepay", controller.handle);
 };
 
