@@ -41,6 +41,8 @@ type OrderResponse = {
     };
 };
 
+type QuotedService = { serviceCode: number; priceInCents: number };
+
 function parseResponse<T>(response: { statusCode: number; payload: string }, statusCode: number) {
     assert.equal(response.statusCode, statusCode, response.payload);
     const body = JSON.parse(response.payload) as ApiResponse<T>;
@@ -79,6 +81,56 @@ async function getProviderCheckout(checkoutId: string, apiKey: string) {
     };
     assert.equal(payload.success, true);
     return payload.data.find((checkout) => checkout.id === checkoutId) ?? null;
+}
+
+async function createOrderWithFreshQuote(
+    app: FastifyInstance,
+    headers: { authorization: string },
+    addressUuid: string,
+    productUuid: string,
+    maxAttempts = 3
+) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const preview = parseResponse<{ quotedServices: QuotedService[] }>(
+            await app.inject({
+                method: "POST",
+                url: "/shipping/quote",
+                payload: {
+                    zipCode: "01001000",
+                    items: [{ productUuid, productSize: "GRAMS_70", quantity: 1 }]
+                }
+            }),
+            200
+        );
+        assert.ok(preview.quotedServices.length > 0);
+        const selectedService = preview.quotedServices[0];
+        assert.ok(selectedService);
+
+        const response = await app.inject({
+            method: "POST",
+            url: "/orders",
+            headers,
+            payload: {
+                addressUuid,
+                shipping: {
+                    serviceCode: selectedService.serviceCode,
+                    priceInCents: selectedService.priceInCents
+                },
+                paymentMethod: "PIX",
+                notes: "Fluxo completo sandbox"
+            }
+        });
+        if (response.statusCode === 201) {
+            return {
+                created: parseResponse<OrderResponse>(response, 201),
+                selectedService
+            };
+        }
+        if (response.statusCode !== 409 || attempt === maxAttempts) {
+            parseResponse<OrderResponse>(response, 201);
+        }
+    }
+    throw new Error("Nao foi possivel criar pedido com cotacao atualizada");
 }
 
 const enabled = process.env.RUN_CHECKOUT_E2E === "true";
@@ -161,45 +213,11 @@ test(
                 parseResponse(response, 201)
             );
 
-        const preview = parseResponse<{
-            quotedServices: Array<{ serviceCode: number; priceInCents: number }>;
-        }>(
-            await app.inject({
-                method: "POST",
-                url: "/shipping/quote",
-                payload: {
-                    zipCode: "01001000",
-                    items: [
-                        {
-                            productUuid: product.product.uuid,
-                            productSize: "GRAMS_70",
-                            quantity: 1
-                        }
-                    ]
-                }
-            }),
-            200
-        );
-        assert.ok(preview.quotedServices.length > 0);
-        const selectedService = preview.quotedServices[0];
-        assert.ok(selectedService);
-
-        const created = parseResponse<OrderResponse>(
-            await app.inject({
-                method: "POST",
-                url: "/orders",
-                headers,
-                payload: {
-                    addressUuid: me.user.address.uuid,
-                    shipping: {
-                        serviceCode: selectedService.serviceCode,
-                        priceInCents: selectedService.priceInCents
-                    },
-                    paymentMethod: "PIX",
-                    notes: "Fluxo completo sandbox"
-                }
-            }),
-            201
+        const { created, selectedService } = await createOrderWithFreshQuote(
+            app,
+            headers,
+            me.user.address.uuid,
+            product.product.uuid
         );
         assert.match(created.order.paymentIdempotencyKey, /^[0-9a-f-]{36}$/);
         assert.equal(created.order.status, "AWAITING_PAYMENT");
@@ -397,7 +415,9 @@ test(
                 superfreteOrderId: fulfilled.order.shipment?.superfreteOrderId,
                 fulfillmentAttempts: fulfilled.order.fulfillment?.attempts,
                 fulfillmentCount: 1,
-                paymentConfirmedEmailCount: 1
+                paymentConfirmedEmailCount: 1,
+                acceptedShippingServiceCode: selectedService.serviceCode,
+                acceptedShippingPriceInCents: selectedService.priceInCents
             })
         );
     }
