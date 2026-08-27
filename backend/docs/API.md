@@ -2993,10 +2993,10 @@ Depois de `checkout.completed`, uma tarefa persistente e unica por pedido compra
 Estados da tarefa:
 
 ```text
-PENDING | PROCESSING | RETRY_SCHEDULED | COMPLETED
+PENDING | PROCESSING | RETRY_SCHEDULED | COMPLETED | FAILED
 ```
 
-O fluxo consulta a operacao existente na Superfrete antes de repetir o checkout. Ao concluir, persiste protocolo, rastreio e URL da etiqueta e muda o pedido de `PAID` para `PROCESSING`.
+O fluxo consulta a operacao existente na Superfrete antes de repetir o checkout. Ao concluir, persiste protocolo, rastreio e URL da etiqueta e muda o pedido de `PAID` para `PROCESSING`. Depois de `FULFILLMENT_WORKER_MAX_ATTEMPTS`, ou quando o estado do pedido torna o processamento impossivel, a tarefa passa para `FAILED` e exige correcao operacional antes do retry administrativo.
 
 ### `POST /orders/:orderUuid/fulfillment/retry`
 
@@ -3020,9 +3020,11 @@ ABACATEPAY_RETURN_URL=https://loja.exemplo.com/checkout
 ABACATEPAY_COMPLETION_URL=https://loja.exemplo.com/checkout/success
 ABACATEPAY_WEBHOOK_SECRET=
 ABACATEPAY_TIMEOUT_MS=15000
+CHECKOUT_ENABLED=true
 FULFILLMENT_WORKER_ENABLED=true
 FULFILLMENT_WORKER_INTERVAL_MS=30000
 FULFILLMENT_WORKER_LOCK_TIMEOUT_MS=300000
+FULFILLMENT_WORKER_MAX_ATTEMPTS=8
 ```
 
 As configuracoes existentes `SUPERFRETE_*` continuam obrigatorias para cotacao e compra da etiqueta.

@@ -46,7 +46,7 @@ type ShippingStatus =
     | "LABEL_PURCHASED"
     | "CANCELLED";
 
-type FulfillmentStatus = "PENDING" | "PROCESSING" | "RETRY_SCHEDULED" | "COMPLETED";
+type FulfillmentStatus = "PENDING" | "PROCESSING" | "RETRY_SCHEDULED" | "COMPLETED" | "FAILED";
 
 type Order = {
     uuid: string;
@@ -214,6 +214,7 @@ Mostre pagamento e entrega separadamente:
 | ------------------------------- | ---------------------------------------------------- |
 | `PENDING` ou `PROCESSING`       | Preparando etiqueta                                  |
 | `RETRY_SCHEDULED`               | Pagamento confirmado; envio aguardando processamento |
+| `FAILED`                        | Pagamento confirmado; envio requer suporte           |
 | `COMPLETED` / `LABEL_PURCHASED` | Etiqueta emitida                                     |
 | pedido `SHIPPED`                | Pedido enviado                                       |
 | pedido `DELIVERED`              | Pedido entregue                                      |
