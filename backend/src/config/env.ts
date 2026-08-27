@@ -11,6 +11,7 @@ const positiveInteger = (defaultValue: number) =>
     z.coerce.number().int().positive().default(defaultValue);
 const enabledFlag = z.enum(["true", "false"]).default("true");
 const checkoutEnabledFlag = z.enum(["true", "false"]).optional();
+const expectedDevModeFlag = z.enum(["true", "false"]).optional();
 
 const SUPERFRETE_PRODUCTION_URL = "https://api.superfrete.com/api/v0";
 const ABACATEPAY_V2_URL = "https://api.abacatepay.com/v2";
@@ -108,6 +109,7 @@ const envSchema = z
         ABACATEPAY_COMPLETION_URL: optionalUrl,
         ABACATEPAY_WEBHOOK_SECRET: optionalString,
         ABACATEPAY_TIMEOUT_MS: positiveInteger(15000),
+        ABACATEPAY_EXPECTED_DEV_MODE: expectedDevModeFlag,
         PAYMENT_LINK_PUBLIC_BASE_URL: optionalUrl,
         CHECKOUT_ENABLED: checkoutEnabledFlag,
         FULFILLMENT_WORKER_ENABLED: enabledFlag,
@@ -181,11 +183,32 @@ const envSchema = z
                 message: `deve ser ${ABACATEPAY_V2_URL} em producao`
             });
         }
-        if (environment.ABACATEPAY_API_KEY?.toLowerCase().startsWith("abc_dev_")) {
+        if (!environment.ABACATEPAY_EXPECTED_DEV_MODE) {
+            context.addIssue({
+                code: "custom",
+                path: ["ABACATEPAY_EXPECTED_DEV_MODE"],
+                message: "obrigatoria em producao"
+            });
+        }
+        if (
+            environment.ABACATEPAY_EXPECTED_DEV_MODE === "false" &&
+            environment.ABACATEPAY_API_KEY?.toLowerCase().startsWith("abc_dev_")
+        ) {
             context.addIssue({
                 code: "custom",
                 path: ["ABACATEPAY_API_KEY"],
                 message: "chave de desenvolvimento nao permitida em producao"
+            });
+        }
+        if (
+            environment.ABACATEPAY_EXPECTED_DEV_MODE === "true" &&
+            environment.ABACATEPAY_API_KEY &&
+            !environment.ABACATEPAY_API_KEY.toLowerCase().startsWith("abc_dev_")
+        ) {
+            context.addIssue({
+                code: "custom",
+                path: ["ABACATEPAY_API_KEY"],
+                message: "deve ser chave de desenvolvimento quando devMode esperado for true"
             });
         }
 
@@ -259,7 +282,8 @@ const envSchema = z
         ...environment,
         SUPERFRETE_BASE_URL:
             environment.SUPERFRETE_BASE_URL ?? "https://sandbox.superfrete.com/api/v0",
-        CHECKOUT_ENABLED: environment.CHECKOUT_ENABLED ?? "true"
+        CHECKOUT_ENABLED: environment.CHECKOUT_ENABLED ?? "true",
+        ABACATEPAY_EXPECTED_DEV_MODE: environment.ABACATEPAY_EXPECTED_DEV_MODE ?? "true"
     }));
 
 export type Env = z.infer<typeof envSchema>;
@@ -272,4 +296,12 @@ export function validateEnv(environment: NodeJS.ProcessEnv = process.env): Env {
         .map((issue) => `- ${issue.path.join(".") || "ambiente"}: ${issue.message}`)
         .join("\n");
     throw new Error(`Variaveis de ambiente invalidas:\n${details}`);
+}
+
+export function expectedAbacatePayDevMode(environment: NodeJS.ProcessEnv = process.env) {
+    const value = environment.ABACATEPAY_EXPECTED_DEV_MODE;
+    if (value === "true") return true;
+    if (value === "false") return false;
+    if (environment.NODE_ENV !== "production") return true;
+    throw new Error("ABACATEPAY_EXPECTED_DEV_MODE obrigatoria em producao");
 }

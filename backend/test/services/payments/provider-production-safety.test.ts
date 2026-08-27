@@ -10,7 +10,7 @@ function productionClient() {
         apiKey: "production-key",
         baseUrl: "https://api.abacatepay.com/v2",
         timeoutMs: 1000,
-        production: true
+        expectedDevMode: false
     });
 }
 
@@ -39,7 +39,7 @@ test("production rejects AbacatePay checkout creation response in dev mode", asy
             metadata: {}
         }),
         (error: Error & { statusCode?: number }) =>
-            error.statusCode === 503 && error.message.includes("ambiente de desenvolvimento")
+            error.statusCode === 503 && error.message.includes("devMode")
     );
 });
 
@@ -62,10 +62,7 @@ test("production rejects AbacatePay checkout query response in dev mode", async 
         })
     );
 
-    await assert.rejects(
-        productionClient().findCheckoutByExternalId("order-1"),
-        /ambiente de desenvolvimento/
-    );
+    await assert.rejects(productionClient().findCheckoutByExternalId("order-1"), /devMode/);
 });
 
 test("production rejects AbacatePay webhook in dev mode before processing", async () => {
@@ -76,7 +73,7 @@ test("production rejects AbacatePay webhook in dev mode before processing", asyn
             return {};
         }
     };
-    const controller = new PaymentWebhookController(service as never, true);
+    const controller = new PaymentWebhookController(service as never, false);
     const payload = Buffer.from(
         JSON.stringify({ id: "event-dev", event: "checkout.completed", devMode: true })
     );
@@ -95,7 +92,7 @@ test("production rejects AbacatePay webhook in dev mode before processing", asyn
         await assert.rejects(
             controller.handle(request as never, { send: () => undefined } as never),
             (error: Error & { statusCode?: number }) =>
-                error.statusCode === 503 && error.message.includes("ambiente de desenvolvimento")
+                error.statusCode === 503 && error.message.includes("devMode")
         );
         assert.equal(processed, false);
     } finally {
@@ -127,7 +124,8 @@ test("checkout lookup follows provider cursor when result is not on first page",
                     url: "https://example.com/bill_second_page",
                     amount: 1000,
                     paidAmount: null,
-                    status: "PENDING"
+                    status: "PENDING",
+                    devMode: true
                 }
             ],
             pagination: { hasMore: false, next: null }
@@ -145,6 +143,187 @@ test("checkout lookup follows provider cursor when result is not on first page",
     assert.equal(requestedUrls.length, 2);
     assert.match(requestedUrls[0], /externalId=order-second-page/);
     assert.match(requestedUrls[1], /after=cursor-2/);
+});
+
+test("staging rejects checkout response outside expected development mode", async (context) => {
+    context.mock.method(globalThis, "fetch", async () =>
+        Response.json({
+            success: true,
+            error: null,
+            data: {
+                id: "bill_prod",
+                externalId: "order-1",
+                url: "https://example.com/bill_prod",
+                amount: 1000,
+                paidAmount: null,
+                status: "PENDING",
+                devMode: false
+            }
+        })
+    );
+    const client = new AbacatePayClient({
+        apiKey: "development-key",
+        baseUrl: "https://api.abacatepay.com/v2",
+        timeoutMs: 1000,
+        expectedDevMode: true
+    });
+
+    await assert.rejects(
+        client.createCheckout({
+            externalId: "order-1",
+            items: [{ id: "prod-1", quantity: 1 }],
+            methods: ["PIX"],
+            metadata: {}
+        }),
+        /devMode/
+    );
+});
+
+test("checkout response requires devMode", async (context) => {
+    context.mock.method(globalThis, "fetch", async () =>
+        Response.json({
+            success: true,
+            error: null,
+            data: {
+                id: "bill_unknown",
+                externalId: "order-1",
+                url: "https://example.com/bill_unknown",
+                amount: 1000,
+                paidAmount: null,
+                status: "PENDING"
+            }
+        })
+    );
+
+    await assert.rejects(
+        productionClient().createCheckout({
+            externalId: "order-1",
+            items: [{ id: "prod-1", quantity: 1 }],
+            methods: ["PIX"],
+            metadata: {}
+        }),
+        /devMode/
+    );
+});
+
+test("checkout creation rejects an empty data array as missing devMode", async (context) => {
+    context.mock.method(globalThis, "fetch", async () =>
+        Response.json({ success: true, error: null, data: [] })
+    );
+
+    await assert.rejects(
+        productionClient().createCheckout({
+            externalId: "order-1",
+            items: [{ id: "prod-1", quantity: 1 }],
+            methods: ["PIX"],
+            metadata: {}
+        }),
+        (error: Error & { statusCode?: number }) =>
+            error.statusCode === 503 && error.message.includes("devMode")
+    );
+});
+
+test("staging rejects webhook outside expected development mode", async () => {
+    let processed = false;
+    const controller = new PaymentWebhookController(
+        { process: async () => ((processed = true), {}) } as never,
+        true
+    );
+    const payload = Buffer.from(
+        JSON.stringify({ id: "event-prod", event: "checkout.completed", devMode: false })
+    );
+    const signature = createHmac("sha256", ABACATEPAY_WEBHOOK_PUBLIC_KEY)
+        .update(payload)
+        .digest("base64");
+    const previousSecret = process.env.ABACATEPAY_WEBHOOK_SECRET;
+    process.env.ABACATEPAY_WEBHOOK_SECRET = "secret";
+    try {
+        await assert.rejects(
+            controller.handle(
+                {
+                    body: payload,
+                    query: { webhookSecret: "secret" },
+                    headers: { "x-webhook-signature": signature }
+                } as never,
+                { send: () => undefined } as never
+            ),
+            /devMode/
+        );
+        assert.equal(processed, false);
+    } finally {
+        if (previousSecret === undefined) delete process.env.ABACATEPAY_WEBHOOK_SECRET;
+        else process.env.ABACATEPAY_WEBHOOK_SECRET = previousSecret;
+    }
+});
+
+test("webhook requires devMode before processing", async () => {
+    let processed = false;
+    const controller = new PaymentWebhookController(
+        { process: async () => ((processed = true), {}) } as never,
+        false
+    );
+    const payload = Buffer.from(
+        JSON.stringify({ id: "event-unknown", event: "checkout.completed" })
+    );
+    const signature = createHmac("sha256", ABACATEPAY_WEBHOOK_PUBLIC_KEY)
+        .update(payload)
+        .digest("base64");
+    const previousSecret = process.env.ABACATEPAY_WEBHOOK_SECRET;
+    process.env.ABACATEPAY_WEBHOOK_SECRET = "secret";
+    try {
+        await assert.rejects(
+            controller.handle(
+                {
+                    body: payload,
+                    query: { webhookSecret: "secret" },
+                    headers: { "x-webhook-signature": signature }
+                } as never,
+                { send: () => undefined } as never
+            ),
+            /devMode/
+        );
+        assert.equal(processed, false);
+    } finally {
+        if (previousSecret === undefined) delete process.env.ABACATEPAY_WEBHOOK_SECRET;
+        else process.env.ABACATEPAY_WEBHOOK_SECRET = previousSecret;
+    }
+});
+
+test("webhook accepts the explicitly expected devMode in staging and production", async () => {
+    const previousSecret = process.env.ABACATEPAY_WEBHOOK_SECRET;
+    process.env.ABACATEPAY_WEBHOOK_SECRET = "secret";
+    try {
+        for (const expectedDevMode of [true, false]) {
+            let processed = false;
+            const controller = new PaymentWebhookController(
+                { process: async () => ((processed = true), {}) } as never,
+                expectedDevMode
+            );
+            const payload = Buffer.from(
+                JSON.stringify({
+                    id: `event-${expectedDevMode}`,
+                    event: "checkout.completed",
+                    devMode: expectedDevMode
+                })
+            );
+            const signature = createHmac("sha256", ABACATEPAY_WEBHOOK_PUBLIC_KEY)
+                .update(payload)
+                .digest("base64");
+
+            await controller.handle(
+                {
+                    body: payload,
+                    query: { webhookSecret: "secret" },
+                    headers: { "x-webhook-signature": signature }
+                } as never,
+                { send: () => undefined } as never
+            );
+            assert.equal(processed, true);
+        }
+    } finally {
+        if (previousSecret === undefined) delete process.env.ABACATEPAY_WEBHOOK_SECRET;
+        else process.env.ABACATEPAY_WEBHOOK_SECRET = previousSecret;
+    }
 });
 
 test("checkout lookup rejects a repeated provider pagination cursor", async (context) => {

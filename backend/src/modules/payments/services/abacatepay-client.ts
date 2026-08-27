@@ -1,4 +1,5 @@
 import { AppError } from "../../../core/errors/app-error";
+import { expectedAbacatePayDevMode } from "../../../config/env";
 
 type RequestOptions = { method: "GET" | "POST"; path: string; body?: unknown };
 
@@ -25,7 +26,7 @@ export class AbacatePayClient {
             apiKey: string;
             baseUrl: string;
             timeoutMs: number;
-            production?: boolean;
+            expectedDevMode?: boolean;
         }
     ) {}
 
@@ -34,7 +35,7 @@ export class AbacatePayClient {
             apiKey: process.env.ABACATEPAY_API_KEY ?? "",
             baseUrl: process.env.ABACATEPAY_BASE_URL ?? "https://api.abacatepay.com/v2",
             timeoutMs: Number(process.env.ABACATEPAY_TIMEOUT_MS ?? 15000),
-            production: process.env.NODE_ENV === "production"
+            expectedDevMode: expectedAbacatePayDevMode()
         });
     }
 
@@ -134,19 +135,29 @@ export class AbacatePayClient {
                 `AbacatePay respondeu com erro ${response.status}: ${payload?.error ?? "resposta invalida"}`
             );
         }
-        const production = this.config.production ?? process.env.NODE_ENV === "production";
-        if (production && this.hasDevelopmentMode(payload)) {
-            throw AppError.serviceUnavailable(
-                "AbacatePay respondeu com dados de ambiente de desenvolvimento em producao"
-            );
+        if (path.startsWith("/checkouts/") && path !== "/checkouts/refund") {
+            this.assertExpectedDevMode(payload, path.startsWith("/checkouts/list"));
         }
         return payload;
     }
 
-    private hasDevelopmentMode(value: unknown): boolean {
-        if (Array.isArray(value)) return value.some((item) => this.hasDevelopmentMode(item));
-        if (!value || typeof value !== "object") return false;
+    private assertExpectedDevMode(payload: unknown, allowEmptyList: boolean) {
+        const expected = this.config.expectedDevMode ?? expectedAbacatePayDevMode();
+        const modes = this.developmentModes(payload);
+        const data = (payload as { data?: unknown }).data;
+        if (allowEmptyList && Array.isArray(data) && data.length === 0) return;
+        if (modes.length === 0 || modes.some((mode) => mode !== expected)) {
+            throw AppError.serviceUnavailable(
+                "AbacatePay respondeu com devMode ausente ou diferente do ambiente esperado"
+            );
+        }
+    }
+
+    private developmentModes(value: unknown): boolean[] {
+        if (Array.isArray(value)) return value.flatMap((item) => this.developmentModes(item));
+        if (!value || typeof value !== "object") return [];
         const record = value as Record<string, unknown>;
-        return record.devMode === true || this.hasDevelopmentMode(record.data);
+        const own = typeof record.devMode === "boolean" ? [record.devMode] : [];
+        return [...own, ...this.developmentModes(record.data)];
     }
 }

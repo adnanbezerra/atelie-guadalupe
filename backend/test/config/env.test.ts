@@ -17,6 +17,7 @@ const validEnvironment: NodeJS.ProcessEnv = {
     ABACATEPAY_RETURN_URL: "https://atelie.example.com/checkout",
     ABACATEPAY_COMPLETION_URL: "https://atelie.example.com/checkout/success",
     ABACATEPAY_WEBHOOK_SECRET: "webhook-secret",
+    ABACATEPAY_EXPECTED_DEV_MODE: "false",
     PAYMENT_LINK_PUBLIC_BASE_URL: "https://atelie.example.com/checkout/manual",
     RESEND_API_KEY: "resend-key",
     EMAIL_FROM: "Atelie Guadalupe <contato@example.com>",
@@ -32,6 +33,7 @@ test("environment validation accepts a complete production configuration", () =>
     assert.equal(environment.EMAIL_WORKER_ENABLED, "true");
     assert.equal(environment.CHECKOUT_ENABLED, "true");
     assert.equal(environment.FULFILLMENT_WORKER_MAX_ATTEMPTS, 8);
+    assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "false");
 });
 
 test("production requires explicit SuperFrete URL and checkout flag", () => {
@@ -64,6 +66,40 @@ test("production rejects a known AbacatePay development key", () => {
     assert.throws(
         () => validateEnv({ ...validEnvironment, ABACATEPAY_API_KEY: "abc_dev_example" }),
         /ABACATEPAY_API_KEY: chave de desenvolvimento nao permitida em producao/
+    );
+});
+
+test("production permits a development key only when dev mode is explicitly expected", () => {
+    const environment = validateEnv({
+        ...validEnvironment,
+        ABACATEPAY_API_KEY: "abc_dev_example",
+        ABACATEPAY_EXPECTED_DEV_MODE: "true"
+    });
+
+    assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "true");
+});
+
+test("production requires a development key when dev mode is expected", () => {
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                ABACATEPAY_EXPECTED_DEV_MODE: "true"
+            }),
+        /ABACATEPAY_API_KEY: deve ser chave de desenvolvimento/
+    );
+});
+
+test("production requires an explicit expected AbacatePay dev mode", () => {
+    const { ABACATEPAY_EXPECTED_DEV_MODE: _expected, ...environment } = validEnvironment;
+
+    assert.throws(
+        () => validateEnv(environment),
+        /ABACATEPAY_EXPECTED_DEV_MODE: obrigatoria em producao/
+    );
+    assert.throws(
+        () => validateEnv({ ...validEnvironment, ABACATEPAY_EXPECTED_DEV_MODE: "yes" }),
+        /ABACATEPAY_EXPECTED_DEV_MODE/
     );
 });
 
@@ -111,6 +147,7 @@ test("checkout flag is strict and preserves the enabled default outside producti
     const environment = validateEnv({ NODE_ENV: "test" });
     assert.equal(environment.CHECKOUT_ENABLED, "true");
     assert.equal(environment.SUPERFRETE_BASE_URL, "https://sandbox.superfrete.com/api/v0");
+    assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "true");
 });
 
 test("environment validation reports all missing production variables", () => {

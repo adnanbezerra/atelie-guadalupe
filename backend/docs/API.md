@@ -3020,12 +3020,17 @@ ABACATEPAY_RETURN_URL=https://loja.exemplo.com/checkout
 ABACATEPAY_COMPLETION_URL=https://loja.exemplo.com/checkout/success
 ABACATEPAY_WEBHOOK_SECRET=
 ABACATEPAY_TIMEOUT_MS=15000
+ABACATEPAY_EXPECTED_DEV_MODE=false
 CHECKOUT_ENABLED=true
 FULFILLMENT_WORKER_ENABLED=true
 FULFILLMENT_WORKER_INTERVAL_MS=30000
 FULFILLMENT_WORKER_LOCK_TIMEOUT_MS=300000
 FULFILLMENT_WORKER_MAX_ATTEMPTS=8
 ```
+
+`ABACATEPAY_EXPECTED_DEV_MODE` deve ser `true` em staging com chave de desenvolvimento e `false`
+em producao real. A aplicacao exige o valor explicitamente quando `NODE_ENV=production` e rejeita
+respostas e webhooks cujo `devMode` esteja ausente ou seja diferente do ambiente esperado.
 
 As configuracoes existentes `SUPERFRETE_*` continuam obrigatorias para cotacao e compra da etiqueta.
 

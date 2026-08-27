@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "../../../core/errors/app-error";
+import { expectedAbacatePayDevMode } from "../../../config/env";
 import {
     AbacateWebhookPayload,
     PaymentWebhookService,
@@ -11,7 +12,7 @@ type WebhookQuery = { webhookSecret?: string };
 export class PaymentWebhookController {
     public constructor(
         private readonly service: PaymentWebhookService,
-        private readonly production = process.env.NODE_ENV === "production"
+        private readonly expectedDevMode = expectedAbacatePayDevMode()
     ) {}
 
     public handle = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -33,9 +34,9 @@ export class PaymentWebhookController {
         } catch {
             throw AppError.validation("Payload de webhook invalido");
         }
-        if (this.production && payload.devMode === true) {
+        if (payload.devMode !== this.expectedDevMode) {
             throw AppError.serviceUnavailable(
-                "Webhook de ambiente de desenvolvimento rejeitado em producao"
+                "Webhook com devMode ausente ou diferente do ambiente esperado"
             );
         }
         const result = await this.service.process(payload);
