@@ -99,7 +99,11 @@ export class SuperFreteClient {
         return new SuperFreteClient({
             token: process.env.SUPERFRETE_TOKEN ?? "",
             userAgent: process.env.SUPERFRETE_USER_AGENT ?? "",
-            baseUrl: process.env.SUPERFRETE_BASE_URL ?? "https://sandbox.superfrete.com/api/v0",
+            baseUrl:
+                process.env.SUPERFRETE_BASE_URL ??
+                (process.env.NODE_ENV === "production"
+                    ? ""
+                    : "https://sandbox.superfrete.com/api/v0"),
             timeoutMs: Number(process.env.SUPERFRETE_TIMEOUT_MS ?? 15000)
         });
     }

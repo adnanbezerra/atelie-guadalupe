@@ -12,19 +12,26 @@ export type AbacateCheckout = {
     amount: number;
     paidAmount: number | null;
     status: string;
+    devMode?: boolean;
     metadata?: Record<string, unknown>;
 };
 
 export class AbacatePayClient {
     public constructor(
-        private readonly config: { apiKey: string; baseUrl: string; timeoutMs: number }
+        private readonly config: {
+            apiKey: string;
+            baseUrl: string;
+            timeoutMs: number;
+            production?: boolean;
+        }
     ) {}
 
     public static fromEnv() {
         return new AbacatePayClient({
             apiKey: process.env.ABACATEPAY_API_KEY ?? "",
             baseUrl: process.env.ABACATEPAY_BASE_URL ?? "https://api.abacatepay.com/v2",
-            timeoutMs: Number(process.env.ABACATEPAY_TIMEOUT_MS ?? 15000)
+            timeoutMs: Number(process.env.ABACATEPAY_TIMEOUT_MS ?? 15000),
+            production: process.env.NODE_ENV === "production"
         });
     }
 
@@ -99,6 +106,19 @@ export class AbacatePayClient {
                 `AbacatePay respondeu com erro ${response.status}: ${payload?.error ?? "resposta invalida"}`
             );
         }
+        const production = this.config.production ?? process.env.NODE_ENV === "production";
+        if (production && this.hasDevelopmentMode(payload)) {
+            throw AppError.serviceUnavailable(
+                "AbacatePay respondeu com dados de ambiente de desenvolvimento em producao"
+            );
+        }
         return payload.data;
+    }
+
+    private hasDevelopmentMode(value: unknown): boolean {
+        if (Array.isArray(value)) return value.some((item) => this.hasDevelopmentMode(item));
+        if (!value || typeof value !== "object") return false;
+        const record = value as Record<string, unknown>;
+        return record.devMode === true || this.hasDevelopmentMode(record.data);
     }
 }

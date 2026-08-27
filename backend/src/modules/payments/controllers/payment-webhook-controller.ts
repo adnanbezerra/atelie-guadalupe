@@ -9,7 +9,10 @@ import {
 type WebhookQuery = { webhookSecret?: string };
 
 export class PaymentWebhookController {
-    public constructor(private readonly service: PaymentWebhookService) {}
+    public constructor(
+        private readonly service: PaymentWebhookService,
+        private readonly production = process.env.NODE_ENV === "production"
+    ) {}
 
     public handle = async (request: FastifyRequest, reply: FastifyReply) => {
         const rawBody = request.body as Buffer;
@@ -29,6 +32,11 @@ export class PaymentWebhookController {
             payload = JSON.parse(rawBody.toString("utf8")) as AbacateWebhookPayload;
         } catch {
             throw AppError.validation("Payload de webhook invalido");
+        }
+        if (this.production && payload.devMode === true) {
+            throw AppError.serviceUnavailable(
+                "Webhook de ambiente de desenvolvimento rejeitado em producao"
+            );
         }
         const result = await this.service.process(payload);
         return reply.send({ success: true, data: result });
