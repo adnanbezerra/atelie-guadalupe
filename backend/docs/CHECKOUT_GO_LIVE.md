@@ -63,35 +63,35 @@ Checkout esta pronto para producao somente quando:
 
 Tarefas:
 
-- [ ] definir regra de negocio para cancelamento quando ja existe `providerCheckoutId`;
-- [ ] enquanto nao houver operacao oficial de cancelamento de checkout comum, bloquear o
+- [x] definir regra de negocio para cancelamento quando ja existe `providerCheckoutId`;
+- [x] enquanto nao houver operacao oficial de cancelamento de checkout comum, bloquear o
       cancelamento simples depois de persistir `providerCheckoutId`;
-- [ ] impedir cancelamento simples de pedido com checkout ativo ou implementar cancelamento do
+- [x] impedir cancelamento simples de pedido com checkout ativo ou implementar cancelamento do
       checkout no provedor, caso exista operacao oficialmente suportada;
-- [ ] tornar corrida entre cancelamento e `checkout.completed` deterministica no banco;
-- [ ] tornar corrida entre cancelamento e criacao/persistencia do checkout deterministica no
+- [x] tornar corrida entre cancelamento e `checkout.completed` deterministica no banco;
+- [x] tornar corrida entre cancelamento e criacao/persistencia do checkout deterministica no
       banco, sem ressuscitar pedido cancelado;
-- [ ] implementar transicoes condicionais no banco e verificar quantas linhas foram alteradas
+- [x] implementar transicoes condicionais no banco e verificar quantas linhas foram alteradas
       antes de criar qualquer efeito colateral;
-- [ ] nunca criar fulfillment para pedido que nao transitou de `AWAITING_PAYMENT` para `PAID`;
-- [ ] quando pagamento confirmado chegar para pedido ja cancelado, registrar ocorrencia financeira
+- [x] nunca criar fulfillment para pedido que nao transitou de `AWAITING_PAYMENT` para `PAID`;
+- [x] quando pagamento confirmado chegar para pedido ja cancelado, registrar ocorrencia financeira
       e encaminhar para reembolso/acao manual, sem perder o evento;
-- [ ] impedir que job impossivel fique em retentativa infinita;
-- [ ] definir limite de tentativas e estado terminal consultavel para fulfillment impossivel;
-- [ ] gerar alerta operacional contendo UUID do pedido, checkout do provedor e valor pago;
-- [ ] documentar procedimento de reembolso desse caso no runbook.
+- [x] impedir que job impossivel fique em retentativa infinita;
+- [x] definir limite de tentativas e estado terminal consultavel para fulfillment impossivel;
+- [x] gerar alerta operacional contendo UUID do pedido, checkout do provedor e valor pago;
+- [x] documentar procedimento de reembolso desse caso no runbook.
 
 Testes obrigatorios:
 
-- [ ] cancelamento antes de criar checkout continua funcionando;
-- [ ] cancelamento depois de criar checkout segue a nova regra;
-- [ ] `checkout.completed` vence a corrida: pedido fica `PAID` e um unico fulfillment e criado;
-- [ ] cancelamento vence a corrida: nenhum fulfillment e criado e pagamento tardio fica visivel
+- [x] cancelamento antes de criar checkout continua funcionando;
+- [x] cancelamento depois de criar checkout segue a nova regra;
+- [x] `checkout.completed` vence a corrida: pedido fica `PAID` e um unico fulfillment e criado;
+- [x] cancelamento vence a corrida: nenhum fulfillment e criado e pagamento tardio fica visivel
       para reconciliacao;
-- [ ] cancelamento vence corrida com criacao do checkout: pedido continua `CANCELLED`, cobranca
+- [x] cancelamento vence corrida com criacao do checkout: pedido continua `CANCELLED`, cobranca
       criada fica rastreavel e nenhum novo checkout e criado no retry;
-- [ ] webhook tardio repetido nao duplica fulfillment, e-mail nem acao de reembolso;
-- [ ] worker nao retenta indefinidamente pedido cancelado.
+- [x] webhook tardio repetido nao duplica fulfillment, e-mail nem acao de reembolso;
+- [x] worker nao retenta indefinidamente pedido cancelado.
 
 **Criterio de aceite:** nenhum estado permite `payment.status = PAID` ficar silenciosamente
 associado a `order.status = CANCELLED`. Todo pagamento recebido termina em fulfillment valido ou
@@ -101,18 +101,18 @@ acao de reembolso rastreavel.
 
 Tarefas:
 
-- [ ] remover fallback silencioso da Superfrete para sandbox quando `NODE_ENV=production`;
-- [ ] exigir `SUPERFRETE_BASE_URL` explicita em producao;
-- [ ] rejeitar URL conhecida de sandbox em producao;
-- [ ] confirmar URL oficial de producao na documentacao atual da Superfrete;
-- [ ] validar que URLs de retorno e conclusao da AbacatePay usam HTTPS e dominio de producao;
-- [ ] validar que `PAYMENT_LINK_PUBLIC_BASE_URL`, `FRONTEND_URL` e `CORS_ORIGIN` apontam para os
+- [x] remover fallback silencioso da Superfrete para sandbox quando `NODE_ENV=production`;
+- [x] exigir `SUPERFRETE_BASE_URL` explicita em producao;
+- [x] rejeitar URL conhecida de sandbox em producao;
+- [x] confirmar URL oficial de producao na documentacao atual da Superfrete;
+- [x] validar que URLs de retorno e conclusao da AbacatePay usam HTTPS e dominio de producao;
+- [x] validar que `PAYMENT_LINK_PUBLIC_BASE_URL`, `FRONTEND_URL` e `CORS_ORIGIN` apontam para os
       dominios corretos;
 - [ ] confirmar separacao entre tokens/chaves de sandbox e producao;
-- [ ] rejeitar resposta de criacao/consulta e webhook da AbacatePay com `devMode: true` em
+- [x] rejeitar resposta de criacao/consulta e webhook da AbacatePay com `devMode: true` em
       producao;
-- [ ] garantir que nenhum segredo real esteja versionado ou presente em logs;
-- [ ] adicionar testes de validacao para configuracao completa, sandbox indevido e URLs locais.
+- [x] garantir que nenhum segredo real esteja versionado ou presente em logs;
+- [x] adicionar testes de validacao para configuracao completa, sandbox indevido e URLs locais.
 
 **Criterio de aceite:** processo com `NODE_ENV=production` falha antes de aceitar trafego quando
 qualquer provedor ou URL publica estiver ausente, local ou em sandbox.
@@ -121,17 +121,17 @@ qualquer provedor ou URL publica estiver ausente, local ou em sandbox.
 
 Tarefas:
 
-- [ ] adicionar configuracao explicita, por exemplo `CHECKOUT_ENABLED`;
-- [ ] exigir valor explicito em producao e falhar de forma fechada; ausencia ou valor invalido nao
+- [x] adicionar configuracao explicita, por exemplo `CHECKOUT_ENABLED`;
+- [x] exigir valor explicito em producao e falhar de forma fechada; ausencia ou valor invalido nao
       pode habilitar cobrancas;
-- [ ] quando desativada, bloquear somente criacao de novos pedidos/pagamentos conforme regra
+- [x] quando desativada, bloquear somente criacao de novos pedidos/pagamentos conforme regra
       definida;
-- [ ] aplicar o bloqueio tanto ao checkout de pedido quanto ao checkout de link de pagamento;
-- [ ] retornar erro controlado e mensagem segura ao frontend;
-- [ ] manter webhook, consulta de pedidos, reembolso e workers funcionando para pagamentos em voo;
-- [ ] criar teste provando que nenhuma chamada ao provedor ocorre com checkout desativado;
-- [ ] testar valor ausente e invalido em producao, alem de `false` explicito;
-- [ ] documentar como desativar, verificar e reativar sem novo deploy.
+- [x] aplicar o bloqueio tanto ao checkout de pedido quanto ao checkout de link de pagamento;
+- [x] retornar erro controlado e mensagem segura ao frontend;
+- [x] manter webhook, consulta de pedidos, reembolso e workers funcionando para pagamentos em voo;
+- [x] criar teste provando que nenhuma chamada ao provedor ocorre com checkout desativado;
+- [x] testar valor ausente e invalido em producao, alem de `false` explicito;
+- [x] documentar como desativar, verificar e reativar sem novo deploy.
 
 **Criterio de aceite:** operacao consegue interromper novas cobrancas em poucos minutos sem
 abandonar cobrancas ja criadas.
@@ -144,28 +144,28 @@ persistido localmente.
 
 Tarefas:
 
-- [ ] manter link em `CREATING` quando o resultado da criacao no provedor for incerto;
-- [ ] em retry de `CREATING`, consultar pelo `externalId` `payment-link:<uuid>` e persistir o mesmo
+- [x] manter link em `CREATING` quando o resultado da criacao no provedor for incerto;
+- [x] em retry de `CREATING`, consultar pelo `externalId` `payment-link:<uuid>` e persistir o mesmo
       checkout sem chamar `createCheckout` novamente;
-- [ ] nao criar segunda cobranca automaticamente quando a consulta ainda nao encontrar resultado
+- [x] nao criar segunda cobranca automaticamente quando a consulta ainda nao encontrar resultado
       para uma tentativa anterior incerta;
-- [ ] reconciliar link `CREATING` antes de conclui-lo como expirado;
-- [ ] manter checkout encontrado rastreavel sem reabrir link expirado nem expor URL para novo
+- [x] reconciliar link `CREATING` antes de conclui-lo como expirado;
+- [x] manter checkout encontrado rastreavel sem reabrir link expirado nem expor URL para novo
       pagamento;
-- [ ] aceitar e auditar webhook tardio valido de checkout expirado;
-- [ ] tornar duas chamadas concorrentes deterministicas, com no maximo uma chamada de criacao ao
+- [x] aceitar e auditar webhook tardio valido de checkout expirado;
+- [x] tornar duas chamadas concorrentes deterministicas, com no maximo uma chamada de criacao ao
       provedor;
-- [ ] encaminhar estado incerto persistente para reconciliacao operacional.
+- [x] encaminhar estado incerto persistente para reconciliacao operacional.
 
 Testes obrigatorios:
 
-- [ ] timeout depois da criacao no provedor e antes da persistencia local;
-- [ ] retry encontra e persiste o checkout original, sem criar outro;
-- [ ] retry sem resultado definitivo nao cria segunda cobranca;
-- [ ] expiracao antes e depois da persistencia do checkout;
-- [ ] webhook tardio depois da expiracao;
-- [ ] duas chamadas concorrentes criam no maximo um checkout;
-- [ ] checkout reconciliado com valor divergente fica bloqueado para acao manual.
+- [x] timeout depois da criacao no provedor e antes da persistencia local;
+- [x] retry encontra e persiste o checkout original, sem criar outro;
+- [x] retry sem resultado definitivo nao cria segunda cobranca;
+- [x] expiracao antes e depois da persistencia do checkout;
+- [x] webhook tardio depois da expiracao;
+- [x] duas chamadas concorrentes criam no maximo um checkout;
+- [x] checkout reconciliado com valor divergente fica bloqueado para acao manual.
 
 **Criterio de aceite:** nenhum checkout personalizado criado no provedor fica sem rastreabilidade
 local, nenhuma incerteza gera segunda cobranca e expiracao nao oculta pagamento possivel ou tardio.
@@ -457,6 +457,6 @@ Commit/deploy: **\*\*\*\***\_\_\_\_**\*\*\*\***
 Usar uma linha por execucao relevante. Nao registrar secrets, tokens, documentos, enderecos ou
 payloads sensiveis.
 
-| Data/hora | Ambiente | Commit | Tarefa/teste | Resultado | IDs seguros/evidencia | Responsavel |
-| --------- | -------- | ------ | ------------ | --------- | --------------------- | ----------- |
-|           |          |        |              |           |                       |             |
+| Data/hora  | Ambiente    | Commit             | Tarefa/teste            | Resultado    | IDs seguros/evidencia                                                                                                     | Responsavel |
+| ---------- | ----------- | ------------------ | ----------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 2026-08-27 | local/teste | `60d2888..72cc362` | Fase 0: GL-001 a GL-004 | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate | Codex + QA  |
