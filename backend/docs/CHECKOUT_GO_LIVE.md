@@ -176,22 +176,22 @@ local, nenhuma incerteza gera segunda cobranca e expiracao nao oculta pagamento 
 
 Adicionar testes para:
 
-- [ ] chave de idempotencia ausente, invalida e pertencente a outro pedido;
-- [ ] duas criacoes concorrentes com a mesma chave;
-- [ ] timeout antes de o provedor criar checkout;
-- [ ] timeout depois de o provedor criar checkout, antes da persistencia local;
-- [ ] reconciliacao de pagamento `CREATING` sem criar segunda cobranca;
-- [ ] checkout reconciliado com valor divergente;
-- [ ] checkout nao encontrado na primeira pagina da listagem do provedor;
-- [ ] erro ao criar produto do catalogo;
-- [ ] webhook com assinatura invalida, secret invalido e corpo alterado;
-- [ ] webhook duplicado e dois webhooks concorrentes com mesmo `eventId`;
-- [ ] `externalId`, `amount` e `paidAmount` divergentes;
-- [ ] evento desconhecido sem quebrar eventos futuros;
-- [ ] falha transacional no meio do processamento e retentativa posterior;
-- [ ] eventos `checkout.refunded`, `checkout.disputed` e `checkout.lost`;
-- [ ] fulfillment interrompido, lock expirado, retry e conclusao unica;
-- [ ] e-mail indisponivel sem desfazer confirmacao financeira.
+- [x] chave de idempotencia ausente, invalida e pertencente a outro pedido;
+- [x] duas criacoes concorrentes com a mesma chave;
+- [x] timeout antes de o provedor criar checkout;
+- [x] timeout depois de o provedor criar checkout, antes da persistencia local;
+- [x] reconciliacao de pagamento `CREATING` sem criar segunda cobranca;
+- [x] checkout reconciliado com valor divergente;
+- [x] checkout nao encontrado na primeira pagina da listagem do provedor;
+- [x] erro ao criar produto do catalogo;
+- [x] webhook com assinatura invalida, secret invalido e corpo alterado;
+- [x] webhook duplicado e dois webhooks concorrentes com mesmo `eventId`;
+- [x] `externalId`, `amount` e `paidAmount` divergentes;
+- [x] evento desconhecido sem quebrar eventos futuros;
+- [x] falha transacional no meio do processamento e retentativa posterior;
+- [x] eventos `checkout.refunded`, `checkout.disputed` e `checkout.lost`;
+- [x] fulfillment interrompido, lock expirado, retry e conclusao unica;
+- [x] e-mail indisponivel sem desfazer confirmacao financeira.
 
 **Criterio de aceite:** testes reproduzem os cenarios antes das correcoes relevantes e passam
 depois delas, sem depender de rede externa.
@@ -208,11 +208,11 @@ pnpm test
 
 Tarefas:
 
-- [ ] confirmar que cada comando termina sem intervencao e com codigo zero;
-- [ ] investigar handles abertos, dependencia externa acidental ou disputa de banco se a suite
+- [x] confirmar que cada comando termina sem intervencao e com codigo zero;
+- [x] investigar handles abertos, dependencia externa acidental ou disputa de banco se a suite
       voltar a parar;
-- [ ] garantir que testes normais nunca chamem AbacatePay ou Superfrete;
-- [ ] registrar duracao total e lista de testes ignorados;
+- [x] garantir que testes normais nunca chamem AbacatePay ou Superfrete;
+- [x] registrar duracao total e lista de testes ignorados;
 - [ ] executar os mesmos comandos no CI usando Node 22 e pnpm definido no projeto;
 - [ ] bloquear merge/deploy quando algum comando falhar.
 
@@ -457,6 +457,7 @@ Commit/deploy: **\*\*\*\***\_\_\_\_**\*\*\*\***
 Usar uma linha por execucao relevante. Nao registrar secrets, tokens, documentos, enderecos ou
 payloads sensiveis.
 
-| Data/hora  | Ambiente    | Commit             | Tarefa/teste            | Resultado    | IDs seguros/evidencia                                                                                                     | Responsavel |
-| ---------- | ----------- | ------------------ | ----------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 2026-08-27 | local/teste | `60d2888..72cc362` | Fase 0: GL-001 a GL-004 | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate | Codex + QA  |
+| Data/hora  | Ambiente    | Commit             | Tarefa/teste                  | Resultado    | IDs seguros/evidencia                                                                                                     | Responsavel |
+| ---------- | ----------- | ------------------ | ----------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 2026-08-27 | local/teste | `60d2888..72cc362` | Fase 0: GL-001 a GL-004       | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate | Codex + QA  |
+| 2026-08-27 | local/teste | `ed9acb0..d46f3c1` | Fase 1: GL-010 e GL-011 local | PASS local   | 57/57 focados; duas suites 141 pass/3 skip/0 fail; 32,06s e 40,08s; build e lint zero; CI real pendente                   | Codex + QA  |
