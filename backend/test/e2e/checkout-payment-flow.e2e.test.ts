@@ -5,7 +5,11 @@ import { test } from "node:test";
 import { FastifyInstance } from "fastify";
 import { ABACATEPAY_WEBHOOK_PUBLIC_KEY } from "../../src/modules/payments/services/payment-webhook-service";
 import { build } from "../helper";
-import { assertCheckoutE2eSafety, checkoutE2eSkipReason } from "./checkout-e2e-guard";
+import {
+    assertCheckoutE2eSafety,
+    checkoutE2eQuotePayload,
+    checkoutE2eSkipReason
+} from "./checkout-e2e-guard";
 
 type ApiResponse<T> = {
     success: boolean;
@@ -87,6 +91,7 @@ async function createOrderWithFreshQuote(
     app: FastifyInstance,
     headers: { authorization: string },
     addressUuid: string,
+    destinationZipCode: string,
     productUuid: string,
     maxAttempts = 3
 ) {
@@ -95,10 +100,7 @@ async function createOrderWithFreshQuote(
             await app.inject({
                 method: "POST",
                 url: "/shipping/quote",
-                payload: {
-                    zipCode: "01001000",
-                    items: [{ productUuid, productSize: "GRAMS_70", quantity: 1 }]
-                }
+                payload: checkoutE2eQuotePayload(destinationZipCode, productUuid)
             }),
             200
         );
@@ -173,7 +175,9 @@ test(
         const headers = authenticatedHeaders(login.token);
         await clearCart(app, login.token);
 
-        const me = parseResponse<{ user: { address: { uuid: string } | null } }>(
+        const me = parseResponse<{
+            user: { address: { uuid: string; zipCode: string } | null };
+        }>(
             await app.inject({ method: "GET", url: "/users/me", headers }),
             200
         );
@@ -217,6 +221,7 @@ test(
             app,
             headers,
             me.user.address.uuid,
+            me.user.address.zipCode,
             product.product.uuid
         );
         assert.match(created.order.paymentIdempotencyKey, /^[0-9a-f-]{36}$/);

@@ -1,6 +1,10 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import { assertCheckoutE2eSafety, checkoutE2eSkipReason } from "./checkout-e2e-guard";
+import {
+    assertCheckoutE2eSafety,
+    checkoutE2eQuotePayload,
+    checkoutE2eSkipReason
+} from "./checkout-e2e-guard";
 
 const safeEnvironment = {
     NODE_ENV: "test",
@@ -31,6 +35,25 @@ test("checkout E2E opt-in fails closed instead of skipping missing configuration
                 CHECKOUT_E2E_ALLOW_DATABASE_WRITES: "true"
             }),
         /variaveis obrigatorias ausentes/
+    );
+});
+
+test("checkout E2E quote uses the persisted order destination", () => {
+    assert.deepStrictEqual(
+        checkoutE2eQuotePayload(
+            "88010000",
+            "0195f4aa-7f18-7db5-9f32-06f4a9a2b401"
+        ),
+        {
+            zipCode: "88010000",
+            items: [
+                {
+                    productUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b401",
+                    productSize: "GRAMS_70",
+                    quantity: 1
+                }
+            ]
+        }
     );
 });
 

@@ -41,3 +41,10 @@ export function assertCheckoutE2eSafety(environment: CheckoutE2eEnvironment) {
 export function checkoutE2eSkipReason(enabled: boolean) {
     return enabled ? false : "Defina RUN_CHECKOUT_E2E=true para executar integracoes sandbox";
 }
+
+export function checkoutE2eQuotePayload(destinationZipCode: string, productUuid: string) {
+    return {
+        zipCode: destinationZipCode,
+        items: [{ productUuid, productSize: "GRAMS_70" as const, quantity: 1 }]
+    };
+}
