@@ -48,7 +48,7 @@ Checkout esta pronto para producao somente quando:
 
 - [ ] todos os bloqueadores P0 deste documento estiverem concluidos;
 - [ ] build, lint, suite completa e testes criticos terminarem com codigo zero;
-- [ ] E2E sandbox passar tres vezes consecutivas;
+- [x] E2E sandbox passar tres vezes consecutivas;
 - [ ] webhook real da AbacatePay chegar a uma URL publica de staging;
 - [ ] observabilidade, alertas, kill switch e runbook estiverem operacionais;
 - [ ] smoke test de producao confirmar um pagamento real de baixo valor de ponta a ponta;
@@ -230,18 +230,24 @@ pnpm run test:e2e:checkout
 
 Para cada uma das tres execucoes:
 
-- [ ] registrar data, commit e ambiente;
-- [ ] confirmar `devMode: true` na AbacatePay;
-- [ ] confirmar que retry devolve mesmo `checkoutId` e `checkoutUrl`;
-- [ ] confirmar valor do checkout igual ao total do pedido;
-- [ ] confirmar webhook sintetico duplicado sem efeitos duplicados;
-- [ ] confirmar somente um fulfillment e um e-mail por finalidade;
-- [ ] confirmar etiqueta no sandbox da Superfrete;
-- [ ] guardar UUID do pedido, IDs dos provedores e resultado do teste;
-- [ ] conferir que dados criados nao afetaram producao.
+- [x] registrar data, commit e ambiente;
+- [x] confirmar `devMode: true` na AbacatePay;
+- [x] confirmar que retry devolve mesmo `checkoutId` e `checkoutUrl`;
+- [x] confirmar valor do checkout igual ao total do pedido;
+- [x] confirmar webhook sintetico duplicado sem efeitos duplicados;
+- [x] confirmar somente um fulfillment e um e-mail por finalidade;
+- [x] confirmar etiqueta no sandbox da Superfrete;
+- [x] guardar UUID do pedido, IDs dos provedores e resultado do teste;
+- [x] conferir que dados criados nao afetaram producao.
 
 **Criterio de aceite:** tres execucoes consecutivas passam sem alteracao de codigo ou limpeza
 manual entre elas.
+
+Evidencia em 2026-08-27: tres execucoes consecutivas passaram no commit `c74554e`, usando chave
+AbacatePay de desenvolvimento, Superfrete sandbox e banco autorizado exclusivamente para testes.
+Cada execucao confirmou exatamente um fulfillment, um e-mail de pagamento e uma etiqueta, sem
+limpeza manual entre rodadas. O webhook desta tarefa continuou sintetico; entrega externa permanece
+separadamente bloqueada por GL-021.
 
 ### GL-021 — Validar entrega real do webhook em staging (P0)
 
@@ -429,7 +435,7 @@ Preencher imediatamente antes da liberacao total:
 | -------------------------------------- | --------- | --------- | ----------- | ---- |
 | Bloqueadores P0 concluidos             |           |           |             |      |
 | Build, lint e suite completa           |           |           |             |      |
-| E2E sandbox 3x                         |           |           |             |      |
+| E2E sandbox 3x                         | PASS      | 3/3 no commit `c74554e`; IDs no registro de execucoes | Codex + QA | 2026-08-27 |
 | Webhook externo em staging             |           |           |             |      |
 | Alertas testados                       |           |           |             |      |
 | Runbook validado                       |           |           |             |      |
@@ -461,3 +467,6 @@ payloads sensiveis.
 | ---------- | ----------- | ------------------ | ----------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | 2026-08-27 | local/teste | `60d2888..72cc362` | Fase 0: GL-001 a GL-004       | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate | Codex + QA  |
 | 2026-08-27 | local/teste | `ed9acb0..d46f3c1` | Fase 1: GL-010 e GL-011 local | PASS local   | 57/57 focados; duas suites 141 pass/3 skip/0 fail; 32,06s e 40,08s; build e lint zero; CI real pendente                   | Codex + QA  |
+| 2026-08-27 23:15 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 1/3 | PASS | pedido `01a04581-82af-7698-801c-389070b931d9`; checkout `bill_5KCy3rLhTjtC2eJfsW0KDxSw`; etiqueta `BZMg4m09lNrVniO3SlqC`; 1 fulfillment; 1 e-mail; 40,77s | Codex + QA |
+| 2026-08-27 23:16 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 2/3 | PASS | pedido `01a04582-e8ae-7689-aaf5-599a803d3997`; checkout `bill_EgrjkwkYGUL0he3fSH3qn3gq`; etiqueta `87MAV5X4AhrxayvqxZZM`; 1 fulfillment; 1 e-mail; 40,42s | Codex + QA |
+| 2026-08-27 23:18 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 3/3 | PASS | pedido `01a04584-75bf-76ed-9a7f-74a7a36150f8`; checkout `bill_M3ujjFSXfCDgaD1S63qzFfc3`; etiqueta `HDBHJzjHxc4gqwU0JW9y`; 1 fulfillment; 1 e-mail; 39,04s | Codex + QA |
