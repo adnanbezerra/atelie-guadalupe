@@ -12,8 +12,10 @@ const positiveInteger = (defaultValue: number) =>
 const enabledFlag = z.enum(["true", "false"]).default("true");
 const checkoutEnabledFlag = z.enum(["true", "false"]).optional();
 const expectedDevModeFlag = z.enum(["true", "false"]).optional();
+const expectedSuperFreteEnvironment = z.enum(["sandbox", "production"]).optional();
 
 const SUPERFRETE_PRODUCTION_URL = "https://api.superfrete.com/api/v0";
+const SUPERFRETE_SANDBOX_URL = "https://sandbox.superfrete.com/api/v0";
 const ABACATEPAY_V2_URL = "https://api.abacatepay.com/v2";
 
 function isPrivateHostname(hostname: string) {
@@ -103,6 +105,7 @@ const envSchema = z
             .regex(/^\d+(?:,\d+)*$/, "deve conter codigos numericos separados por virgula")
             .default("1,2,17"),
         SUPERFRETE_TIMEOUT_MS: positiveInteger(15000),
+        SUPERFRETE_EXPECTED_ENVIRONMENT: expectedSuperFreteEnvironment,
         ABACATEPAY_BASE_URL: optionalUrl.default(ABACATEPAY_V2_URL),
         ABACATEPAY_API_KEY: optionalString,
         ABACATEPAY_RETURN_URL: optionalUrl,
@@ -129,6 +132,30 @@ const envSchema = z
         SHIPPING_TRACKING_LOCK_TIMEOUT_MS: positiveInteger(300000)
     })
     .superRefine((environment, context) => {
+        const effectiveSuperFreteEnvironment =
+            environment.SUPERFRETE_EXPECTED_ENVIRONMENT ??
+            (environment.NODE_ENV === "production" ? undefined : "sandbox");
+        const expectedSuperFreteUrl =
+            effectiveSuperFreteEnvironment === "sandbox"
+                ? SUPERFRETE_SANDBOX_URL
+                : effectiveSuperFreteEnvironment === "production"
+                  ? SUPERFRETE_PRODUCTION_URL
+                  : undefined;
+        const effectiveSuperFreteUrl =
+            environment.SUPERFRETE_BASE_URL ??
+            (environment.NODE_ENV === "production" ? undefined : SUPERFRETE_SANDBOX_URL);
+        if (
+            effectiveSuperFreteUrl &&
+            expectedSuperFreteUrl &&
+            effectiveSuperFreteUrl !== expectedSuperFreteUrl
+        ) {
+            context.addIssue({
+                code: "custom",
+                path: ["SUPERFRETE_BASE_URL"],
+                message: `deve ser ${expectedSuperFreteUrl} quando SUPERFRETE_EXPECTED_ENVIRONMENT=${effectiveSuperFreteEnvironment}`
+            });
+        }
+
         if (environment.NODE_ENV === "test") return;
 
         const required = [
@@ -168,14 +195,14 @@ const envSchema = z
                 path: ["SUPERFRETE_BASE_URL"],
                 message: "obrigatoria em producao"
             });
-        } else if (environment.SUPERFRETE_BASE_URL !== SUPERFRETE_PRODUCTION_URL) {
+        }
+        if (!environment.SUPERFRETE_EXPECTED_ENVIRONMENT) {
             context.addIssue({
                 code: "custom",
-                path: ["SUPERFRETE_BASE_URL"],
-                message: `deve ser ${SUPERFRETE_PRODUCTION_URL} em producao`
+                path: ["SUPERFRETE_EXPECTED_ENVIRONMENT"],
+                message: "obrigatoria em producao"
             });
         }
-
         if (environment.ABACATEPAY_BASE_URL !== ABACATEPAY_V2_URL) {
             context.addIssue({
                 code: "custom",
@@ -281,7 +308,9 @@ const envSchema = z
     .transform((environment) => ({
         ...environment,
         SUPERFRETE_BASE_URL:
-            environment.SUPERFRETE_BASE_URL ?? "https://sandbox.superfrete.com/api/v0",
+            environment.SUPERFRETE_BASE_URL ?? SUPERFRETE_SANDBOX_URL,
+        SUPERFRETE_EXPECTED_ENVIRONMENT:
+            environment.SUPERFRETE_EXPECTED_ENVIRONMENT ?? "sandbox",
         CHECKOUT_ENABLED: environment.CHECKOUT_ENABLED ?? "true",
         ABACATEPAY_EXPECTED_DEV_MODE: environment.ABACATEPAY_EXPECTED_DEV_MODE ?? "true"
     }));

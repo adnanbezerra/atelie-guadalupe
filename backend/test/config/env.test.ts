@@ -13,6 +13,7 @@ const validEnvironment: NodeJS.ProcessEnv = {
     SUPERFRETE_BASE_URL: "https://api.superfrete.com/api/v0",
     SUPERFRETE_TOKEN: "superfrete-token",
     SUPERFRETE_USER_AGENT: "Atelie Guadalupe (tech@example.com)",
+    SUPERFRETE_EXPECTED_ENVIRONMENT: "production",
     ABACATEPAY_API_KEY: "abacatepay-key",
     ABACATEPAY_RETURN_URL: "https://atelie.example.com/checkout",
     ABACATEPAY_COMPLETION_URL: "https://atelie.example.com/checkout/success",
@@ -36,9 +37,10 @@ test("environment validation accepts a complete production configuration", () =>
     assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "false");
 });
 
-test("production requires explicit SuperFrete URL and checkout flag", () => {
+test("production requires explicit SuperFrete URL, environment and checkout flag", () => {
     const {
         SUPERFRETE_BASE_URL: _baseUrl,
+        SUPERFRETE_EXPECTED_ENVIRONMENT: _superFreteEnvironment,
         CHECKOUT_ENABLED: _checkout,
         ...environment
     } = validEnvironment;
@@ -47,18 +49,80 @@ test("production requires explicit SuperFrete URL and checkout flag", () => {
         () => validateEnv(environment),
         (error: Error) =>
             error.message.includes("SUPERFRETE_BASE_URL: obrigatoria em producao") &&
+            error.message.includes(
+                "SUPERFRETE_EXPECTED_ENVIRONMENT: obrigatoria em producao"
+            ) &&
             error.message.includes("CHECKOUT_ENABLED: obrigatoria em producao")
     );
 });
 
-test("production rejects sandbox provider configuration", () => {
+test("production accepts explicitly expected SuperFrete sandbox configuration", () => {
+    const environment = validateEnv({
+        ...validEnvironment,
+        SUPERFRETE_BASE_URL: "https://sandbox.superfrete.com/api/v0",
+        SUPERFRETE_EXPECTED_ENVIRONMENT: "sandbox"
+    });
+
+    assert.equal(environment.SUPERFRETE_EXPECTED_ENVIRONMENT, "sandbox");
+});
+
+test("production rejects SuperFrete URL and expected environment mismatch", () => {
     assert.throws(
         () =>
             validateEnv({
                 ...validEnvironment,
                 SUPERFRETE_BASE_URL: "https://sandbox.superfrete.com/api/v0"
             }),
-        /SUPERFRETE_BASE_URL.*https:\/\/api\.superfrete\.com\/api\/v0/
+        /SUPERFRETE_BASE_URL.*SUPERFRETE_EXPECTED_ENVIRONMENT=production/
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                SUPERFRETE_EXPECTED_ENVIRONMENT: "sandbox"
+            }),
+        /SUPERFRETE_BASE_URL.*SUPERFRETE_EXPECTED_ENVIRONMENT=sandbox/
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                SUPERFRETE_EXPECTED_ENVIRONMENT: "staging"
+            }),
+        /SUPERFRETE_EXPECTED_ENVIRONMENT/
+    );
+});
+
+test("development rejects SuperFrete URL and expected environment mismatch", () => {
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                NODE_ENV: "development",
+                SUPERFRETE_BASE_URL: "https://api.superfrete.com/api/v0",
+                SUPERFRETE_EXPECTED_ENVIRONMENT: "sandbox"
+            }),
+        /SUPERFRETE_BASE_URL.*SUPERFRETE_EXPECTED_ENVIRONMENT=sandbox/
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                NODE_ENV: "development",
+                SUPERFRETE_BASE_URL: "https://sandbox.superfrete.com/api/v0",
+                SUPERFRETE_EXPECTED_ENVIRONMENT: "production"
+            }),
+        /SUPERFRETE_BASE_URL.*SUPERFRETE_EXPECTED_ENVIRONMENT=production/
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                NODE_ENV: "development",
+                SUPERFRETE_BASE_URL: undefined,
+                SUPERFRETE_EXPECTED_ENVIRONMENT: "production"
+            }),
+        /SUPERFRETE_BASE_URL.*SUPERFRETE_EXPECTED_ENVIRONMENT=production/
     );
 });
 
@@ -147,6 +211,7 @@ test("checkout flag is strict and preserves the enabled default outside producti
     const environment = validateEnv({ NODE_ENV: "test" });
     assert.equal(environment.CHECKOUT_ENABLED, "true");
     assert.equal(environment.SUPERFRETE_BASE_URL, "https://sandbox.superfrete.com/api/v0");
+    assert.equal(environment.SUPERFRETE_EXPECTED_ENVIRONMENT, "sandbox");
     assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "true");
 });
 
