@@ -17,6 +17,7 @@ A Superfrete possui sandbox e token proprio, separado da producao. Gere o token 
 
 ```env
 SUPERFRETE_BASE_URL=https://sandbox.superfrete.com/api/v0
+SUPERFRETE_EXPECTED_ENVIRONMENT=sandbox
 SUPERFRETE_TOKEN=<token-do-sandbox>
 SUPERFRETE_USER_AGENT=Atelie Guadalupe Backend (tech@atelieguadalupe.com)
 ```
@@ -49,6 +50,7 @@ ABACATEPAY_API_KEY=...
 ABACATEPAY_WEBHOOK_SECRET=...
 ABACATEPAY_EXPECTED_DEV_MODE=true
 SUPERFRETE_BASE_URL=https://sandbox.superfrete.com/api/v0
+SUPERFRETE_EXPECTED_ENVIRONMENT=sandbox
 SUPERFRETE_TOKEN=...
 SUPERFRETE_USER_AGENT=Atelie Guadalupe Backend (tech@atelieguadalupe.com)
 ```

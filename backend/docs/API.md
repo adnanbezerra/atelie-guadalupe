@@ -3021,6 +3021,8 @@ ABACATEPAY_COMPLETION_URL=https://loja.exemplo.com/checkout/success
 ABACATEPAY_WEBHOOK_SECRET=
 ABACATEPAY_TIMEOUT_MS=15000
 ABACATEPAY_EXPECTED_DEV_MODE=false
+SUPERFRETE_BASE_URL=https://api.superfrete.com/api/v0
+SUPERFRETE_EXPECTED_ENVIRONMENT=production
 CHECKOUT_ENABLED=true
 FULFILLMENT_WORKER_ENABLED=true
 FULFILLMENT_WORKER_INTERVAL_MS=30000
@@ -3033,6 +3035,10 @@ em producao real. A aplicacao exige o valor explicitamente quando `NODE_ENV=prod
 respostas e webhooks cujo `devMode` esteja ausente ou seja diferente do ambiente esperado.
 
 As configuracoes existentes `SUPERFRETE_*` continuam obrigatorias para cotacao e compra da etiqueta.
+Quando `NODE_ENV=production`, `SUPERFRETE_EXPECTED_ENVIRONMENT` tambem e obrigatoria. Use
+`sandbox` somente em staging intencional com a URL exata
+`https://sandbox.superfrete.com/api/v0`; producao real deve usar `production` com a URL exata
+`https://api.superfrete.com/api/v0`. Qualquer divergencia encerra a inicializacao.
 
 ### E2E completo do checkout em sandbox
 

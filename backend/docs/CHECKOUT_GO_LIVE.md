@@ -103,7 +103,8 @@ Tarefas:
 
 - [x] remover fallback silencioso da Superfrete para sandbox quando `NODE_ENV=production`;
 - [x] exigir `SUPERFRETE_BASE_URL` explicita em producao;
-- [x] rejeitar URL conhecida de sandbox em producao;
+- [x] rejeitar URL conhecida de sandbox em producao real e permitir sandbox em staging somente
+      com modo esperado explicitamente configurado;
 - [x] confirmar URL oficial de producao na documentacao atual da Superfrete;
 - [x] validar que URLs de retorno e conclusao da AbacatePay usam HTTPS e dominio de producao;
 - [x] validar que `PAYMENT_LINK_PUBLIC_BASE_URL`, `FRONTEND_URL` e `CORS_ORIGIN` apontam para os
@@ -254,6 +255,11 @@ separadamente bloqueada por GL-021.
 O E2E atual nao cobre entrega externa. Criar webhook v2 da AbacatePay apontando para endpoint HTTPS
 publico de staging e usando segredo exclusivo de staging.
 
+O staging pode executar o build com `NODE_ENV=production`, mas deve declarar
+`SUPERFRETE_EXPECTED_ENVIRONMENT=sandbox` junto da URL exata do sandbox. A inicializacao rejeita
+URL e modo divergentes. Antes do teste, manter `FULFILLMENT_WORKER_ENABLED=false` para impedir que
+o webhook externo compre etiqueta sem controle operacional.
+
 Tarefas:
 
 - [ ] confirmar DNS, HTTPS e certificado;
@@ -361,6 +367,7 @@ recuperacao foi testado.
 - [ ] `ABACATEPAY_RETURN_URL` e `ABACATEPAY_COMPLETION_URL` usam HTTPS;
 - [ ] webhook de producao usa endpoint HTTPS, secret exclusivo e eventos corretos;
 - [ ] `SUPERFRETE_BASE_URL` e URL de producao, nunca sandbox;
+- [ ] `SUPERFRETE_EXPECTED_ENVIRONMENT=production`;
 - [ ] token e user agent da Superfrete sao de producao;
 - [ ] workers necessarios estao habilitados e com apenas concorrencia planejada;
 - [ ] Resend, remetente, reply-to e dominio estao validados;
