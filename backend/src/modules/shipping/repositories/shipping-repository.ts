@@ -18,6 +18,7 @@ type UpdateShippingBoxInput = Partial<CreateShippingBoxInput>;
 
 const shippingOrderInclude = {
     address: true,
+    payment: true,
     items: {
         include: {
             product: true

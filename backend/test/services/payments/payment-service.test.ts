@@ -313,6 +313,7 @@ test("abacate webhook signature uses the exact raw body", () => {
 test("checkout.completed marks payment paid and enqueues fulfillment atomically", async () => {
     const calls: string[] = [];
     const transactionClient = {
+        $queryRaw: async () => [{ id: 3 }],
         orderPayment: {
             updateMany: async () => {
                 calls.push("payment-paid");
@@ -540,6 +541,7 @@ test("late payment on cancelled order is recorded once without fulfillment or em
     const alerts: unknown[] = [];
     let firstFinancialTransition = true;
     const transactionClient = {
+        $queryRaw: async () => [{ id: 3 }],
         order: {
             updateMany: async () => ({ count: 0 }),
             findUniqueOrThrow: async () => ({ status: "CANCELLED" })

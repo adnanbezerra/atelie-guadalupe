@@ -1,9 +1,6 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import {
-    PaymentStatus,
-    OrderStatus
-} from "../../../src/generated/prisma/enums";
+import { PaymentStatus, OrderStatus } from "../../../src/generated/prisma/enums";
 import { PaymentWebhookService } from "../../../src/modules/payments/services/payment-webhook-service";
 
 function checkoutPayload(id: string, overrides: Record<string, unknown> = {}) {
@@ -50,6 +47,7 @@ test("concurrent deliveries with the same event id produce effects once", async 
         releaseTransaction = resolve;
     });
     const transactionClient = {
+        $queryRaw: async () => [{ id: 3 }],
         order: { updateMany: async () => ({ count: 1 }) },
         orderPayment: { updateMany: async () => ({ count: 1 }) },
         fulfillmentJob: {
@@ -205,6 +203,7 @@ test("transaction failure records error and a later retry can finish", async () 
         paymentStatus: PaymentStatus.PENDING as PaymentStatus
     };
     const transactionClient = {
+        $queryRaw: async () => [{ id: 3 }],
         order: {
             updateMany: async () => {
                 if (financial.orderStatus !== OrderStatus.AWAITING_PAYMENT) return { count: 0 };
@@ -275,44 +274,83 @@ test("transaction failure records error and a later retry can finish", async () 
 });
 
 test("refund, dispute and lost events persist their financial state", async () => {
-    for (const [eventType, status, dateField] of [
-        ["checkout.refunded", PaymentStatus.REFUNDED, "refundedAt"],
-        ["checkout.disputed", PaymentStatus.DISPUTED, "disputedAt"],
-        ["checkout.lost", PaymentStatus.LOST, "lostAt"]
-    ] as const) {
-        let paymentData: Record<string, unknown> | undefined;
-        let eventProcessed = false;
-        const prisma = {
-            paymentWebhookEvent: {
-                upsert: async () => ({ processedAt: null }),
-                updateMany: async () => ({ count: 1 }),
-                update: async () => {
-                    eventProcessed = true;
+    const previousProviderTimeout = process.env.SUPERFRETE_TIMEOUT_MS;
+    const previousFulfillmentTimeout = process.env.FULFILLMENT_TRANSACTION_TIMEOUT_MS;
+    process.env.SUPERFRETE_TIMEOUT_MS = "100";
+    process.env.FULFILLMENT_TRANSACTION_TIMEOUT_MS = "10400";
+    try {
+        for (const [eventType, status, dateField] of [
+            ["checkout.refunded", PaymentStatus.REFUNDED, "refundedAt"],
+            ["checkout.disputed", PaymentStatus.DISPUTED, "disputedAt"],
+            ["checkout.lost", PaymentStatus.LOST, "lostAt"]
+        ] as const) {
+            let paymentData: Record<string, unknown> | undefined;
+            let fulfillmentData: Record<string, unknown> | undefined;
+            let eventProcessed = false;
+            let transactionOptions: { timeout: number } | undefined;
+            const transactionClient = {
+                $queryRaw: async () => [{ id: 3 }],
+                orderPayment: {
+                    update: async ({ data }: { data: Record<string, unknown> }) => {
+                        paymentData = data;
+                    }
+                },
+                fulfillmentJob: {
+                    updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                        fulfillmentData = data;
+                        return { count: 1 };
+                    }
+                },
+                paymentWebhookEvent: {
+                    update: async () => {
+                        eventProcessed = true;
+                    }
                 }
-            },
-            orderPayment: {
-                findUnique: async () => orderPayment(),
-                update: async ({ data }: { data: Record<string, unknown> }) => {
-                    paymentData = data;
+            };
+            const prisma = {
+                paymentWebhookEvent: {
+                    upsert: async () => ({ processedAt: null }),
+                    updateMany: async () => ({ count: 1 }),
+                    update: async () => {
+                        eventProcessed = true;
+                    }
+                },
+                orderPayment: { findUnique: async () => orderPayment() },
+                $transaction: async (
+                    callback: (tx: typeof transactionClient) => Promise<unknown>,
+                    options: { timeout: number }
+                ) => {
+                    transactionOptions = options;
+                    return callback(transactionClient);
                 }
-            },
-            $transaction: async (operations: Promise<unknown>[]) => Promise.all(operations)
-        };
+            };
 
-        const result = await new PaymentWebhookService(prisma as never).process({
-            ...checkoutPayload(`event-${status}`),
-            event: eventType,
-            data: {
-                ...checkoutPayload("unused").data,
-                refundPublicId: "refund-1",
-                reason: "provider reason"
-            }
-        });
+            const result = await new PaymentWebhookService(prisma as never).process({
+                ...checkoutPayload(`event-${status}`),
+                event: eventType,
+                data: {
+                    ...checkoutPayload("unused").data,
+                    refundPublicId: "refund-1",
+                    reason: "provider reason"
+                }
+            });
 
-        assert.deepStrictEqual(result, { processed: true });
-        assert.equal(paymentData?.status, status);
-        assert.equal(paymentData?.refundPublicId, "refund-1");
-        assert.ok(paymentData?.[dateField] instanceof Date);
-        assert.equal(eventProcessed, true);
+            assert.deepStrictEqual(result, { processed: true });
+            assert.equal(paymentData?.status, status);
+            assert.equal(paymentData?.refundPublicId, "refund-1");
+            assert.ok(paymentData?.[dateField] instanceof Date);
+            assert.equal(fulfillmentData?.status, "FAILED");
+            assert.match(String(fulfillmentData?.lastError), new RegExp(status));
+            assert.equal(eventProcessed, true);
+            assert.deepStrictEqual(transactionOptions, { timeout: 20400 });
+        }
+    } finally {
+        if (previousProviderTimeout === undefined) delete process.env.SUPERFRETE_TIMEOUT_MS;
+        else process.env.SUPERFRETE_TIMEOUT_MS = previousProviderTimeout;
+        if (previousFulfillmentTimeout === undefined) {
+            delete process.env.FULFILLMENT_TRANSACTION_TIMEOUT_MS;
+        } else {
+            process.env.FULFILLMENT_TRANSACTION_TIMEOUT_MS = previousFulfillmentTimeout;
+        }
     }
 });

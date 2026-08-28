@@ -788,6 +788,11 @@ export class ShippingService {
                 AppError.business("A etiqueta so pode ser comprada apos a confirmacao do pagamento")
             );
         }
+        if (order.payment?.status !== "PAID") {
+            return left(
+                AppError.business("A etiqueta so pode ser comprada com pagamento financeiro ativo")
+            );
+        }
         if (!order.address) {
             return left(AppError.business("Pedido precisa ter endereco para gerar a etiqueta"));
         }

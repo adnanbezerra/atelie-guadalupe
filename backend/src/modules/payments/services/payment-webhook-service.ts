@@ -9,6 +9,10 @@ import {
 import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
+import {
+    minimumFulfillmentTransactionTimeoutMs,
+    minimumFulfillmentWorkerLockTimeoutMs
+} from "../../../core/config/fulfillment-timing";
 
 export type AbacateWebhookPayload = {
     id: string;
@@ -132,98 +136,106 @@ export class PaymentWebhookService {
                 ) {
                     throw AppError.conflict("Valor pago diverge do total esperado");
                 }
-                const result = await this.prisma.$transaction(async (tx) => {
-                    const orderTransition = await tx.order.updateMany({
-                        where: { id: payment.orderId, status: OrderStatus.AWAITING_PAYMENT },
-                        data: { status: OrderStatus.PAID }
-                    });
-
-                    if (orderTransition.count === 0) {
-                        const order = await tx.order.findUniqueOrThrow({
-                            where: { id: payment.orderId },
-                            select: { status: true }
+                const result = await this.prisma.$transaction(
+                    async (tx) => {
+                        await tx.$queryRaw(
+                            Prisma.sql`SELECT "id" FROM "OrderPayment" WHERE "orderId" = ${payment.orderId} FOR UPDATE`
+                        );
+                        const orderTransition = await tx.order.updateMany({
+                            where: { id: payment.orderId, status: OrderStatus.AWAITING_PAYMENT },
+                            data: { status: OrderStatus.PAID }
                         });
-                        let latePaymentRecorded = false;
-                        if (order.status === OrderStatus.CANCELLED) {
-                            const latePayment = await tx.orderPayment.updateMany({
-                                where: {
-                                    id: payment.id,
-                                    status: {
-                                        in: [
-                                            PaymentStatus.CREATING,
-                                            PaymentStatus.PENDING,
-                                            PaymentStatus.PAID
-                                        ]
-                                    }
-                                },
-                                data: {
-                                    status: PaymentStatus.REFUND_PENDING,
-                                    paidAmountInCents: checkout.paidAmount,
-                                    providerMethod: payload.data?.payerInformation?.method,
-                                    paidAt: payment.paidAt ?? new Date(),
-                                    refundReason:
-                                        "Pagamento confirmado depois do cancelamento; acao manual necessaria"
-                                }
+
+                        if (orderTransition.count === 0) {
+                            const order = await tx.order.findUniqueOrThrow({
+                                where: { id: payment.orderId },
+                                select: { status: true }
                             });
-                            latePaymentRecorded = latePayment.count === 1;
+                            let latePaymentRecorded = false;
+                            if (order.status === OrderStatus.CANCELLED) {
+                                const latePayment = await tx.orderPayment.updateMany({
+                                    where: {
+                                        id: payment.id,
+                                        status: {
+                                            in: [
+                                                PaymentStatus.CREATING,
+                                                PaymentStatus.PENDING,
+                                                PaymentStatus.PAID
+                                            ]
+                                        }
+                                    },
+                                    data: {
+                                        status: PaymentStatus.REFUND_PENDING,
+                                        paidAmountInCents: checkout.paidAmount,
+                                        providerMethod: payload.data?.payerInformation?.method,
+                                        paidAt: payment.paidAt ?? new Date(),
+                                        refundReason:
+                                            "Pagamento confirmado depois do cancelamento; acao manual necessaria"
+                                    }
+                                });
+                                latePaymentRecorded = latePayment.count === 1;
+                            }
+                            await tx.paymentWebhookEvent.update({
+                                where: { eventId: payload.id },
+                                data: { processedAt: new Date(), error: null }
+                            });
+                            return { latePaymentRecorded };
                         }
+
+                        const paymentTransition = await tx.orderPayment.updateMany({
+                            where: {
+                                id: payment.id,
+                                status: { in: [PaymentStatus.CREATING, PaymentStatus.PENDING] }
+                            },
+                            data: {
+                                status: PaymentStatus.PAID,
+                                paidAmountInCents: checkout.paidAmount,
+                                providerMethod: payload.data?.payerInformation?.method,
+                                paidAt: payment.paidAt ?? new Date()
+                            }
+                        });
+                        if (paymentTransition.count !== 1) {
+                            throw AppError.conflict(
+                                "Pagamento nao estava disponivel para confirmacao"
+                            );
+                        }
+                        await tx.fulfillmentJob.upsert({
+                            where: { orderId: payment.orderId },
+                            create: { uuid: createUuid(), orderId: payment.orderId },
+                            update: {}
+                        });
+                        await tx.emailJob.upsert({
+                            where: {
+                                deduplicationKey: `payment-paid:${payment.order.uuid}`
+                            },
+                            create: createEmailJob({
+                                type: EmailJobType.PAYMENT_CONFIRMED,
+                                recipient: payment.order.user.email,
+                                deduplicationKey: `payment-paid:${payment.order.uuid}`,
+                                payload: orderEmailPayload({
+                                    customerName: payment.order.user.name,
+                                    orderUuid: payment.order.uuid,
+                                    items: payment.order.items.map((item) => ({
+                                        name: item.productNameSnapshot,
+                                        quantity: item.quantity,
+                                        totalInCents: item.totalPriceInCents
+                                    })),
+                                    subtotalInCents: payment.order.subtotalInCents,
+                                    shippingInCents: payment.order.shippingInCents,
+                                    discountInCents: payment.order.discountInCents,
+                                    totalInCents: payment.order.totalInCents
+                                })
+                            }),
+                            update: {}
+                        });
                         await tx.paymentWebhookEvent.update({
                             where: { eventId: payload.id },
                             data: { processedAt: new Date(), error: null }
                         });
-                        return { latePaymentRecorded };
-                    }
-
-                    const paymentTransition = await tx.orderPayment.updateMany({
-                        where: {
-                            id: payment.id,
-                            status: { in: [PaymentStatus.CREATING, PaymentStatus.PENDING] }
-                        },
-                        data: {
-                            status: PaymentStatus.PAID,
-                            paidAmountInCents: checkout.paidAmount,
-                            providerMethod: payload.data?.payerInformation?.method,
-                            paidAt: payment.paidAt ?? new Date()
-                        }
-                    });
-                    if (paymentTransition.count !== 1) {
-                        throw AppError.conflict("Pagamento nao estava disponivel para confirmacao");
-                    }
-                    await tx.fulfillmentJob.upsert({
-                        where: { orderId: payment.orderId },
-                        create: { uuid: createUuid(), orderId: payment.orderId },
-                        update: {}
-                    });
-                    await tx.emailJob.upsert({
-                        where: {
-                            deduplicationKey: `payment-paid:${payment.order.uuid}`
-                        },
-                        create: createEmailJob({
-                            type: EmailJobType.PAYMENT_CONFIRMED,
-                            recipient: payment.order.user.email,
-                            deduplicationKey: `payment-paid:${payment.order.uuid}`,
-                            payload: orderEmailPayload({
-                                customerName: payment.order.user.name,
-                                orderUuid: payment.order.uuid,
-                                items: payment.order.items.map((item) => ({
-                                    name: item.productNameSnapshot,
-                                    quantity: item.quantity,
-                                    totalInCents: item.totalPriceInCents
-                                })),
-                                subtotalInCents: payment.order.subtotalInCents,
-                                shippingInCents: payment.order.shippingInCents,
-                                discountInCents: payment.order.discountInCents,
-                                totalInCents: payment.order.totalInCents
-                            })
-                        }),
-                        update: {}
-                    });
-                    await tx.paymentWebhookEvent.update({
-                        where: { eventId: payload.id },
-                        data: { processedAt: new Date(), error: null }
-                    });
-                    return { latePaymentRecorded: false };
-                });
+                        return { latePaymentRecorded: false };
+                    },
+                    { timeout: this.financialTransitionTimeoutMs() }
+                );
                 if (result.latePaymentRecorded && this.alertLatePayment) {
                     try {
                         await this.alertLatePayment({
@@ -247,25 +259,48 @@ export class PaymentWebhookService {
 
             const state = this.eventState(payload.event);
             if (state) {
-                await this.prisma.$transaction([
-                    this.prisma.orderPayment.update({
-                        where: { id: payment.id },
-                        data: {
-                            status: state.status,
-                            refundPublicId: payload.data?.refundPublicId,
-                            refundReason: payload.data?.reason,
-                            refundedAt:
-                                state.status === PaymentStatus.REFUNDED ? new Date() : undefined,
-                            disputedAt:
-                                state.status === PaymentStatus.DISPUTED ? new Date() : undefined,
-                            lostAt: state.status === PaymentStatus.LOST ? new Date() : undefined
-                        }
-                    }),
-                    this.prisma.paymentWebhookEvent.update({
-                        where: { eventId: payload.id },
-                        data: { processedAt: new Date(), error: null }
-                    })
-                ]);
+                await this.prisma.$transaction(
+                    async (tx) => {
+                        await tx.$queryRaw(
+                            Prisma.sql`SELECT "id" FROM "OrderPayment" WHERE "orderId" = ${payment.orderId} FOR UPDATE`
+                        );
+                        await tx.orderPayment.update({
+                            where: { id: payment.id },
+                            data: {
+                                status: state.status,
+                                refundPublicId: payload.data?.refundPublicId,
+                                refundReason: payload.data?.reason,
+                                refundedAt:
+                                    state.status === PaymentStatus.REFUNDED
+                                        ? new Date()
+                                        : undefined,
+                                disputedAt:
+                                    state.status === PaymentStatus.DISPUTED
+                                        ? new Date()
+                                        : undefined,
+                                lostAt: state.status === PaymentStatus.LOST ? new Date() : undefined
+                            }
+                        });
+                        await tx.fulfillmentJob.updateMany({
+                            where: {
+                                orderId: payment.orderId,
+                                status: {
+                                    in: ["PENDING", "PROCESSING", "RETRY_SCHEDULED"]
+                                }
+                            },
+                            data: {
+                                status: "FAILED",
+                                lockedAt: null,
+                                lastError: `Pagamento em estado ${state.status}; fulfillment bloqueado`
+                            }
+                        });
+                        await tx.paymentWebhookEvent.update({
+                            where: { eventId: payload.id },
+                            data: { processedAt: new Date(), error: null }
+                        });
+                    },
+                    { timeout: this.financialTransitionTimeoutMs() }
+                );
             } else {
                 await this.markProcessed(payload.id);
             }
@@ -354,6 +389,23 @@ export class PaymentWebhookService {
         if (event === "checkout.disputed") return PaymentLinkStatus.DISPUTED;
         if (event === "checkout.lost") return PaymentLinkStatus.LOST;
         return null;
+    }
+
+    private financialTransitionTimeoutMs() {
+        const providerTimeout = Number(process.env.SUPERFRETE_TIMEOUT_MS ?? 15000);
+        if (!Number.isInteger(providerTimeout) || providerTimeout <= 0) {
+            throw AppError.serviceUnavailable("SUPERFRETE_TIMEOUT_MS deve ser inteiro positivo");
+        }
+        const minimum = minimumFulfillmentTransactionTimeoutMs(providerTimeout);
+        const fulfillmentTimeout = Number(
+            process.env.FULFILLMENT_TRANSACTION_TIMEOUT_MS ?? minimum
+        );
+        if (!Number.isInteger(fulfillmentTimeout) || fulfillmentTimeout < minimum) {
+            throw AppError.serviceUnavailable(
+                `FULFILLMENT_TRANSACTION_TIMEOUT_MS deve ser no minimo ${minimum}`
+            );
+        }
+        return minimumFulfillmentWorkerLockTimeoutMs(fulfillmentTimeout);
     }
 
     private markProcessed(eventId: string) {
