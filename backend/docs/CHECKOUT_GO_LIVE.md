@@ -277,6 +277,10 @@ Tarefas:
 **Criterio de aceite:** evento externo autentico atualiza um unico pedido e inicia um unico
 fulfillment sem intervencao manual.
 
+**Estado em 2026-08-28: BLOCKED.** Nao existe backend de staging, URL HTTPS publica nem acesso a
+deploy e logs. O endpoint local e webhook sintetico nao substituem esta evidencia. Retomar GL-021
+depois de provisionar staging isolado com as configuracoes de seguranca descritas acima.
+
 ## Fase 3 — observabilidade e operacao
 
 ### GL-030 — Criar metricas e alertas (P0)
@@ -443,7 +447,7 @@ Preencher imediatamente antes da liberacao total:
 | Bloqueadores P0 concluidos             |           |           |             |      |
 | Build, lint e suite completa           |           |           |             |      |
 | E2E sandbox 3x                         | PASS      | 3/3 no commit `c74554e`; IDs no registro de execucoes | Codex + QA | 2026-08-27 |
-| Webhook externo em staging             |           |           |             |      |
+| Webhook externo em staging             | BLOCKED   | Staging ainda nao provisionado | Responsavel de infraestrutura | 2026-08-28 |
 | Alertas testados                       |           |           |             |      |
 | Runbook validado                       |           |           |             |      |
 | Backup/restauracao testados            |           |           |             |      |
@@ -477,3 +481,4 @@ payloads sensiveis.
 | 2026-08-27 23:15 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 1/3 | PASS | pedido `01a04581-82af-7698-801c-389070b931d9`; checkout `bill_5KCy3rLhTjtC2eJfsW0KDxSw`; etiqueta `BZMg4m09lNrVniO3SlqC`; 1 fulfillment; 1 e-mail; 40,77s | Codex + QA |
 | 2026-08-27 23:16 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 2/3 | PASS | pedido `01a04582-e8ae-7689-aaf5-599a803d3997`; checkout `bill_EgrjkwkYGUL0he3fSH3qn3gq`; etiqueta `87MAV5X4AhrxayvqxZZM`; 1 fulfillment; 1 e-mail; 40,42s | Codex + QA |
 | 2026-08-27 23:18 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 3/3 | PASS | pedido `01a04584-75bf-76ed-9a7f-74a7a36150f8`; checkout `bill_M3ujjFSXfCDgaD1S63qzFfc3`; etiqueta `HDBHJzjHxc4gqwU0JW9y`; 1 fulfillment; 1 e-mail; 39,04s | Codex + QA |
+| 2026-08-28 | staging | `95df3d3` | GL-021 webhook externo | BLOCKED | Backend staging, URL HTTPS publica e acesso a deploy/logs inexistentes | Responsavel de infraestrutura |
