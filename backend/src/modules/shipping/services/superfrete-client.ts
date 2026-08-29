@@ -206,10 +206,8 @@ export class SuperFreteClient {
             },
             body: body ? JSON.stringify(body) : undefined,
             signal: AbortSignal.timeout(this.config.timeoutMs)
-        }).catch((error: Error) => {
-            throw AppError.serviceUnavailable(
-                `Falha ao comunicar com o SuperFrete: ${error.message}`
-            );
+        }).catch(() => {
+            throw AppError.serviceUnavailable("Falha ao comunicar com o SuperFrete");
         });
 
         const text = await response.text();
@@ -224,14 +222,7 @@ export class SuperFreteClient {
         }
 
         if (!response.ok) {
-            const detail =
-                typeof data === "string"
-                    ? data
-                    : JSON.stringify(data ?? { status: response.status }).slice(0, 500);
-
-            throw AppError.serviceUnavailable(
-                `SuperFrete respondeu com erro ${response.status}: ${detail}`
-            );
+            throw AppError.serviceUnavailable(`SuperFrete respondeu com erro ${response.status}`);
         }
 
         return data;

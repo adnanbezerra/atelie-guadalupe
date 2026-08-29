@@ -85,3 +85,52 @@ test("provider request result is preserved when telemetry observer throws", asyn
         global.fetch = originalFetch;
     }
 });
+
+test("provider errors never expose response payloads or transport details", async () => {
+    const originalFetch = global.fetch;
+    const personalData = "12345678900 customer@example.com bearer-secret";
+    try {
+        global.fetch = async () =>
+            new Response(JSON.stringify({ success: false, error: personalData, data: null }), {
+                status: 422,
+                headers: { "content-type": "application/json" }
+            });
+        const abacate = new AbacatePayClient({
+            apiKey: "secret",
+            baseUrl: "https://provider.invalid",
+            timeoutMs: 100
+        });
+        await assert.rejects(
+            () => abacate.createProduct({ externalId: "test", name: "Test", price: 100 }),
+            (error: Error) =>
+                error.message === "AbacatePay respondeu com erro 422" &&
+                !error.message.includes(personalData)
+        );
+
+        global.fetch = async () => new Response(personalData, { status: 400 });
+        const superfrete = new SuperFreteClient({
+            token: "secret",
+            userAgent: "test",
+            baseUrl: "https://provider.invalid",
+            timeoutMs: 100
+        });
+        await assert.rejects(
+            () => superfrete.getOrderInfo("order-1"),
+            (error: Error) =>
+                error.message === "SuperFrete respondeu com erro 400" &&
+                !error.message.includes(personalData)
+        );
+
+        global.fetch = async () => {
+            throw new Error(personalData);
+        };
+        await assert.rejects(
+            () => superfrete.getOrderInfo("order-1"),
+            (error: Error) =>
+                error.message === "Falha ao comunicar com o SuperFrete" &&
+                !error.message.includes(personalData)
+        );
+    } finally {
+        global.fetch = originalFetch;
+    }
+});

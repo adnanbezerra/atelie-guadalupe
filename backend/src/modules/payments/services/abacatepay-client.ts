@@ -218,19 +218,15 @@ export class AbacatePayClient {
             },
             body: body === undefined ? undefined : JSON.stringify(body),
             signal: AbortSignal.timeout(this.config.timeoutMs)
-        }).catch((error: Error) => {
-            throw AppError.serviceUnavailable(
-                `Falha ao comunicar com a AbacatePay: ${error.message}`
-            );
+        }).catch(() => {
+            throw AppError.serviceUnavailable("Falha ao comunicar com a AbacatePay");
         });
 
         const payload = (await response
             .json()
             .catch(() => null)) as AbacatePaginatedEnvelope<T> | null;
         if (!response.ok || !payload?.success || payload.data === null) {
-            throw AppError.serviceUnavailable(
-                `AbacatePay respondeu com erro ${response.status}: ${payload?.error ?? "resposta invalida"}`
-            );
+            throw AppError.serviceUnavailable(`AbacatePay respondeu com erro ${response.status}`);
         }
         if (path.startsWith("/checkouts/") && path !== "/checkouts/refund") {
             this.assertExpectedDevMode(payload, path.startsWith("/checkouts/list"));
