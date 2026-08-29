@@ -5,8 +5,8 @@ import { validateEnv } from "../../src/config/env";
 const validEnvironment: NodeJS.ProcessEnv = {
     NODE_ENV: "production",
     PORT: "3000",
-    DATABASE_URL: "postgresql://user:password@database.example.com:5432/app",
-    JWT_SECRET: "production-secret",
+    DATABASE_URL: "postgresql://user:password@database.example.com:5432/app?sslmode=require",
+    JWT_SECRET: "1vZ9qL7nY2rT8mK4xP6cD3wF5sH0jB9uE7aN",
     CORS_ORIGIN: "https://atelie.example.com,https://admin.atelie.example.com",
     MONGODB_URL: "mongodb://database.example.com:27017",
     MONGODB_DB_NAME: "media",
@@ -22,7 +22,11 @@ const validEnvironment: NodeJS.ProcessEnv = {
     PAYMENT_LINK_PUBLIC_BASE_URL: "https://atelie.example.com/checkout/manual",
     RESEND_API_KEY: "resend-key",
     EMAIL_FROM: "Atelie Guadalupe <contato@example.com>",
+    EMAIL_REPLY_TO: "suporte@example.com",
     FRONTEND_URL: "https://atelie.example.com",
+    FULFILLMENT_WORKER_ENABLED: "true",
+    EMAIL_WORKER_ENABLED: "true",
+    SHIPPING_TRACKING_WORKER_ENABLED: "true",
     CHECKOUT_ENABLED: "true",
     CHECKOUT_OBSERVABILITY_ENABLED: "true",
     CHECKOUT_ALERT_CHANNEL: "operations-checkout",
@@ -129,6 +133,70 @@ test("production requires explicit SuperFrete URL, environment and checkout flag
             error.message.includes("SUPERFRETE_EXPECTED_ENVIRONMENT: obrigatoria em producao") &&
             error.message.includes("CHECKOUT_ENABLED: obrigatoria em producao")
     );
+});
+
+test("production requires TLS for PostgreSQL and a strong JWT secret", () => {
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                DATABASE_URL: "postgresql://user:password@database.example.com:5432/app",
+                JWT_SECRET: "change-me"
+            }),
+        (error: Error) =>
+            error.message.includes("DATABASE_URL: deve exigir TLS") &&
+            error.message.includes("JWT_SECRET: deve possuir pelo menos 32 bytes")
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                JWT_SECRET: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }),
+        /JWT_SECRET: possui pouca variacao/
+    );
+
+    for (const databaseUrl of [
+        "mysql://user:password@database.example.com/app?sslmode=require",
+        "postgresql://user:password@database.example.com/app?sslmode=require&sslmode=disable",
+        "postgresql://user:password@database.example.com/app?sslmode=disable&sslmode=require"
+    ]) {
+        assert.throws(
+            () => validateEnv({ ...validEnvironment, DATABASE_URL: databaseUrl }),
+            /DATABASE_URL/
+        );
+    }
+});
+
+test("production requires explicit worker flags and email reply-to", () => {
+    const {
+        FULFILLMENT_WORKER_ENABLED: _fulfillment,
+        EMAIL_WORKER_ENABLED: _email,
+        SHIPPING_TRACKING_WORKER_ENABLED: _tracking,
+        EMAIL_REPLY_TO: _replyTo,
+        ...environment
+    } = validEnvironment;
+
+    assert.throws(
+        () => validateEnv(environment),
+        (error: Error) =>
+            error.message.includes("FULFILLMENT_WORKER_ENABLED: obrigatoria") &&
+            error.message.includes("EMAIL_WORKER_ENABLED: obrigatoria") &&
+            error.message.includes("SHIPPING_TRACKING_WORKER_ENABLED: obrigatoria") &&
+            error.message.includes("EMAIL_REPLY_TO: obrigatoria")
+    );
+});
+
+test("production validates sender email without changing development defaults", () => {
+    assert.throws(
+        () => validateEnv({ ...validEnvironment, EMAIL_FROM: "invalid sender" }),
+        /EMAIL_FROM: deve conter remetente de email valido/
+    );
+
+    const environment = validateEnv({ NODE_ENV: "test" });
+    assert.equal(environment.FULFILLMENT_WORKER_ENABLED, "true");
+    assert.equal(environment.EMAIL_WORKER_ENABLED, "true");
+    assert.equal(environment.SHIPPING_TRACKING_WORKER_ENABLED, "true");
 });
 
 test("production accepts explicitly expected SuperFrete sandbox configuration", () => {

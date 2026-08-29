@@ -13,14 +13,16 @@ const optionalUrl = z.preprocess(emptyToUndefined, z.url().optional());
 const optionalEmail = z.preprocess(emptyToUndefined, z.email().optional());
 const positiveInteger = (defaultValue: number) =>
     z.coerce.number().int().positive().default(defaultValue);
-const enabledFlag = z.enum(["true", "false"]).default("true");
+const enabledFlag = z.enum(["true", "false"]).optional();
 const checkoutEnabledFlag = z.enum(["true", "false"]).optional();
 const expectedDevModeFlag = z.enum(["true", "false"]).optional();
 const expectedSuperFreteEnvironment = z.enum(["sandbox", "production"]).optional();
 
-const SUPERFRETE_PRODUCTION_URL = "https://api.superfrete.com/api/v0";
-const SUPERFRETE_SANDBOX_URL = "https://sandbox.superfrete.com/api/v0";
-const ABACATEPAY_V2_URL = "https://api.abacatepay.com/v2";
+export const SUPERFRETE_PRODUCTION_URL = "https://api.superfrete.com/api/v0";
+export const SUPERFRETE_SANDBOX_URL = "https://sandbox.superfrete.com/api/v0";
+export const ABACATEPAY_V2_URL = "https://api.abacatepay.com/v2";
+const PRODUCTION_DATABASE_SSL_MODES = new Set(["require", "verify-ca", "verify-full"]);
+const UNSAFE_JWT_SECRETS = ["change-me", "dev-secret", "test-secret", "production-secret"];
 
 function isPrivateHostname(hostname: string) {
     const normalized = hostname
@@ -91,6 +93,39 @@ function operationalProductionUrlIssue(value: string) {
         return "nao pode usar dominio reservado ou placeholder em producao";
     }
     return null;
+}
+
+function productionDatabaseUrlIssue(value: string) {
+    let url: URL;
+    try {
+        url = new URL(value);
+    } catch {
+        return "deve ser uma URL PostgreSQL valida";
+    }
+    if (url.protocol !== "postgresql:" && url.protocol !== "postgres:") {
+        return "deve usar protocolo PostgreSQL em producao";
+    }
+    const sslModes = url.searchParams.getAll("sslmode");
+    if (sslModes.length !== 1 || !PRODUCTION_DATABASE_SSL_MODES.has(sslModes[0])) {
+        return "deve exigir TLS com sslmode=require, verify-ca ou verify-full em producao";
+    }
+    return null;
+}
+
+function productionJwtSecretIssue(value: string) {
+    if (Buffer.byteLength(value, "utf8") < 32) return "deve possuir pelo menos 32 bytes";
+    const normalized = value.toLowerCase();
+    if (UNSAFE_JWT_SECRETS.some((unsafe) => normalized.includes(unsafe))) {
+        return "nao pode usar valor conhecido de desenvolvimento ou placeholder";
+    }
+    if (new Set(value).size < 8) return "possui pouca variacao de caracteres";
+    return null;
+}
+
+function emailSenderIssue(value: string) {
+    const bracketed = value.match(/^.+\s<([^<>]+)>$/);
+    const address = bracketed?.[1] ?? value;
+    return z.email().safeParse(address).success ? null : "deve conter remetente de email valido";
 }
 
 const envSchema = z
@@ -248,6 +283,14 @@ const envSchema = z
                 message: "obrigatoria em producao"
             });
         }
+        if (environment.DATABASE_URL) {
+            const message = productionDatabaseUrlIssue(environment.DATABASE_URL);
+            if (message) context.addIssue({ code: "custom", path: ["DATABASE_URL"], message });
+        }
+        if (environment.JWT_SECRET) {
+            const message = productionJwtSecretIssue(environment.JWT_SECRET);
+            if (message) context.addIssue({ code: "custom", path: ["JWT_SECRET"], message });
+        }
         if (!environment.SUPERFRETE_EXPECTED_ENVIRONMENT) {
             context.addIssue({
                 code: "custom",
@@ -297,6 +340,30 @@ const envSchema = z
                 path: ["CHECKOUT_ENABLED"],
                 message: "obrigatoria em producao"
             });
+        }
+        for (const name of [
+            "FULFILLMENT_WORKER_ENABLED",
+            "EMAIL_WORKER_ENABLED",
+            "SHIPPING_TRACKING_WORKER_ENABLED"
+        ] as const) {
+            if (!environment[name]) {
+                context.addIssue({
+                    code: "custom",
+                    path: [name],
+                    message: "obrigatoria em producao"
+                });
+            }
+        }
+        if (!environment.EMAIL_REPLY_TO) {
+            context.addIssue({
+                code: "custom",
+                path: ["EMAIL_REPLY_TO"],
+                message: "obrigatoria em producao"
+            });
+        }
+        if (environment.EMAIL_FROM) {
+            const message = emailSenderIssue(environment.EMAIL_FROM);
+            if (message) context.addIssue({ code: "custom", path: ["EMAIL_FROM"], message });
         }
         if (environment.CHECKOUT_OBSERVABILITY_ENABLED !== "true") {
             context.addIssue({
@@ -390,7 +457,10 @@ const envSchema = z
         SUPERFRETE_EXPECTED_ENVIRONMENT: environment.SUPERFRETE_EXPECTED_ENVIRONMENT ?? "sandbox",
         CHECKOUT_ENABLED: environment.CHECKOUT_ENABLED ?? "true",
         CHECKOUT_OBSERVABILITY_ENABLED: environment.CHECKOUT_OBSERVABILITY_ENABLED ?? "true",
-        ABACATEPAY_EXPECTED_DEV_MODE: environment.ABACATEPAY_EXPECTED_DEV_MODE ?? "true"
+        ABACATEPAY_EXPECTED_DEV_MODE: environment.ABACATEPAY_EXPECTED_DEV_MODE ?? "true",
+        FULFILLMENT_WORKER_ENABLED: environment.FULFILLMENT_WORKER_ENABLED ?? "true",
+        EMAIL_WORKER_ENABLED: environment.EMAIL_WORKER_ENABLED ?? "true",
+        SHIPPING_TRACKING_WORKER_ENABLED: environment.SHIPPING_TRACKING_WORKER_ENABLED ?? "true"
     }));
 
 export type Env = z.infer<typeof envSchema>;
