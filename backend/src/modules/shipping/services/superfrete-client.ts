@@ -1,4 +1,9 @@
 import { AppError } from "../../../core/errors/app-error";
+import {
+    observeProviderRequest,
+    ProviderRequestObservation,
+    safelyObserveProviderRequest
+} from "../../observability/checkout-telemetry";
 
 type SuperFreteRequestOptions = {
     method: "GET" | "POST";
@@ -93,7 +98,12 @@ function normalizeDocument(value?: string) {
 }
 
 export class SuperFreteClient {
-    public constructor(private readonly config: SuperFreteClientConfig) {}
+    public constructor(
+        private readonly config: SuperFreteClientConfig,
+        private readonly observer: (
+            observation: ProviderRequestObservation
+        ) => void = observeProviderRequest
+    ) {}
 
     public static fromEnv() {
         return new SuperFreteClient({
@@ -161,6 +171,29 @@ export class SuperFreteClient {
     }
 
     private async request({ method, path, body }: SuperFreteRequestOptions): Promise<unknown> {
+        const startedAt = Date.now();
+        try {
+            const result = await this.performRequest({ method, path, body });
+            safelyObserveProviderRequest(this.observer, {
+                provider: "SUPERFRETE",
+                operation: `${method} ${path}`,
+                result: "success",
+                durationMs: Date.now() - startedAt
+            });
+            return result;
+        } catch (error) {
+            safelyObserveProviderRequest(this.observer, {
+                provider: "SUPERFRETE",
+                operation: `${method} ${path}`,
+                result: "error",
+                durationMs: Date.now() - startedAt,
+                statusCode: statusCode(error)
+            });
+            throw error;
+        }
+    }
+
+    private async performRequest({ method, path, body }: SuperFreteRequestOptions) {
         this.ensureConfigured();
 
         const response = await fetch(`${this.config.baseUrl}${path}`, {
@@ -203,6 +236,12 @@ export class SuperFreteClient {
 
         return data;
     }
+}
+
+function statusCode(error: unknown) {
+    if (!error || typeof error !== "object" || !("statusCode" in error)) return undefined;
+    const value = (error as { statusCode?: unknown }).statusCode;
+    return typeof value === "number" ? value : undefined;
 }
 
 export function normalizeSuperFreteRecipient(input: {

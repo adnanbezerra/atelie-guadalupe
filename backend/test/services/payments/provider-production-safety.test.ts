@@ -145,6 +145,159 @@ test("checkout lookup follows provider cursor when result is not on first page",
     assert.match(requestedUrls[1], /after=cursor-2/);
 });
 
+test("checkout listing applies filters and returns every provider page", async (context) => {
+    const requestedUrls: string[] = [];
+    context.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+        const url = String(input);
+        requestedUrls.push(url);
+        return Response.json({
+            success: true,
+            error: null,
+            data: [
+                {
+                    id: url.includes("after=next") ? "bill-2" : "bill-1",
+                    externalId: url.includes("after=next") ? "order-2" : "order-1",
+                    url: "https://example.test/checkout",
+                    amount: 1000,
+                    paidAmount: 1000,
+                    status: "PAID",
+                    devMode: true
+                }
+            ],
+            pagination: url.includes("after=next")
+                ? { hasMore: false, next: null }
+                : { hasMore: true, next: "next" }
+        });
+    });
+    const client = new AbacatePayClient({
+        apiKey: "test-key",
+        baseUrl: "https://api.abacatepay.com/v2",
+        timeoutMs: 1000,
+        expectedDevMode: true
+    });
+
+    const checkouts = await client.listCheckouts({
+        status: "PAID"
+    });
+
+    assert.deepEqual(
+        checkouts.map((item) => item.id),
+        ["bill-1", "bill-2"]
+    );
+    assert.match(requestedUrls[0], /status=PAID/);
+    assert.match(requestedUrls[1], /after=next/);
+    assert.ok(requestedUrls.every((url) => !/[?&](startDate|endDate)=/.test(url)));
+});
+
+test("checkout listing fails closed on incomplete or duplicate pagination", async (context) => {
+    const client = new AbacatePayClient({
+        apiKey: "test-key",
+        baseUrl: "https://api.abacatepay.com/v2",
+        timeoutMs: 1000,
+        expectedDevMode: true
+    });
+    context.mock.method(globalThis, "fetch", async () =>
+        Response.json({
+            success: true,
+            error: null,
+            data: [checkoutListItem("bill-1")],
+            pagination: { hasMore: true, next: null }
+        })
+    );
+    await assert.rejects(client.listCheckouts(), /sem proximo cursor/);
+
+    let page = 0;
+    context.mock.restoreAll();
+    context.mock.method(globalThis, "fetch", async () => {
+        page += 1;
+        return Response.json({
+            success: true,
+            error: null,
+            data: [checkoutListItem("bill-1")],
+            pagination:
+                page === 1 ? { hasMore: true, next: "next" } : { hasMore: false, next: null }
+        });
+    });
+    await assert.rejects(client.listCheckouts(), /repetiu checkout/);
+});
+
+test("checkout listing enforces configured record ceiling", async (context) => {
+    context.mock.method(globalThis, "fetch", async () =>
+        Response.json({
+            success: true,
+            error: null,
+            data: [checkoutListItem("bill-1"), checkoutListItem("bill-2")],
+            pagination: { hasMore: false, next: null }
+        })
+    );
+    const client = new AbacatePayClient({
+        apiKey: "test-key",
+        baseUrl: "https://api.abacatepay.com/v2",
+        timeoutMs: 1000,
+        expectedDevMode: true,
+        maxCheckoutListRecords: 1
+    });
+
+    await assert.rejects(client.listCheckouts(), /limite operacional/);
+});
+
+test("checkout listing enforces configured page ceiling", async (context) => {
+    let requests = 0;
+    context.mock.method(globalThis, "fetch", async () => {
+        requests += 1;
+        return Response.json({
+            success: true,
+            error: null,
+            data: [],
+            pagination: { hasMore: true, next: `cursor-${requests}` }
+        });
+    });
+    const client = new AbacatePayClient({
+        apiKey: "test-key",
+        baseUrl: "https://api.abacatepay.com/v2",
+        timeoutMs: 1000,
+        expectedDevMode: true,
+        maxCheckoutListPages: 1
+    });
+
+    await assert.rejects(client.listCheckouts(), /limite operacional de paginas/);
+    assert.equal(requests, 1);
+});
+
+test("checkout lookup fails closed on duplicate externalId", async (context) => {
+    context.mock.method(globalThis, "fetch", async () =>
+        Response.json({
+            success: true,
+            error: null,
+            data: [
+                { ...checkoutListItem("bill-1"), externalId: "order-1" },
+                { ...checkoutListItem("bill-2"), externalId: "order-1" }
+            ],
+            pagination: { hasMore: false, next: null }
+        })
+    );
+    const client = new AbacatePayClient({
+        apiKey: "test-key",
+        baseUrl: "https://api.abacatepay.com/v2",
+        timeoutMs: 1000,
+        expectedDevMode: true
+    });
+
+    await assert.rejects(client.findCheckoutByExternalId("order-1"), /mesmo externalId/);
+});
+
+function checkoutListItem(id: string) {
+    return {
+        id,
+        externalId: `order-${id}`,
+        url: "https://example.test/checkout",
+        amount: 1000,
+        paidAmount: 1000,
+        status: "PAID",
+        devMode: true
+    };
+}
+
 test("staging rejects checkout response outside expected development mode", async (context) => {
     context.mock.method(globalThis, "fetch", async () =>
         Response.json({

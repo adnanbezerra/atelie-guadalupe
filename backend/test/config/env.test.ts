@@ -23,7 +23,12 @@ const validEnvironment: NodeJS.ProcessEnv = {
     RESEND_API_KEY: "resend-key",
     EMAIL_FROM: "Atelie Guadalupe <contato@example.com>",
     FRONTEND_URL: "https://atelie.example.com",
-    CHECKOUT_ENABLED: "true"
+    CHECKOUT_ENABLED: "true",
+    CHECKOUT_OBSERVABILITY_ENABLED: "true",
+    CHECKOUT_ALERT_CHANNEL: "operations-checkout",
+    CHECKOUT_ALERT_OWNER: "responsavel-tecnico",
+    CHECKOUT_LOG_QUERY_URL: "https://logs.atelieguadalupe.com/checkout",
+    CHECKOUT_RUNBOOK_URL: "https://docs.atelieguadalupe.com/checkout-runbook"
 };
 
 test("environment validation accepts a complete production configuration", () => {
@@ -34,7 +39,79 @@ test("environment validation accepts a complete production configuration", () =>
     assert.equal(environment.EMAIL_WORKER_ENABLED, "true");
     assert.equal(environment.CHECKOUT_ENABLED, "true");
     assert.equal(environment.FULFILLMENT_WORKER_MAX_ATTEMPTS, 8);
+    assert.equal(environment.FULFILLMENT_TRANSACTION_TIMEOUT_MS, 70000);
     assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "false");
+    assert.equal(environment.CHECKOUT_OBSERVABILITY_ENABLED, "true");
+});
+
+test("fulfillment transaction timeout covers every provider call plus DB margin", () => {
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                SUPERFRETE_TIMEOUT_MS: "20000",
+                FULFILLMENT_TRANSACTION_TIMEOUT_MS: "89999"
+            }),
+        (error: Error) =>
+            error.message.includes("FULFILLMENT_TRANSACTION_TIMEOUT_MS: deve ser no minimo 90000")
+    );
+
+    const environment = validateEnv({
+        ...validEnvironment,
+        SUPERFRETE_TIMEOUT_MS: "20000",
+        FULFILLMENT_TRANSACTION_TIMEOUT_MS: "90000"
+    });
+    assert.equal(environment.FULFILLMENT_TRANSACTION_TIMEOUT_MS, 90000);
+});
+
+test("fulfillment worker lease outlives the financial transaction", () => {
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                FULFILLMENT_TRANSACTION_TIMEOUT_MS: "70000",
+                FULFILLMENT_WORKER_LOCK_TIMEOUT_MS: "79999"
+            }),
+        (error: Error) =>
+            error.message.includes("FULFILLMENT_WORKER_LOCK_TIMEOUT_MS: deve ser no minimo 80000")
+    );
+});
+
+test("production requires enabled and actionable checkout observability", () => {
+    const environment = {
+        ...validEnvironment,
+        CHECKOUT_OBSERVABILITY_ENABLED: "false",
+        CHECKOUT_ALERT_CHANNEL: undefined,
+        CHECKOUT_ALERT_OWNER: undefined,
+        CHECKOUT_LOG_QUERY_URL: undefined,
+        CHECKOUT_RUNBOOK_URL: undefined
+    };
+
+    assert.throws(
+        () => validateEnv(environment),
+        (error: Error) =>
+            error.message.includes("CHECKOUT_OBSERVABILITY_ENABLED: deve ser true") &&
+            error.message.includes("CHECKOUT_ALERT_CHANNEL: obrigatoria") &&
+            error.message.includes("CHECKOUT_ALERT_OWNER: obrigatoria") &&
+            error.message.includes("CHECKOUT_LOG_QUERY_URL: obrigatoria") &&
+            error.message.includes("CHECKOUT_RUNBOOK_URL: obrigatoria")
+    );
+});
+
+test("production requires safe real HTTPS observability URLs", () => {
+    const unsafeValues = [
+        ["CHECKOUT_LOG_QUERY_URL", "http://logs.atelieguadalupe.com/checkout", "HTTPS"],
+        ["CHECKOUT_LOG_QUERY_URL", "https://user:secret@logs.atelieguadalupe.com", "credenciais"],
+        ["CHECKOUT_RUNBOOK_URL", "https://localhost/runbook", "local ou privado"],
+        ["CHECKOUT_RUNBOOK_URL", "https://docs.example.com/runbook", "placeholder"]
+    ] as const;
+
+    for (const [name, value, message] of unsafeValues) {
+        assert.throws(
+            () => validateEnv({ ...validEnvironment, [name]: value }),
+            (error: Error) => error.message.includes(`${name}:`) && error.message.includes(message)
+        );
+    }
 });
 
 test("production requires explicit SuperFrete URL, environment and checkout flag", () => {
@@ -49,9 +126,7 @@ test("production requires explicit SuperFrete URL, environment and checkout flag
         () => validateEnv(environment),
         (error: Error) =>
             error.message.includes("SUPERFRETE_BASE_URL: obrigatoria em producao") &&
-            error.message.includes(
-                "SUPERFRETE_EXPECTED_ENVIRONMENT: obrigatoria em producao"
-            ) &&
+            error.message.includes("SUPERFRETE_EXPECTED_ENVIRONMENT: obrigatoria em producao") &&
             error.message.includes("CHECKOUT_ENABLED: obrigatoria em producao")
     );
 });

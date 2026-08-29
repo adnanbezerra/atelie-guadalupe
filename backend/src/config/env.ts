@@ -1,5 +1,9 @@
 import { isIP } from "node:net";
 import { z } from "zod";
+import {
+    minimumFulfillmentTransactionTimeoutMs,
+    minimumFulfillmentWorkerLockTimeoutMs
+} from "../core/config/fulfillment-timing";
 
 const emptyToUndefined = (value: unknown) =>
     typeof value === "string" && value.trim() === "" ? undefined : value;
@@ -19,7 +23,10 @@ const SUPERFRETE_SANDBOX_URL = "https://sandbox.superfrete.com/api/v0";
 const ABACATEPAY_V2_URL = "https://api.abacatepay.com/v2";
 
 function isPrivateHostname(hostname: string) {
-    const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+    const normalized = hostname
+        .toLowerCase()
+        .replace(/^\[|\]$/g, "")
+        .replace(/\.$/, "");
     if (
         normalized === "localhost" ||
         normalized.endsWith(".localhost") ||
@@ -70,6 +77,22 @@ function publicProductionUrlIssue(value: string) {
     return null;
 }
 
+function operationalProductionUrlIssue(value: string) {
+    const publicIssue = publicProductionUrlIssue(value);
+    if (publicIssue) return publicIssue;
+    const hostname = new URL(value).hostname.toLowerCase().replace(/\.$/, "");
+    if (
+        hostname === "example.com" ||
+        hostname.endsWith(".example.com") ||
+        hostname.endsWith(".example") ||
+        hostname.endsWith(".invalid") ||
+        hostname.endsWith(".test")
+    ) {
+        return "nao pode usar dominio reservado ou placeholder em producao";
+    }
+    return null;
+}
+
 const envSchema = z
     .object({
         NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -115,10 +138,18 @@ const envSchema = z
         ABACATEPAY_EXPECTED_DEV_MODE: expectedDevModeFlag,
         PAYMENT_LINK_PUBLIC_BASE_URL: optionalUrl,
         CHECKOUT_ENABLED: checkoutEnabledFlag,
+        CHECKOUT_OBSERVABILITY_ENABLED: z.enum(["true", "false"]).optional(),
+        CHECKOUT_OBSERVABILITY_INTERVAL_MS: positiveInteger(60000),
+        PAYMENT_PENDING_ALERT_MINUTES: positiveInteger(30),
+        CHECKOUT_ALERT_CHANNEL: optionalString,
+        CHECKOUT_ALERT_OWNER: optionalString,
+        CHECKOUT_LOG_QUERY_URL: optionalUrl,
+        CHECKOUT_RUNBOOK_URL: optionalUrl,
         FULFILLMENT_WORKER_ENABLED: enabledFlag,
         FULFILLMENT_WORKER_INTERVAL_MS: positiveInteger(30000),
         FULFILLMENT_WORKER_LOCK_TIMEOUT_MS: positiveInteger(300000),
         FULFILLMENT_WORKER_MAX_ATTEMPTS: positiveInteger(8),
+        FULFILLMENT_TRANSACTION_TIMEOUT_MS: positiveInteger(70000),
         RESEND_API_KEY: optionalString,
         EMAIL_FROM: optionalString,
         EMAIL_REPLY_TO: optionalEmail,
@@ -132,6 +163,27 @@ const envSchema = z
         SHIPPING_TRACKING_LOCK_TIMEOUT_MS: positiveInteger(300000)
     })
     .superRefine((environment, context) => {
+        const minimumFulfillmentTimeout = minimumFulfillmentTransactionTimeoutMs(
+            environment.SUPERFRETE_TIMEOUT_MS
+        );
+        if (environment.FULFILLMENT_TRANSACTION_TIMEOUT_MS < minimumFulfillmentTimeout) {
+            context.addIssue({
+                code: "custom",
+                path: ["FULFILLMENT_TRANSACTION_TIMEOUT_MS"],
+                message: `deve ser no minimo ${minimumFulfillmentTimeout} (4 chamadas SuperFrete + 10000ms de margem)`
+            });
+        }
+        const minimumWorkerLockTimeout = minimumFulfillmentWorkerLockTimeoutMs(
+            environment.FULFILLMENT_TRANSACTION_TIMEOUT_MS
+        );
+        if (environment.FULFILLMENT_WORKER_LOCK_TIMEOUT_MS < minimumWorkerLockTimeout) {
+            context.addIssue({
+                code: "custom",
+                path: ["FULFILLMENT_WORKER_LOCK_TIMEOUT_MS"],
+                message: `deve ser no minimo ${minimumWorkerLockTimeout} (timeout transacional + 10000ms de margem)`
+            });
+        }
+
         const effectiveSuperFreteEnvironment =
             environment.SUPERFRETE_EXPECTED_ENVIRONMENT ??
             (environment.NODE_ENV === "production" ? undefined : "sandbox");
@@ -246,6 +298,33 @@ const envSchema = z
                 message: "obrigatoria em producao"
             });
         }
+        if (environment.CHECKOUT_OBSERVABILITY_ENABLED !== "true") {
+            context.addIssue({
+                code: "custom",
+                path: ["CHECKOUT_OBSERVABILITY_ENABLED"],
+                message: "deve ser true em producao"
+            });
+        }
+        for (const name of [
+            "CHECKOUT_ALERT_CHANNEL",
+            "CHECKOUT_ALERT_OWNER",
+            "CHECKOUT_LOG_QUERY_URL",
+            "CHECKOUT_RUNBOOK_URL"
+        ] as const) {
+            if (!environment[name]) {
+                context.addIssue({
+                    code: "custom",
+                    path: [name],
+                    message: "obrigatoria em producao"
+                });
+            }
+        }
+        for (const name of ["CHECKOUT_LOG_QUERY_URL", "CHECKOUT_RUNBOOK_URL"] as const) {
+            const value = environment[name];
+            if (!value) continue;
+            const message = operationalProductionUrlIssue(value);
+            if (message) context.addIssue({ code: "custom", path: [name], message });
+        }
 
         const publicUrls = [
             "ABACATEPAY_RETURN_URL",
@@ -307,11 +386,10 @@ const envSchema = z
     })
     .transform((environment) => ({
         ...environment,
-        SUPERFRETE_BASE_URL:
-            environment.SUPERFRETE_BASE_URL ?? SUPERFRETE_SANDBOX_URL,
-        SUPERFRETE_EXPECTED_ENVIRONMENT:
-            environment.SUPERFRETE_EXPECTED_ENVIRONMENT ?? "sandbox",
+        SUPERFRETE_BASE_URL: environment.SUPERFRETE_BASE_URL ?? SUPERFRETE_SANDBOX_URL,
+        SUPERFRETE_EXPECTED_ENVIRONMENT: environment.SUPERFRETE_EXPECTED_ENVIRONMENT ?? "sandbox",
         CHECKOUT_ENABLED: environment.CHECKOUT_ENABLED ?? "true",
+        CHECKOUT_OBSERVABILITY_ENABLED: environment.CHECKOUT_OBSERVABILITY_ENABLED ?? "true",
         ABACATEPAY_EXPECTED_DEV_MODE: environment.ABACATEPAY_EXPECTED_DEV_MODE ?? "true"
     }));
 

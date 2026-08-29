@@ -1,5 +1,10 @@
 import { AppError } from "../../../core/errors/app-error";
 import { expectedAbacatePayDevMode } from "../../../config/env";
+import {
+    observeProviderRequest,
+    ProviderRequestObservation,
+    safelyObserveProviderRequest
+} from "../../observability/checkout-telemetry";
 
 type RequestOptions = { method: "GET" | "POST"; path: string; body?: unknown };
 
@@ -18,6 +23,12 @@ export type AbacateCheckout = {
     status: string;
     devMode?: boolean;
     metadata?: Record<string, unknown>;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type AbacateCheckoutListFilters = {
+    status?: "PENDING" | "EXPIRED" | "CANCELLED" | "PAID" | "REFUNDED";
 };
 
 export class AbacatePayClient {
@@ -27,7 +38,12 @@ export class AbacatePayClient {
             baseUrl: string;
             timeoutMs: number;
             expectedDevMode?: boolean;
-        }
+            maxCheckoutListRecords?: number;
+            maxCheckoutListPages?: number;
+        },
+        private readonly observer: (
+            observation: ProviderRequestObservation
+        ) => void = observeProviderRequest
     ) {}
 
     public static fromEnv() {
@@ -35,7 +51,11 @@ export class AbacatePayClient {
             apiKey: process.env.ABACATEPAY_API_KEY ?? "",
             baseUrl: process.env.ABACATEPAY_BASE_URL ?? "https://api.abacatepay.com/v2",
             timeoutMs: Number(process.env.ABACATEPAY_TIMEOUT_MS ?? 15000),
-            expectedDevMode: expectedAbacatePayDevMode()
+            expectedDevMode: expectedAbacatePayDevMode(),
+            maxCheckoutListRecords: Number(
+                process.env.ABACATEPAY_RECONCILIATION_MAX_RECORDS ?? 100000
+            ),
+            maxCheckoutListPages: Number(process.env.ABACATEPAY_RECONCILIATION_MAX_PAGES ?? 2000)
         });
     }
 
@@ -68,18 +88,68 @@ export class AbacatePayClient {
     }
 
     public async findCheckoutByExternalId(externalId: string) {
+        const checkouts = await this.listCheckouts({ externalId });
+        if (checkouts.length > 1) {
+            throw AppError.serviceUnavailable(
+                "AbacatePay retornou mais de um checkout para o mesmo externalId"
+            );
+        }
+        return checkouts[0] ?? null;
+    }
+
+    public async listCheckouts(filters: AbacateCheckoutListFilters & { externalId?: string } = {}) {
         let after: string | null = null;
         const visitedCursors = new Set<string>();
+        const visitedCheckoutIds = new Set<string>();
+        const checkouts: AbacateCheckout[] = [];
+        const maxRecords = this.config.maxCheckoutListRecords ?? 100000;
+        const maxPages = this.config.maxCheckoutListPages ?? 2000;
+        if (
+            !Number.isInteger(maxRecords) ||
+            maxRecords <= 0 ||
+            !Number.isInteger(maxPages) ||
+            maxPages <= 0
+        ) {
+            throw AppError.serviceUnavailable("Limite da listagem AbacatePay invalido");
+        }
+        let pages = 0;
         do {
-            const query = new URLSearchParams({ externalId, limit: "100" });
+            pages += 1;
+            if (pages > maxPages) {
+                throw AppError.serviceUnavailable(
+                    "Listagem AbacatePay excedeu limite operacional de paginas"
+                );
+            }
+            const query = new URLSearchParams({ limit: "100" });
+            if (filters.externalId) query.set("externalId", filters.externalId);
+            if (filters.status) query.set("status", filters.status);
             if (after) query.set("after", after);
             const response = await this.requestEnvelope<AbacateCheckout[]>({
                 method: "GET",
                 path: `/checkouts/list?${query.toString()}`
             });
-            const checkout = response.data.find((item) => item.externalId === externalId);
-            if (checkout) return checkout;
-            if (!response.pagination?.hasMore || !response.pagination.next) return null;
+            for (const checkout of response.data) {
+                if (visitedCheckoutIds.has(checkout.id)) {
+                    throw AppError.serviceUnavailable(
+                        "AbacatePay repetiu checkout durante paginacao"
+                    );
+                }
+                visitedCheckoutIds.add(checkout.id);
+                if (!filters.externalId || checkout.externalId === filters.externalId) {
+                    checkouts.push(checkout);
+                }
+                if (visitedCheckoutIds.size > maxRecords) {
+                    throw AppError.serviceUnavailable(
+                        "Listagem AbacatePay excedeu limite operacional de registros"
+                    );
+                }
+            }
+            if (!response.pagination?.hasMore) return checkouts;
+            if (!response.pagination.next) {
+                throw AppError.serviceUnavailable(
+                    "AbacatePay informou mais paginas sem proximo cursor"
+                );
+            }
             if (visitedCursors.has(response.pagination.next)) {
                 throw AppError.serviceUnavailable(
                     "AbacatePay retornou cursor de paginacao repetido"
@@ -88,7 +158,7 @@ export class AbacatePayClient {
             visitedCursors.add(response.pagination.next);
             after = response.pagination.next;
         } while (after);
-        return null;
+        return checkouts;
     }
 
     public refundCheckout(id: string, reason?: string) {
@@ -104,6 +174,33 @@ export class AbacatePayClient {
     }
 
     private async requestEnvelope<T>({
+        method,
+        path,
+        body
+    }: RequestOptions): Promise<AbacatePaginatedEnvelope<T>> {
+        const startedAt = Date.now();
+        try {
+            const result = await this.performRequest<T>({ method, path, body });
+            safelyObserveProviderRequest(this.observer, {
+                provider: "ABACATEPAY",
+                operation: `${method} ${path.split("?")[0]}`,
+                result: "success",
+                durationMs: Date.now() - startedAt
+            });
+            return result;
+        } catch (error) {
+            safelyObserveProviderRequest(this.observer, {
+                provider: "ABACATEPAY",
+                operation: `${method} ${path.split("?")[0]}`,
+                result: "error",
+                durationMs: Date.now() - startedAt,
+                statusCode: statusCode(error)
+            });
+            throw error;
+        }
+    }
+
+    private async performRequest<T>({
         method,
         path,
         body
@@ -127,9 +224,9 @@ export class AbacatePayClient {
             );
         });
 
-        const payload = (await response.json().catch(() => null)) as
-            | AbacatePaginatedEnvelope<T>
-            | null;
+        const payload = (await response
+            .json()
+            .catch(() => null)) as AbacatePaginatedEnvelope<T> | null;
         if (!response.ok || !payload?.success || payload.data === null) {
             throw AppError.serviceUnavailable(
                 `AbacatePay respondeu com erro ${response.status}: ${payload?.error ?? "resposta invalida"}`
@@ -160,4 +257,10 @@ export class AbacatePayClient {
         const own = typeof record.devMode === "boolean" ? [record.devMode] : [];
         return [...own, ...this.developmentModes(record.data)];
     }
+}
+
+function statusCode(error: unknown) {
+    if (!error || typeof error !== "object" || !("statusCode" in error)) return undefined;
+    const value = (error as { statusCode?: unknown }).statusCode;
+    return typeof value === "number" ? value : undefined;
 }

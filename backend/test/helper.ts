@@ -23,6 +23,7 @@ function config() {
     process.env.FULFILLMENT_WORKER_ENABLED = "false";
     process.env.EMAIL_WORKER_ENABLED = "false";
     process.env.SHIPPING_TRACKING_WORKER_ENABLED = "false";
+    process.env.CHECKOUT_OBSERVABILITY_ENABLED = "false";
 
     return {
         skipOverride: true // Register our application with fastify-plugin
