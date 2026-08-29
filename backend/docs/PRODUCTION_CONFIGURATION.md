@@ -12,7 +12,9 @@ identidade dos dois revisores.
 
 No gerenciador de configuracao da release, antes de aceitar trafego:
 
-1. configure `NODE_ENV=production` e `CHECKOUT_ENABLED=false`;
+1. configure `NODE_ENV=production`, `CHECKOUT_ENABLED=false`,
+   `CHECKOUT_ROLLOUT_MODE=ALLOWLIST` e uma lista interna aprovada em
+   `CHECKOUT_ALLOWED_USER_UUIDS`;
 2. use a credencial de runtime em `DATABASE_URL`, nunca a role de migration;
 3. declare explicitamente `FULFILLMENT_WORKER_ENABLED`, `EMAIL_WORKER_ENABLED` e
    `SHIPPING_TRACKING_WORKER_ENABLED` em cada replica; use `true` somente onde planejado;
@@ -55,7 +57,12 @@ Ambas conferem diretamente no deploy, secret manager e paineis, sem transcrever 
 9. Resend confirma dominio, `EMAIL_FROM` e `EMAIL_REPLY_TO`; envie teste somente na fase autorizada;
 10. amostra do agregador de logs confirma ausencia de query string, tokens, secrets, documentos,
     enderecos, e-mails e corpos de resposta dos provedores;
-11. `CHECKOUT_ENABLED=false` permanece aplicado em todas replicas ate inicio controlado do smoke.
+11. `CHECKOUT_ENABLED=false` permanece aplicado em todas replicas ate inicio controlado do smoke;
+12. `CHECKOUT_ROLLOUT_MODE=ALLOWLIST` possui no maximo 100 UUIDs internos, sem repeticao. Modo
+    `PUBLIC` e lista residual sao proibidos antes da liberacao total.
+
+Procedimento de expansao e evidencia: `docs/CHECKOUT_CANARY.md`. Preflight exige inicio em
+`ALLOWLIST`; mudanca posterior para `PUBLIC` depende do gate GL-051.
 
 Documentacao oficial revisada em 2026-08-28:
 

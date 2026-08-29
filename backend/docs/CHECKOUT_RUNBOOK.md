@@ -71,6 +71,11 @@ e link personalizado. Checkouts ja persistidos continuam acessiveis, e pagamento
 `CREATING` continuam consultando a AbacatePay para reconciliar cobranca talvez criada antes de um
 timeout. Webhooks, consultas, reembolsos e workers nao dependem desse switch.
 
+Com switch mestre ativo, `CHECKOUT_ROLLOUT_MODE=ALLOWLIST` limita pedidos novos aos donos
+autenticados em `CHECKOUT_ALLOWED_USER_UUIDS` e bloqueia criacao nova por link publico. Modo
+`PUBLIC` exige lista ausente. Configuracao ausente/invalida em producao falha fechada. Veja
+`docs/CHECKOUT_CANARY.md`.
+
 ### Desativar sem novo deploy
 
 1. Registre motivo, horario, responsavel e release em execucao.
@@ -373,11 +378,14 @@ provedor e nao envie URL interna, payload ou identificador secreto.
 4. Valide uma consulta de checkout na AbacatePay, uma consulta/cotacao controlada na Superfrete e,
    se afetado, um envio controlado no Resend.
 5. Reative primeiro workers pausados, um por vez, e monitore backlog. Depois obtenha aprovacao
-   operacional e tecnica para `CHECKOUT_ENABLED=true`.
+   operacional e tecnica para `CHECKOUT_ENABLED=true` com `CHECKOUT_ROLLOUT_MODE=ALLOWLIST`.
 6. Recarregue todas as instancias com mesma release. Crie uma unica cobranca controlada de baixo
    valor; confirme uma criacao, identificador/valor corretos e persistencia local.
 7. Monitore criacao, webhooks, fulfillment, e-mail e reconciliacao durante janela definida. Volte
    imediatamente ao switch seguro se divergencia reaparecer.
+
+Nao altere para `PUBLIC` durante recuperacao. Expansao posterior segue gate canario e nova
+aprovacao.
 
 Feche incidente somente depois de registrar evidencia filtrada, impacto final, conciliacao,
 decisao dos responsaveis e acoes preventivas.

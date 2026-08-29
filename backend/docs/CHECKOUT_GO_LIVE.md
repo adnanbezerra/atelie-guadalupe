@@ -485,6 +485,12 @@ Durante cada etapa:
 **Criterio de aceite:** canario completa janela definida sem duplicidade, perda de pagamento,
 divergencia de valor, pedido pago parado ou etiqueta duplicada.
 
+Controle local: `CHECKOUT_ENABLED` prevalece como switch mestre. `CHECKOUT_ROLLOUT_MODE=ALLOWLIST`
+aceita somente donos autenticados listados e bloqueia links publicos; `PUBLIC` exige lista ausente.
+`pnpm run canary:evaluate` avalia politica e contagens sanitizadas sem mudar configuracao.
+Procedimento em `docs/CHECKOUT_CANARY.md`. Thresholds, execucao implantada, paineis, evidencias e
+aprovacoes ainda nao existem; nenhum item operacional acima foi marcado.
+
 ### GL-052 — Validar cartao antes de declarar cobertura completa (P1)
 
 O backend oferece `PIX` e `CARD`. Passar somente PIX nao prova cartao.
