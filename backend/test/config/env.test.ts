@@ -28,6 +28,7 @@ const validEnvironment: NodeJS.ProcessEnv = {
     EMAIL_WORKER_ENABLED: "true",
     SHIPPING_TRACKING_WORKER_ENABLED: "true",
     CHECKOUT_ENABLED: "true",
+    CHECKOUT_ROLLOUT_MODE: "PUBLIC",
     CHECKOUT_OBSERVABILITY_ENABLED: "true",
     CHECKOUT_ALERT_CHANNEL: "operations-checkout",
     CHECKOUT_ALERT_OWNER: "responsavel-tecnico",
@@ -42,6 +43,7 @@ test("environment validation accepts a complete production configuration", () =>
     assert.equal(environment.SUPERFRETE_TIMEOUT_MS, 15000);
     assert.equal(environment.EMAIL_WORKER_ENABLED, "true");
     assert.equal(environment.CHECKOUT_ENABLED, "true");
+    assert.equal(environment.CHECKOUT_ROLLOUT_MODE, "PUBLIC");
     assert.equal(environment.FULFILLMENT_WORKER_MAX_ATTEMPTS, 8);
     assert.equal(environment.FULFILLMENT_TRANSACTION_TIMEOUT_MS, 70000);
     assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "false");
@@ -353,9 +355,55 @@ test("checkout flag is strict and preserves the enabled default outside producti
 
     const environment = validateEnv({ NODE_ENV: "test" });
     assert.equal(environment.CHECKOUT_ENABLED, "true");
+    assert.equal(environment.CHECKOUT_ROLLOUT_MODE, "PUBLIC");
     assert.equal(environment.SUPERFRETE_BASE_URL, "https://sandbox.superfrete.com/api/v0");
     assert.equal(environment.SUPERFRETE_EXPECTED_ENVIRONMENT, "sandbox");
     assert.equal(environment.ABACATEPAY_EXPECTED_DEV_MODE, "true");
+});
+
+test("checkout rollout validates allowlist mode and rejects residual users in public mode", () => {
+    const first = "0195f4aa-7f18-7db5-9f32-06f4a9a2b401";
+    const second = "0195f4aa-7f18-7db5-9f32-06f4a9a2b402";
+    const allowlist = validateEnv({
+        ...validEnvironment,
+        CHECKOUT_ROLLOUT_MODE: "ALLOWLIST",
+        CHECKOUT_ALLOWED_USER_UUIDS: `${first},${second}`
+    });
+    assert.equal(allowlist.CHECKOUT_ALLOWED_USER_UUIDS, `${first},${second}`);
+
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                CHECKOUT_ROLLOUT_MODE: "ALLOWLIST",
+                CHECKOUT_ALLOWED_USER_UUIDS: `${first},${first}`
+            }),
+        /CHECKOUT_ALLOWED_USER_UUIDS/
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                CHECKOUT_ALLOWED_USER_UUIDS: first
+            }),
+        /deve permanecer ausente fora do modo ALLOWLIST/
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                CHECKOUT_ROLLOUT_MODE: "ALLOWLIST",
+                CHECKOUT_ALLOWED_USER_UUIDS: undefined
+            }),
+        /obrigatoria e valida no modo ALLOWLIST/
+    );
+});
+
+test("production requires explicit checkout rollout mode", () => {
+    assert.throws(
+        () => validateEnv({ ...validEnvironment, CHECKOUT_ROLLOUT_MODE: undefined }),
+        /CHECKOUT_ROLLOUT_MODE: obrigatoria em producao/
+    );
 });
 
 test("environment validation reports all missing production variables", () => {

@@ -118,6 +118,65 @@ test("payment service blocks a new checkout without calling the provider when di
     }
 });
 
+test("payment service allowlist blocks unlisted owners and cannot bypass order ownership", async () => {
+    const previousMode = process.env.CHECKOUT_ROLLOUT_MODE;
+    const previousUsers = process.env.CHECKOUT_ALLOWED_USER_UUIDS;
+    const previousEnabled = process.env.CHECKOUT_ENABLED;
+    const allowedUser = "0195f4aa-7f18-7db5-9f32-06f4a9a2b401";
+    const otherUser = "0195f4aa-7f18-7db5-9f32-06f4a9a2b402";
+    process.env.CHECKOUT_ENABLED = "true";
+    process.env.CHECKOUT_ROLLOUT_MODE = "ALLOWLIST";
+    process.env.CHECKOUT_ALLOWED_USER_UUIDS = allowedUser;
+    let providerCalled = false;
+    const prisma = {
+        order: {
+            findUnique: async () => ({
+                id: 1,
+                uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b403",
+                user: { uuid: otherUser },
+                paymentIdempotencyKey: key,
+                payment: null,
+                status: "AWAITING_PAYMENT",
+                addressId: 2,
+                totalInCents: 5000,
+                items: [],
+                shipment: { status: "CONFIRMED" }
+            })
+        }
+    };
+    const client = {
+        createCheckout: async () => {
+            providerCalled = true;
+        }
+    };
+
+    try {
+        const result = await new PaymentService(prisma as never, client as never).createCheckout(
+            otherUser,
+            "0195f4aa-7f18-7db5-9f32-06f4a9a2b403",
+            key
+        );
+        assert.equal(result.success, false);
+        if (!result.success) assert.equal(result.value.code, "SERVICE_UNAVAILABLE");
+
+        const spoofed = await new PaymentService(prisma as never, client as never).createCheckout(
+            allowedUser,
+            "0195f4aa-7f18-7db5-9f32-06f4a9a2b403",
+            key
+        );
+        assert.equal(spoofed.success, false);
+        if (!spoofed.success) assert.equal(spoofed.value.code, "RESOURCE_NOT_FOUND");
+        assert.equal(providerCalled, false);
+    } finally {
+        if (previousEnabled === undefined) delete process.env.CHECKOUT_ENABLED;
+        else process.env.CHECKOUT_ENABLED = previousEnabled;
+        if (previousMode === undefined) delete process.env.CHECKOUT_ROLLOUT_MODE;
+        else process.env.CHECKOUT_ROLLOUT_MODE = previousMode;
+        if (previousUsers === undefined) delete process.env.CHECKOUT_ALLOWED_USER_UUIDS;
+        else process.env.CHECKOUT_ALLOWED_USER_UUIDS = previousUsers;
+    }
+});
+
 test("payment service reconciles a creating checkout without creating another while disabled", async () => {
     const previous = process.env.CHECKOUT_ENABLED;
     process.env.CHECKOUT_ENABLED = "false";

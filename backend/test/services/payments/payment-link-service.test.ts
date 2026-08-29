@@ -424,6 +424,39 @@ test("public payment endpoint blocks a new checkout without calling the provider
     }
 });
 
+test("allowlist rollout blocks new public payment-link checkout", async () => {
+    const previousMode = process.env.CHECKOUT_ROLLOUT_MODE;
+    const previousUsers = process.env.CHECKOUT_ALLOWED_USER_UUIDS;
+    const previousEnabled = process.env.CHECKOUT_ENABLED;
+    process.env.CHECKOUT_ENABLED = "true";
+    process.env.CHECKOUT_ROLLOUT_MODE = "ALLOWLIST";
+    process.env.CHECKOUT_ALLOWED_USER_UUIDS = "0195f4aa-7f18-7db5-9f32-06f4a9a2b401";
+    const stored = paymentLink();
+    let providerCalled = false;
+    const prisma = { paymentLink: { findUnique: async () => stored } };
+    const provider = {
+        createCheckout: async () => {
+            providerCalled = true;
+        }
+    };
+
+    try {
+        const result = await new PaymentLinkService(prisma as never, provider as never).pay(
+            stored.uuid
+        );
+        assert.equal(result.success, false);
+        if (!result.success) assert.equal(result.value.code, "SERVICE_UNAVAILABLE");
+        assert.equal(providerCalled, false);
+    } finally {
+        if (previousEnabled === undefined) delete process.env.CHECKOUT_ENABLED;
+        else process.env.CHECKOUT_ENABLED = previousEnabled;
+        if (previousMode === undefined) delete process.env.CHECKOUT_ROLLOUT_MODE;
+        else process.env.CHECKOUT_ROLLOUT_MODE = previousMode;
+        if (previousUsers === undefined) delete process.env.CHECKOUT_ALLOWED_USER_UUIDS;
+        else process.env.CHECKOUT_ALLOWED_USER_UUIDS = previousUsers;
+    }
+});
+
 test("public payment endpoint reconciles a creating checkout without creating another while disabled", async () => {
     const previous = process.env.CHECKOUT_ENABLED;
     process.env.CHECKOUT_ENABLED = "false";

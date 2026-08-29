@@ -26,6 +26,8 @@ const validProductionEnvironment: NodeJS.ProcessEnv = {
     ABACATEPAY_EXPECTED_DEV_MODE: "false",
     PAYMENT_LINK_PUBLIC_BASE_URL: "https://atelie.example.com/checkout/manual",
     CHECKOUT_ENABLED: "false",
+    CHECKOUT_ROLLOUT_MODE: "ALLOWLIST",
+    CHECKOUT_ALLOWED_USER_UUIDS: "0195f4aa-7f18-7db5-9f32-06f4a9a2b401",
     CHECKOUT_OBSERVABILITY_ENABLED: "true",
     CHECKOUT_ALERT_CHANNEL: "operations-checkout",
     CHECKOUT_ALERT_OWNER: "responsavel-tecnico",
@@ -70,6 +72,17 @@ test("production preflight accepts only explicit provider modes and disabled che
     });
     assert.equal(
         wrongNodeEnvironment.find((check) => check.id === "node_environment_is_production")?.status,
+        "AUTO_FAIL"
+    );
+
+    const publicRollout = inspectProductionEnvironment({
+        ...validProductionEnvironment,
+        CHECKOUT_ROLLOUT_MODE: "PUBLIC",
+        CHECKOUT_ALLOWED_USER_UUIDS: undefined
+    });
+    assert.equal(
+        publicRollout.find((check) => check.id === "checkout_rollout_starts_with_allowlist")
+            ?.status,
         "AUTO_FAIL"
     );
 

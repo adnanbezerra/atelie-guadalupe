@@ -47,6 +47,11 @@ export function inspectProductionEnvironment(environment: NodeJS.ProcessEnv) {
         automatic("production_environment_schema", environmentValid),
         automatic("checkout_disabled_during_preflight", environment.CHECKOUT_ENABLED === "false"),
         automatic(
+            "checkout_rollout_starts_with_allowlist",
+            environment.CHECKOUT_ROLLOUT_MODE === "ALLOWLIST" &&
+                Boolean(environment.CHECKOUT_ALLOWED_USER_UUIDS?.trim())
+        ),
+        automatic(
             "abacatepay_production_mode",
             environment.ABACATEPAY_BASE_URL === ABACATEPAY_V2_URL &&
                 environment.ABACATEPAY_EXPECTED_DEV_MODE === "false"

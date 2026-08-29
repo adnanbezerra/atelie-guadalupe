@@ -172,7 +172,7 @@ export class PaymentLinkService {
                 )
             );
         }
-        if (!isCheckoutCreationEnabled()) {
+        if (!isCheckoutCreationEnabled({ flow: "PAYMENT_LINK" })) {
             return left(checkoutUnavailableError());
         }
         if (paymentLink.status !== PaymentLinkStatus.ACTIVE) {

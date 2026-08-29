@@ -75,7 +75,7 @@ export class PaymentService {
                 )
             );
         }
-        if (!isCheckoutCreationEnabled()) {
+        if (!isCheckoutCreationEnabled({ flow: "ORDER", userUuid: currentUserUuid })) {
             return left(checkoutUnavailableError());
         }
         if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.AWAITING_PAYMENT) {

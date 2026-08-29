@@ -15,8 +15,10 @@ const positiveInteger = (defaultValue: number) =>
     z.coerce.number().int().positive().default(defaultValue);
 const enabledFlag = z.enum(["true", "false"]).optional();
 const checkoutEnabledFlag = z.enum(["true", "false"]).optional();
+const checkoutRolloutMode = z.enum(["ALLOWLIST", "PUBLIC"]).optional();
 const expectedDevModeFlag = z.enum(["true", "false"]).optional();
 const expectedSuperFreteEnvironment = z.enum(["sandbox", "production"]).optional();
+const checkoutAllowedUsers = z.preprocess(emptyToUndefined, z.string().trim().max(3699).optional());
 
 export const SUPERFRETE_PRODUCTION_URL = "https://api.superfrete.com/api/v0";
 export const SUPERFRETE_SANDBOX_URL = "https://sandbox.superfrete.com/api/v0";
@@ -128,6 +130,17 @@ function emailSenderIssue(value: string) {
     return z.email().safeParse(address).success ? null : "deve conter remetente de email valido";
 }
 
+function checkoutAllowedUsersIssue(value: string | undefined) {
+    if (!value) return null;
+    const users = value.split(",").map((item) => item.trim().toLowerCase());
+    if (users.length > 100) return "deve conter no maximo 100 UUIDs";
+    if (users.some((item) => !z.uuid().safeParse(item).success)) {
+        return "deve conter somente UUIDs separados por virgula";
+    }
+    if (new Set(users).size !== users.length) return "nao deve conter UUIDs duplicados";
+    return null;
+}
+
 const envSchema = z
     .object({
         NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -173,6 +186,8 @@ const envSchema = z
         ABACATEPAY_EXPECTED_DEV_MODE: expectedDevModeFlag,
         PAYMENT_LINK_PUBLIC_BASE_URL: optionalUrl,
         CHECKOUT_ENABLED: checkoutEnabledFlag,
+        CHECKOUT_ROLLOUT_MODE: checkoutRolloutMode,
+        CHECKOUT_ALLOWED_USER_UUIDS: checkoutAllowedUsers,
         CHECKOUT_OBSERVABILITY_ENABLED: z.enum(["true", "false"]).optional(),
         CHECKOUT_OBSERVABILITY_INTERVAL_MS: positiveInteger(60000),
         PAYMENT_PENDING_ALERT_MINUTES: positiveInteger(30),
@@ -198,6 +213,32 @@ const envSchema = z
         SHIPPING_TRACKING_LOCK_TIMEOUT_MS: positiveInteger(300000)
     })
     .superRefine((environment, context) => {
+        const allowedUsersIssue = checkoutAllowedUsersIssue(
+            environment.CHECKOUT_ALLOWED_USER_UUIDS
+        );
+        if (allowedUsersIssue) {
+            context.addIssue({
+                code: "custom",
+                path: ["CHECKOUT_ALLOWED_USER_UUIDS"],
+                message: allowedUsersIssue
+            });
+        }
+        if (environment.CHECKOUT_ROLLOUT_MODE === "ALLOWLIST") {
+            if (!environment.CHECKOUT_ALLOWED_USER_UUIDS || allowedUsersIssue) {
+                context.addIssue({
+                    code: "custom",
+                    path: ["CHECKOUT_ALLOWED_USER_UUIDS"],
+                    message: "obrigatoria e valida no modo ALLOWLIST"
+                });
+            }
+        } else if (environment.CHECKOUT_ALLOWED_USER_UUIDS) {
+            context.addIssue({
+                code: "custom",
+                path: ["CHECKOUT_ALLOWED_USER_UUIDS"],
+                message: "deve permanecer ausente fora do modo ALLOWLIST"
+            });
+        }
+
         const minimumFulfillmentTimeout = minimumFulfillmentTransactionTimeoutMs(
             environment.SUPERFRETE_TIMEOUT_MS
         );
@@ -341,6 +382,13 @@ const envSchema = z
                 message: "obrigatoria em producao"
             });
         }
+        if (!environment.CHECKOUT_ROLLOUT_MODE) {
+            context.addIssue({
+                code: "custom",
+                path: ["CHECKOUT_ROLLOUT_MODE"],
+                message: "obrigatoria em producao"
+            });
+        }
         for (const name of [
             "FULFILLMENT_WORKER_ENABLED",
             "EMAIL_WORKER_ENABLED",
@@ -456,6 +504,7 @@ const envSchema = z
         SUPERFRETE_BASE_URL: environment.SUPERFRETE_BASE_URL ?? SUPERFRETE_SANDBOX_URL,
         SUPERFRETE_EXPECTED_ENVIRONMENT: environment.SUPERFRETE_EXPECTED_ENVIRONMENT ?? "sandbox",
         CHECKOUT_ENABLED: environment.CHECKOUT_ENABLED ?? "true",
+        CHECKOUT_ROLLOUT_MODE: environment.CHECKOUT_ROLLOUT_MODE ?? "PUBLIC",
         CHECKOUT_OBSERVABILITY_ENABLED: environment.CHECKOUT_OBSERVABILITY_ENABLED ?? "true",
         ABACATEPAY_EXPECTED_DEV_MODE: environment.ABACATEPAY_EXPECTED_DEV_MODE ?? "true",
         FULFILLMENT_WORKER_ENABLED: environment.FULFILLMENT_WORKER_ENABLED ?? "true",
