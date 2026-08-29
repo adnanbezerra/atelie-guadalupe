@@ -171,6 +171,31 @@ Testes obrigatorios:
 **Criterio de aceite:** nenhum checkout personalizado criado no provedor fica sem rastreabilidade
 local, nenhuma incerteza gera segunda cobranca e expiracao nao oculta pagamento possivel ou tardio.
 
+### GL-005 — Bloquear fulfillment sem pagamento financeiro ativo (P0)
+
+**Risco:** pedido pode permanecer `PAID` ou `PROCESSING` depois de `checkout.refunded`,
+`checkout.disputed` ou `checkout.lost`; worker poderia comprar etiqueta olhando apenas estado do
+pedido.
+
+- [x] exigir `OrderPayment.status = PAID` no claim, retry manual e compra de etiqueta;
+- [x] serializar compra e transicoes financeiras pela linha de `OrderPayment`;
+- [x] manter lock durante `createCart`, `getOrderInfo`, `checkout` e nova `getOrderInfo`, com timeout
+      transacional de no minimo `4 * SUPERFRETE_TIMEOUT_MS + 10000ms`;
+- [x] exigir lease do worker no minimo `FULFILLMENT_TRANSACTION_TIMEOUT_MS + 10000ms`, impedindo
+      recovery concorrente antes do fim da compra;
+- [x] tornar jobs ainda nao concluidos `FAILED` ao receber refund, disputa ou perda;
+- [x] testar evento terminal depois do claim sem chamada de compra e os tres estados terminais.
+
+**Criterio de aceite:** etiqueta so e comprada enquanto pagamento permanece `PAID`; webhook
+financeiro concorrente vence antes da compra ou aguarda compra ja autorizada terminar, sem estado
+intermediario ambiguo. Transacao longa e deliberada: prioriza exclusao financeira; margem cobre
+consultas e persistencias no banco, e configuracao abaixo do teto de rede falha fechada.
+
+Evidencia em 2026-08-28: dois interleavings reais no PostgreSQL foram executados duas vezes. Quando
+fulfillment obteve o lock primeiro, houve uma unica autorizacao e o evento terminal aguardou; quando
+`LOST` obteve o lock primeiro, nenhuma autorizacao ocorreu e o job terminou `FAILED`. Teste usa
+Superfrete fake e `pg_blocking_pids`, sem rede externa.
+
 ## Fase 1 — ampliar testes automatizados
 
 ### GL-010 — Cobrir estados e falhas do pagamento (P0)
@@ -287,25 +312,30 @@ depois de provisionar staging isolado com as configuracoes de seguranca descrita
 
 Monitorar pelo menos:
 
-- [ ] quantidade e taxa de criacoes de checkout por resultado HTTP;
-- [ ] latencia e erros da AbacatePay e Superfrete;
-- [ ] pagamentos `CREATING` acima de 2 minutos;
-- [ ] pagamentos `PENDING` acima do prazo esperado do negocio;
-- [ ] webhooks com `error` ou sem `processedAt` acima de 2 minutos;
-- [ ] pagamento `PAID` cujo pedido nao esta `PAID`, `PROCESSING`, `SHIPPED` ou `DELIVERED`;
-- [ ] pedido `PAID` sem fulfillment;
-- [ ] fulfillment `RETRY_SCHEDULED`, numero de tentativas e idade do job;
-- [ ] divergencia entre valor esperado e pago;
-- [ ] pedidos cancelados com pagamento pago;
-- [ ] e-mails falhos e etiquetas nao compradas.
+- [x] quantidade e taxa de criacoes de checkout por resultado HTTP;
+- [x] latencia e erros da AbacatePay e Superfrete;
+- [x] pagamentos `CREATING` acima de 2 minutos;
+- [x] pagamentos `PENDING` acima do prazo esperado do negocio;
+- [x] webhooks com `error` ou sem `processedAt` acima de 2 minutos;
+- [x] pagamento `PAID` cujo pedido nao esta `PAID`, `PROCESSING`, `SHIPPED` ou `DELIVERED`;
+- [x] pedido `PAID` sem fulfillment;
+- [x] fulfillment `RETRY_SCHEDULED`, numero de tentativas e idade do job;
+- [x] divergencia entre valor esperado e pago;
+- [x] pedidos cancelados com pagamento pago;
+- [x] e-mails falhos e etiquetas nao compradas.
 
 Cada alerta precisa ter:
 
-- [ ] limiar e janela definidos;
+- [x] limiar e janela definidos;
 - [ ] canal e responsavel definidos;
 - [ ] link para consulta/log relevante;
-- [ ] acao imediata descrita no runbook;
+- [x] acao imediata descrita no runbook;
 - [ ] teste controlado provando que alerta chega.
+
+Implementacao e teste local documentados em `docs/CHECKOUT_OBSERVABILITY.md`. O teste automatizado
+prova emissao no sink Pino. Canal, responsavel e consulta continuam sem valores reais; as tarefas
+operacionais permanecem abertas ate existir infraestrutura para rotear o evento e comprovar chegada
+a um canal humano.
 
 **Criterio de aceite:** falha financeira ou logistica conhecida gera alerta acionavel antes de um
 cliente precisar reclamar.
@@ -314,17 +344,17 @@ cliente precisar reclamar.
 
 Documentar procedimentos para:
 
-- [ ] desativar novos checkouts sem desligar webhooks/workers;
-- [ ] localizar pedido por UUID, e-mail e ID do provedor;
-- [ ] reconciliar checkout `CREATING` ou `PENDING`;
-- [ ] reprocessar webhook com seguranca;
-- [ ] reexecutar fulfillment sem duplicar etiqueta;
-- [ ] tratar pagamento confirmado de pedido cancelado;
-- [ ] reembolsar pagamento e registrar identificador do reembolso;
-- [ ] tratar disputa e perda;
-- [ ] responder indisponibilidade de cada provedor;
-- [ ] escalar incidente e comunicar cliente;
-- [ ] confirmar recuperacao antes de reativar checkout.
+- [x] desativar novos checkouts sem desligar webhooks/workers;
+- [x] localizar pedido por UUID, e-mail e ID do provedor;
+- [x] reconciliar checkout `CREATING` ou `PENDING`;
+- [x] reprocessar webhook com seguranca;
+- [x] reexecutar fulfillment sem duplicar etiqueta;
+- [x] tratar pagamento confirmado de pedido cancelado;
+- [x] reembolsar pagamento e registrar identificador do reembolso;
+- [x] tratar disputa e perda;
+- [x] responder indisponibilidade de cada provedor;
+- [x] escalar incidente e comunicar cliente;
+- [x] confirmar recuperacao antes de reativar checkout.
 
 **Criterio de aceite:** outra pessoa da equipe consegue executar os procedimentos usando somente o
 runbook e acessos autorizados.
@@ -333,11 +363,19 @@ runbook e acessos autorizados.
 
 Tarefas:
 
-- [ ] comparar checkouts pagos no provedor com `OrderPayment` local;
-- [ ] comparar valor, `externalId`, status e horario;
-- [ ] listar pagamento sem pedido, pedido pago sem pagamento e status divergentes;
-- [ ] registrar resolucao e responsavel por divergencia;
-- [ ] manter trilha de auditoria sem expor dados sensiveis.
+- [x] comparar checkouts pagos no provedor com `OrderPayment` local;
+- [x] comparar valor, `externalId`, status do checkout/pagamento/pedido e horario financeiro;
+- [x] listar pagamento sem pedido, pedido pago sem pagamento e status divergentes;
+- [x] registrar resolucao e responsavel por divergencia;
+- [x] manter trilha de auditoria sem expor dados sensiveis.
+
+Implementacao: `pnpm run reconcile:order-payments`. A API oficial nao oferece filtro por data:
+cliente percorre todas as paginas e aplica `updatedAt >= from && updatedAt < to` localmente. Em
+paralelo, varredura sem janela compara todos os checkouts financeiros `PAID`/`REFUNDED`, todos os
+pagamentos financeiros persistentes e pedidos `PAID`, `PROCESSING`, `SHIPPED` ou `DELIVERED`,
+evitando ocultar invariante antiga. Tetos de paginas/registros falham fechados. Relatorio explicita
+atividade da janela e sweep persistente, aceita registro auditado de resolucoes e sanitiza
+identificadores arbitrarios.
 
 **Criterio de aceite:** toda divergencia financeira aparece em relatorio diario e possui dono.
 
@@ -442,19 +480,19 @@ O backend oferece `PIX` e `CARD`. Passar somente PIX nao prova cartao.
 
 Preencher imediatamente antes da liberacao total:
 
-| Verificacao                            | Resultado | Evidencia | Responsavel | Data |
-| -------------------------------------- | --------- | --------- | ----------- | ---- |
-| Bloqueadores P0 concluidos             |           |           |             |      |
-| Build, lint e suite completa           |           |           |             |      |
-| E2E sandbox 3x                         | PASS      | 3/3 no commit `c74554e`; IDs no registro de execucoes | Codex + QA | 2026-08-27 |
-| Webhook externo em staging             | BLOCKED   | Staging ainda nao provisionado | Responsavel de infraestrutura | 2026-08-28 |
-| Alertas testados                       |           |           |             |      |
-| Runbook validado                       |           |           |             |      |
-| Backup/restauracao testados            |           |           |             |      |
-| Configuracao revisada por duas pessoas |           |           |             |      |
-| Smoke real de producao                 |           |           |             |      |
-| Canario sem incidentes                 |           |           |             |      |
-| Reconciliacao financeira               |           |           |             |      |
+| Verificacao                            | Resultado  | Evidencia                                             | Responsavel                   | Data       |
+| -------------------------------------- | ---------- | ----------------------------------------------------- | ----------------------------- | ---------- |
+| Bloqueadores P0 concluidos             |            |                                                       |                               |            |
+| Build, lint e suite completa           | PASS local | 194 pass/4 skip opt-in/0 fail; lint e typecheck PASS  | Codex + QA                    | 2026-08-28 |
+| E2E sandbox 3x                         | PASS       | 3/3 no commit `c74554e`; IDs no registro de execucoes | Codex + QA                    | 2026-08-27 |
+| Webhook externo em staging             | BLOCKED    | Staging ainda nao provisionado                        | Responsavel de infraestrutura | 2026-08-28 |
+| Alertas testados                       |            |                                                       |                               |            |
+| Runbook validado                       |            |                                                       |                               |            |
+| Backup/restauracao testados            |            |                                                       |                               |            |
+| Configuracao revisada por duas pessoas |            |                                                       |                               |            |
+| Smoke real de producao                 |            |                                                       |                               |            |
+| Canario sem incidentes                 |            |                                                       |                               |            |
+| Reconciliacao financeira               |            |                                                       |                               |            |
 
 Decisao final:
 
@@ -474,11 +512,12 @@ Commit/deploy: **\*\*\*\***\_\_\_\_**\*\*\*\***
 Usar uma linha por execucao relevante. Nao registrar secrets, tokens, documentos, enderecos ou
 payloads sensiveis.
 
-| Data/hora  | Ambiente    | Commit             | Tarefa/teste                  | Resultado    | IDs seguros/evidencia                                                                                                     | Responsavel |
-| ---------- | ----------- | ------------------ | ----------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 2026-08-27 | local/teste | `60d2888..72cc362` | Fase 0: GL-001 a GL-004       | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate | Codex + QA  |
-| 2026-08-27 | local/teste | `ed9acb0..d46f3c1` | Fase 1: GL-010 e GL-011 local | PASS local   | 57/57 focados; duas suites 141 pass/3 skip/0 fail; 32,06s e 40,08s; build e lint zero; CI real pendente                   | Codex + QA  |
-| 2026-08-27 23:15 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 1/3 | PASS | pedido `01a04581-82af-7698-801c-389070b931d9`; checkout `bill_5KCy3rLhTjtC2eJfsW0KDxSw`; etiqueta `BZMg4m09lNrVniO3SlqC`; 1 fulfillment; 1 e-mail; 40,77s | Codex + QA |
-| 2026-08-27 23:16 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 2/3 | PASS | pedido `01a04582-e8ae-7689-aaf5-599a803d3997`; checkout `bill_EgrjkwkYGUL0he3fSH3qn3gq`; etiqueta `87MAV5X4AhrxayvqxZZM`; 1 fulfillment; 1 e-mail; 40,42s | Codex + QA |
-| 2026-08-27 23:18 UTC | sandbox/teste | `c74554e` | GL-020 E2E checkout 3/3 | PASS | pedido `01a04584-75bf-76ed-9a7f-74a7a36150f8`; checkout `bill_M3ujjFSXfCDgaD1S63qzFfc3`; etiqueta `HDBHJzjHxc4gqwU0JW9y`; 1 fulfillment; 1 e-mail; 39,04s | Codex + QA |
-| 2026-08-28 | staging | `95df3d3` | GL-021 webhook externo | BLOCKED | Backend staging, URL HTTPS publica e acesso a deploy/logs inexistentes | Responsavel de infraestrutura |
+| Data/hora            | Ambiente      | Commit             | Tarefa/teste                  | Resultado    | IDs seguros/evidencia                                                                                                                                     | Responsavel                   |
+| -------------------- | ------------- | ------------------ | ----------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| 2026-08-27           | local/teste   | `60d2888..72cc362` | Fase 0: GL-001 a GL-004       | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate                                 | Codex + QA                    |
+| 2026-08-27           | local/teste   | `ed9acb0..d46f3c1` | Fase 1: GL-010 e GL-011 local | PASS local   | 57/57 focados; duas suites 141 pass/3 skip/0 fail; 32,06s e 40,08s; build e lint zero; CI real pendente                                                   | Codex + QA                    |
+| 2026-08-27 23:15 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 1/3       | PASS         | pedido `01a04581-82af-7698-801c-389070b931d9`; checkout `bill_5KCy3rLhTjtC2eJfsW0KDxSw`; etiqueta `BZMg4m09lNrVniO3SlqC`; 1 fulfillment; 1 e-mail; 40,77s | Codex + QA                    |
+| 2026-08-27 23:16 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 2/3       | PASS         | pedido `01a04582-e8ae-7689-aaf5-599a803d3997`; checkout `bill_EgrjkwkYGUL0he3fSH3qn3gq`; etiqueta `87MAV5X4AhrxayvqxZZM`; 1 fulfillment; 1 e-mail; 40,42s | Codex + QA                    |
+| 2026-08-27 23:18 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 3/3       | PASS         | pedido `01a04584-75bf-76ed-9a7f-74a7a36150f8`; checkout `bill_M3ujjFSXfCDgaD1S63qzFfc3`; etiqueta `HDBHJzjHxc4gqwU0JW9y`; 1 fulfillment; 1 e-mail; 39,04s | Codex + QA                    |
+| 2026-08-28           | staging       | `95df3d3`          | GL-021 webhook externo        | BLOCKED      | Backend staging, URL HTTPS publica e acesso a deploy/logs inexistentes                                                                                    | Responsavel de infraestrutura |
+| 2026-08-28           | local/teste   | `bd1511a..f33fead` | GL-005 e Fase 3 tecnica       | PASS tecnico | suite 194 pass/4 skip/0 fail; 76/76 focados; corrida PostgreSQL GL-005 2x; build, test-tsc, lint, Prettier tocados e diff-check                           | Codex + QA                    |
