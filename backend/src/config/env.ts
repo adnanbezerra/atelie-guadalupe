@@ -97,7 +97,7 @@ function operationalProductionUrlIssue(value: string) {
     return null;
 }
 
-function productionDatabaseUrlIssue(value: string) {
+export function productionDatabaseUrlIssue(value: string) {
     let url: URL;
     try {
         url = new URL(value);
