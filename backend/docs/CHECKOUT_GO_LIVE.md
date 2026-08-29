@@ -428,6 +428,18 @@ recuperacao foi testado.
 **Criterio de aceite:** revisao por duas pessoas, sem copiar valores de segredo para documento,
 ticket, chat ou log.
 
+Procedimento: `pnpm run config:verify-production` e `docs/PRODUCTION_CONFIGURATION.md`. Preflight
+valida schema de ambiente, TLS PostgreSQL, forca minima do JWT, modos exatos dos provedores, kill
+switch, flags explicitas dos workers, remetente/reply-to e audita privilegios da role de runtime
+com consulta read-only. Saida contem somente IDs e estados `AUTO_PASS`, `AUTO_FAIL` ou
+`MANUAL_REQUIRED`; nunca declara `GO` ou `PASS` global enquanto paineis e segunda revisao estiverem
+pendentes. Teste local cobriu logica com valores ficticios, sem consultar producao. Erros de
+AbacatePay e Superfrete deixaram de incluir corpos/respostas do provedor.
+
+**Estado em 2026-08-28: MANUAL_REQUIRED.** Nao ha acesso a deploy/banco de producao, paineis dos
+provedores, agregador de logs nem segundo revisor. Nenhum item acima foi marcado apenas por teste
+local; criterio de aceite permanece bloqueado.
+
 ## Fase 5 — smoke test e liberacao gradual
 
 ### GL-050 — Executar smoke test real em producao (P0)
@@ -531,3 +543,4 @@ payloads sensiveis.
 | 2026-08-28           | staging       | `95df3d3`          | GL-021 webhook externo        | BLOCKED      | Backend staging, URL HTTPS publica e acesso a deploy/logs inexistentes                                                                                    | Responsavel de infraestrutura |
 | 2026-08-28           | local/teste   | `bd1511a..f33fead` | GL-005 e Fase 3 tecnica       | PASS tecnico | suite 194 pass/4 skip/0 fail; 76/76 focados; corrida PostgreSQL GL-005 2x; build, test-tsc, lint, Prettier tocados e diff-check                           | Codex + QA                    |
 | 2026-08-28           | local/teste   | apos `8e2cb2a`     | GL-040 backup/restore local   | PASS parcial | dump 9690 ms; restore 26270 ms; 12 migrations; 5 contagens iguais; cleanup confirmado; identidade independente/estrutura de uniques pedem novo drill      | Codex                         |
+| 2026-08-28           | local/teste   | apos `6be3080`     | GL-041 preflight local        | PASS tecnico | validacao e probe read-only implementados; paineis, deploy de producao, logs e revisao por duas pessoas permanecem `MANUAL_REQUIRED`                      | Codex                         |
