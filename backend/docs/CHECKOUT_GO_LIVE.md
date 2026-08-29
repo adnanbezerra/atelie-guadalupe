@@ -385,15 +385,24 @@ identificadores arbitrarios.
 
 Tarefas:
 
-- [ ] criar backup restauravel do banco;
-- [ ] testar restauracao em ambiente isolado;
-- [ ] conferir migracoes geradas e versionadas;
+- [x] criar backup restauravel do banco;
+- [x] testar restauracao em ambiente isolado;
+- [x] conferir migracoes geradas e versionadas;
 - [ ] executar `pnpm exec prisma migrate status` contra staging;
 - [ ] executar `pnpm run prisma:migrate:deploy` primeiro em staging;
 - [ ] validar constraints unicas de pedido, pagamento, idempotencia e evento de webhook;
 - [ ] medir tempo e locks das migracoes;
-- [ ] definir rollback por deploy de aplicacao e restauracao/reconciliacao de dados;
-- [ ] nunca editar ou criar migracao Prisma manualmente.
+- [x] definir rollback por deploy de aplicacao e restauracao/reconciliacao de dados;
+- [x] nunca editar ou criar migracao Prisma manualmente.
+
+Procedimento: `pnpm run db:verify-backup` e `docs/DATABASE_RECOVERY.md`. Evidencia em 2026-08-28 no
+banco de testes autorizado: dump custom e restore isolado passaram; 12 migrations/checksums, nomes
+de 6 indices unicos e contagens de 5 tabelas essenciais coincidiram; banco e arquivos temporarios
+foram removidos. Duracoes: dump 9690 ms, restore 26270 ms, validacao 791 ms. Execucao derivou nome
+esperado da propria URL e precede guardas independentes de host/porta e validacao estrutural exata
+dos indices; essas evidencias exigem novo drill com valores de inventario. O status Prisma local
+apontou schema atualizado. Isso nao substitui `migrate status`, `migrate deploy` nem medicao de
+locks em staging, que permanece inexistente; criterio de aceite segue bloqueado.
 
 **Criterio de aceite:** staging parte do mesmo estado de banco esperado em producao e procedimento de
 recuperacao foi testado.
@@ -521,3 +530,4 @@ payloads sensiveis.
 | 2026-08-27 23:18 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 3/3       | PASS         | pedido `01a04584-75bf-76ed-9a7f-74a7a36150f8`; checkout `bill_M3ujjFSXfCDgaD1S63qzFfc3`; etiqueta `HDBHJzjHxc4gqwU0JW9y`; 1 fulfillment; 1 e-mail; 39,04s | Codex + QA                    |
 | 2026-08-28           | staging       | `95df3d3`          | GL-021 webhook externo        | BLOCKED      | Backend staging, URL HTTPS publica e acesso a deploy/logs inexistentes                                                                                    | Responsavel de infraestrutura |
 | 2026-08-28           | local/teste   | `bd1511a..f33fead` | GL-005 e Fase 3 tecnica       | PASS tecnico | suite 194 pass/4 skip/0 fail; 76/76 focados; corrida PostgreSQL GL-005 2x; build, test-tsc, lint, Prettier tocados e diff-check                           | Codex + QA                    |
+| 2026-08-28           | local/teste   | apos `8e2cb2a`     | GL-040 backup/restore local   | PASS parcial | dump 9690 ms; restore 26270 ms; 12 migrations; 5 contagens iguais; cleanup confirmado; identidade independente/estrutura de uniques pedem novo drill      | Codex                         |
