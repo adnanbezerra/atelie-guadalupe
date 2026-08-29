@@ -463,6 +463,11 @@ dinheiro e pode comprar etiqueta real; responsavel financeiro e operacional prec
 **Criterio de aceite:** fluxo real completo termina no tempo esperado, sem ajuste direto no banco,
 webhook manual ou retry improvisado.
 
+Preparacao local: `pnpm run smoke:verify-production` verifica somente estado persistido em
+transacao read-only e produz evidencia sanitizada; procedimento em `docs/PRODUCTION_SMOKE.md`.
+Execucao real, aprovacoes, paineis, pagamento, entrega externa, disposicao da etiqueta e
+reconciliacao permanecem bloqueados/`MANUAL_REQUIRED`; nenhum item operacional acima foi marcado.
+
 ### GL-051 — Liberar em canario (P0)
 
 Ordem sugerida:
