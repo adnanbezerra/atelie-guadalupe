@@ -415,9 +415,7 @@ export class OrderService {
         }
         if (order.payment?.providerCheckoutId) {
             return left(
-                AppError.business(
-                    "Pedido com checkout ativo nao pode ser cancelado por este fluxo"
-                )
+                AppError.business("Pedido com checkout ativo nao pode ser cancelado por este fluxo")
             );
         }
 

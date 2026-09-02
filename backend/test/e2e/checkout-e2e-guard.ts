@@ -29,9 +29,10 @@ export function assertCheckoutE2eSafety(environment: CheckoutE2eEnvironment) {
     if (!environment.ABACATEPAY_API_KEY?.startsWith("abc_dev_")) {
         throw new Error("E2E recusado: chave AbacatePay de desenvolvimento obrigatoria");
     }
-    const superFreteBaseUrl = (
-        environment.SUPERFRETE_BASE_URL ?? SUPERFRETE_SANDBOX_URL
-    ).replace(/\/$/, "");
+    const superFreteBaseUrl = (environment.SUPERFRETE_BASE_URL ?? SUPERFRETE_SANDBOX_URL).replace(
+        /\/$/,
+        ""
+    );
     if (superFreteBaseUrl !== SUPERFRETE_SANDBOX_URL) {
         throw new Error("E2E recusado: URL Superfrete deve apontar ao sandbox");
     }

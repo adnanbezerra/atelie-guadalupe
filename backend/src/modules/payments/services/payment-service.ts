@@ -149,11 +149,7 @@ export class PaymentService {
             completionUrl: process.env.ABACATEPAY_COMPLETION_URL,
             metadata: { orderUuid: order.uuid, idempotencyKey }
         });
-        const checkoutMismatch = this.checkoutMismatch(
-            checkout,
-            order.uuid,
-            order.totalInCents
-        );
+        const checkoutMismatch = this.checkoutMismatch(checkout, order.uuid, order.totalInCents);
         if (checkoutMismatch) {
             await this.recordDivergentCheckout(order.id, checkout);
             return left(checkoutMismatch);
@@ -175,11 +171,7 @@ export class PaymentService {
         if (payment.status !== PaymentStatus.CREATING) return null;
         const checkout = await this.abacatePay.findCheckoutByExternalId(orderUuid);
         if (!checkout) return null;
-        const mismatch = this.checkoutMismatch(
-            checkout,
-            orderUuid,
-            payment.expectedAmountInCents
-        );
+        const mismatch = this.checkoutMismatch(checkout, orderUuid, payment.expectedAmountInCents);
         if (mismatch) {
             await this.recordDivergentCheckout(payment.orderId, checkout);
             throw mismatch;

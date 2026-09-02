@@ -177,10 +177,7 @@ test(
 
         const me = parseResponse<{
             user: { address: { uuid: string; zipCode: string } | null };
-        }>(
-            await app.inject({ method: "GET", url: "/users/me", headers }),
-            200
-        );
+        }>(await app.inject({ method: "GET", url: "/users/me", headers }), 200);
         assert.ok(me.user.address, "Usuario E2E precisa ter endereco completo");
         parseResponse(
             await app.inject({

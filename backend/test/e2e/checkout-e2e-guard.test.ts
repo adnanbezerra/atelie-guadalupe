@@ -40,10 +40,7 @@ test("checkout E2E opt-in fails closed instead of skipping missing configuration
 
 test("checkout E2E quote uses the persisted order destination", () => {
     assert.deepStrictEqual(
-        checkoutE2eQuotePayload(
-            "88010000",
-            "0195f4aa-7f18-7db5-9f32-06f4a9a2b401"
-        ),
+        checkoutE2eQuotePayload("88010000", "0195f4aa-7f18-7db5-9f32-06f4a9a2b401"),
         {
             zipCode: "88010000",
             items: [
@@ -64,6 +61,9 @@ test("checkout E2E guard rejects production, missing DB consent and unsafe provi
         { ABACATEPAY_API_KEY: "abc_live_redacted" },
         { SUPERFRETE_BASE_URL: "https://api.superfrete.com/api/v0" }
     ]) {
-        assert.throws(() => assertCheckoutE2eSafety({ ...safeEnvironment, ...override }), /E2E recusado/);
+        assert.throws(
+            () => assertCheckoutE2eSafety({ ...safeEnvironment, ...override }),
+            /E2E recusado/
+        );
     }
 });
