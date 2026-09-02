@@ -508,6 +508,15 @@ O backend oferece `PIX` e `CARD`. Passar somente PIX nao prova cartao.
 
 **Criterio de aceite:** fluxo e runbook especificos de cartao foram comprovados.
 
+Preparacao operacional local: `docs/CHECKOUT_CARD_RUNBOOK.md` separa `PASS_LOCAL` de evidencia
+real, define compra CARD controlada, webhook externo, fulfillment, reembolso, disputa/perda,
+frontend, evidencia sanitizada e rollback/kill switch. Criacao do documento nao comprova nenhum
+item acima. Cobertura automatizada backend passou no commit `1411aba`: os dois fluxos oferecem
+`["PIX", "CARD"]`; completion CARD persiste metodo e produz efeitos uma vez; refund, dispute e
+lost preservam CARD e bloqueiam fulfillment. Compra, webhook externo, eventos do provedor,
+frontend e operacoes reais permanecem `MANUAL_REQUIRED` e dependem de staging/provedor ou producao
+autorizada.
+
 ## Gate final GO/NO-GO
 
 Preencher imediatamente antes da liberacao total:
@@ -515,7 +524,7 @@ Preencher imediatamente antes da liberacao total:
 | Verificacao                            | Resultado  | Evidencia                                             | Responsavel                   | Data       |
 | -------------------------------------- | ---------- | ----------------------------------------------------- | ----------------------------- | ---------- |
 | Bloqueadores P0 concluidos             |            |                                                       |                               |            |
-| Build, lint e suite completa           | PASS local | 194 pass/4 skip opt-in/0 fail; lint e typecheck PASS  | Codex + QA                    | 2026-08-28 |
+| Build, lint e suite completa           | PASS local | 226 pass/4 skip opt-in/0 fail; lint e typecheck PASS  | Codex + QA                    | 2026-09-02 |
 | E2E sandbox 3x                         | PASS       | 3/3 no commit `c74554e`; IDs no registro de execucoes | Codex + QA                    | 2026-08-27 |
 | Webhook externo em staging             | BLOCKED    | Staging ainda nao provisionado                        | Responsavel de infraestrutura | 2026-08-28 |
 | Alertas testados                       |            |                                                       |                               |            |
@@ -555,3 +564,4 @@ payloads sensiveis.
 | 2026-08-28           | local/teste   | `bd1511a..f33fead` | GL-005 e Fase 3 tecnica       | PASS tecnico | suite 194 pass/4 skip/0 fail; 76/76 focados; corrida PostgreSQL GL-005 2x; build, test-tsc, lint, Prettier tocados e diff-check                           | Codex + QA                    |
 | 2026-08-28           | local/teste   | apos `8e2cb2a`     | GL-040 backup/restore local   | PASS parcial | dump 9690 ms; restore 26270 ms; 12 migrations; 5 contagens iguais; cleanup confirmado; identidade independente/estrutura de uniques pedem novo drill      | Codex                         |
 | 2026-08-28           | local/teste   | apos `6be3080`     | GL-041 preflight local        | PASS tecnico | validacao e probe read-only implementados; paineis, deploy de producao, logs e revisao por duas pessoas permanecem `MANUAL_REQUIRED`                      | Codex                         |
+| 2026-09-02           | local/teste   | `1411aba`          | GL-052 cobertura CARD backend | PASS_LOCAL   | 35/35 focados; suite 226 pass/4 skip/0 fail; build, lint, Prettier tocados e diff-check; sem rede externa                                                 | Codex + QA                    |
