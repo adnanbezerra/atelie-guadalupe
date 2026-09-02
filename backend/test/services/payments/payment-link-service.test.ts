@@ -108,6 +108,7 @@ test("public payment endpoint creates and persists a hosted checkout", async () 
 
     assert.equal(result.success, true);
     assert.equal(checkoutInput?.externalId, `payment-link:${stored.uuid}`);
+    assert.deepStrictEqual(checkoutInput?.methods, ["PIX", "CARD"]);
     if (result.success) assert.equal(result.value.checkoutUrl, "https://pay.example/bill_1");
 });
 

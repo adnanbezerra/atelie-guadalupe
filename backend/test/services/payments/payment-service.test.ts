@@ -289,6 +289,7 @@ test("payment service returns an existing checkout while new checkouts are disab
 
 test("payment checkout does not subtract the promotion discount twice", async () => {
     const productPrices: number[] = [];
+    let checkoutInput: Record<string, unknown> | undefined;
     const order = {
         id: 1,
         uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
@@ -341,12 +342,15 @@ test("payment checkout does not subtract the promotion discount twice", async ()
             productPrices.push(input.price);
             return { id: `provider:${input.externalId}` };
         },
-        createCheckout: async () => ({
-            id: "bill_1",
-            externalId: order.uuid,
-            url: "https://pay.example/bill_1",
-            amount: order.totalInCents
-        })
+        createCheckout: async (input: Record<string, unknown>) => {
+            checkoutInput = input;
+            return {
+                id: "bill_1",
+                externalId: order.uuid,
+                url: "https://pay.example/bill_1",
+                amount: order.totalInCents
+            };
+        }
     };
 
     const result = await new PaymentService(prisma as never, client as never).createCheckout(
@@ -357,6 +361,7 @@ test("payment checkout does not subtract the promotion discount twice", async ()
 
     assert.equal(result.success, true);
     assert.deepStrictEqual(productPrices, [8500, 1000]);
+    assert.deepStrictEqual(checkoutInput?.methods, ["PIX", "CARD"]);
 });
 
 test("abacate webhook signature uses the exact raw body", () => {

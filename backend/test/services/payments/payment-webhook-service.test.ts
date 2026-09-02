@@ -39,25 +39,40 @@ function orderPayment() {
     };
 }
 
-test("concurrent deliveries with the same event id produce effects once", async () => {
+test("concurrent CARD completion persists method and produces effects once", async () => {
     const event = { processedAt: null as Date | null, error: null as string | null };
-    let effectCount = 0;
+    let orderTransitionCount = 0;
+    let paymentUpdateCount = 0;
+    let fulfillmentCount = 0;
+    let emailCount = 0;
+    let paymentData: Record<string, unknown> | undefined;
     let releaseTransaction: (() => void) | undefined;
     const transactionBlocked = new Promise<void>((resolve) => {
         releaseTransaction = resolve;
     });
     const transactionClient = {
         $queryRaw: async () => [{ id: 3 }],
-        order: { updateMany: async () => ({ count: 1 }) },
-        orderPayment: { updateMany: async () => ({ count: 1 }) },
+        order: {
+            updateMany: async () => {
+                orderTransitionCount += 1;
+                return { count: 1 };
+            }
+        },
+        orderPayment: {
+            updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                paymentUpdateCount += 1;
+                paymentData = data;
+                return { count: 1 };
+            }
+        },
         fulfillmentJob: {
             upsert: async () => {
-                effectCount += 1;
+                fulfillmentCount += 1;
             }
         },
         emailJob: {
             upsert: async () => {
-                effectCount += 1;
+                emailCount += 1;
             }
         },
         paymentWebhookEvent: {
@@ -88,18 +103,32 @@ test("concurrent deliveries with the same event id produce effects once", async 
     };
     const service = new PaymentWebhookService(prisma as never);
 
-    const first = service.process(checkoutPayload("event-concurrent"));
+    const cardPayload = {
+        ...checkoutPayload("event-concurrent"),
+        data: {
+            ...checkoutPayload("unused").data,
+            payerInformation: { method: "CARD" }
+        }
+    };
+    const first = service.process(cardPayload);
     await new Promise((resolve) => setImmediate(resolve));
     await assert.rejects(
-        service.process(checkoutPayload("event-concurrent")),
+        service.process(cardPayload),
         (error: Error & { statusCode?: number }) => error.statusCode === 409
     );
     releaseTransaction?.();
     await first;
-    const duplicate = await service.process(checkoutPayload("event-concurrent"));
+    const duplicate = await service.process(cardPayload);
 
     assert.deepStrictEqual(duplicate, { duplicate: true });
-    assert.equal(effectCount, 2);
+    assert.equal(paymentData?.status, PaymentStatus.PAID);
+    assert.equal(paymentData?.paidAmountInCents, 5000);
+    assert.equal(paymentData?.providerMethod, "CARD");
+    assert.ok(paymentData?.paidAt instanceof Date);
+    assert.equal(orderTransitionCount, 1);
+    assert.equal(paymentUpdateCount, 1);
+    assert.equal(fulfillmentCount, 1);
+    assert.equal(emailCount, 1);
 });
 
 test("stale webhook processing claim can be recovered after interruption", async () => {
@@ -273,7 +302,7 @@ test("transaction failure records error and a later retry can finish", async () 
     assert.equal(financial.paymentStatus, PaymentStatus.PAID);
 });
 
-test("refund, dispute and lost events persist their financial state", async () => {
+test("refund, dispute and lost events preserve CARD and block fulfillment", async () => {
     const previousProviderTimeout = process.env.SUPERFRETE_TIMEOUT_MS;
     const previousFulfillmentTimeout = process.env.FULFILLMENT_TRANSACTION_TIMEOUT_MS;
     process.env.SUPERFRETE_TIMEOUT_MS = "100";
@@ -285,7 +314,9 @@ test("refund, dispute and lost events persist their financial state", async () =
             ["checkout.lost", PaymentStatus.LOST, "lostAt"]
         ] as const) {
             let paymentData: Record<string, unknown> | undefined;
+            let persistedPayment = { ...orderPayment(), providerMethod: "CARD" };
             let fulfillmentData: Record<string, unknown> | undefined;
+            let fulfillmentWhere: Record<string, unknown> | undefined;
             let eventProcessed = false;
             let transactionOptions: { timeout: number } | undefined;
             const transactionClient = {
@@ -293,10 +324,19 @@ test("refund, dispute and lost events persist their financial state", async () =
                 orderPayment: {
                     update: async ({ data }: { data: Record<string, unknown> }) => {
                         paymentData = data;
+                        persistedPayment = { ...persistedPayment, ...data };
+                        return persistedPayment;
                     }
                 },
                 fulfillmentJob: {
-                    updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                    updateMany: async ({
+                        where,
+                        data
+                    }: {
+                        where: Record<string, unknown>;
+                        data: Record<string, unknown>;
+                    }) => {
+                        fulfillmentWhere = where;
                         fulfillmentData = data;
                         return { count: 1 };
                     }
@@ -315,7 +355,7 @@ test("refund, dispute and lost events persist their financial state", async () =
                         eventProcessed = true;
                     }
                 },
-                orderPayment: { findUnique: async () => orderPayment() },
+                orderPayment: { findUnique: async () => persistedPayment },
                 $transaction: async (
                     callback: (tx: typeof transactionClient) => Promise<unknown>,
                     options: { timeout: number }
@@ -330,6 +370,7 @@ test("refund, dispute and lost events persist their financial state", async () =
                 event: eventType,
                 data: {
                     ...checkoutPayload("unused").data,
+                    payerInformation: { method: "CARD" },
                     refundPublicId: "refund-1",
                     reason: "provider reason"
                 }
@@ -339,7 +380,13 @@ test("refund, dispute and lost events persist their financial state", async () =
             assert.equal(paymentData?.status, status);
             assert.equal(paymentData?.refundPublicId, "refund-1");
             assert.ok(paymentData?.[dateField] instanceof Date);
+            assert.equal(persistedPayment.providerMethod, "CARD");
+            assert.deepStrictEqual(fulfillmentWhere, {
+                orderId: 7,
+                status: { in: ["PENDING", "PROCESSING", "RETRY_SCHEDULED"] }
+            });
             assert.equal(fulfillmentData?.status, "FAILED");
+            assert.equal(fulfillmentData?.lockedAt, null);
             assert.match(String(fulfillmentData?.lastError), new RegExp(status));
             assert.equal(eventProcessed, true);
             assert.deepStrictEqual(transactionOptions, { timeout: 20400 });
