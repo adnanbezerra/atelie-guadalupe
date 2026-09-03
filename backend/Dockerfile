@@ -8,9 +8,16 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends ca-certificates openssl \
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable \
+    && corepack prepare pnpm@10.25.0 --activate
 
-COPY certs/postgres-ca.crt /etc/ssl/certs/postgres-ca.crt
+COPY certs/postgres-ca.crt /usr/local/share/ca-certificates/postgres-ca.crt
+
+RUN update-ca-certificates \
+    && cp /usr/local/share/ca-certificates/postgres-ca.crt /etc/ssl/certs/postgres-ca.crt
 
 FROM base AS deps
 
@@ -29,7 +36,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 
 COPY src ./src
 
-RUN pnpm exec prisma generate
+RUN DATABASE_URL=postgresql://build:build@localhost:5432/build pnpm exec prisma generate
 RUN pnpm run build:ts
 
 FROM build AS migrate
@@ -44,20 +51,12 @@ ENV NODE_ENV=production
 
 CMD ["pnpm", "run", "prisma:seed"]
 
-FROM node:22-bookworm-slim AS runner
+FROM base AS runner
 
 ENV NODE_ENV=production
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
 ENV HOST=0.0.0.0
 ENV PORT=3000
-ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-WORKDIR /app
-
-RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
-
-COPY certs/postgres-ca.crt /etc/ssl/certs/postgres-ca.crt
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
