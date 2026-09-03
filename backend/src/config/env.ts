@@ -97,7 +97,43 @@ function operationalProductionUrlIssue(value: string) {
     return null;
 }
 
-export function productionDatabaseUrlIssue(value: string) {
+export function normalizeDatabaseHostname(hostname: string) {
+    return hostname
+        .trim()
+        .toLowerCase()
+        .replace(/^\[|\]$/g, "")
+        .replace(/\.$/, "");
+}
+
+function isInternalDatabaseHostname(hostname: string) {
+    const normalized = normalizeDatabaseHostname(hostname);
+    if (normalized === "localhost" || normalized.endsWith(".localhost")) return false;
+    if (isIP(normalized) === 4) {
+        const [first, second] = normalized.split(".").map(Number);
+        return (
+            first === 10 ||
+            (first === 100 && second >= 64 && second <= 127) ||
+            (first === 172 && second >= 16 && second <= 31) ||
+            (first === 192 && second === 168)
+        );
+    }
+    if (isIP(normalized) === 6) {
+        return normalized.startsWith("fc") || normalized.startsWith("fd");
+    }
+    return (
+        normalized.endsWith(".internal") ||
+        normalized.endsWith(".local") ||
+        (!normalized.includes(".") && /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/i.test(normalized))
+    );
+}
+
+export function productionDatabaseUrlIssue(
+    value: string,
+    environment: {
+        PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL?: string;
+        PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST?: string;
+    } = process.env
+) {
     let url: URL;
     try {
         url = new URL(value);
@@ -107,9 +143,40 @@ export function productionDatabaseUrlIssue(value: string) {
     if (url.protocol !== "postgresql:" && url.protocol !== "postgres:") {
         return "deve usar protocolo PostgreSQL em producao";
     }
+    const allowInsecureInternal = environment.PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL;
+    const expectedHost = environment.PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST?.trim();
+    if (
+        allowInsecureInternal !== undefined &&
+        allowInsecureInternal !== "true" &&
+        allowInsecureInternal !== "false"
+    ) {
+        return "PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL deve ser true ou false";
+    }
     const sslModes = url.searchParams.getAll("sslmode");
-    if (sslModes.length !== 1 || !PRODUCTION_DATABASE_SSL_MODES.has(sslModes[0])) {
+    if (sslModes.length !== 1) {
         return "deve exigir TLS com sslmode=require, verify-ca ou verify-full em producao";
+    }
+    if (PRODUCTION_DATABASE_SSL_MODES.has(sslModes[0])) {
+        if (allowInsecureInternal === "true" || expectedHost) {
+            return "configuracao de banco interno sem TLS deve estar ausente quando TLS esta ativo";
+        }
+        return null;
+    }
+    if (sslModes[0] !== "disable") {
+        return "deve exigir TLS com sslmode=require, verify-ca ou verify-full em producao";
+    }
+    if (allowInsecureInternal !== "true") {
+        return "sslmode=disable exige PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true";
+    }
+    const normalizedExpectedHost = expectedHost
+        ? normalizeDatabaseHostname(expectedHost)
+        : undefined;
+    const actualHost = normalizeDatabaseHostname(url.hostname);
+    if (!normalizedExpectedHost || actualHost !== normalizedExpectedHost) {
+        return "sslmode=disable exige host igual a PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST";
+    }
+    if (!isInternalDatabaseHostname(actualHost)) {
+        return "sslmode=disable permitido somente para host privado ou interno";
     }
     return null;
 }
@@ -149,6 +216,8 @@ const envSchema = z
             (value) => !value || /^postgres(?:ql)?:\/\//.test(value),
             "deve ser uma URL PostgreSQL"
         ),
+        PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: enabledFlag,
+        PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: optionalString,
         JWT_SECRET: optionalString,
         JWT_EXPIRES_IN: z.string().trim().min(1).default("1d"),
         RATE_LIMIT_MAX: positiveInteger(120),
@@ -325,7 +394,7 @@ const envSchema = z
             });
         }
         if (environment.DATABASE_URL) {
-            const message = productionDatabaseUrlIssue(environment.DATABASE_URL);
+            const message = productionDatabaseUrlIssue(environment.DATABASE_URL, environment);
             if (message) context.addIssue({ code: "custom", path: ["DATABASE_URL"], message });
         }
         if (environment.JWT_SECRET) {

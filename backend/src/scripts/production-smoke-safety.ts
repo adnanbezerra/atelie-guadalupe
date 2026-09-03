@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { productionDatabaseUrlIssue } from "../config/env";
+import { normalizeDatabaseHostname, productionDatabaseUrlIssue } from "../config/env";
 import { checkoutAllowedUserUuids } from "../modules/payments/services/checkout-availability";
 
 const MAX_APPROVED_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -138,14 +138,13 @@ export function readProductionSmokeInputs(environment: NodeJS.ProcessEnv): Produ
 
 export function productionSmokeDatabaseUrl(environment: NodeJS.ProcessEnv) {
     const connectionString = required(environment, "DATABASE_URL");
-    if (productionDatabaseUrlIssue(connectionString)) {
+    if (productionDatabaseUrlIssue(connectionString, environment)) {
         throw new Error("invalid production database URL");
     }
     const url = new URL(connectionString);
-    const expectedHost = required(
-        environment,
-        "PRODUCTION_SMOKE_EXPECTED_DATABASE_HOST"
-    ).toLowerCase();
+    const expectedHost = normalizeDatabaseHostname(
+        required(environment, "PRODUCTION_SMOKE_EXPECTED_DATABASE_HOST")
+    );
     const expectedPort = z.coerce
         .number()
         .int()
@@ -155,7 +154,7 @@ export function productionSmokeDatabaseUrl(environment: NodeJS.ProcessEnv) {
     const expectedName = required(environment, "PRODUCTION_SMOKE_EXPECTED_DATABASE_NAME");
     const actualName = decodeURIComponent(url.pathname.replace(/^\//, ""));
     if (
-        url.hostname.toLowerCase() !== expectedHost ||
+        normalizeDatabaseHostname(url.hostname) !== expectedHost ||
         Number(url.port || "5432") !== expectedPort ||
         actualName !== expectedName
     ) {

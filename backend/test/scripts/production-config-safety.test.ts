@@ -99,6 +99,20 @@ test("production preflight accepts only explicit provider modes and disabled che
     );
 });
 
+test("production preflight accepts explicit internal PostgreSQL without TLS", () => {
+    const checks = inspectProductionEnvironment({
+        ...validProductionEnvironment,
+        DATABASE_URL: "postgresql://app:secret@postgres/app?sslmode=disable",
+        PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "true",
+        PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "postgres"
+    });
+
+    assert.equal(
+        checks.find((check) => check.id === "production_environment_schema")?.status,
+        "AUTO_PASS"
+    );
+});
+
 test("database privilege checks reject ownership, DDL and dangerous role attributes", () => {
     const safeChecks = inspectProductionDatabasePrivileges({
         dangerousRoleAttributes: false,

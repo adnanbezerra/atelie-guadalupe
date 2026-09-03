@@ -1,6 +1,6 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import { validateEnv } from "../../src/config/env";
+import { productionDatabaseUrlIssue, validateEnv } from "../../src/config/env";
 
 const validEnvironment: NodeJS.ProcessEnv = {
     NODE_ENV: "production",
@@ -166,6 +166,100 @@ test("production requires TLS for PostgreSQL and a strong JWT secret", () => {
         assert.throws(
             () => validateEnv({ ...validEnvironment, DATABASE_URL: databaseUrl }),
             /DATABASE_URL/
+        );
+    }
+});
+
+test("production permits sslmode=disable only for the explicitly expected internal host", () => {
+    const databaseUrl = "postgresql://user:password@postgres:5432/app?sslmode=disable";
+    const insecureInternalEnvironment = {
+        ...validEnvironment,
+        DATABASE_URL: databaseUrl,
+        PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "true",
+        PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "postgres"
+    };
+
+    assert.equal(validateEnv(insecureInternalEnvironment).DATABASE_URL, databaseUrl);
+    assert.equal(productionDatabaseUrlIssue(databaseUrl, insecureInternalEnvironment), null);
+
+    for (const [host, expectedHost] of [
+        ["db.internal", "DB.INTERNAL."],
+        ["10.20.30.40", "10.20.30.40"],
+        ["[fd00::1234]", "fd00::1234"]
+    ] as const) {
+        const internalUrl = `postgresql://user:password@${host}:5432/app?sslmode=disable`;
+        assert.equal(
+            productionDatabaseUrlIssue(internalUrl, {
+                PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "true",
+                PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: expectedHost
+            }),
+            null
+        );
+    }
+
+    for (const environment of [
+        { ...validEnvironment, DATABASE_URL: databaseUrl },
+        {
+            ...insecureInternalEnvironment,
+            PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "false"
+        },
+        {
+            ...insecureInternalEnvironment,
+            PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "other-postgres"
+        },
+        {
+            ...insecureInternalEnvironment,
+            DATABASE_URL:
+                "postgresql://user:password@database.example.com:5432/app?sslmode=disable",
+            PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "database.example.com"
+        },
+        ...["localhost", "127.0.0.1", "8.8.8.8"].map((host) => ({
+            ...insecureInternalEnvironment,
+            DATABASE_URL: `postgresql://user:password@${host}:5432/app?sslmode=disable`,
+            PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: host
+        })),
+        {
+            ...insecureInternalEnvironment,
+            DATABASE_URL:
+                "postgresql://user:password@postgres:5432/app?sslmode=disable&sslmode=disable"
+        },
+        {
+            ...insecureInternalEnvironment,
+            PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "yes"
+        }
+    ]) {
+        assert.throws(() => validateEnv(environment), /DATABASE_URL|ALLOW_INSECURE_INTERNAL/);
+    }
+});
+
+test("production database TLS modes remain accepted without insecure opt-in", () => {
+    for (const sslmode of ["require", "verify-ca", "verify-full"]) {
+        const databaseUrl = `postgresql://user:password@database.example.com:5432/app?sslmode=${sslmode}`;
+        assert.equal(productionDatabaseUrlIssue(databaseUrl, {}), null);
+        assert.equal(
+            validateEnv({ ...validEnvironment, DATABASE_URL: databaseUrl }).DATABASE_URL,
+            databaseUrl
+        );
+    }
+
+    assert.equal(
+        validateEnv({
+            ...validEnvironment,
+            PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "false"
+        }).DATABASE_URL,
+        validEnvironment.DATABASE_URL
+    );
+    for (const residual of [
+        { PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "true" },
+        { PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "db.internal" },
+        {
+            PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "false",
+            PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "db.internal"
+        }
+    ]) {
+        assert.throws(
+            () => validateEnv({ ...validEnvironment, ...residual }),
+            /DATABASE_URL: configuracao de banco interno sem TLS deve estar ausente/
         );
     }
 });

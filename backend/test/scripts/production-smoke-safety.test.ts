@@ -134,6 +134,29 @@ test("production smoke inputs require production, enabled single-user allowlist 
 
 test("production smoke database target must match approved host, port and name", () => {
     assert.equal(productionSmokeDatabaseUrl(environment()), environment().DATABASE_URL);
+    const insecureInternalEnvironment = {
+        ...environment(),
+        DATABASE_URL:
+            "postgresql://runtime:private@db.internal:5432/checkout_production?sslmode=disable",
+        PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "true",
+        PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "db.internal"
+    };
+    assert.equal(
+        productionSmokeDatabaseUrl(insecureInternalEnvironment),
+        insecureInternalEnvironment.DATABASE_URL
+    );
+    const normalizedIpv6Environment = {
+        ...environment(),
+        DATABASE_URL:
+            "postgresql://runtime:private@[fd00::1234]:5432/checkout_production?sslmode=disable",
+        PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: "true",
+        PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "fd00::1234",
+        PRODUCTION_SMOKE_EXPECTED_DATABASE_HOST: "[FD00::1234]"
+    };
+    assert.equal(
+        productionSmokeDatabaseUrl(normalizedIpv6Environment),
+        normalizedIpv6Environment.DATABASE_URL
+    );
     for (const invalid of [
         { PRODUCTION_SMOKE_EXPECTED_DATABASE_HOST: "other.internal" },
         { PRODUCTION_SMOKE_EXPECTED_DATABASE_PORT: "5433" },
