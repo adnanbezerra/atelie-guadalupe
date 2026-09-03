@@ -86,20 +86,18 @@ lista com exatamente uma conta e `DATABASE_URL` da role runtime/read-only. Execu
 pnpm run smoke:verify-production
 ```
 
-`DATABASE_URL` deve usar protocolo PostgreSQL e conter exatamente um `sslmode`. O padrao permitido
-e `require`, `verify-ca` ou `verify-full`. Para URL interna do PostgreSQL no mesmo projeto
-Easypanel, `sslmode=disable` exige tambem:
+`DATABASE_URL` deve usar protocolo PostgreSQL e conter exatamente um `sslmode`. Prefira `require`,
+`verify-ca` ou `verify-full`. A excecao temporaria com `sslmode=disable`, inclusive para host
+publico, exige tambem:
 
 ```env
 PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true
-PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=HOST_INTERNO_EXATO
+PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=HOST_EXATO
 ```
 
-Host declarado deve ser exatamente o host de `DATABASE_URL`. Antes do smoke, duas pessoas devem
-confirmar no Easypanel que aplicacao e banco compartilham somente rede privada autorizada e que
-PostgreSQL nao esta publicado em **Expose**. Preflight/probe nao prova isolamento de rede. TLS
-continua obrigatorio para qualquer host externo ou caminho fora da rede privada. Veja
-[Postgres Service — Easypanel Docs](https://easypanel.io/docs/services/postgres).
+Host declarado deve ser exatamente o host de `DATABASE_URL`. Preflight/probe nao prova isolamento
+de rede nem criptografia. Para host publico, restrinja a porta PostgreSQL no firewall e restaure TLS
+assim que possivel.
 
 Probe abre transacao PostgreSQL
 `REPEATABLE READ, READ ONLY`; esse comando e a primeira instrucao SQL. Em seguida confirma

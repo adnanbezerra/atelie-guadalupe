@@ -105,28 +105,6 @@ export function normalizeDatabaseHostname(hostname: string) {
         .replace(/\.$/, "");
 }
 
-function isInternalDatabaseHostname(hostname: string) {
-    const normalized = normalizeDatabaseHostname(hostname);
-    if (normalized === "localhost" || normalized.endsWith(".localhost")) return false;
-    if (isIP(normalized) === 4) {
-        const [first, second] = normalized.split(".").map(Number);
-        return (
-            first === 10 ||
-            (first === 100 && second >= 64 && second <= 127) ||
-            (first === 172 && second >= 16 && second <= 31) ||
-            (first === 192 && second === 168)
-        );
-    }
-    if (isIP(normalized) === 6) {
-        return normalized.startsWith("fc") || normalized.startsWith("fd");
-    }
-    return (
-        normalized.endsWith(".internal") ||
-        normalized.endsWith(".local") ||
-        (!normalized.includes(".") && /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/i.test(normalized))
-    );
-}
-
 export function productionDatabaseUrlIssue(
     value: string,
     environment: {
@@ -174,9 +152,6 @@ export function productionDatabaseUrlIssue(
     const actualHost = normalizeDatabaseHostname(url.hostname);
     if (!normalizedExpectedHost || actualHost !== normalizedExpectedHost) {
         return "sslmode=disable exige host igual a PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST";
-    }
-    if (!isInternalDatabaseHostname(actualHost)) {
-        return "sslmode=disable permitido somente para host privado ou interno";
     }
     return null;
 }

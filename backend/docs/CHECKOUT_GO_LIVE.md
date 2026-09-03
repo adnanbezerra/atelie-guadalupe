@@ -430,10 +430,10 @@ recuperacao foi testado.
 ticket, chat ou log.
 
 Procedimento: `pnpm run config:verify-production` e `docs/PRODUCTION_CONFIGURATION.md`. Preflight
-valida schema de ambiente, TLS PostgreSQL ou opt-in restrito para `sslmode=disable` com host interno
+valida schema de ambiente, TLS PostgreSQL ou opt-in restrito para `sslmode=disable` com host exato
 exato, forca minima do JWT, modos dos provedores, kill switch, flags dos workers e privilegios da
 role runtime em consulta read-only. Excecao exige `PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true`
-e `PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=<host interno exato>`; TLS segue padrao. Revisao por
+e `PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=<host exato>`; TLS segue recomendado. Revisao por
 duas pessoas precisa confirmar rede privada e PostgreSQL nao exposto, pois preflight nao prova
 isolamento. Roles de migration/runtime continuam separadas. Referencia:
 [Easypanel Postgres](https://easypanel.io/docs/services/postgres). Saida contem somente IDs e estados

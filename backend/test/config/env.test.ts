@@ -170,7 +170,7 @@ test("production requires TLS for PostgreSQL and a strong JWT secret", () => {
     }
 });
 
-test("production permits sslmode=disable only for the explicitly expected internal host", () => {
+test("production permits sslmode=disable only for the explicitly expected host", () => {
     const databaseUrl = "postgresql://user:password@postgres:5432/app?sslmode=disable";
     const insecureInternalEnvironment = {
         ...validEnvironment,
@@ -185,7 +185,9 @@ test("production permits sslmode=disable only for the explicitly expected intern
     for (const [host, expectedHost] of [
         ["db.internal", "DB.INTERNAL."],
         ["10.20.30.40", "10.20.30.40"],
-        ["[fd00::1234]", "fd00::1234"]
+        ["[fd00::1234]", "fd00::1234"],
+        ["187.77.60.172", "187.77.60.172"],
+        ["database.example.com", "DATABASE.EXAMPLE.COM."]
     ] as const) {
         const internalUrl = `postgresql://user:password@${host}:5432/app?sslmode=disable`;
         assert.equal(
@@ -207,17 +209,6 @@ test("production permits sslmode=disable only for the explicitly expected intern
             ...insecureInternalEnvironment,
             PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "other-postgres"
         },
-        {
-            ...insecureInternalEnvironment,
-            DATABASE_URL:
-                "postgresql://user:password@database.example.com:5432/app?sslmode=disable",
-            PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: "database.example.com"
-        },
-        ...["localhost", "127.0.0.1", "8.8.8.8"].map((host) => ({
-            ...insecureInternalEnvironment,
-            DATABASE_URL: `postgresql://user:password@${host}:5432/app?sslmode=disable`,
-            PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: host
-        })),
         {
             ...insecureInternalEnvironment,
             DATABASE_URL:

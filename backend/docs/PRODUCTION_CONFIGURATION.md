@@ -21,24 +21,21 @@ No gerenciador de configuracao da release, antes de aceitar trafego:
 4. execute `pnpm run config:verify-production` no contexto da release, sem imprimir o ambiente;
 5. corrija qualquer `AUTO_FAIL`; nao prossiga para revisao manual enquanto ele existir.
 
-`DATABASE_URL` precisa exigir TLS por `sslmode=require`, `verify-ca` ou `verify-full`; prefira
-`verify-full`. Excecao estreita existe para URL interna do PostgreSQL no mesmo projeto Easypanel,
-que a plataforma fornece com `sslmode=disable` na rede privada:
+`DATABASE_URL` deve preferir TLS por `sslmode=require`, `verify-ca` ou `verify-full`. Enquanto TLS
+nao estiver operacional, uma excecao explicita permite `sslmode=disable` somente para o host exato
+declarado:
 
 ```env
-DATABASE_URL=postgresql://RUNTIME_USER:SECRET@HOST_INTERNO_EXATO:5432/PRODUCTION_DB_NAME?sslmode=disable
+DATABASE_URL=postgresql://RUNTIME_USER:SECRET@HOST_EXATO:5432/PRODUCTION_DB_NAME?sslmode=disable
 PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true
-PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=HOST_INTERNO_EXATO
+PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=HOST_EXATO
 ```
 
-Use excecao somente se o host de `DATABASE_URL` for exatamente o host interno declarado, aplicacao
-e banco compartilharem a rede privada do projeto e PostgreSQL nao possuir porta publicada em
-**Expose**. O opt-in nao permite host publico e nao fornece criptografia. Se trafego sair da rede
-privada, remova-o e configure TLS. Conforme a
-[documentacao oficial do Easypanel](https://easypanel.io/docs/services/postgres), PostgreSQL e
-privado por padrao, a URL interna usa `sslmode=disable` e **Expose** publica acesso externo.
+O opt-in aceita host publico, mas nao fornece criptografia nem autenticacao do servidor. Restrinja
+a porta PostgreSQL no firewall aos IPs necessarios e trate isso como configuracao temporaria. Quando
+TLS estiver operacional, remova as duas variaveis de excecao e troque o `sslmode`.
 
-Validacao automatica confirma opt-in, formato interno e igualdade do host; nao prova topologia,
+Validacao automatica confirma opt-in e igualdade do host; nao prova topologia,
 firewall ou ausencia de exposicao. Duas pessoas devem revisar esses pontos diretamente no
 Easypanel. O probe read-only bloqueia role superuser, `CREATEROLE`, `CREATEDB`, replicacao,
 `BYPASSRLS`, ownership do banco/schema/tabelas e `CREATE` no banco ou schema `public`; exige
@@ -59,8 +56,8 @@ decisao `GO`.
 Ambas conferem diretamente no deploy, secret manager e paineis, sem transcrever valores:
 
 1. inventario confirma banco de producao e grants DML estritamente necessarios da role de runtime;
-   se usar excecao Easypanel sem TLS, confirma host interno exato, **Expose** desabilitado, nenhuma
-   porta publica/firewall permissivo e somente servicos autorizados na rede privada;
+   se usar excecao sem TLS, confirma host exato e firewall restrito; em rede privada, confirma
+   tambem que somente servicos autorizados compartilham a rede;
 2. `JWT_SECRET` possui pelo menos 32 bytes, foi gerado aleatoriamente para producao e nao e
    reutilizado em outro ambiente ou servico;
 3. `CORS_ORIGIN` lista somente origens aprovadas e inclui origem de `FRONTEND_URL`;
