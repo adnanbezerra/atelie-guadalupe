@@ -21,6 +21,7 @@ Compartilhar somente metadados nao sensiveis:
 - plataforma/projeto de deploy;
 - acesso read-only aos deploy logs;
 - host, porta e nome do PostgreSQL, sem usuario/senha;
+- confirmacao de que o PostgreSQL usa somente rede privada interna ou, se externo, TLS;
 - confirmacao das roles de migration e runtime;
 - mecanismo autorizado para executar migrations;
 - nome do database MongoDB de staging;
@@ -49,9 +50,29 @@ Requisitos:
 - protocolo `postgresql:` ou `postgres:`;
 - exatamente um `sslmode`;
 - preferir `verify-full`; `verify-ca` e aceitavel; `require` e minimo permitido;
-- nunca usar `sslmode=disable`;
+- manter TLS como padrao;
 - backup/snapshot antes de migration relevante;
 - acesso read-only posterior para evidencias de webhook e migrations.
+
+Excecao Easypanel: a documentacao oficial fornece URL interna com `sslmode=disable` para servicos
+no mesmo projeto e informa que esse host e alcancavel pela rede privada de servicos. Use essa URL
+somente quando aplicacao e PostgreSQL estiverem nessa rede interna, sem porta publicada em
+**Expose**:
+
+```env
+DATABASE_URL=postgresql://RUNTIME_USER:SECRET@HOST_INTERNO_EXATO:5432/STAGING_DB_NAME?sslmode=disable
+PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true
+PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=HOST_INTERNO_EXATO
+```
+
+`PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST` deve repetir exatamente o host da URL interna, sem
+usuario, porta ou protocolo. O opt-in nao torna uma conexao publica segura e nao substitui TLS. Se
+PostgreSQL estiver exposto, atravessar rede publica ou usar host externo, remova o opt-in e use
+`sslmode=require`, `verify-ca` ou `verify-full`. Duas pessoas devem confirmar manualmente no
+Easypanel que **Expose** esta desabilitado e que somente servicos autorizados compartilham a rede;
+o preflight valida configuracao e igualdade do host, nao isolamento de rede.
+
+Referencia: [Postgres Service — Easypanel Docs](https://easypanel.io/docs/services/postgres).
 
 Separar roles:
 
@@ -63,7 +84,8 @@ Separar roles:
 
 O `prisma.config.ts` atual le somente `DATABASE_URL`. No job de migration, injetar temporariamente
 a URL da migration role. No servico implantado, `DATABASE_URL` deve voltar a ser a runtime role.
-Nunca disponibilizar credencial de migration ao processo da aplicacao.
+Nunca disponibilizar credencial de migration ao processo da aplicacao. A excecao de TLS interno nao
+altera essa separacao nem reduz os privilegios exigidos para a role runtime.
 
 Sequencia:
 

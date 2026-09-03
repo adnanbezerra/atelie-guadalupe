@@ -410,7 +410,8 @@ recuperacao foi testado.
 ### GL-041 — Revisar configuracao final de producao (P0)
 
 - [ ] `NODE_ENV=production`;
-- [ ] `DATABASE_URL` aponta para producao com SSL e usuario de privilegio minimo;
+- [ ] `DATABASE_URL` aponta para producao com TLS e usuario de privilegio minimo, ou usa excecao
+      Easypanel interna explicitamente aprovada;
 - [ ] `JWT_SECRET` forte e exclusivo;
 - [ ] `CORS_ORIGIN` contem somente origens esperadas;
 - [ ] `ABACATEPAY_BASE_URL` confere com documentacao oficial;
@@ -429,12 +430,17 @@ recuperacao foi testado.
 ticket, chat ou log.
 
 Procedimento: `pnpm run config:verify-production` e `docs/PRODUCTION_CONFIGURATION.md`. Preflight
-valida schema de ambiente, TLS PostgreSQL, forca minima do JWT, modos exatos dos provedores, kill
-switch, flags explicitas dos workers, remetente/reply-to e audita privilegios da role de runtime
-com consulta read-only. Saida contem somente IDs e estados `AUTO_PASS`, `AUTO_FAIL` ou
-`MANUAL_REQUIRED`; nunca declara `GO` ou `PASS` global enquanto paineis e segunda revisao estiverem
-pendentes. Teste local cobriu logica com valores ficticios, sem consultar producao. Erros de
-AbacatePay e Superfrete deixaram de incluir corpos/respostas do provedor.
+valida schema de ambiente, TLS PostgreSQL ou opt-in restrito para `sslmode=disable` com host interno
+exato, forca minima do JWT, modos dos provedores, kill switch, flags dos workers e privilegios da
+role runtime em consulta read-only. Excecao exige `PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true`
+e `PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=<host interno exato>`; TLS segue padrao. Revisao por
+duas pessoas precisa confirmar rede privada e PostgreSQL nao exposto, pois preflight nao prova
+isolamento. Roles de migration/runtime continuam separadas. Referencia:
+[Easypanel Postgres](https://easypanel.io/docs/services/postgres). Saida contem somente IDs e estados
+`AUTO_PASS`, `AUTO_FAIL` ou `MANUAL_REQUIRED`; nunca declara `GO` ou `PASS` global enquanto paineis
+e segunda revisao estiverem pendentes. Teste local cobriu logica com valores ficticios, sem
+consultar producao. Erros de AbacatePay e Superfrete deixaram de incluir corpos/respostas do
+provedor.
 
 **Estado em 2026-08-28: MANUAL_REQUIRED.** Nao ha acesso a deploy/banco de producao, paineis dos
 provedores, agregador de logs nem segundo revisor. Nenhum item acima foi marcado apenas por teste
@@ -524,7 +530,7 @@ Preencher imediatamente antes da liberacao total:
 | Verificacao                            | Resultado  | Evidencia                                             | Responsavel                   | Data       |
 | -------------------------------------- | ---------- | ----------------------------------------------------- | ----------------------------- | ---------- |
 | Bloqueadores P0 concluidos             |            |                                                       |                               |            |
-| Build, lint e suite completa           | PASS local | 226 pass/4 skip opt-in/0 fail; lint e typecheck PASS  | Codex + QA                    | 2026-09-02 |
+| Build, lint e suite completa           | PASS local | 229 pass/4 skip opt-in/0 fail; lint e typecheck PASS  | Codex + QA                    | 2026-09-03 |
 | E2E sandbox 3x                         | PASS       | 3/3 no commit `c74554e`; IDs no registro de execucoes | Codex + QA                    | 2026-08-27 |
 | Webhook externo em staging             | BLOCKED    | Staging ainda nao provisionado                        | Responsavel de infraestrutura | 2026-08-28 |
 | Alertas testados                       |            |                                                       |                               |            |
@@ -565,3 +571,4 @@ payloads sensiveis.
 | 2026-08-28           | local/teste   | apos `8e2cb2a`     | GL-040 backup/restore local   | PASS parcial | dump 9690 ms; restore 26270 ms; 12 migrations; 5 contagens iguais; cleanup confirmado; identidade independente/estrutura de uniques pedem novo drill      | Codex                         |
 | 2026-08-28           | local/teste   | apos `6be3080`     | GL-041 preflight local        | PASS tecnico | validacao e probe read-only implementados; paineis, deploy de producao, logs e revisao por duas pessoas permanecem `MANUAL_REQUIRED`                      | Codex                         |
 | 2026-09-02           | local/teste   | `1411aba`          | GL-052 cobertura CARD backend | PASS_LOCAL   | 35/35 focados; suite 226 pass/4 skip/0 fail; build, lint, Prettier tocados e diff-check; sem rede externa                                                 | Codex + QA                    |
+| 2026-09-03           | local/teste   | `e4599cd`          | PostgreSQL interno Easypanel  | PASS tecnico | 36/36 focados; suite 229 pass/4 skip/0 fail; TLS segue padrao; excecao sem TLS exige opt-in, host interno exato e revisao da rede                         | Codex + QA                    |

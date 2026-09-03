@@ -22,11 +22,28 @@ No gerenciador de configuracao da release, antes de aceitar trafego:
 5. corrija qualquer `AUTO_FAIL`; nao prossiga para revisao manual enquanto ele existir.
 
 `DATABASE_URL` precisa exigir TLS por `sslmode=require`, `verify-ca` ou `verify-full`; prefira
-`verify-full`. O probe read-only bloqueia role superuser, `CREATEROLE`, `CREATEDB`, replicacao,
+`verify-full`. Excecao estreita existe para URL interna do PostgreSQL no mesmo projeto Easypanel,
+que a plataforma fornece com `sslmode=disable` na rede privada:
+
+```env
+DATABASE_URL=postgresql://RUNTIME_USER:SECRET@HOST_INTERNO_EXATO:5432/PRODUCTION_DB_NAME?sslmode=disable
+PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true
+PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=HOST_INTERNO_EXATO
+```
+
+Use excecao somente se o host de `DATABASE_URL` for exatamente o host interno declarado, aplicacao
+e banco compartilharem a rede privada do projeto e PostgreSQL nao possuir porta publicada em
+**Expose**. O opt-in nao permite host publico e nao fornece criptografia. Se trafego sair da rede
+privada, remova-o e configure TLS. Conforme a
+[documentacao oficial do Easypanel](https://easypanel.io/docs/services/postgres), PostgreSQL e
+privado por padrao, a URL interna usa `sslmode=disable` e **Expose** publica acesso externo.
+
+Validacao automatica confirma opt-in, formato interno e igualdade do host; nao prova topologia,
+firewall ou ausencia de exposicao. Duas pessoas devem revisar esses pontos diretamente no
+Easypanel. O probe read-only bloqueia role superuser, `CREATEROLE`, `CREATEDB`, replicacao,
 `BYPASSRLS`, ownership do banco/schema/tabelas e `CREATE` no banco ou schema `public`; exige
-`USAGE` no schema. Probe roda dentro de transacao explicitamente read-only. O job separado de
-migration pode receber temporariamente uma role mais privilegiada. Essa credencial nao pode chegar
-ao processo da aplicacao.
+`USAGE` no schema. Job separado de migration pode receber temporariamente role mais privilegiada.
+Essa credencial nao pode chegar ao processo da aplicacao, inclusive na excecao interna.
 
 Saida possui somente IDs e estados:
 
@@ -42,6 +59,8 @@ decisao `GO`.
 Ambas conferem diretamente no deploy, secret manager e paineis, sem transcrever valores:
 
 1. inventario confirma banco de producao e grants DML estritamente necessarios da role de runtime;
+   se usar excecao Easypanel sem TLS, confirma host interno exato, **Expose** desabilitado, nenhuma
+   porta publica/firewall permissivo e somente servicos autorizados na rede privada;
 2. `JWT_SECRET` possui pelo menos 32 bytes, foi gerado aleatoriamente para producao e nao e
    reutilizado em outro ambiente ou servico;
 3. `CORS_ORIGIN` lista somente origens aprovadas e inclui origem de `FRONTEND_URL`;
@@ -64,12 +83,13 @@ Ambas conferem diretamente no deploy, secret manager e paineis, sem transcrever 
 Procedimento de expansao e evidencia: `docs/CHECKOUT_CANARY.md`. Preflight exige inicio em
 `ALLOWLIST`; mudanca posterior para `PUBLIC` depende do gate GL-051.
 
-Documentacao oficial revisada em 2026-08-28:
+Documentacao oficial revisada ate 2026-09-03:
 
 - AbacatePay API v2: `https://docs.abacatepay.com/pages/reference/introduction`;
 - seguranca de webhook: `https://docs.abacatepay.com/pages/webhooks/security`;
 - cadastro/lista de eventos: `https://docs.abacatepay.com/pages/webhooks/create`;
 - Superfrete: `https://superfrete.readme.io/reference/primeiros-passos`.
+- Easypanel Postgres: `https://easypanel.io/docs/services/postgres`.
 
 ## Evidencia e bloqueio
 

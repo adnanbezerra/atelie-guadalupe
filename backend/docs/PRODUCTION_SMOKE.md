@@ -86,14 +86,29 @@ lista com exatamente uma conta e `DATABASE_URL` da role runtime/read-only. Execu
 pnpm run smoke:verify-production
 ```
 
-`DATABASE_URL` deve usar protocolo PostgreSQL e conter exatamente um `sslmode`, limitado a
-`require`, `verify-ca` ou `verify-full`. Probe abre transacao PostgreSQL
+`DATABASE_URL` deve usar protocolo PostgreSQL e conter exatamente um `sslmode`. O padrao permitido
+e `require`, `verify-ca` ou `verify-full`. Para URL interna do PostgreSQL no mesmo projeto
+Easypanel, `sslmode=disable` exige tambem:
+
+```env
+PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL=true
+PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST=HOST_INTERNO_EXATO
+```
+
+Host declarado deve ser exatamente o host de `DATABASE_URL`. Antes do smoke, duas pessoas devem
+confirmar no Easypanel que aplicacao e banco compartilham somente rede privada autorizada e que
+PostgreSQL nao esta publicado em **Expose**. Preflight/probe nao prova isolamento de rede. TLS
+continua obrigatorio para qualquer host externo ou caminho fora da rede privada. Veja
+[Postgres Service — Easypanel Docs](https://easypanel.io/docs/services/postgres).
+
+Probe abre transacao PostgreSQL
 `REPEATABLE READ, READ ONLY`; esse comando e a primeira instrucao SQL. Em seguida confirma
 `current_database()` contra nome aprovado antes de ler qualquer registro. Nao chama provedor,
 servidor ou worker e nao altera registro. Host, porta e nome do banco precisam coincidir exatamente
 com inventario esperado, sem aparecer na saida. Consultas selecionam somente escalares necessarios.
 Comparacoes do JSON persistido viram booleanos dentro do banco; payload/resposta nao saem da
-transacao.
+transacao. A excecao de transporte nao altera uso da role runtime/read-only; role de migration
+continua restrita ao job separado e nunca participa do smoke.
 
 Checks automaticos exigem:
 
