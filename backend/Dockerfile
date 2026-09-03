@@ -10,6 +10,8 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
 
+COPY certs/postgres-ca.crt /etc/ssl/certs/postgres-ca.crt
+
 FROM base AS deps
 
 COPY package.json pnpm-lock.yaml ./
