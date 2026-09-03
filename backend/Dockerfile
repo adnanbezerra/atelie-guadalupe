@@ -57,6 +57,7 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
 
+COPY certs/postgres-ca.crt /etc/ssl/certs/postgres-ca.crt
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
