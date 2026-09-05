@@ -19,7 +19,7 @@
         "watch:ts": "tsc -w",
         "dev": "pnpm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"pnpm run watch:ts\" \"pnpm run dev:start\"",
         "dev:start": "fastify start --options --ignore-watch=.ts$ -w -l info -P dist/app.js",
-        "prisma:generate": "pnpm exec prisma generate",
+        "prisma:generate": "DATABASE_URL=postgresql://build:build@localhost:5432/build pnpm exec prisma generate",
         "prisma:migrate:dev": "pnpm exec prisma migrate dev",
         "prisma:migrate:deploy": "pnpm exec prisma migrate deploy",
         "prisma:seed": "ts-node prisma/seed.ts",

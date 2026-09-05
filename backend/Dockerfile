@@ -36,7 +36,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 
 COPY src ./src
 
-RUN DATABASE_URL=postgresql://build:build@localhost:5432/build pnpm exec prisma generate
+RUN pnpm run prisma:generate
 RUN pnpm run build:ts
 
 FROM build AS migrate
