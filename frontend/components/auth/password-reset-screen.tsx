@@ -34,6 +34,139 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_PATTERN =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 
+function ArrowLeftIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <path
+                d="M15 18l-6-6 6-6"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+            />
+        </svg>
+    );
+}
+
+function MailIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <rect
+                height="14"
+                rx="2"
+                stroke="currentColor"
+                strokeWidth="2"
+                width="18"
+                x="3"
+                y="5"
+            />
+            <path
+                d="m4 7 8 6 8-6"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+            />
+        </svg>
+    );
+}
+
+function LockIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <rect
+                height="10"
+                rx="2"
+                stroke="currentColor"
+                strokeWidth="2"
+                width="14"
+                x="5"
+                y="11"
+            />
+            <path
+                d="M8 11V8a4 4 0 0 1 8 0v3"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="2"
+            />
+        </svg>
+    );
+}
+
+function EyeIcon({ hidden }: { hidden: boolean }) {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <path
+                d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+            />
+            <circle
+                cx="12"
+                cy="12"
+                r="2.5"
+                stroke="currentColor"
+                strokeWidth="2"
+            />
+            {hidden ? (
+                <path
+                    d="m4 4 16 16"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                />
+            ) : null}
+        </svg>
+    );
+}
+
+function ShieldIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-10"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <path
+                d="M12 3 5 6v5c0 4.7 2.9 8.4 7 10 4.1-1.6 7-5.3 7-10V6l-7-3Z"
+                stroke="currentColor"
+                strokeLinejoin="round"
+                strokeWidth="1.8"
+            />
+            <path
+                d="m9 12 2 2 4-4"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.8"
+            />
+        </svg>
+    );
+}
+
 function requestErrorMessage(status: number) {
     if (status === 422) return "Digite um e-mail válido para continuar.";
     if (status === 429) {
@@ -215,20 +348,21 @@ export function PasswordResetScreen() {
                         className="mb-10 inline-flex min-h-11 w-fit items-center gap-2 rounded-lg px-1 text-sm font-bold text-primary underline-offset-4 hover:underline"
                         href={loginHref}
                     >
-                        <span
-                            aria-hidden="true"
-                            className="material-symbols-outlined text-xl"
-                        >
-                            arrow_back
-                        </span>
+                        <ArrowLeftIcon />
                         Voltar para o login
                     </Link>
 
                     <div className="mb-8" aria-label="Progresso da recuperação">
                         <div className="mb-3 flex items-center justify-between text-xs font-bold text-muted">
                             <span
-                                aria-current={stage === "request" ? "step" : undefined}
-                                className={stage === "request" ? "text-primary" : "text-success"}
+                                aria-current={
+                                    stage === "request" ? "step" : undefined
+                                }
+                                className={
+                                    stage === "request"
+                                        ? "text-primary"
+                                        : "text-success"
+                                }
                             >
                                 <span className="sm:hidden">1. E-mail</span>
                                 <span className="hidden sm:inline">
@@ -236,8 +370,14 @@ export function PasswordResetScreen() {
                                 </span>
                             </span>
                             <span
-                                aria-current={stage === "confirm" ? "step" : undefined}
-                                className={stage === "confirm" ? "text-primary" : undefined}
+                                aria-current={
+                                    stage === "confirm" ? "step" : undefined
+                                }
+                                className={
+                                    stage === "confirm"
+                                        ? "text-primary"
+                                        : undefined
+                                }
                             >
                                 <span className="sm:hidden">2. Nova senha</span>
                                 <span className="hidden sm:inline">
@@ -245,7 +385,10 @@ export function PasswordResetScreen() {
                                 </span>
                             </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2" aria-hidden="true">
+                        <div
+                            className="grid grid-cols-2 gap-2"
+                            aria-hidden="true"
+                        >
                             <span className="h-1 rounded-full bg-primary" />
                             <span
                                 className={`h-1 rounded-full ${stage === "confirm" ? "bg-primary" : "bg-slate-200"}`}
@@ -292,11 +435,8 @@ export function PasswordResetScreen() {
                                 E-mail da sua conta
                             </label>
                             <div className="relative">
-                                <span
-                                    aria-hidden="true"
-                                    className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                                >
-                                    mail
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+                                    <MailIcon />
                                 </span>
                                 <input
                                     autoComplete="email"
@@ -305,7 +445,9 @@ export function PasswordResetScreen() {
                                     id="reset-email"
                                     inputMode="email"
                                     name="email"
-                                    onChange={(event) => setEmail(event.target.value)}
+                                    onChange={(event) =>
+                                        setEmail(event.target.value)
+                                    }
                                     placeholder="exemplo@email.com"
                                     type="email"
                                     value={email}
@@ -330,16 +472,10 @@ export function PasswordResetScreen() {
                                 >
                                     Código de 6 dígitos
                                 </label>
-                                <div className="relative">
-                                    <span
-                                        aria-hidden="true"
-                                        className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                                    >
-                                        pin
-                                    </span>
+                                <div>
                                     <input
                                         autoComplete="one-time-code"
-                                        className="min-h-14 w-full rounded-lg border border-border bg-slate-50 py-3 pl-12 pr-4 font-sans text-lg font-bold tracking-[0.28em] text-foreground placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-500 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
+                                        className="min-h-14 w-full rounded-lg border border-border bg-slate-50 px-4 py-3 text-center font-mono text-xl font-bold tabular-nums tracking-[0.42em] text-foreground placeholder:font-normal placeholder:tracking-[0.42em] placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
                                         id="reset-code"
                                         inputMode="numeric"
                                         maxLength={6}
@@ -366,11 +502,8 @@ export function PasswordResetScreen() {
                                     Nova senha
                                 </label>
                                 <div className="relative">
-                                    <span
-                                        aria-hidden="true"
-                                        className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                                    >
-                                        lock
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+                                        <LockIcon />
                                     </span>
                                     <input
                                         autoComplete="new-password"
@@ -382,23 +515,26 @@ export function PasswordResetScreen() {
                                             setNewPassword(event.target.value)
                                         }
                                         placeholder="Digite sua nova senha"
-                                        type={showPassword ? "text" : "password"}
+                                        type={
+                                            showPassword ? "text" : "password"
+                                        }
                                         value={newPassword}
                                     />
                                     <button
-                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        aria-label={
+                                            showPassword
+                                                ? "Ocultar senha"
+                                                : "Mostrar senha"
+                                        }
                                         className="absolute right-2 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted hover:bg-slate-200 hover:text-foreground"
-                                        onClick={() => setShowPassword((current) => !current)}
+                                        onClick={() =>
+                                            setShowPassword(
+                                                (current) => !current,
+                                            )
+                                        }
                                         type="button"
                                     >
-                                        <span
-                                            aria-hidden="true"
-                                            className="material-symbols-outlined"
-                                        >
-                                            {showPassword
-                                                ? "visibility_off"
-                                                : "visibility"}
-                                        </span>
+                                        <EyeIcon hidden={showPassword} />
                                     </button>
                                 </div>
                                 <p className="mt-3 font-sans text-sm leading-6 text-muted">
@@ -424,7 +560,9 @@ export function PasswordResetScreen() {
                                 </p>
                                 <button
                                     className="min-h-11 shrink-0 rounded-lg px-2 font-sans text-sm font-bold text-primary underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-muted"
-                                    disabled={cooldown > 0 || pendingAction !== null}
+                                    disabled={
+                                        cooldown > 0 || pendingAction !== null
+                                    }
                                     onClick={requestCode}
                                     type="button"
                                 >
@@ -449,15 +587,8 @@ export function PasswordResetScreen() {
                     />
                     <div className="absolute inset-0 z-20 flex items-end bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-transparent p-12 xl:p-16">
                         <div className="max-w-md text-white">
-                            <span
-                                aria-hidden="true"
-                                className="material-symbols-outlined mb-5 text-4xl text-secondary"
-                                style={{
-                                    fontVariationSettings:
-                                        "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-                                }}
-                            >
-                                verified_user
+                            <span className="mb-5 block text-secondary">
+                                <ShieldIcon />
                             </span>
                             <h2 className="font-display text-3xl font-bold leading-tight">
                                 Seu acesso, protegido com cuidado.
