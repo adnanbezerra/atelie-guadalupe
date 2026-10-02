@@ -6,6 +6,19 @@ import { EmailProvider, EmailProviderError, ResendEmailProvider } from "./resend
 
 const MAX_ATTEMPTS = 4;
 const RETRY_DELAYS_MS = [30_000, 120_000, 600_000];
+const PASSWORD_RESET_MAX_AGE_MS = 10 * 60 * 1000;
+const TRANSACTIONAL_EMAIL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export type EmailWorkerSummary = {
+    selected: number;
+    sent: number;
+    retryScheduled: number;
+    failed: number;
+    skipped: number;
+    staleCancelled: number;
+};
+
+type ProcessJobResult = "SENT" | "RETRY_SCHEDULED" | "FAILED" | "SKIPPED";
 
 function errorDetails(error: unknown) {
     if (error instanceof EmailProviderError) {
@@ -24,8 +37,9 @@ export class EmailService {
     ) {}
 
     public async processDue(limit = 10) {
+        const now = new Date();
         const staleBefore = new Date(
-            Date.now() - Number(process.env.EMAIL_WORKER_LOCK_TIMEOUT_MS ?? 300000)
+            now.getTime() - Number(process.env.EMAIL_WORKER_LOCK_TIMEOUT_MS ?? 300000)
         );
         await this.prisma.emailJob.updateMany({
             where: {
@@ -53,22 +67,73 @@ export class EmailService {
             }
         });
 
+        const passwordResetCutoff = new Date(now.getTime() - PASSWORD_RESET_MAX_AGE_MS);
+        const transactionalCutoff = new Date(now.getTime() - TRANSACTIONAL_EMAIL_MAX_AGE_MS);
+        const expiredPasswordResets = await this.prisma.emailJob.updateMany({
+            where: {
+                type: EmailJobType.PASSWORD_RESET,
+                status: { in: [EmailJobStatus.PENDING, EmailJobStatus.RETRY_SCHEDULED] },
+                createdAt: { lt: passwordResetCutoff }
+            },
+            data: {
+                status: EmailJobStatus.CANCELLED,
+                payload: {},
+                lockedAt: null,
+                lastError: "Codigo de recuperacao expirou antes do envio"
+            }
+        });
+        const expiredTransactionalEmails = await this.prisma.emailJob.updateMany({
+            where: {
+                type: { not: EmailJobType.PASSWORD_RESET },
+                status: { in: [EmailJobStatus.PENDING, EmailJobStatus.RETRY_SCHEDULED] },
+                createdAt: { lt: transactionalCutoff }
+            },
+            data: {
+                status: EmailJobStatus.CANCELLED,
+                lockedAt: null,
+                lastError: "Email transacional expirou antes do envio"
+            }
+        });
+
         const jobs = await this.prisma.emailJob.findMany({
             where: {
                 status: { in: [EmailJobStatus.PENDING, EmailJobStatus.RETRY_SCHEDULED] },
-                nextAttemptAt: { lte: new Date() },
-                attempts: { lt: MAX_ATTEMPTS }
+                nextAttemptAt: { lte: now },
+                attempts: { lt: MAX_ATTEMPTS },
+                OR: [
+                    {
+                        type: EmailJobType.PASSWORD_RESET,
+                        createdAt: { gte: passwordResetCutoff }
+                    },
+                    {
+                        type: { not: EmailJobType.PASSWORD_RESET },
+                        createdAt: { gte: transactionalCutoff }
+                    }
+                ]
             },
             orderBy: { nextAttemptAt: "asc" },
             take: limit
         });
 
+        const summary: EmailWorkerSummary = {
+            selected: jobs.length,
+            sent: 0,
+            retryScheduled: 0,
+            failed: 0,
+            skipped: 0,
+            staleCancelled: expiredPasswordResets.count + expiredTransactionalEmails.count
+        };
         for (const job of jobs) {
-            await this.processJob(job.id);
+            const result = await this.processJob(job.id);
+            if (result === "SENT") summary.sent += 1;
+            if (result === "RETRY_SCHEDULED") summary.retryScheduled += 1;
+            if (result === "FAILED") summary.failed += 1;
+            if (result === "SKIPPED") summary.skipped += 1;
         }
+        return summary;
     }
 
-    private async processJob(jobId: number) {
+    private async processJob(jobId: number): Promise<ProcessJobResult> {
         const claimed = await this.prisma.emailJob.updateMany({
             where: {
                 id: jobId,
@@ -81,7 +146,7 @@ export class EmailService {
                 lockedAt: new Date()
             }
         });
-        if (claimed.count === 0) return;
+        if (claimed.count === 0) return "SKIPPED";
 
         const job = await this.prisma.emailJob.findUniqueOrThrow({ where: { id: jobId } });
         let rendered;
@@ -100,7 +165,7 @@ export class EmailService {
                             : "Payload de email invalido"
                 }
             });
-            return;
+            return "FAILED";
         }
         const idempotencyKey = `email-job:${job.uuid}`;
         const log = await this.prisma.emailDeliveryLog.create({
@@ -145,6 +210,7 @@ export class EmailService {
                     }
                 })
             ]);
+            return "SENT";
         } catch (error) {
             const detail = errorDetails(error);
             const exhausted = job.attempts >= MAX_ATTEMPTS;
@@ -172,6 +238,7 @@ export class EmailService {
                     }
                 })
             ]);
+            return exhausted ? "FAILED" : "RETRY_SCHEDULED";
         }
     }
 }

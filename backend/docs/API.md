@@ -131,6 +131,27 @@ Recurso nao encontrado.
 
 Conflito de negocio, como email duplicado ou slug de produto ja existente.
 
+### `429 RATE_LIMIT_EXCEEDED`
+
+Muitas requisicoes foram feitas pelo mesmo IP no intervalo configurado. O frontend deve exibir
+`error.message` e pode usar o header `Retry-After` para informar quando tentar novamente.
+
+```json
+{
+    "success": false,
+    "error": {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "Muitas tentativas. Tente novamente mais tarde.",
+        "details": [
+            {
+                "limit": 3,
+                "timeWindow": "15 minutes"
+            }
+        ]
+    }
+}
+```
+
 ### `400 BUSINESS_RULE_ERROR`
 
 Regra de negocio invalida, como carrinho vazio ou estoque insuficiente.

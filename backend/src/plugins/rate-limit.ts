@@ -1,5 +1,6 @@
 import fp from "fastify-plugin";
 import rateLimit from "@fastify/rate-limit";
+import { AppError } from "../core/errors/app-error";
 
 export default fp(async (fastify) => {
     await fastify.register(rateLimit, {
@@ -12,19 +13,17 @@ export default fp(async (fastify) => {
             "x-ratelimit-reset": true
         },
         errorResponseBuilder: function (_request, context) {
-            return {
-                success: false,
-                error: {
-                    code: "RATE_LIMIT_EXCEEDED",
-                    message: "Limite de requisicoes excedido",
-                    details: [
-                        {
-                            limit: context.max,
-                            timeWindow: context.after
-                        }
-                    ]
-                }
-            };
+            return new AppError(
+                "RATE_LIMIT_EXCEEDED",
+                context.statusCode,
+                "Muitas tentativas. Tente novamente mais tarde.",
+                [
+                    {
+                        limit: context.max,
+                        timeWindow: context.after
+                    }
+                ]
+            );
         }
     });
 });

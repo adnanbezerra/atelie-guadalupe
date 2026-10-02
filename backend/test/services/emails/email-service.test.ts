@@ -144,8 +144,16 @@ test("email worker records acceptance and marks the job sent", async () => {
         send: async () => ({ messageId: "resend-1" })
     };
 
-    await new EmailService(prisma as never, provider).processDue();
+    const summary = await new EmailService(prisma as never, provider).processDue();
 
+    assert.deepEqual(summary, {
+        selected: 1,
+        sent: 1,
+        retryScheduled: 0,
+        failed: 0,
+        skipped: 0,
+        staleCancelled: 0
+    });
     assert.equal(job.status, EmailJobStatus.SENT);
     assert.equal(job.attempts, 1);
     assert.equal(job.providerMessageId, "resend-1");
@@ -252,10 +260,13 @@ test("email provider outage does not undo an already committed payment", async (
             }
         },
         emailJob: {
-            updateMany: async () => {
-                job.status = EmailJobStatus.PROCESSING;
-                job.attempts += 1;
-                return { count: 1 };
+            updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                if (data.status === EmailJobStatus.PROCESSING) {
+                    job.status = EmailJobStatus.PROCESSING;
+                    job.attempts += 1;
+                    return { count: 1 };
+                }
+                return { count: 0 };
             },
             findMany: async () => [job],
             findUniqueOrThrow: async () => job,
@@ -286,4 +297,40 @@ test("email provider outage does not undo an already committed payment", async (
     assert.equal(job.status, EmailJobStatus.RETRY_SCHEDULED);
     assert.equal(job.lastError, "email provider unavailable");
     assert.equal(log.status, EmailDeliveryStatus.FAILED);
+});
+
+test("email worker cancels stale jobs before selecting work", async () => {
+    const cancellations: Array<{
+        where: Record<string, unknown>;
+        data: Record<string, unknown>;
+    }> = [];
+    const prisma = {
+        emailJob: {
+            updateMany: async ({ where, data }: Record<string, Record<string, unknown>>) => {
+                if (data.status !== EmailJobStatus.CANCELLED) return { count: 0 };
+                cancellations.push({ where, data });
+                return { count: where.type === EmailJobType.PASSWORD_RESET ? 1 : 2 };
+            },
+            findMany: async () => []
+        }
+    };
+    const provider = {
+        send: async () => {
+            throw new Error("provider must not be called");
+        }
+    };
+
+    const summary = await new EmailService(prisma as never, provider).processDue();
+
+    assert.deepEqual(summary, {
+        selected: 0,
+        sent: 0,
+        retryScheduled: 0,
+        failed: 0,
+        skipped: 0,
+        staleCancelled: 3
+    });
+    assert.equal(cancellations.length, 2);
+    assert.deepEqual(cancellations[0].data.payload, {});
+    assert.equal(cancellations[1].data.payload, undefined);
 });
