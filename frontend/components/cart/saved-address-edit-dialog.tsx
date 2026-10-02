@@ -99,7 +99,7 @@ export function SavedAddressEditDialog({
                 return;
             }
 
-            setAddressField("street", payload.logradouro ?? "");
+            setAddressField("street", (payload.logradouro ?? "").slice(0, 30));
             setAddressField("neighborhood", payload.bairro ?? "");
             setAddressField("city", payload.localidade ?? "");
             setAddressField("state", payload.uf ?? "");
@@ -281,6 +281,7 @@ export function SavedAddressEditDialog({
                             defaultValue={address.street}
                             id="edit-shipping-street"
                             label="Rua"
+                            maxLength={30}
                             name="street"
                             placeholder="Rua das Oliveiras"
                             required

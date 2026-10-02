@@ -20,6 +20,9 @@ import {
     storeOrder,
 } from "./checkout-utils";
 import { PaymentStatus } from "./payment-status";
+import { CheckoutAddressForm } from "./checkout-address-form";
+import { CheckoutCustomerFieldForm } from "./checkout-customer-field-form";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { useApiToken } from "@/hooks/use-api-token";
 import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/hooks/use-user";
@@ -57,10 +60,27 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [checkoutError, setCheckoutError] = useState<CheckoutError | null>(
         null,
     );
+    const [checkoutNotice, setCheckoutNotice] = useState<CheckoutError | null>(
+        null,
+    );
 
     const hasValidServiceCode =
         Number.isInteger(quotedShipping.serviceCode) &&
         quotedShipping.serviceCode > 0;
+    const documentLength = userContext.user?.document?.replace(
+        /\D/g,
+        "",
+    ).length;
+    const hasValidDocument = documentLength === 11 || documentLength === 14;
+    const requiresPhone = quotedShipping.serviceCode === 33;
+    const hasValidPhone =
+        !requiresPhone ||
+        userContext.user?.phone?.replace(/\D/g, "").length === 11;
+    const hasValidAddress = Boolean(
+        userContext.address?.uuid &&
+        userContext.address.street.trim().length > 0 &&
+        userContext.address.street.length <= 30,
+    );
     const paymentConfirmed = Boolean(
         order &&
         (PAYMENT_CONFIRMED_STATUSES.has(order.status) ||
@@ -221,12 +241,23 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     ]);
 
     async function prepareOrder() {
-        if (!token || !userContext.address?.uuid || !hasValidServiceCode) {
+        if (
+            !token ||
+            !hasValidDocument ||
+            !hasValidAddress ||
+            !hasValidPhone ||
+            !userContext.address?.uuid ||
+            !hasValidServiceCode
+        ) {
             setCheckoutError({
-                title: "Confira a entrega",
-                description: !userContext.address?.uuid
-                    ? "Cadastre um endereço completo antes de finalizar a compra."
-                    : "Volte ao carrinho, calcule o frete e escolha uma opção de entrega.",
+                title: "Complete os dados do pedido",
+                description: !hasValidDocument
+                    ? "Cadastre seu CPF antes de finalizar a compra."
+                    : !hasValidAddress
+                      ? "Cadastre um endereço com a rua limitada a 30 caracteres."
+                      : !hasValidPhone
+                        ? "Esta transportadora exige um telefone com DDD e 11 números."
+                        : "Volte ao carrinho, calcule o frete e escolha uma opção de entrega.",
             });
             return;
         }
@@ -457,7 +488,64 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                 ) : (
                     <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
                         <div className="space-y-6">
-                            <DeliveryAddress address={userContext.address} />
+                            {!hasValidDocument ? (
+                                <CheckoutCustomerFieldForm
+                                    field="document"
+                                    onError={(title, description) =>
+                                        setCheckoutError({
+                                            title,
+                                            description,
+                                        })
+                                    }
+                                    onSaved={(title, description) =>
+                                        setCheckoutNotice({
+                                            title,
+                                            description,
+                                        })
+                                    }
+                                />
+                            ) : null}
+
+                            {hasValidAddress ? (
+                                <DeliveryAddress
+                                    address={userContext.address!}
+                                />
+                            ) : (
+                                <CheckoutAddressForm
+                                    address={userContext.address}
+                                    onError={(title, description) =>
+                                        setCheckoutError({
+                                            title,
+                                            description,
+                                        })
+                                    }
+                                    onSaved={() =>
+                                        setCheckoutNotice({
+                                            title: "Endereço salvo",
+                                            description:
+                                                "Seu endereço de entrega foi cadastrado. Agora você pode confirmar o pedido e o frete.",
+                                        })
+                                    }
+                                />
+                            )}
+
+                            {!hasValidPhone ? (
+                                <CheckoutCustomerFieldForm
+                                    field="phone"
+                                    onError={(title, description) =>
+                                        setCheckoutError({
+                                            title,
+                                            description,
+                                        })
+                                    }
+                                    onSaved={(title, description) =>
+                                        setCheckoutNotice({
+                                            title,
+                                            description,
+                                        })
+                                    }
+                                />
+                            ) : null}
                             <OrderItems items={displayItems} />
 
                             {!order ? (
@@ -467,7 +555,9 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
 
                         <CheckoutSummary
                             canPrepare={
-                                Boolean(userContext.address) &&
+                                hasValidDocument &&
+                                hasValidAddress &&
+                                hasValidPhone &&
                                 hasValidServiceCode
                             }
                             discount={discount}
@@ -488,6 +578,12 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             <CheckoutErrorDialog
                 error={checkoutError}
                 onClose={() => setCheckoutError(null)}
+            />
+            <FeedbackDialog
+                description={checkoutNotice?.description ?? ""}
+                onOpenChange={(open) => !open && setCheckoutNotice(null)}
+                open={checkoutNotice != null}
+                title={checkoutNotice?.title ?? ""}
             />
         </main>
     );

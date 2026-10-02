@@ -357,6 +357,7 @@ export function ProfileDataView({
                         <AddressInput
                             defaultValue={primaryAddress?.street ?? ""}
                             label="Rua"
+                            maxLength={30}
                             name="street"
                             placeholder="Rua das Oliveiras"
                             wide
@@ -423,12 +424,14 @@ export function ProfileDataView({
 function AddressInput({
     defaultValue,
     label,
+    maxLength,
     name,
     placeholder,
     wide,
 }: {
     defaultValue: string;
     label: string;
+    maxLength?: number;
     name: string;
     placeholder: string;
     wide?: boolean;
@@ -441,6 +444,7 @@ function AddressInput({
             <input
                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
                 defaultValue={defaultValue}
+                maxLength={maxLength}
                 name={name}
                 placeholder={placeholder}
                 type="text"

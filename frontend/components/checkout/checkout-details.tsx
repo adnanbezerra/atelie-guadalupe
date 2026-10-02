@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ProductImage } from "@/components/shared/product-image";
 import type { Address } from "@/lib/types";
 import { formatCurrency, formatProductSizeLabel } from "@/lib/utils";
@@ -12,7 +11,7 @@ export type CheckoutDisplayItem = {
     totalPriceInCents: number;
 };
 
-export function DeliveryAddress({ address }: { address: Address | null }) {
+export function DeliveryAddress({ address }: { address: Address }) {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start gap-4">
@@ -26,30 +25,16 @@ export function DeliveryAddress({ address }: { address: Address | null }) {
                     <h2 className="font-display text-xl font-bold text-slate-950">
                         Entrega em
                     </h2>
-                    {address ? (
-                        <address className="mt-2 not-italic text-sm leading-6 text-slate-600">
-                            {address.street}, {address.number}
-                            <br />
-                            {address.neighborhood} · {address.city} —{" "}
-                            {address.state}
-                            <br />
-                            CEP {address.zipCode}
-                        </address>
-                    ) : (
-                        <p className="mt-2 text-sm text-slate-600">
-                            Cadastre um endereço para continuar.
-                        </p>
-                    )}
+                    <address className="mt-2 not-italic text-sm leading-6 text-slate-600">
+                        {address.street}, {address.number}
+                        <br />
+                        {address.neighborhood} · {address.city} —{" "}
+                        {address.state}
+                        <br />
+                        CEP {address.zipCode}
+                    </address>
                 </div>
             </div>
-            {!address ? (
-                <Link
-                    className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-primary px-4 py-2 text-sm font-bold text-primary hover:bg-primary/5"
-                    href="/perfil"
-                >
-                    Cadastrar endereço
-                </Link>
-            ) : null}
         </section>
     );
 }

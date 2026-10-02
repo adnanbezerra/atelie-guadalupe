@@ -8,7 +8,12 @@ import {
     onlyDigits,
 } from "@/components/profile/profile-page-helpers";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { useUser } from "@/hooks/use-user";
+import {
+    clearAddressZipCodeDraft,
+    saveAddressZipCodeDraft,
+} from "@/lib/address-draft";
 import { previewShippingQuote } from "@/lib/api";
 import type { Cart, ShippingQuoteService } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -91,6 +96,8 @@ export function ShippingQuotePanel({
     const [cepError, setCepError] = useState<string | null>(null);
     const [quoteError, setQuoteError] = useState<string | null>(null);
     const [hasCalculated, setHasCalculated] = useState(false);
+    const [isZipDraftSaved, setIsZipDraftSaved] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
     const lastCepRequestRef = useRef("");
 
     const savedAddress = userContext.address;
@@ -168,6 +175,8 @@ export function ShippingQuotePanel({
         setZipCode(formattedValue);
         setManualAddress(null);
         setCepError(null);
+        setIsZipDraftSaved(false);
+        clearAddressZipCodeDraft();
         resetQuote();
 
         if (cleanZipCode.length !== 8) {
@@ -263,6 +272,24 @@ export function ShippingQuotePanel({
             deliveryLabel: getDeliveryLabel(service),
             destinationLabel: addressLabel,
         });
+    }
+
+    function handleZipDraftChange(checked: boolean) {
+        if (!manualAddress) return;
+
+        try {
+            if (checked) {
+                saveAddressZipCodeDraft(manualAddress.zipCode);
+            } else {
+                clearAddressZipCodeDraft();
+            }
+            setIsZipDraftSaved(checked);
+        } catch {
+            setIsZipDraftSaved(false);
+            setSaveError(
+                "Seu navegador não permitiu guardar o CEP. Você ainda pode preencher o endereço no checkout.",
+            );
+        }
     }
 
     return (
@@ -368,6 +395,33 @@ export function ShippingQuotePanel({
                                 <p className="mt-1 text-sm font-semibold text-slate-500">
                                     CEP {formatCep(addressPreview.zipCode)}
                                 </p>
+                                {manualAddress ? (
+                                    <label className="mt-4 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 transition has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5">
+                                        <input
+                                            checked={isZipDraftSaved}
+                                            className="size-5 shrink-0 accent-[#1940b3]"
+                                            onChange={(event) =>
+                                                handleZipDraftChange(
+                                                    event.currentTarget.checked,
+                                                )
+                                            }
+                                            type="checkbox"
+                                        />
+                                        <span className="flex-1 text-sm font-bold leading-5 text-slate-800">
+                                            Usar este CEP ao cadastrar meu
+                                            endereço
+                                        </span>
+                                        {isZipDraftSaved ? (
+                                            <span
+                                                aria-label="CEP guardado"
+                                                className="material-symbols-outlined text-xl text-[#167a45]"
+                                                role="img"
+                                            >
+                                                check_circle
+                                            </span>
+                                        ) : null}
+                                    </label>
+                                ) : null}
                                 {savedAddressPreview && savedAddress ? (
                                     <SavedAddressEditDialog
                                         address={savedAddress}
@@ -482,6 +536,13 @@ export function ShippingQuotePanel({
                     </fieldset>
                 ) : null}
             </div>
+
+            <FeedbackDialog
+                description={saveError ?? ""}
+                onOpenChange={(open) => !open && setSaveError(null)}
+                open={saveError != null}
+                title="Não foi possível guardar o CEP"
+            />
         </section>
     );
 }

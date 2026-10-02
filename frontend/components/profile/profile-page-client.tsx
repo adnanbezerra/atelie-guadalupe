@@ -152,7 +152,7 @@ export function ProfilePageClient() {
                 return;
             }
 
-            setAddressField("street", payload.logradouro ?? "");
+            setAddressField("street", (payload.logradouro ?? "").slice(0, 30));
             setAddressField("neighborhood", payload.bairro ?? "");
             setAddressField("city", payload.localidade ?? "");
             setAddressField("state", payload.uf ?? "");
