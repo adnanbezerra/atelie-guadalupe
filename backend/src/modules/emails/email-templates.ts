@@ -142,13 +142,13 @@ export function renderEmail(
         const customerName = stringValue(payload, "customerName");
         const resetCode = stringValue(payload, "resetCode");
         const expiresInMinutes = numberValue(payload, "expiresInMinutes");
+        const passwordResetUrl = `${frontendUrl.replace(/\/$/, "")}/recuperar-senha`;
         const subject = "Seu codigo para redefinir a senha";
         return {
             subject,
             html: renderTemplate(templates.passwordReset, {
-                customerName,
-                resetCode,
-                expiresInMinutes: String(expiresInMinutes)
+                recoveryCode: resetCode,
+                passwordResetUrl
             }),
             text: `Ola, ${customerName}!\n\nSeu codigo para redefinir a senha e ${resetCode}. Ele expira em ${expiresInMinutes} minutos.\n\nSe voce nao solicitou esta alteracao, ignore este email.`
         };

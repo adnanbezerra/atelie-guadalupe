@@ -9,15 +9,21 @@ import { EmailService } from "../../../src/modules/emails/email-service";
 import { escapeHtml, renderEmail } from "../../../src/modules/emails/email-templates";
 
 test("password reset email renders code, expiry and escaped customer name", () => {
-    const rendered = renderEmail(EmailJobType.PASSWORD_RESET, {
-        customerName: "Maria <script>",
-        resetCode: "042731",
-        expiresInMinutes: 10
-    });
+    const rendered = renderEmail(
+        EmailJobType.PASSWORD_RESET,
+        {
+            customerName: "Maria <script>",
+            resetCode: "042731",
+            expiresInMinutes: 10
+        },
+        "https://atelie.example"
+    );
 
     assert.match(rendered.subject, /codigo/i);
     assert.match(rendered.html, /042731/);
     assert.match(rendered.html, /10 minutos/);
+    assert.match(rendered.html, /https:\/\/atelie\.example\/recuperar-senha/);
+    assert.doesNotMatch(rendered.html, /{{[^}]+}}/);
     assert.doesNotMatch(rendered.html, /Maria <script>/);
     assert.match(rendered.text, /042731/);
 });
