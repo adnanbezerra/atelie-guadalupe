@@ -51,19 +51,15 @@ async function proxyRequest(request: NextRequest, path: string[]) {
             body,
             cache: "no-store",
         });
-    } catch (error) {
-        const cause =
-            error instanceof Error && "cause" in error
-                ? String(error.cause)
-                : undefined;
-
+    } catch {
         return NextResponse.json(
             {
                 success: false,
                 error: {
                     code: "API_UNREACHABLE",
-                    message: `Nao foi possivel conectar ao backend em ${env.API_BASE_URL}. Verifique se a API esta rodando e se API_BASE_URL esta correta.`,
-                    details: cause ? [{ message: cause }] : [],
+                    message:
+                        "Não foi possível se conectar ao servidor. Aguarde um pouco, verifique sua conexão com a internet e tente novamente.",
+                    details: [],
                 },
             },
             { status: 502 },
