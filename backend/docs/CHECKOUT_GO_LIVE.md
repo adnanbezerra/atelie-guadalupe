@@ -47,7 +47,7 @@ Revisao adicional de codigo e documentacao oficial em 2026-08-27:
 Checkout esta pronto para producao somente quando:
 
 - [ ] todos os bloqueadores P0 deste documento estiverem concluidos;
-- [ ] build, lint, suite completa e testes criticos terminarem com codigo zero;
+- [x] build, lint, suite completa e testes criticos terminarem com codigo zero;
 - [x] E2E sandbox passar tres vezes consecutivas;
 - [ ] webhook real da AbacatePay chegar a uma URL publica de staging;
 - [ ] observabilidade, alertas, kill switch e runbook estiverem operacionais;
@@ -239,10 +239,21 @@ Tarefas:
       voltar a parar;
 - [x] garantir que testes normais nunca chamem AbacatePay ou Superfrete;
 - [x] registrar duracao total e lista de testes ignorados;
-- [ ] executar os mesmos comandos no CI usando Node 22 e pnpm definido no projeto;
+- [x] executar os mesmos comandos no CI usando Node 22 e pnpm definido no projeto;
 - [ ] bloquear merge/deploy quando algum comando falhar.
 
 **Criterio de aceite:** duas execucoes locais e uma execucao no CI passam integralmente.
+
+Evidencia mais recente em 2026-10-01: o workflow `CI` do GitHub Actions passou no commit
+`b4431ec` usando Node 22 e pnpm 10.25.0, incluindo geracao do Prisma Client, build, lint e suite.
+A verificacao local do mesmo commit passou com build, lint, 229 testes aprovados, 4 testes opt-in
+ignorados, schema Prisma valido, Prettier e `git diff --check`. A branch `main` permanece sem
+protecao; portanto, o CI existe e passou, mas ainda nao bloqueia merge por politica da branch.
+
+Apos a revisao dos contratos oficiais da AbacatePay e da SuperFrete, o commit `5e31374` corrigiu a
+retentativa temporaria de webhooks, a confirmacao da compra/cancelamento de etiquetas, seguro,
+divergencia de preco e validacoes de destinatario. O gate local passou com lint, build, 239 testes
+aprovados, 4 testes opt-in ignorados, zero falhas, Prettier e `git diff --check`.
 
 ## Fase 2 — provar integracoes em sandbox e staging
 
@@ -527,48 +538,52 @@ autorizada.
 
 Preencher imediatamente antes da liberacao total:
 
-| Verificacao                            | Resultado  | Evidencia                                             | Responsavel                   | Data       |
-| -------------------------------------- | ---------- | ----------------------------------------------------- | ----------------------------- | ---------- |
-| Bloqueadores P0 concluidos             |            |                                                       |                               |            |
-| Build, lint e suite completa           | PASS local | 229 pass/4 skip opt-in/0 fail; lint e typecheck PASS  | Codex + QA                    | 2026-09-03 |
-| E2E sandbox 3x                         | PASS       | 3/3 no commit `c74554e`; IDs no registro de execucoes | Codex + QA                    | 2026-08-27 |
-| Webhook externo em staging             | BLOCKED    | Staging ainda nao provisionado                        | Responsavel de infraestrutura | 2026-08-28 |
-| Alertas testados                       |            |                                                       |                               |            |
-| Runbook validado                       |            |                                                       |                               |            |
-| Backup/restauracao testados            |            |                                                       |                               |            |
-| Configuracao revisada por duas pessoas |            |                                                       |                               |            |
-| Smoke real de producao                 |            |                                                       |                               |            |
-| Canario sem incidentes                 |            |                                                       |                               |            |
-| Reconciliacao financeira               |            |                                                       |                               |            |
+| Verificacao                            | Resultado       | Evidencia                                                 | Responsavel                     | Data       |
+| -------------------------------------- | --------------- | --------------------------------------------------------- | ------------------------------- | ---------- |
+| Bloqueadores P0 concluidos             | NO-GO           | Staging, alertas, preflight, smoke e canario pendentes    | Codex                           | 2026-10-01 |
+| Build, lint e suite completa           | PASS            | Local + CI Node 22 no commit `b4431ec`; 229/4/0           | Codex                           | 2026-10-01 |
+| E2E sandbox 3x                         | PASS            | 3/3 no commit `c74554e`; IDs no registro de execucoes     | Codex + QA                      | 2026-08-27 |
+| Webhook externo em staging             | BLOCKED         | Sem staging publico ou evidencia externa acessivel        | Responsavel de infraestrutura   | 2026-10-01 |
+| Alertas testados                       | PASS_LOCAL      | Sink local passou; canal humano e entrega pendentes       | Codex + responsavel operacional | 2026-10-01 |
+| Runbook validado                       | MANUAL_REQUIRED | Documentacao pronta; execucao por segunda pessoa pendente | Responsavel operacional         | 2026-10-01 |
+| Backup/restauracao testados            | PASS parcial    | Drill anterior sem inventario independente                | Codex + responsavel do banco    | 2026-10-01 |
+| Configuracao revisada por duas pessoas | BLOCKED         | Release confirmada; preflight e segunda revisao pendentes | Responsavel de infraestrutura   | 2026-10-01 |
+| Smoke real de producao                 | BLOCKED         | Sem preflight aprovado, autorizacao ou pagamento real     | Responsavel operacional         | 2026-10-01 |
+| Canario sem incidentes                 | BLOCKED         | Depende de smoke aprovado e thresholds humanos            | Responsaveis do gate            | 2026-10-01 |
+| Reconciliacao financeira               | PASS_LOCAL      | Tooling pronto; reconciliacao real depende dos paineis    | Codex + responsavel financeiro  | 2026-10-01 |
 
 Decisao final:
 
 - [ ] **GO** — todos os P0 e criterios obrigatorios possuem evidencia;
-- [ ] **NO-GO** — existe bloqueador, evidencia ausente ou divergencia nao explicada.
+- [x] **NO-GO** — existe bloqueador, evidencia ausente ou divergencia nao explicada.
 
 Responsavel tecnico: **\*\*\*\***\_\_\_\_**\*\*\*\***
 
 Responsavel operacional: **\*\*\*\***\_\_\_\_**\*\*\*\***
 
-Data e hora: **\*\*\*\***\_\_\_\_**\*\*\*\***
+Data e hora: **2026-10-01 19:53 UTC**
 
-Commit/deploy: **\*\*\*\***\_\_\_\_**\*\*\*\***
+Commit/deploy: **commit auditado `b4431ec`; mesma release em producao confirmada pela responsavel**
 
 ## Registro de execucoes
 
 Usar uma linha por execucao relevante. Nao registrar secrets, tokens, documentos, enderecos ou
 payloads sensiveis.
 
-| Data/hora            | Ambiente      | Commit             | Tarefa/teste                  | Resultado    | IDs seguros/evidencia                                                                                                                                     | Responsavel                   |
-| -------------------- | ------------- | ------------------ | ----------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| 2026-08-27           | local/teste   | `60d2888..72cc362` | Fase 0: GL-001 a GL-004       | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate                                 | Codex + QA                    |
-| 2026-08-27           | local/teste   | `ed9acb0..d46f3c1` | Fase 1: GL-010 e GL-011 local | PASS local   | 57/57 focados; duas suites 141 pass/3 skip/0 fail; 32,06s e 40,08s; build e lint zero; CI real pendente                                                   | Codex + QA                    |
-| 2026-08-27 23:15 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 1/3       | PASS         | pedido `01a04581-82af-7698-801c-389070b931d9`; checkout `bill_5KCy3rLhTjtC2eJfsW0KDxSw`; etiqueta `BZMg4m09lNrVniO3SlqC`; 1 fulfillment; 1 e-mail; 40,77s | Codex + QA                    |
-| 2026-08-27 23:16 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 2/3       | PASS         | pedido `01a04582-e8ae-7689-aaf5-599a803d3997`; checkout `bill_EgrjkwkYGUL0he3fSH3qn3gq`; etiqueta `87MAV5X4AhrxayvqxZZM`; 1 fulfillment; 1 e-mail; 40,42s | Codex + QA                    |
-| 2026-08-27 23:18 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 3/3       | PASS         | pedido `01a04584-75bf-76ed-9a7f-74a7a36150f8`; checkout `bill_M3ujjFSXfCDgaD1S63qzFfc3`; etiqueta `HDBHJzjHxc4gqwU0JW9y`; 1 fulfillment; 1 e-mail; 39,04s | Codex + QA                    |
-| 2026-08-28           | staging       | `95df3d3`          | GL-021 webhook externo        | BLOCKED      | Backend staging, URL HTTPS publica e acesso a deploy/logs inexistentes                                                                                    | Responsavel de infraestrutura |
-| 2026-08-28           | local/teste   | `bd1511a..f33fead` | GL-005 e Fase 3 tecnica       | PASS tecnico | suite 194 pass/4 skip/0 fail; 76/76 focados; corrida PostgreSQL GL-005 2x; build, test-tsc, lint, Prettier tocados e diff-check                           | Codex + QA                    |
-| 2026-08-28           | local/teste   | apos `8e2cb2a`     | GL-040 backup/restore local   | PASS parcial | dump 9690 ms; restore 26270 ms; 12 migrations; 5 contagens iguais; cleanup confirmado; identidade independente/estrutura de uniques pedem novo drill      | Codex                         |
-| 2026-08-28           | local/teste   | apos `6be3080`     | GL-041 preflight local        | PASS tecnico | validacao e probe read-only implementados; paineis, deploy de producao, logs e revisao por duas pessoas permanecem `MANUAL_REQUIRED`                      | Codex                         |
-| 2026-09-02           | local/teste   | `1411aba`          | GL-052 cobertura CARD backend | PASS_LOCAL   | 35/35 focados; suite 226 pass/4 skip/0 fail; build, lint, Prettier tocados e diff-check; sem rede externa                                                 | Codex + QA                    |
-| 2026-09-03           | local/teste   | `e4599cd`          | PostgreSQL interno Easypanel  | PASS tecnico | 36/36 focados; suite 229 pass/4 skip/0 fail; TLS segue padrao; excecao sem TLS exige opt-in, host interno exato e revisao da rede                         | Codex + QA                    |
+| Data/hora            | Ambiente      | Commit             | Tarefa/teste                  | Resultado    | IDs seguros/evidencia                                                                                                                                      | Responsavel                   |
+| -------------------- | ------------- | ------------------ | ----------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| 2026-08-27           | local/teste   | `60d2888..72cc362` | Fase 0: GL-001 a GL-004       | PASS tecnico | 60/60 focados; suite 121 pass/3 skip/0 fail; corrida PostgreSQL 1/1; build, test-tsc, `eslint src test` e Prisma validate                                  | Codex + QA                    |
+| 2026-08-27           | local/teste   | `ed9acb0..d46f3c1` | Fase 1: GL-010 e GL-011 local | PASS local   | 57/57 focados; duas suites 141 pass/3 skip/0 fail; 32,06s e 40,08s; build e lint zero; CI real pendente                                                    | Codex + QA                    |
+| 2026-08-27 23:15 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 1/3       | PASS         | pedido `01a04581-82af-7698-801c-389070b931d9`; checkout `bill_5KCy3rLhTjtC2eJfsW0KDxSw`; etiqueta `BZMg4m09lNrVniO3SlqC`; 1 fulfillment; 1 e-mail; 40,77s  | Codex + QA                    |
+| 2026-08-27 23:16 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 2/3       | PASS         | pedido `01a04582-e8ae-7689-aaf5-599a803d3997`; checkout `bill_EgrjkwkYGUL0he3fSH3qn3gq`; etiqueta `87MAV5X4AhrxayvqxZZM`; 1 fulfillment; 1 e-mail; 40,42s  | Codex + QA                    |
+| 2026-08-27 23:18 UTC | sandbox/teste | `c74554e`          | GL-020 E2E checkout 3/3       | PASS         | pedido `01a04584-75bf-76ed-9a7f-74a7a36150f8`; checkout `bill_M3ujjFSXfCDgaD1S63qzFfc3`; etiqueta `HDBHJzjHxc4gqwU0JW9y`; 1 fulfillment; 1 e-mail; 39,04s  | Codex + QA                    |
+| 2026-08-28           | staging       | `95df3d3`          | GL-021 webhook externo        | BLOCKED      | Backend staging, URL HTTPS publica e acesso a deploy/logs inexistentes                                                                                     | Responsavel de infraestrutura |
+| 2026-08-28           | local/teste   | `bd1511a..f33fead` | GL-005 e Fase 3 tecnica       | PASS tecnico | suite 194 pass/4 skip/0 fail; 76/76 focados; corrida PostgreSQL GL-005 2x; build, test-tsc, lint, Prettier tocados e diff-check                            | Codex + QA                    |
+| 2026-08-28           | local/teste   | apos `8e2cb2a`     | GL-040 backup/restore local   | PASS parcial | dump 9690 ms; restore 26270 ms; 12 migrations; 5 contagens iguais; cleanup confirmado; identidade independente/estrutura de uniques pedem novo drill       | Codex                         |
+| 2026-08-28           | local/teste   | apos `6be3080`     | GL-041 preflight local        | PASS tecnico | validacao e probe read-only implementados; paineis, deploy de producao, logs e revisao por duas pessoas permanecem `MANUAL_REQUIRED`                       | Codex                         |
+| 2026-09-02           | local/teste   | `1411aba`          | GL-052 cobertura CARD backend | PASS_LOCAL   | 35/35 focados; suite 226 pass/4 skip/0 fail; build, lint, Prettier tocados e diff-check; sem rede externa                                                  | Codex + QA                    |
+| 2026-09-03           | local/teste   | `e4599cd`          | PostgreSQL interno Easypanel  | PASS tecnico | 36/36 focados; suite 229 pass/4 skip/0 fail; TLS segue padrao; excecao sem TLS exige opt-in, host interno exato e revisao da rede                          | Codex + QA                    |
+| 2026-10-01 19:53 UTC | local/CI      | `b4431ec`          | Base tecnica e CI             | PASS tecnico | HEAD = origin/main; GitHub Actions Node 22 PASS; build, lint, suite 229 pass/4 skip/0 fail, Prisma validate, Prettier e diff-check PASS; main sem protecao | Codex                         |
+| 2026-10-01           | producao      | `b4431ec`          | Release implantada            | CONFIRMADO   | Responsavel confirmou que producao executa o commit auditado; sem valores secretos                                                                         | Responsavel da loja           |
+| 2026-10-01           | local         | `b4431ec`          | Preflight de producao         | NOT_RUN      | Workspace usa contexto de desenvolvimento; falhou fechado antes do probe do banco. Executar no contexto da release no Easypanel                            | Codex                         |
+| 2026-10-01           | local/teste   | `5e31374`          | Contratos dos provedores      | PASS tecnico | AbacatePay e SuperFrete corrigidos; lint/build, 239 pass/4 skip/0 fail, Prettier e diff-check PASS                                                         | Codex                         |
