@@ -11,7 +11,13 @@ export type CheckoutDisplayItem = {
     totalPriceInCents: number;
 };
 
-export function DeliveryAddress({ address }: { address: Address }) {
+export function DeliveryAddress({
+    address,
+    showSavedConfirmation = false,
+}: {
+    address: Address;
+    showSavedConfirmation?: boolean;
+}) {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start gap-4">
@@ -25,6 +31,20 @@ export function DeliveryAddress({ address }: { address: Address }) {
                     <h2 className="font-display text-xl font-bold text-slate-950">
                         Entrega em
                     </h2>
+                    {showSavedConfirmation ? (
+                        <p
+                            aria-live="polite"
+                            className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-[#167a45]"
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-xl"
+                            >
+                                check_circle
+                            </span>
+                            Salvo com sucesso
+                        </p>
+                    ) : null}
                     <address className="mt-2 not-italic text-sm leading-6 text-slate-600">
                         {address.street}, {address.number}
                         <br />

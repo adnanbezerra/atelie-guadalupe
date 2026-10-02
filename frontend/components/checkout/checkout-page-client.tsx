@@ -63,6 +63,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [checkoutNotice, setCheckoutNotice] = useState<CheckoutError | null>(
         null,
     );
+    const [isAddressSaveConfirmed, setIsAddressSaveConfirmed] = useState(false);
 
     const hasValidServiceCode =
         Number.isInteger(quotedShipping.serviceCode) &&
@@ -509,6 +510,9 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             {hasValidAddress ? (
                                 <DeliveryAddress
                                     address={userContext.address!}
+                                    showSavedConfirmation={
+                                        isAddressSaveConfirmed
+                                    }
                                 />
                             ) : (
                                 <CheckoutAddressForm
@@ -520,11 +524,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                         })
                                     }
                                     onSaved={() =>
-                                        setCheckoutNotice({
-                                            title: "Endereço salvo",
-                                            description:
-                                                "Seu endereço de entrega foi cadastrado. Agora você pode confirmar o pedido e o frete.",
-                                        })
+                                        setIsAddressSaveConfirmed(true)
                                     }
                                 />
                             )}

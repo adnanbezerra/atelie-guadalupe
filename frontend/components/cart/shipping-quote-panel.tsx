@@ -408,8 +408,7 @@ export function ShippingQuotePanel({
                                             type="checkbox"
                                         />
                                         <span className="flex-1 text-sm font-bold leading-5 text-slate-800">
-                                            Usar este CEP ao cadastrar meu
-                                            endereço
+                                            Salvar CEP como meu endereço
                                         </span>
                                         {isZipDraftSaved ? (
                                             <span
