@@ -167,6 +167,7 @@ export class PaymentWebhookService {
                                             in: [
                                                 PaymentStatus.CREATING,
                                                 PaymentStatus.PENDING,
+                                                PaymentStatus.EXPIRED,
                                                 PaymentStatus.PAID
                                             ]
                                         }

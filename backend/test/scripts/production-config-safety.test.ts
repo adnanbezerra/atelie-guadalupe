@@ -36,6 +36,7 @@ const validProductionEnvironment: NodeJS.ProcessEnv = {
     FULFILLMENT_WORKER_ENABLED: "true",
     EMAIL_WORKER_ENABLED: "true",
     SHIPPING_TRACKING_WORKER_ENABLED: "true",
+    PAYMENT_EXPIRATION_WORKER_ENABLED: "true",
     RESEND_API_KEY: "secret",
     EMAIL_FROM: "Atelie Guadalupe <contato@example.com>",
     EMAIL_REPLY_TO: "suporte@example.com",
@@ -90,7 +91,8 @@ test("production preflight accepts only explicit provider modes and disabled che
         ...validProductionEnvironment,
         FULFILLMENT_WORKER_ENABLED: "false",
         EMAIL_WORKER_ENABLED: "false",
-        SHIPPING_TRACKING_WORKER_ENABLED: "false"
+        SHIPPING_TRACKING_WORKER_ENABLED: "false",
+        PAYMENT_EXPIRATION_WORKER_ENABLED: "false"
     });
     assert.equal(
         dedicatedWebReplica.find((check) => check.id === "worker_flags_configured_explicitly")

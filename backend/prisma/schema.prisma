@@ -60,6 +60,7 @@ enum ShippingStatus {
 enum PaymentStatus {
   CREATING
   PENDING
+  EXPIRED
   PAID
   REFUND_PENDING
   REFUNDED

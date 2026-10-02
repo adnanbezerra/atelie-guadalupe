@@ -235,6 +235,9 @@ const envSchema = z
         CHECKOUT_OBSERVABILITY_ENABLED: z.enum(["true", "false"]).optional(),
         CHECKOUT_OBSERVABILITY_INTERVAL_MS: positiveInteger(60000),
         PAYMENT_PENDING_ALERT_MINUTES: positiveInteger(30),
+        PAYMENT_EXPIRATION_WORKER_ENABLED: enabledFlag,
+        PAYMENT_EXPIRATION_WORKER_INTERVAL_MS: positiveInteger(60000),
+        PAYMENT_EXPIRATION_MINUTES: positiveInteger(15),
         CHECKOUT_ALERT_CHANNEL: optionalString,
         CHECKOUT_ALERT_OWNER: optionalString,
         CHECKOUT_LOG_QUERY_URL: optionalUrl,
@@ -436,7 +439,8 @@ const envSchema = z
         for (const name of [
             "FULFILLMENT_WORKER_ENABLED",
             "EMAIL_WORKER_ENABLED",
-            "SHIPPING_TRACKING_WORKER_ENABLED"
+            "SHIPPING_TRACKING_WORKER_ENABLED",
+            "PAYMENT_EXPIRATION_WORKER_ENABLED"
         ] as const) {
             if (!environment[name]) {
                 context.addIssue({
@@ -553,7 +557,8 @@ const envSchema = z
         ABACATEPAY_EXPECTED_DEV_MODE: environment.ABACATEPAY_EXPECTED_DEV_MODE ?? "true",
         FULFILLMENT_WORKER_ENABLED: environment.FULFILLMENT_WORKER_ENABLED ?? "true",
         EMAIL_WORKER_ENABLED: environment.EMAIL_WORKER_ENABLED ?? "true",
-        SHIPPING_TRACKING_WORKER_ENABLED: environment.SHIPPING_TRACKING_WORKER_ENABLED ?? "true"
+        SHIPPING_TRACKING_WORKER_ENABLED: environment.SHIPPING_TRACKING_WORKER_ENABLED ?? "true",
+        PAYMENT_EXPIRATION_WORKER_ENABLED: environment.PAYMENT_EXPIRATION_WORKER_ENABLED ?? "true"
     }));
 
 export type Env = z.infer<typeof envSchema>;

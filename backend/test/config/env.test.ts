@@ -27,6 +27,7 @@ const validEnvironment: NodeJS.ProcessEnv = {
     FULFILLMENT_WORKER_ENABLED: "true",
     EMAIL_WORKER_ENABLED: "true",
     SHIPPING_TRACKING_WORKER_ENABLED: "true",
+    PAYMENT_EXPIRATION_WORKER_ENABLED: "true",
     CHECKOUT_ENABLED: "true",
     CHECKOUT_ROLLOUT_MODE: "PUBLIC",
     CHECKOUT_OBSERVABILITY_ENABLED: "true",
@@ -260,6 +261,7 @@ test("production requires explicit worker flags and email reply-to", () => {
         FULFILLMENT_WORKER_ENABLED: _fulfillment,
         EMAIL_WORKER_ENABLED: _email,
         SHIPPING_TRACKING_WORKER_ENABLED: _tracking,
+        PAYMENT_EXPIRATION_WORKER_ENABLED: _paymentExpiration,
         EMAIL_REPLY_TO: _replyTo,
         ...environment
     } = validEnvironment;
@@ -270,6 +272,7 @@ test("production requires explicit worker flags and email reply-to", () => {
             error.message.includes("FULFILLMENT_WORKER_ENABLED: obrigatoria") &&
             error.message.includes("EMAIL_WORKER_ENABLED: obrigatoria") &&
             error.message.includes("SHIPPING_TRACKING_WORKER_ENABLED: obrigatoria") &&
+            error.message.includes("PAYMENT_EXPIRATION_WORKER_ENABLED: obrigatoria") &&
             error.message.includes("EMAIL_REPLY_TO: obrigatoria")
     );
 });
@@ -284,6 +287,7 @@ test("production validates sender email without changing development defaults", 
     assert.equal(environment.FULFILLMENT_WORKER_ENABLED, "true");
     assert.equal(environment.EMAIL_WORKER_ENABLED, "true");
     assert.equal(environment.SHIPPING_TRACKING_WORKER_ENABLED, "true");
+    assert.equal(environment.PAYMENT_EXPIRATION_WORKER_ENABLED, "true");
 });
 
 test("production accepts explicitly expected SuperFrete sandbox configuration", () => {

@@ -65,7 +65,8 @@ export function inspectProductionEnvironment(environment: NodeJS.ProcessEnv) {
             "worker_flags_configured_explicitly",
             ["true", "false"].includes(environment.FULFILLMENT_WORKER_ENABLED ?? "") &&
                 ["true", "false"].includes(environment.EMAIL_WORKER_ENABLED ?? "") &&
-                ["true", "false"].includes(environment.SHIPPING_TRACKING_WORKER_ENABLED ?? "")
+                ["true", "false"].includes(environment.SHIPPING_TRACKING_WORKER_ENABLED ?? "") &&
+                ["true", "false"].includes(environment.PAYMENT_EXPIRATION_WORKER_ENABLED ?? "")
         )
     ];
 }
