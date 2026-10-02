@@ -12,9 +12,55 @@ type AdminDashboardClientProps = {
     initialMarketing: MarketingPayload | null;
 };
 
+const orderStatuses: Record<string, { label: string; className: string }> = {
+    PENDING: {
+        label: "Pendente",
+        className: "bg-slate-100 text-slate-700 ring-slate-200",
+    },
+    AWAITING_PAYMENT: {
+        label: "Aguardando pagamento",
+        className: "bg-amber-50 text-amber-700 ring-amber-200",
+    },
+    PAID: {
+        label: "Pago",
+        className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    },
+    PROCESSING: {
+        label: "Em processamento",
+        className: "bg-blue-50 text-blue-700 ring-blue-200",
+    },
+    SHIPPED: {
+        label: "Enviado",
+        className: "bg-sky-50 text-sky-700 ring-sky-200",
+    },
+    DELIVERED: {
+        label: "Entregue",
+        className: "bg-emerald-700 text-white ring-emerald-700",
+    },
+    CANCELLED: {
+        label: "Cancelado",
+        className: "bg-red-50 text-red-700 ring-red-200",
+    },
+};
+
+const unknownOrderStatus = {
+    label: "Status indisponível",
+    className: "bg-slate-100 text-slate-700 ring-slate-200",
+};
+
+const chartDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+});
+
 function monthKey(date: string) {
     const current = new Date(date);
     return `${current.getUTCFullYear()}-${current.getUTCMonth()}`;
+}
+
+function dayKey(date: Date) {
+    return date.toISOString().slice(0, 10);
 }
 
 export function AdminDashboardClient({
@@ -43,13 +89,44 @@ export function AdminDashboardClient({
         };
     }, [orders.data]);
 
-    const chartOrders = (
-        metrics.currentOrders.length ? metrics.currentOrders : orders.data
-    ).slice(0, 12);
-    const maxOrder = Math.max(
-        ...chartOrders.map((item) => item.totalInCents),
+    const salesHistory = useMemo(() => {
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        const days = Array.from({ length: 30 }, (_, index) => {
+            const date = new Date(today);
+            date.setUTCDate(today.getUTCDate() - (29 - index));
+
+            return {
+                date,
+                key: dayKey(date),
+                totalInCents: 0,
+            };
+        });
+        const totalsByDay = new Map(
+            days.map((day) => [day.key, day.totalInCents]),
+        );
+
+        for (const order of orders.data) {
+            const key = dayKey(new Date(order.placedAt));
+
+            if (totalsByDay.has(key)) {
+                totalsByDay.set(
+                    key,
+                    (totalsByDay.get(key) ?? 0) + order.totalInCents,
+                );
+            }
+        }
+
+        return days.map((day) => ({
+            ...day,
+            totalInCents: totalsByDay.get(day.key) ?? 0,
+        }));
+    }, [orders.data]);
+    const maxDailySale = Math.max(
+        ...salesHistory.map((day) => day.totalInCents),
         1,
     );
+    const chartAxisDays = [0, 9, 19, 29].map((index) => salesHistory[index]);
 
     return (
         <>
@@ -142,32 +219,43 @@ export function AdminDashboardClient({
                             </select>
                         </div>
                         <div className="flex h-[250px] flex-col justify-end">
-                            <div className="flex h-48 items-end justify-between gap-2 px-2">
-                                {chartOrders.map((order) => (
+                            <div className="grid h-48 grid-cols-[repeat(30,minmax(0,1fr))] items-end gap-1 px-2">
+                                {salesHistory.map((day) => (
                                     <div
-                                        className="w-full rounded-t-sm bg-primary/20 hover:bg-primary"
-                                        key={order.uuid}
+                                        aria-label={
+                                            day.totalInCents > 0
+                                                ? `${chartDateFormatter.format(day.date)}: ${formatCurrency(day.totalInCents)}`
+                                                : undefined
+                                        }
+                                        className={
+                                            day.totalInCents > 0
+                                                ? "w-full rounded-t-sm bg-primary/70 transition-colors hover:bg-primary"
+                                                : "h-px w-full bg-slate-200"
+                                        }
+                                        key={day.key}
                                         style={{
-                                            height: `${Math.max(
-                                                30,
-                                                Math.round(
-                                                    (order.totalInCents /
-                                                        maxOrder) *
-                                                        100,
-                                                ),
-                                            )}%`,
+                                            height:
+                                                day.totalInCents > 0
+                                                    ? `${Math.max(
+                                                          8,
+                                                          Math.round(
+                                                              (day.totalInCents /
+                                                                  maxDailySale) *
+                                                                  100,
+                                                          ),
+                                                      )}%`
+                                                    : undefined,
                                         }}
-                                        title={formatCurrency(
-                                            order.totalInCents,
-                                        )}
+                                        title={`${chartDateFormatter.format(day.date)}: ${formatCurrency(day.totalInCents)}`}
                                     />
                                 ))}
                             </div>
-                            <div className="mt-4 flex justify-between px-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                <span>01 Mai</span>
-                                <span>10 Mai</span>
-                                <span>20 Mai</span>
-                                <span>30 Mai</span>
+                            <div className="mt-4 flex justify-between px-1 text-xs font-bold text-slate-500">
+                                {chartAxisDays.map((day) => (
+                                    <span key={day.key}>
+                                        {chartDateFormatter.format(day.date)}
+                                    </span>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -199,32 +287,40 @@ export function AdminDashboardClient({
                                     : initialOrders
                                 )
                                     .slice(0, 6)
-                                    .map((order) => (
-                                        <tr
-                                            className="transition-colors hover:bg-slate-50"
-                                            key={order.uuid}
-                                        >
-                                            <td className="px-6 py-4 text-sm font-bold">
-                                                #{order.uuid.slice(0, 8)}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm">
-                                                Cliente
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-500">
-                                                {formatDate(order.placedAt)}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="rounded bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase text-blue-700">
-                                                    {order.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-bold">
-                                                {formatCurrency(
-                                                    order.totalInCents,
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    .map((order) => {
+                                        const status =
+                                            orderStatuses[order.status] ??
+                                            unknownOrderStatus;
+
+                                        return (
+                                            <tr
+                                                className="transition-colors hover:bg-slate-50"
+                                                key={order.uuid}
+                                            >
+                                                <td className="px-6 py-4 text-sm font-bold">
+                                                    #{order.uuid.slice(0, 8)}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm">
+                                                    Cliente
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-500">
+                                                    {formatDate(order.placedAt)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`inline-flex whitespace-nowrap rounded px-2.5 py-1 text-xs font-bold ring-1 ${status.className}`}
+                                                    >
+                                                        {status.label}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold">
+                                                    {formatCurrency(
+                                                        order.totalInCents,
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>
