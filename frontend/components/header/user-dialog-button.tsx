@@ -82,7 +82,7 @@ export function UserDialogButton() {
                             </Link>
                             <Link
                                 className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
-                                href="/pedidos"
+                                href="/perfil#pedidos"
                             >
                                 <span className="material-symbols-outlined text-base">
                                     receipt_long

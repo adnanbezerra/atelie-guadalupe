@@ -120,6 +120,7 @@ export class ShippingTrackingService {
             }
 
             if (status === "posted") {
+                const trackingCode = info.trackingCode ?? shipment.trackingCode;
                 await this.prisma.$transaction(async (tx) => {
                     await tx.orderShipment.update({
                         where: { id: shipment.id },
@@ -136,18 +137,20 @@ export class ShippingTrackingService {
                                 data: { status: OrderStatus.SHIPPED }
                             });
                         }
-                        await tx.emailJob.upsert({
-                            where: {
-                                deduplicationKey: `shipment-posted:${shipment.order.uuid}`
-                            },
-                            create: this.emailJob(
-                                EmailJobType.ORDER_SHIPPED,
-                                "shipment-posted",
-                                shipment,
-                                info.trackingCode ?? shipment.trackingCode ?? undefined
-                            ),
-                            update: {}
-                        });
+                        if (trackingCode) {
+                            await tx.emailJob.upsert({
+                                where: {
+                                    deduplicationKey: `shipment-posted:${shipment.order.uuid}`
+                                },
+                                create: this.emailJob(
+                                    EmailJobType.ORDER_SHIPPED,
+                                    "shipment-posted",
+                                    shipment,
+                                    trackingCode
+                                ),
+                                update: {}
+                            });
+                        }
                     }
                 });
                 return;

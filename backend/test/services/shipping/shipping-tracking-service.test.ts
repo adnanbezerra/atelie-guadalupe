@@ -39,8 +39,12 @@ function shipment(status: OrderStatus) {
     };
 }
 
-async function processProviderStatus(providerStatus: string, orderStatus: OrderStatus) {
-    const current = shipment(orderStatus);
+async function processProviderStatus(
+    providerStatus: string,
+    orderStatus: OrderStatus,
+    trackingCode: string | null = "AA123BR"
+) {
+    const current = { ...shipment(orderStatus), trackingCode };
     const emailKeys: string[] = [];
     let savedOrderStatus: OrderStatus | null = null;
     let savedShipment: Record<string, unknown> | null = null;
@@ -77,7 +81,7 @@ async function processProviderStatus(providerStatus: string, orderStatus: OrderS
         getOrderInfo: async () => ({
             id: "sf-1",
             status: providerStatus,
-            tracking: "AA123BR",
+            tracking: trackingCode,
             posted_at: "2026-08-03T12:00:00.000Z"
         })
     };
@@ -95,6 +99,13 @@ test("tracking worker marks a posted order as shipped and enqueues one email", a
     const savedShipment = result.savedShipment as Record<string, unknown> | null;
     assert.equal(savedShipment?.superfreteStatus, "posted");
     assert.equal(savedShipment?.trackingCode, "AA123BR");
+});
+
+test("tracking worker waits for a real tracking code before enqueuing shipped email", async () => {
+    const result = await processProviderStatus("posted", OrderStatus.PROCESSING, null);
+
+    assert.equal(result.savedOrderStatus, OrderStatus.SHIPPED);
+    assert.deepStrictEqual(result.emailKeys, []);
 });
 
 test("tracking worker jumps directly to delivered without enqueuing a late shipped email", async () => {

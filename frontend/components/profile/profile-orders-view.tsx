@@ -16,6 +16,8 @@ type ProfileOrdersViewProps = {
     isLoading: boolean;
 };
 
+const SUPERFRETE_TRACKING_URL = "https://rastreamento.superfrete.com/";
+
 export function ProfileOrdersView({
     orders,
     isLoading,
@@ -157,6 +159,35 @@ export function ProfileOrdersView({
                                             )}
                                         </p>
                                     </div>
+                                    {order.shipment?.trackingCode ? (
+                                        <div className="rounded-2xl bg-[#f8f5ef] p-4">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-[#4a3728]">
+                                                Rastreamento
+                                            </p>
+                                            <p className="mt-2 [overflow-wrap:anywhere] text-sm font-bold text-slate-900">
+                                                {order.shipment.trackingCode}
+                                            </p>
+                                            <a
+                                                className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-md shadow-primary/20 transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-primary/30"
+                                                href={SUPERFRETE_TRACKING_URL}
+                                                rel="noreferrer"
+                                                target="_blank"
+                                            >
+                                                Rastrear encomenda
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="material-symbols-outlined text-lg"
+                                                >
+                                                    open_in_new
+                                                </span>
+                                            </a>
+                                            <p className="mt-3 text-xs leading-5 text-slate-600">
+                                                Cole o código acima no
+                                                rastreador oficial da
+                                                SuperFrete.
+                                            </p>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </article>

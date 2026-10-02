@@ -10,6 +10,7 @@ export type RenderedEmail = {
 
 type Payload = Record<string, unknown>;
 type TemplateValues = Record<string, string>;
+const SUPERFRETE_TRACKING_URL = "https://rastreamento.superfrete.com/";
 
 const templateDirectory = resolve(__dirname, "../../../src/modules/emails/templates");
 const templates = {
@@ -136,7 +137,7 @@ export function renderEmail(
     }
 
     const data = orderData(payloadValue);
-    const orderUrl = `${frontendUrl.replace(/\/$/, "")}/pedidos/${encodeURIComponent(data.orderUuid)}`;
+    const orderUrl = `${frontendUrl.replace(/\/$/, "")}/perfil#pedidos`;
     const greeting = `Ola, ${data.customerName}!`;
     const baseText = orderText(data);
     const templateValues = {
@@ -186,9 +187,10 @@ export function renderEmail(
             subject,
             html: renderTemplate(templates.orderShipped, {
                 ...templateValues,
-                trackingCode: tracking
+                trackingCode: tracking,
+                trackingUrl: SUPERFRETE_TRACKING_URL
             }),
-            text: `${greeting}\n\nSeu pedido esta a caminho.\n${message}\n\n${orderUrl}`
+            text: `${greeting}\n\nSeu pedido esta a caminho.\n${message}\nRastreie em: ${SUPERFRETE_TRACKING_URL}\n\n${orderUrl}`
         };
     }
 

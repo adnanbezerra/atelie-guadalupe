@@ -47,7 +47,10 @@ test("email templates escape dynamic values and build the order link", () => {
 
     assert.match(rendered.html, /Maria &lt;Admin&gt;/);
     assert.match(rendered.html, /AA123BR/);
-    assert.match(rendered.html, /https:\/\/atelie\.example\/pedidos\/order-1/);
+    assert.match(rendered.html, /https:\/\/rastreamento\.superfrete\.com\//);
+    assert.match(rendered.text, /https:\/\/rastreamento\.superfrete\.com\//);
+    assert.match(rendered.text, /https:\/\/atelie\.example\/perfil#pedidos/);
+    assert.doesNotMatch(rendered.html, /\/pedidos\/order-1/);
     assert.match(rendered.text, /AA123BR/);
 });
 
