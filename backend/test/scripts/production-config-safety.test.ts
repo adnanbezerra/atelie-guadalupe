@@ -11,6 +11,7 @@ const validProductionEnvironment: NodeJS.ProcessEnv = {
     NODE_ENV: "production",
     DATABASE_URL: "postgresql://app:secret@database.example.com/app?sslmode=verify-full",
     JWT_SECRET: "1vZ9qL7nY2rT8mK4xP6cD3wF5sH0jB9uE7aN",
+    PASSWORD_RESET_SECRET: "8qM4xP6cD3wF5sH0jB9uE7aN1vZ9qL7nY2rT",
     CORS_ORIGIN: "https://atelie.example.com",
     MONGODB_URL: "mongodb://database.example.com/media",
     MONGODB_DB_NAME: "media",

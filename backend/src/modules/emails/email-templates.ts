@@ -15,6 +15,7 @@ const SUPERFRETE_TRACKING_URL = "https://rastreamento.superfrete.com/";
 const templateDirectory = resolve(__dirname, "../../../src/modules/emails/templates");
 const templates = {
     welcome: readFileSync(resolve(templateDirectory, "welcome.html"), "utf8"),
+    passwordReset: readFileSync(resolve(templateDirectory, "password-reset.html"), "utf8"),
     orderCreated: readFileSync(resolve(templateDirectory, "order-created.html"), "utf8"),
     paymentConfirmed: readFileSync(resolve(templateDirectory, "payment-confirmed.html"), "utf8"),
     orderShipped: readFileSync(resolve(templateDirectory, "order-shipped.html"), "utf8"),
@@ -133,6 +134,23 @@ export function renderEmail(
                 frontendUrl: frontendUrl.replace(/\/$/, "")
             }),
             text: `Ola, ${name}!\n\n${message}`
+        };
+    }
+
+    if (type === EmailJobType.PASSWORD_RESET) {
+        const payload = record(payloadValue);
+        const customerName = stringValue(payload, "customerName");
+        const resetCode = stringValue(payload, "resetCode");
+        const expiresInMinutes = numberValue(payload, "expiresInMinutes");
+        const subject = "Seu codigo para redefinir a senha";
+        return {
+            subject,
+            html: renderTemplate(templates.passwordReset, {
+                customerName,
+                resetCode,
+                expiresInMinutes: String(expiresInMinutes)
+            }),
+            text: `Ola, ${customerName}!\n\nSeu codigo para redefinir a senha e ${resetCode}. Ele expira em ${expiresInMinutes} minutos.\n\nSe voce nao solicitou esta alteracao, ignore este email.`
         };
     }
 

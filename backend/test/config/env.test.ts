@@ -7,6 +7,7 @@ const validEnvironment: NodeJS.ProcessEnv = {
     PORT: "3000",
     DATABASE_URL: "postgresql://user:password@database.example.com:5432/app?sslmode=require",
     JWT_SECRET: "1vZ9qL7nY2rT8mK4xP6cD3wF5sH0jB9uE7aN",
+    PASSWORD_RESET_SECRET: "8qM4xP6cD3wF5sH0jB9uE7aN1vZ9qL7nY2rT",
     CORS_ORIGIN: "https://atelie.example.com,https://admin.atelie.example.com",
     MONGODB_URL: "mongodb://database.example.com:27017",
     MONGODB_DB_NAME: "media",
@@ -169,6 +170,23 @@ test("production requires TLS for PostgreSQL and a strong JWT secret", () => {
             /DATABASE_URL/
         );
     }
+});
+
+test("non-test environments require a strong password reset secret", () => {
+    const { PASSWORD_RESET_SECRET: _secret, ...missingSecret } = validEnvironment;
+    assert.throws(() => validateEnv(missingSecret), /PASSWORD_RESET_SECRET: obrigatoria/);
+    assert.throws(
+        () => validateEnv({ ...validEnvironment, PASSWORD_RESET_SECRET: "change-me" }),
+        /PASSWORD_RESET_SECRET: deve possuir pelo menos 32 bytes/
+    );
+    assert.throws(
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                PASSWORD_RESET_SECRET: validEnvironment.JWT_SECRET
+            }),
+        /PASSWORD_RESET_SECRET: deve ser diferente de JWT_SECRET/
+    );
 });
 
 test("production permits sslmode=disable only for the explicitly expected host", () => {

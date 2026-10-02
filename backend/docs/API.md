@@ -69,9 +69,13 @@ Payload minimo esperado:
     "sub": "0195f4aa-7f18-7db5-9f32-06f4a9a2b101",
     "email": "maria@email.com",
     "role": "USER",
-    "name": "Maria da Silva"
+    "name": "Maria da Silva",
+    "authVersion": 0
 }
 ```
+
+`authVersion` permite revogar tokens antigos após redefinição de senha. Tokens legados sem esse
+campo são tratados como versão `0`.
 
 ## 6. Erros mais comuns
 
@@ -236,6 +240,80 @@ Possiveis erros:
 - `401` credenciais invalidas
 - `403` usuario inativo
 - `422` payload invalido
+
+## 8.3 `POST /auth/password-reset/request`
+
+Uso:
+
+- solicita código numérico de redefinição de senha por e-mail
+- não exige JWT
+- sempre devolve a mesma resposta, exista ou não uma conta ativa para o e-mail
+- código vale por 10 minutos; reenvio permitido após 60 segundos
+- novo código invalida o anterior
+- limite de 3 solicitações por IP a cada 15 minutos
+
+Request:
+
+```json
+{
+    "email": "maria@email.com"
+}
+```
+
+Resposta `202`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "message": "Se existir uma conta ativa para este email, enviaremos um codigo de recuperacao"
+    }
+}
+```
+
+Possiveis erros:
+
+- `422` e-mail inválido
+- `429` limite de solicitações excedido
+
+## 8.4 `POST /auth/password-reset/confirm`
+
+Uso:
+
+- confirma código de 6 dígitos e define nova senha
+- não exige JWT
+- código permite no máximo 5 tentativas
+- senha deve ter 8 a 72 caracteres, maiúscula, minúscula, número e caractere especial
+- sucesso revoga todos os JWTs emitidos anteriormente
+- não realiza login automático nem retorna novo JWT
+- limite de 5 tentativas por IP a cada 15 minutos
+
+Request:
+
+```json
+{
+    "email": "maria@email.com",
+    "code": "042731",
+    "newPassword": "NovaSenha@123"
+}
+```
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "message": "Senha redefinida com sucesso"
+    }
+}
+```
+
+Possiveis erros:
+
+- `401` código inválido, expirado, consumido ou sem conta ativa correspondente
+- `422` payload, código ou nova senha inválidos
+- `429` limite de tentativas excedido
 
 ## 9. Users
 

@@ -3,4 +3,5 @@ export type JwtUserPayload = {
     email: string;
     role: "ADMIN" | "SUBADMIN" | "USER";
     name: string;
+    authVersion?: number;
 };

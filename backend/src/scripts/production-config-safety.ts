@@ -20,6 +20,7 @@ export type ProductionDatabasePrivileges = {
 const MANUAL_CHECK_IDS = [
     "database_target_and_runtime_grants_reviewed",
     "jwt_secret_unique_to_production",
+    "password_reset_secret_unique_to_production",
     "cors_origins_match_expected_frontends",
     "abacatepay_key_confirmed_in_production_dashboard",
     "abacatepay_webhook_endpoint_secret_and_events_confirmed",

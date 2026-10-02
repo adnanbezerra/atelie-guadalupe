@@ -194,6 +194,7 @@ const envSchema = z
         PRODUCTION_DATABASE_ALLOW_INSECURE_INTERNAL: enabledFlag,
         PRODUCTION_DATABASE_EXPECTED_INTERNAL_HOST: optionalString,
         JWT_SECRET: optionalString,
+        PASSWORD_RESET_SECRET: optionalString,
         JWT_EXPIRES_IN: z.string().trim().min(1).default("1d"),
         RATE_LIMIT_MAX: positiveInteger(120),
         RATE_LIMIT_TIME_WINDOW: z.string().trim().min(1).default("1 minute"),
@@ -336,6 +337,7 @@ const envSchema = z
         const required = [
             "DATABASE_URL",
             "JWT_SECRET",
+            "PASSWORD_RESET_SECRET",
             "CORS_ORIGIN",
             "MONGODB_URL",
             "SUPERFRETE_TOKEN",
@@ -353,6 +355,19 @@ const envSchema = z
         for (const name of required) {
             if (!environment[name]) {
                 context.addIssue({ code: "custom", path: [name], message: "obrigatoria" });
+            }
+        }
+        if (environment.PASSWORD_RESET_SECRET) {
+            const message = productionJwtSecretIssue(environment.PASSWORD_RESET_SECRET);
+            if (message) {
+                context.addIssue({ code: "custom", path: ["PASSWORD_RESET_SECRET"], message });
+            }
+            if (environment.PASSWORD_RESET_SECRET === environment.JWT_SECRET) {
+                context.addIssue({
+                    code: "custom",
+                    path: ["PASSWORD_RESET_SECRET"],
+                    message: "deve ser diferente de JWT_SECRET"
+                });
             }
         }
         if (!environment.MONGODB_DB_NAME && !environment.MONGODB_NAME) {

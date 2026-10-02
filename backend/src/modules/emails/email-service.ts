@@ -1,5 +1,5 @@
 import { PrismaClient } from "../../generated/prisma/client";
-import { EmailDeliveryStatus, EmailJobStatus } from "../../generated/prisma/enums";
+import { EmailDeliveryStatus, EmailJobStatus, EmailJobType } from "../../generated/prisma/enums";
 import { createUuid } from "../../core/utils/uuid";
 import { renderEmail } from "./email-templates";
 import { EmailProvider, EmailProviderError, ResendEmailProvider } from "./resend-email-provider";
@@ -93,6 +93,7 @@ export class EmailService {
                 data: {
                     status: EmailJobStatus.FAILED,
                     lockedAt: null,
+                    ...(job.type === EmailJobType.PASSWORD_RESET ? { payload: {} } : {}),
                     lastError:
                         error instanceof Error
                             ? error.message.slice(0, 500)
@@ -139,7 +140,8 @@ export class EmailService {
                         providerMessageId: result.messageId,
                         sentAt: completedAt,
                         lockedAt: null,
-                        lastError: null
+                        lastError: null,
+                        ...(job.type === EmailJobType.PASSWORD_RESET ? { payload: {} } : {})
                     }
                 })
             ]);
@@ -163,7 +165,10 @@ export class EmailService {
                         status: exhausted ? EmailJobStatus.FAILED : EmailJobStatus.RETRY_SCHEDULED,
                         nextAttemptAt: exhausted ? job.nextAttemptAt : new Date(Date.now() + delay),
                         lockedAt: null,
-                        lastError: detail.message
+                        lastError: detail.message,
+                        ...(exhausted && job.type === EmailJobType.PASSWORD_RESET
+                            ? { payload: {} }
+                            : {})
                     }
                 })
             ]);

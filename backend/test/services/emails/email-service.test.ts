@@ -8,13 +8,30 @@ import {
 import { EmailService } from "../../../src/modules/emails/email-service";
 import { escapeHtml, renderEmail } from "../../../src/modules/emails/email-templates";
 
-function createJob() {
+test("password reset email renders code, expiry and escaped customer name", () => {
+    const rendered = renderEmail(EmailJobType.PASSWORD_RESET, {
+        customerName: "Maria <script>",
+        resetCode: "042731",
+        expiresInMinutes: 10
+    });
+
+    assert.match(rendered.subject, /codigo/i);
+    assert.match(rendered.html, /042731/);
+    assert.match(rendered.html, /10 minutos/);
+    assert.doesNotMatch(rendered.html, /Maria <script>/);
+    assert.match(rendered.text, /042731/);
+});
+
+function createJob(
+    type: EmailJobType = EmailJobType.WELCOME,
+    payload: Record<string, unknown> = { customerName: "Maria" }
+) {
     return {
         id: 1,
         uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b500",
-        type: EmailJobType.WELCOME,
+        type,
         recipient: "maria@example.com",
-        payload: { customerName: "Maria" },
+        payload,
         deduplicationKey: "welcome:user-1",
         status: EmailJobStatus.PENDING as EmailJobStatus,
         attempts: 0,
@@ -81,7 +98,11 @@ test("order received email shows confirmed shipping and final totals", () => {
 });
 
 test("email worker records acceptance and marks the job sent", async () => {
-    const job = createJob();
+    const job = createJob(EmailJobType.PASSWORD_RESET, {
+        customerName: "Maria",
+        resetCode: "042731",
+        expiresInMinutes: 10
+    });
     const logs: Array<Record<string, unknown>> = [];
     const prisma = {
         emailJob: {
@@ -122,6 +143,7 @@ test("email worker records acceptance and marks the job sent", async () => {
     assert.equal(job.status, EmailJobStatus.SENT);
     assert.equal(job.attempts, 1);
     assert.equal(job.providerMessageId, "resend-1");
+    assert.deepEqual(job.payload, {});
     assert.equal(logs[0].status, EmailDeliveryStatus.ACCEPTED);
     assert.equal(logs[0].attemptNumber, 1);
 });

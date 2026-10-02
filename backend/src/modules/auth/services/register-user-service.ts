@@ -30,7 +30,7 @@ export class RegisterUserService {
 
     public async execute(
         input: RegisterInput
-    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
+    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser>; authVersion: number }>> {
         const email = normalizeEmail(input.email);
         const document = input.document ? normalizeDocument(input.document) : null;
 
@@ -74,7 +74,8 @@ export class RegisterUserService {
         );
 
         return right({
-            user: presentUser(user)
+            user: presentUser(user),
+            authVersion: user.authVersion
         });
     }
 }
@@ -84,7 +85,7 @@ export class LoginService {
 
     public async execute(
         input: LoginInput
-    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser> }>> {
+    ): Promise<Either<AppError, { user: ReturnType<typeof presentUser>; authVersion: number }>> {
         const email = normalizeEmail(input.email);
         const user = await this.userRepository.findByEmail(email);
 
@@ -102,7 +103,8 @@ export class LoginService {
         }
 
         return right({
-            user: presentUser(user)
+            user: presentUser(user),
+            authVersion: user.authVersion
         });
     }
 }

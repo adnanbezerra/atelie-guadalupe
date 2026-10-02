@@ -22,6 +22,13 @@ export default fp(async (fastify) => {
         async function (request: FastifyRequest, _reply: FastifyReply) {
             try {
                 const payload = await request.jwtVerify<JwtUserPayload>();
+                const user = await fastify.prisma.user.findUnique({
+                    where: { uuid: payload.sub },
+                    select: { authVersion: true, isActive: true }
+                });
+                if (!user?.isActive || user.authVersion !== (payload.authVersion ?? 0)) {
+                    throw AppError.unauthorized("Access token invalido");
+                }
                 request.currentUser = payload;
             } catch (error) {
                 if (isExpiredAccessTokenError(error)) {

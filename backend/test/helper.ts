@@ -18,6 +18,8 @@ function config() {
         process.env.DATABASE_URL ??
         "postgresql://postgres:postgres@localhost:5432/atelie_guadalupe";
     process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-secret";
+    process.env.PASSWORD_RESET_SECRET =
+        process.env.PASSWORD_RESET_SECRET ?? "password-reset-test-secret-32-bytes";
     process.env.MONGODB_URL = "";
     process.env.MONGODB_DB_NAME = "";
     process.env.FULFILLMENT_WORKER_ENABLED = "false";
