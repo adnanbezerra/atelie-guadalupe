@@ -92,7 +92,9 @@ export class PaymentWebhookService {
                 select: { processedAt: true }
             });
             if (current?.processedAt) return { duplicate: true };
-            throw AppError.conflict("Webhook ja esta sendo processado");
+            throw AppError.serviceUnavailable(
+                "Webhook ainda esta sendo processado; tente novamente"
+            );
         }
 
         try {
@@ -120,7 +122,12 @@ export class PaymentWebhookService {
                 const paymentLink = await this.prisma.paymentLink.findUnique({
                     where: { providerCheckoutId: checkout.id }
                 });
-                if (!paymentLink || checkout.externalId !== `payment-link:${paymentLink.uuid}`) {
+                if (!paymentLink) {
+                    throw AppError.serviceUnavailable(
+                        "Pagamento do webhook ainda nao esta disponivel"
+                    );
+                }
+                if (checkout.externalId !== `payment-link:${paymentLink.uuid}`) {
                     throw AppError.notFound("Pagamento do webhook nao encontrado");
                 }
                 return await this.processPaymentLink(payload, checkout, paymentLink);

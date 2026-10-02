@@ -345,6 +345,8 @@ Observacoes:
 - se `address.uuid` for enviado, o endereco precisa pertencer ao usuario logado
 - se `address.uuid` nao for enviado, o backend atualiza o endereco existente ou cria um novo
 - ao criar novo endereco, `address` precisa incluir `zipCode`, `street`, `number`, `neighborhood`, `city`, `state` e `country`
+- por compatibilidade com a SuperFrete, `street`, `neighborhood` e `city` aceitam ate 50 caracteres,
+  `number` ate 10, `complement` ate 20 e `state` deve ser a sigla de 2 letras
 - `number` e o numero do predio/casa; `apartmentNumber` identifica apartamento/sala/unidade
 - `isDefault` nao existe para endereco de usuario
 - nao existem rotas publicas `GET|POST|PATCH|DELETE /users/me/addresses`; use `GET /users/me` e `PATCH /users/me`
@@ -2745,7 +2747,31 @@ A resposta publica de pedido agora inclui:
 
 ### `POST /orders`
 
-Requer autenticacao e agora exige `addressUuid`. O backend gera `paymentIdempotencyKey`, cria o pedido em `PENDING` e devolve a chave na resposta. A chave nao e credencial e deve ser guardada para criar ou recuperar o checkout.
+Requer autenticacao e `addressUuid`. O CPF/CNPJ continua opcional no cadastro e no banco, mas e
+obrigatorio para iniciar o checkout: o backend usa primeiro `address.document` e, quando ausente,
+`user.document`. O documento deve conter 11 ou 14 digitos. Sem documento, o endpoint responde
+`400 BUSINESS_RULE_ERROR` com a mensagem `Informe um CPF ou CNPJ para continuar o checkout` e nao
+cria o pedido.
+
+O endpoint tambem valida os limites de destinatario exigidos pela SuperFrete antes de criar o
+pedido. O nome deve conter nome e sobrenome; nome e endereco aceitam ate 50 caracteres, numero ate
+10, complemento ate 20, bairro e cidade ate 50. O estado deve ser informado como uma sigla de duas
+letras. O codigo de servico `33` identifica a transportadora J&T na SuperFrete e exige telefone do
+destinatario com 11 digitos, incluindo DDD; por exemplo, `11999999999`.
+
+O backend gera `paymentIdempotencyKey`, cria o pedido em `AWAITING_PAYMENT` e devolve a chave na
+resposta. A chave nao e credencial e deve ser guardada para criar ou recuperar o checkout.
+
+### `POST /orders/:orderUuid/payment`
+
+Requer autenticacao e o header `Idempotency-Key` devolvido na criacao do pedido. Antes de abrir um
+novo checkout na AbacatePay, o endpoint confirma novamente que o pedido possui CPF/CNPJ com 11 ou
+14 digitos. Essa segunda verificacao protege pedidos antigos ou dados alterados entre a criacao do
+pedido e o pagamento. Sem documento, responde `400 BUSINESS_RULE_ERROR` com a mensagem
+`Informe um CPF ou CNPJ antes de iniciar o pagamento` e nao chama o provedor.
+
+Uma repeticao idempotente de um checkout que ja existe continua devolvendo o checkout persistido;
+ela nao e bloqueada por uma alteracao posterior no cadastro.
 
 ### `POST /shipping/orders/:orderUuid/quote`
 
@@ -2974,7 +3000,12 @@ Eventos processados:
 | `checkout.disputed`  | Marca o pagamento como `DISPUTED`                                                         |
 | `checkout.lost`      | Marca o pagamento como `LOST`                                                             |
 
-Cada `event.id` e persistido com restricao unica. Reentregas processadas respondem `200` sem repetir efeitos. Eventos validos que nao pertencem ao fluxo de checkout sao registrados e ignorados.
+Cada `event.id` e persistido com restricao unica. Reentregas processadas respondem `200` sem repetir
+efeitos. Se o webhook chegar antes de o checkout ser persistido localmente, ou enquanto outra
+entrega do mesmo evento ainda estiver sendo processada, a API responde `503 SERVICE_UNAVAILABLE`.
+A AbacatePay pode entao tentar novamente o mesmo `event.id`; a retentativa reutiliza o registro ja
+criado e nao duplica efeitos. Eventos validos que nao pertencem ao fluxo de checkout sao registrados
+e ignorados.
 
 A `completionUrl` da AbacatePay nao comprova pagamento. A fonte de verdade e o pedido consultado nesta API depois do processamento do webhook.
 

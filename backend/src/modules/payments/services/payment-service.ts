@@ -3,6 +3,7 @@ import { OrderStatus, PaymentStatus, ShippingStatus } from "../../../generated/p
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
+import { isCpfOrCnpj } from "../../../core/utils/document";
 import { AbacateCheckout, AbacatePayClient } from "./abacatepay-client";
 import { checkoutUnavailableError, isCheckoutCreationEnabled } from "./checkout-availability";
 
@@ -33,7 +34,7 @@ export class PaymentService {
     ): Promise<Either<AppError, ReturnType<typeof paymentResponse>>> {
         const order = await this.prisma.order.findUnique({
             where: { uuid: orderUuid },
-            include: { user: true, shipment: true, payment: true, items: true }
+            include: { user: true, address: true, shipment: true, payment: true, items: true }
         });
         if (!order || order.user.uuid !== currentUserUuid) {
             return left(AppError.notFound("Pedido nao encontrado"));
@@ -83,6 +84,9 @@ export class PaymentService {
         }
         if (!order.addressId || order.shipment?.status !== ShippingStatus.CONFIRMED) {
             return left(AppError.business("Confirme o endereco e o frete antes do pagamento"));
+        }
+        if (!isCpfOrCnpj(order.address?.document ?? order.user.document)) {
+            return left(AppError.business("Informe um CPF ou CNPJ antes de iniciar o pagamento"));
         }
         if (order.totalInCents <= 0) {
             return left(AppError.business("O total do pedido precisa ser positivo"));

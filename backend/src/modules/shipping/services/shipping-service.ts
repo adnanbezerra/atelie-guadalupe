@@ -22,7 +22,8 @@ import { buildPackagingPlan } from "./shipping-packaging";
 import {
     normalizeSuperFreteRecipient,
     SuperFreteCalculatorPayload,
-    SuperFreteClient
+    SuperFreteClient,
+    validateSuperFreteRecipient
 } from "./superfrete-client";
 
 type CurrentUser = {
@@ -267,6 +268,31 @@ function extractCreatedSuperFreteOrderId(payload: unknown): string | null {
         getString(getRecord(record.order)?.id) ??
         getString(getRecord(record.data)?.id)
     );
+}
+
+export function extractSuperFreteCartPriceInCents(payload: unknown): number | null {
+    const record = getRecord(payload);
+    if (!record) return null;
+
+    return priceToCents(record.price) ?? priceToCents(getRecord(record.data)?.price);
+}
+
+export function checkoutConfirmsPurchase(payload: unknown, orderId: string): boolean {
+    const record = getRecord(payload);
+    const purchase = getRecord(record?.purchase);
+    if (record?.success !== true || getString(purchase?.status)?.toLowerCase() !== "paid") {
+        return false;
+    }
+
+    return ensureArray(purchase?.orders).some((item) => {
+        if (typeof item === "string") return item === orderId;
+        const order = getRecord(item);
+        return getString(order?.id) === orderId;
+    });
+}
+
+export function isPurchasedSuperFreteStatus(status: string | null): boolean {
+    return ["released", "posted", "delivered"].includes(status?.toLowerCase() ?? "");
 }
 
 export function extractSuperFreteOrderInfo(
@@ -812,12 +838,13 @@ export class ShippingService {
         }
 
         let superfreteOrderId = order.shipment.superfreteOrderId;
+        let cartResponse: unknown = order.shipment.cartResponse;
         if (!superfreteOrderId) {
             const senderSnapshot =
                 this.readSenderSnapshot(order.shipment.senderSnapshot) ??
                 this.buildSenderSnapshotRecordFromPlatform(await this.requirePlatformForOrder());
             const cartPayload = this.buildCartPayload(order, senderSnapshot);
-            const cartResponse = await this.superFreteClient.createCart(cartPayload);
+            cartResponse = await this.superFreteClient.createCart(cartPayload);
             superfreteOrderId = extractCreatedSuperFreteOrderId(cartResponse);
 
             if (!superfreteOrderId) {
@@ -839,19 +866,42 @@ export class ShippingService {
             );
         }
 
+        const cartPriceInCents = extractSuperFreteCartPriceInCents(cartResponse);
+        if (cartPriceInCents === null) {
+            return left(
+                AppError.serviceUnavailable("SuperFrete nao confirmou o preco da etiqueta")
+            );
+        }
+        if (cartPriceInCents !== order.shipment.shippingPriceInCents) {
+            return left(
+                AppError.serviceUnavailable(
+                    "O preco da etiqueta no SuperFrete diverge do frete cobrado"
+                )
+            );
+        }
+
         let checkoutResponse: unknown = order.shipment.checkoutResponse;
         let orderInfo = extractSuperFreteOrderInfo(
             await this.superFreteClient.getOrderInfo(superfreteOrderId),
             superfreteOrderId
         );
-        const alreadyPurchased = Boolean(
-            orderInfo.protocol || orderInfo.trackingCode || orderInfo.labelUrl
-        );
+        const alreadyPurchased = isPurchasedSuperFreteStatus(orderInfo.status);
         if (!alreadyPurchased) {
             checkoutResponse = await this.superFreteClient.checkout([superfreteOrderId]);
+            if (!checkoutConfirmsPurchase(checkoutResponse, superfreteOrderId)) {
+                return left(
+                    AppError.serviceUnavailable("SuperFrete nao confirmou o pagamento da etiqueta")
+                );
+            }
             orderInfo = extractSuperFreteOrderInfo(
                 await this.superFreteClient.getOrderInfo(superfreteOrderId),
                 superfreteOrderId
+            );
+        }
+
+        if (!isPurchasedSuperFreteStatus(orderInfo.status)) {
+            return left(
+                AppError.serviceUnavailable("SuperFrete ainda nao liberou a etiqueta comprada")
             );
         }
 
@@ -893,6 +943,15 @@ export class ShippingService {
         const cancellationResponse = await this.superFreteClient.cancelOrder(
             order.shipment.superfreteOrderId
         );
+        const cancelledOrder = extractSuperFreteOrderInfo(
+            await this.superFreteClient.getOrderInfo(order.shipment.superfreteOrderId),
+            order.shipment.superfreteOrderId
+        );
+        if (cancelledOrder.status?.toLowerCase() !== "cancelled") {
+            return left(
+                AppError.serviceUnavailable("SuperFrete ainda nao confirmou o cancelamento")
+            );
+        }
 
         await this.shippingRepository.updateShipmentStatusByOrderId(
             order.id,
@@ -1140,6 +1199,26 @@ export class ShippingService {
         const shipment = order.shipment!;
         const packaging = getRecord(shipment.packagingSnapshot);
         const consolidatedPackage = getRecord(packaging?.consolidatedPackage);
+        const calculatorPayload = getRecord(shipment.calculatorPayload);
+        const quotedOptions = getRecord(calculatorPayload?.options);
+        const useInsurance = quotedOptions?.use_insurance_value === true;
+        const recipientInput = {
+            name: order.user.name,
+            address: order.address!.street,
+            number: order.address!.number,
+            complement: order.address!.complement,
+            district: order.address!.neighborhood,
+            city: order.address!.city,
+            stateAbbr: order.address!.state,
+            postalCode: order.address!.zipCode,
+            document: order.address!.document ?? order.user.document ?? "",
+            phone: order.user.phone
+        };
+        const recipientError = validateSuperFreteRecipient(
+            recipientInput,
+            shipment.selectedServiceCode!
+        );
+        if (recipientError) throw AppError.business(recipientError);
 
         return {
             from: {
@@ -1154,17 +1233,7 @@ export class ShippingService {
                 document:
                     senderSnapshot.address.document ?? senderSnapshot.platform.document ?? undefined
             },
-            to: normalizeSuperFreteRecipient({
-                name: ensureHumanName(order.user.name, "Cliente"),
-                address: order.address!.street,
-                number: order.address!.number,
-                complement: order.address!.complement,
-                district: order.address!.neighborhood,
-                city: order.address!.city,
-                stateAbbr: order.address!.state,
-                postalCode: order.address!.zipCode,
-                document: order.address!.document ?? order.user.document ?? ""
-            }),
+            to: normalizeSuperFreteRecipient(recipientInput),
             service: shipment.selectedServiceCode!,
             products: order.items.map((item) => ({
                 name: item.productNameSnapshot,
@@ -1178,10 +1247,9 @@ export class ShippingService {
                 weight: getNumber(consolidatedPackage?.weightKg) ?? 0
             },
             options: {
-                insurance_value:
-                    shipment.shippingPriceInCents !== null ? order.subtotalInCents / 100 : null,
-                receipt: false,
-                own_hand: false,
+                insurance_value: useInsurance ? getNumber(quotedOptions?.insurance_value) : null,
+                receipt: quotedOptions?.receipt === true,
+                own_hand: quotedOptions?.own_hand === true,
                 non_commercial: true
             },
             platform: senderSnapshot.platform.name,

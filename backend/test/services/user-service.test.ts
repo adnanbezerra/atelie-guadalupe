@@ -21,6 +21,33 @@ function makeUser(passwordHash: string) {
     };
 }
 
+test("address endpoint schema enforces SuperFrete field limits", () => {
+    const address = {
+        zipCode: "01001000",
+        street: "A".repeat(50),
+        number: "1".repeat(10),
+        complement: "C".repeat(20),
+        neighborhood: "B".repeat(50),
+        city: "S".repeat(50),
+        state: "SP",
+        country: "Brasil"
+    };
+
+    assert.equal(updateMeSchema.safeParse({ address }).success, true);
+    assert.equal(
+        updateMeSchema.safeParse({ address: { ...address, street: "A".repeat(51) } }).success,
+        false
+    );
+    assert.equal(
+        updateMeSchema.safeParse({ address: { ...address, number: "1".repeat(11) } }).success,
+        false
+    );
+    assert.equal(
+        updateMeSchema.safeParse({ address: { ...address, complement: "C".repeat(21) } }).success,
+        false
+    );
+});
+
 test("change my password accepts current password that does not match new password rules", async () => {
     const oldPassword = "old";
     const oldPasswordHash = await hashPassword(oldPassword);

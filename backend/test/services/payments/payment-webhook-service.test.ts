@@ -114,7 +114,7 @@ test("concurrent CARD completion persists method and produces effects once", asy
     await new Promise((resolve) => setImmediate(resolve));
     await assert.rejects(
         service.process(cardPayload),
-        (error: Error & { statusCode?: number }) => error.statusCode === 409
+        (error: Error & { statusCode?: number }) => error.statusCode === 503
     );
     releaseTransaction?.();
     await first;

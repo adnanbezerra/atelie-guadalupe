@@ -10,7 +10,8 @@ function payableOrder(overrides: Record<string, unknown> = {}) {
     return {
         id: 1,
         uuid: orderUuid,
-        user: { uuid: "user-1" },
+        user: { uuid: "user-1", document: "12345678901" },
+        address: { document: null },
         paymentIdempotencyKey: key,
         payment: null,
         status: "AWAITING_PAYMENT",

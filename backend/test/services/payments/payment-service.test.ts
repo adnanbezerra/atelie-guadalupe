@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
+import { AppError } from "../../../src/core/errors/app-error";
 import { PaymentLinkStatus, PaymentStatus } from "../../../src/generated/prisma/enums";
 import { PaymentService } from "../../../src/modules/payments/services/payment-service";
 import {
@@ -65,6 +66,53 @@ test("payment service rejects checkout before shipping confirmation", async () =
     const service = new PaymentService(prisma as never, {} as never);
     const result = await service.createCheckout("user-1", "order-1", key);
     assert.equal(result.success, false);
+});
+
+test("payment service does not call AbacatePay when checkout has no CPF or CNPJ", async () => {
+    const previous = process.env.CHECKOUT_ENABLED;
+    process.env.CHECKOUT_ENABLED = "true";
+    let providerCalled = false;
+    try {
+        const prisma = {
+            order: {
+                findUnique: async () => ({
+                    id: 1,
+                    uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
+                    user: { uuid: "user-1", document: null },
+                    address: { document: null },
+                    paymentIdempotencyKey: key,
+                    payment: null,
+                    status: "AWAITING_PAYMENT",
+                    addressId: 2,
+                    totalInCents: 5000,
+                    items: [],
+                    shipment: { status: "CONFIRMED" }
+                })
+            }
+        };
+        const service = new PaymentService(
+            prisma as never,
+            {
+                createCheckout: async () => {
+                    providerCalled = true;
+                }
+            } as never
+        );
+
+        const result = await service.createCheckout("user-1", "order-1", key);
+
+        assert.equal(result.success, false);
+        if (!result.success) {
+            assert.equal(
+                result.value.message,
+                "Informe um CPF ou CNPJ antes de iniciar o pagamento"
+            );
+        }
+        assert.equal(providerCalled, false);
+    } finally {
+        if (previous === undefined) delete process.env.CHECKOUT_ENABLED;
+        else process.env.CHECKOUT_ENABLED = previous;
+    }
 });
 
 test("payment service blocks a new checkout without calling the provider when disabled", async () => {
@@ -293,7 +341,8 @@ test("payment checkout does not subtract the promotion discount twice", async ()
     const order = {
         id: 1,
         uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
-        user: { uuid: "user-1" },
+        user: { uuid: "user-1", document: "12345678901" },
+        address: { document: null },
         paymentIdempotencyKey: key,
         payment: null,
         status: "AWAITING_PAYMENT",
@@ -464,7 +513,8 @@ test("checkout creation persists provider checkout without reviving a cancelled 
     const order = {
         id: 1,
         uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b402",
-        user: { uuid: "user-1" },
+        user: { uuid: "user-1", document: "12345678901" },
+        address: { document: null },
         paymentIdempotencyKey: key,
         payment: null,
         status: "AWAITING_PAYMENT",
@@ -701,6 +751,55 @@ test("processed webhook delivery is ignored without repeating effects", async ()
 
     assert.deepStrictEqual(result, { duplicate: true });
     assert.equal(paymentLookup, false);
+});
+
+test("unknown checkout webhook returns a retryable error until checkout persistence finishes", async () => {
+    let storedError: string | undefined;
+    const prisma = {
+        paymentWebhookEvent: {
+            upsert: async () => ({ processedAt: null }),
+            updateMany: async () => ({ count: 1 }),
+            update: async ({ data }: { data: { error: string } }) => {
+                storedError = data.error;
+            }
+        },
+        orderPayment: { findUnique: async () => null },
+        paymentLink: { findUnique: async () => null }
+    };
+    const service = new PaymentWebhookService(prisma as never);
+
+    await assert.rejects(
+        service.process({
+            id: "evt_before_persistence",
+            event: "checkout.completed",
+            data: {
+                checkout: {
+                    id: "bill_before_persistence",
+                    externalId: "order-before-persistence",
+                    amount: 5000,
+                    paidAmount: 5000
+                }
+            }
+        }),
+        (error: AppError) => error.statusCode === 503
+    );
+    assert.equal(storedError, "Pagamento do webhook ainda nao esta disponivel");
+});
+
+test("concurrent webhook delivery returns a retryable error while the first is processing", async () => {
+    const prisma = {
+        paymentWebhookEvent: {
+            upsert: async () => ({ processedAt: null }),
+            updateMany: async () => ({ count: 0 }),
+            findUnique: async () => ({ processedAt: null })
+        }
+    };
+    const service = new PaymentWebhookService(prisma as never);
+
+    await assert.rejects(
+        service.process({ id: "evt_in_flight", event: "checkout.completed" }),
+        (error: AppError) => error.statusCode === 503
+    );
 });
 
 test("checkout.completed records payment for a personalized payment link", async () => {

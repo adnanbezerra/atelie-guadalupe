@@ -9,7 +9,9 @@ test("order service blocks order creation with empty cart", async () => {
             id: 1,
             uuid: "user-1",
             name: "Maria",
-            email: "maria@example.com"
+            email: "maria@example.com",
+            document: "12345678901",
+            phone: null
         })
     };
 
@@ -18,7 +20,14 @@ test("order service blocks order creation with empty cart", async () => {
             id: 8,
             uuid: "address-1",
             userId: 1,
-            zipCode: "01001000"
+            document: null,
+            zipCode: "01001000",
+            street: "Praca da Se",
+            number: "100",
+            complement: null,
+            neighborhood: "Se",
+            city: "Sao Paulo",
+            state: "SP"
         })
     };
 
@@ -50,6 +59,62 @@ test("order service blocks order creation with empty cart", async () => {
     assert.equal(result.success, false);
 });
 
+test("order service requires CPF or CNPJ only when starting checkout", async () => {
+    let shippingCalled = false;
+    const service = new OrderService(
+        {
+            findByUuid: async () => ({
+                id: 1,
+                uuid: "user-1",
+                name: "Maria da Silva",
+                email: "maria@example.com",
+                document: null,
+                phone: null
+            })
+        } as never,
+        {
+            findByUuid: async () => ({
+                id: 8,
+                uuid: "address-1",
+                userId: 1,
+                document: null,
+                zipCode: "01001000",
+                street: "Praca da Se",
+                number: "100",
+                complement: null,
+                neighborhood: "Se",
+                city: "Sao Paulo",
+                state: "SP"
+            })
+        } as never,
+        {
+            findByUserId: async () => ({
+                id: 10,
+                userId: 1,
+                items: [{ uuid: "item-1" }]
+            })
+        } as never,
+        {} as never,
+        {} as never,
+        {
+            prepareOrderShipping: async () => {
+                shippingCalled = true;
+            }
+        } as never
+    );
+
+    const result = await service.createFromCart("user-1", {
+        addressUuid: "address-1",
+        shipping: { serviceCode: 1, priceInCents: 1590 }
+    });
+
+    assert.equal(result.success, false);
+    if (!result.success) {
+        assert.equal(result.value.message, "Informe um CPF ou CNPJ para continuar o checkout");
+    }
+    assert.equal(shippingCalled, false);
+});
+
 test("order service creates order from cart snapshot", async () => {
     const deletedItems: string[] = [];
     let queuedEmail: unknown;
@@ -59,8 +124,10 @@ test("order service creates order from cart snapshot", async () => {
         findByUuid: async () => ({
             id: 1,
             uuid: "user-1",
-            name: "Maria",
-            email: "maria@example.com"
+            name: "Maria da Silva",
+            email: "maria@example.com",
+            document: "12345678901",
+            phone: null
         })
     };
 
@@ -69,7 +136,14 @@ test("order service creates order from cart snapshot", async () => {
             id: 8,
             uuid: "address-1",
             userId: 1,
-            zipCode: "01001000"
+            document: null,
+            zipCode: "01001000",
+            street: "Praca da Se",
+            number: "100",
+            complement: null,
+            neighborhood: "Se",
+            city: "Sao Paulo",
+            state: "SP"
         })
     };
 
@@ -215,7 +289,7 @@ test("order service creates order from cart snapshot", async () => {
     assert.equal(shipment.selectedServiceName, "PAC");
     assert.equal(shipment.shippingPriceInCents, 1590);
     assert.deepStrictEqual((queuedEmail as { payload: unknown }).payload, {
-        customerName: "Maria",
+        customerName: "Maria da Silva",
         orderUuid: (queuedEmail as { deduplicationKey: string }).deduplicationKey.replace(
             "order-created:",
             ""

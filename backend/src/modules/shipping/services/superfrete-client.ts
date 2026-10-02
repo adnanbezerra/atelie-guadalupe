@@ -43,6 +43,7 @@ type RecipientPayload = {
     state_abbr: string;
     postal_code: string;
     document: string;
+    phone?: string;
     email?: string;
 };
 
@@ -158,7 +159,7 @@ export class SuperFreteClient {
             body: {
                 order: {
                     id: orderId,
-                    reason: "Cancelado pela integracao"
+                    description: "Cancelado pela integracao"
                 }
             }
         });
@@ -245,6 +246,7 @@ export function normalizeSuperFreteRecipient(input: {
     stateAbbr: string;
     postalCode: string;
     document: string;
+    phone?: string | null;
     email?: string;
 }): RecipientPayload {
     return {
@@ -257,6 +259,44 @@ export function normalizeSuperFreteRecipient(input: {
         state_abbr: input.stateAbbr.toUpperCase(),
         postal_code: normalizePostalCode(input.postalCode),
         document: normalizeDocument(input.document) ?? "",
+        phone: input.phone?.replace(/\D/g, "") || undefined,
         email: input.email
     };
+}
+
+export function validateSuperFreteRecipient(
+    input: Parameters<typeof normalizeSuperFreteRecipient>[0],
+    serviceCode: number
+): string | null {
+    const recipient = normalizeSuperFreteRecipient(input);
+    const limits: Array<[string, string | undefined, number]> = [
+        ["nome", recipient.name, 50],
+        ["endereco", recipient.address, 50],
+        ["numero", recipient.number, 10],
+        ["complemento", recipient.complement, 20],
+        ["bairro", recipient.district, 50],
+        ["cidade", recipient.city, 50]
+    ];
+    const exceeded = limits.find(([, value, max]) => (value?.length ?? 0) > max);
+    if (exceeded) {
+        return `O campo ${exceeded[0]} excede o limite de ${exceeded[2]} caracteres do SuperFrete`;
+    }
+
+    if (!recipient.name.trim().includes(" ")) {
+        return "Informe nome e sobrenome para gerar a etiqueta";
+    }
+    if (!/^\d{8}$/.test(recipient.postal_code)) {
+        return "Informe um CEP valido para gerar a etiqueta";
+    }
+    if (!/^[A-Z]{2}$/.test(recipient.state_abbr)) {
+        return "Informe a sigla do estado com 2 letras para gerar a etiqueta";
+    }
+    if (!/^\d{11}$|^\d{14}$/.test(recipient.document)) {
+        return "Informe um CPF ou CNPJ para gerar a etiqueta";
+    }
+    if (serviceCode === 33 && !/^\d{11}$/.test(recipient.phone ?? "")) {
+        return "Informe um telefone com 11 digitos para usar o servico J&T";
+    }
+
+    return null;
 }

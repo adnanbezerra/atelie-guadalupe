@@ -1,6 +1,9 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import { ShippingService } from "../../../src/modules/shipping/services/shipping-service";
+import {
+    checkoutConfirmsPurchase,
+    ShippingService
+} from "../../../src/modules/shipping/services/shipping-service";
 import { normalizeSuperFreteRecipient } from "../../../src/modules/shipping/services/superfrete-client";
 
 test("SuperFrete recipient payload omits email so only branded tracking emails are sent", () => {
@@ -456,4 +459,163 @@ test("shipping service recalculates quote when quote-affecting options change", 
         discountInCents: 0,
         totalInCents: 11590
     });
+});
+
+function createPaidOrderForLabel() {
+    const order = createConfirmedOrder();
+    return {
+        ...order,
+        status: "PAID" as const,
+        payment: { status: "PAID" as const },
+        user: {
+            ...order.user,
+            name: "Maria da Silva",
+            phone: null
+        },
+        items: [
+            {
+                id: 1,
+                uuid: "item-1",
+                orderId: 1,
+                productId: 99,
+                productSize: "GRAMS_70" as const,
+                productNameSnapshot: "Hidrapele",
+                imageUrlSnapshot: null,
+                quantity: 1,
+                unitPriceInCents: 10000,
+                totalPriceInCents: 10000,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                product: null
+            }
+        ],
+        shipment: {
+            ...order.shipment,
+            calculatorPayload: {
+                options: {
+                    insurance_value: 100,
+                    use_insurance_value: false,
+                    receipt: false,
+                    own_hand: false
+                }
+            },
+            packagingSnapshot: {
+                consolidatedPackage: {
+                    heightCm: 11.5,
+                    widthCm: 6.5,
+                    lengthCm: 6.5,
+                    weightKg: 0.128
+                }
+            }
+        }
+    };
+}
+
+test("label checkout buys a pending cart even when it already has a protocol", async () => {
+    const order = createPaidOrderForLabel();
+    const updates: Array<{ status: string; data: Record<string, unknown> }> = [];
+    let checkoutCalls = 0;
+    let infoCalls = 0;
+    let cartPayload: Record<string, unknown> | undefined;
+    const repository = {
+        findOrderForShipping: async () => order,
+        updateShipmentStatusByOrderId: async (
+            _orderId: number,
+            status: string,
+            data: Record<string, unknown>
+        ) => {
+            updates.push({ status, data });
+        }
+    };
+    const client = {
+        createCart: async (payload: Record<string, unknown>) => {
+            cartPayload = payload;
+            return { id: "sf-1", price: 15.9, status: "pending" };
+        },
+        getOrderInfo: async () => {
+            infoCalls += 1;
+            return infoCalls === 1
+                ? { id: "sf-1", protocol: "protocol-1", status: "pending" }
+                : { id: "sf-1", protocol: "protocol-1", status: "released" };
+        },
+        checkout: async () => {
+            checkoutCalls += 1;
+            return {
+                success: true,
+                purchase: { status: "paid", orders: [{ id: "sf-1" }] }
+            };
+        }
+    };
+    const service = new ShippingService(
+        repository as never,
+        {} as never,
+        client as never,
+        {} as never
+    );
+
+    const result = await service.checkoutOrder({ sub: "system", role: "ADMIN" }, order.uuid);
+
+    assert.equal(result.success, true);
+    assert.equal(checkoutCalls, 1);
+    assert.equal((cartPayload?.options as { insurance_value: unknown }).insurance_value, null);
+    assert.deepStrictEqual(
+        updates.map((update) => update.status),
+        ["CHECKOUT_REQUESTED", "LABEL_PURCHASED"]
+    );
+});
+
+test("label checkout does not persist purchase without released provider status", async () => {
+    const baseOrder = createPaidOrderForLabel();
+    const order = {
+        ...baseOrder,
+        shipment: {
+            ...baseOrder.shipment,
+            superfreteOrderId: "sf-1",
+            cartResponse: { id: "sf-1", price: 15.9, status: "pending" }
+        }
+    };
+    let persisted = false;
+    const service = new ShippingService(
+        {
+            findOrderForShipping: async () => order,
+            updateShipmentStatusByOrderId: async () => {
+                persisted = true;
+            }
+        } as never,
+        {} as never,
+        {
+            getOrderInfo: async () => ({
+                id: "sf-1",
+                protocol: "protocol-1",
+                status: "pending"
+            }),
+            checkout: async () => ({
+                success: true,
+                purchase: { status: "paid", orders: [{ id: "sf-1" }] }
+            })
+        } as never,
+        {} as never
+    );
+
+    const result = await service.checkoutOrder({ sub: "system", role: "ADMIN" }, order.uuid);
+
+    assert.equal(result.success, false);
+    assert.equal(persisted, false);
+});
+
+test("SuperFrete checkout confirmation requires paid purchase and matching order", () => {
+    assert.equal(
+        checkoutConfirmsPurchase(
+            { success: true, purchase: { status: "paid", orders: [{ id: "sf-1" }] } },
+            "sf-1"
+        ),
+        true
+    );
+    assert.equal(
+        checkoutConfirmsPurchase(
+            { success: true, purchase: { status: "paid", orders: [{ id: "sf-other" }] } },
+            "sf-1"
+        ),
+        false
+    );
 });

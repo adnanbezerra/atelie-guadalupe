@@ -7,6 +7,7 @@ import {
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
+import { isCpfOrCnpj } from "../../../core/utils/document";
 import { AddressRepository } from "../../addresses/repositories/address-repository";
 import { CartRepository } from "../../carts/repositories/cart-repository";
 import { MarketingRepository } from "../../marketing/repositories/marketing-repository";
@@ -18,6 +19,7 @@ import { calculateProductPriceInCents } from "../../products/services/product-pr
 import { hasAvailableStock } from "../../products/services/product-stock";
 import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
 import { ShippingService } from "../../shipping/services/shipping-service";
+import { validateSuperFreteRecipient } from "../../shipping/services/superfrete-client";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { OrderRepository } from "../repositories/order-repository";
 import { presentOrder } from "./order-presenter";
@@ -89,6 +91,29 @@ export class OrderService {
         const cart = await this.cartRepository.findByUserId(user.id);
         if (!cart || cart.items.length === 0) {
             return left(AppError.business("Nao e possivel criar pedido com carrinho vazio"));
+        }
+
+        const recipientDocument = address.document ?? user.document;
+        if (!isCpfOrCnpj(recipientDocument)) {
+            return left(AppError.business("Informe um CPF ou CNPJ para continuar o checkout"));
+        }
+        const recipientError = validateSuperFreteRecipient(
+            {
+                name: user.name,
+                address: address.street,
+                number: address.number,
+                complement: address.complement,
+                district: address.neighborhood,
+                city: address.city,
+                stateAbbr: address.state,
+                postalCode: address.zipCode,
+                document: recipientDocument,
+                phone: user.phone
+            },
+            input.shipping.serviceCode
+        );
+        if (recipientError) {
+            return left(AppError.business(recipientError));
         }
 
         for (const item of cart.items) {
