@@ -345,6 +345,8 @@ Observacoes:
 - se `address.uuid` for enviado, o endereco precisa pertencer ao usuario logado
 - se `address.uuid` nao for enviado, o backend atualiza o endereco existente ou cria um novo
 - ao criar novo endereco, `address` precisa incluir `zipCode`, `street`, `number`, `neighborhood`, `city`, `state` e `country`
+- por compatibilidade com a SuperFrete, `street`, `neighborhood` e `city` aceitam ate 50 caracteres,
+  `number` ate 10, `complement` ate 20 e `state` deve ser a sigla de 2 letras
 - `number` e o numero do predio/casa; `apartmentNumber` identifica apartamento/sala/unidade
 - `isDefault` nao existe para endereco de usuario
 - nao existem rotas publicas `GET|POST|PATCH|DELETE /users/me/addresses`; use `GET /users/me` e `PATCH /users/me`
@@ -2745,7 +2747,31 @@ A resposta publica de pedido agora inclui:
 
 ### `POST /orders`
 
-Requer autenticacao e agora exige `addressUuid`. O backend gera `paymentIdempotencyKey`, cria o pedido em `PENDING` e devolve a chave na resposta. A chave nao e credencial e deve ser guardada para criar ou recuperar o checkout.
+Requer autenticacao e `addressUuid`. O CPF/CNPJ continua opcional no cadastro e no banco, mas e
+obrigatorio para iniciar o checkout: o backend usa primeiro `address.document` e, quando ausente,
+`user.document`. O documento deve conter 11 ou 14 digitos. Sem documento, o endpoint responde
+`400 BUSINESS_RULE_ERROR` com a mensagem `Informe um CPF ou CNPJ para continuar o checkout` e nao
+cria o pedido.
+
+O endpoint tambem valida os limites de destinatario exigidos pela SuperFrete antes de criar o
+pedido. O nome deve conter nome e sobrenome; nome e endereco aceitam ate 50 caracteres, numero ate
+10, complemento ate 20, bairro e cidade ate 50. O estado deve ser informado como uma sigla de duas
+letras. O codigo de servico `33` identifica a transportadora J&T na SuperFrete e exige telefone do
+destinatario com 11 digitos, incluindo DDD; por exemplo, `11999999999`.
+
+O backend gera `paymentIdempotencyKey`, cria o pedido em `AWAITING_PAYMENT` e devolve a chave na
+resposta. A chave nao e credencial e deve ser guardada para criar ou recuperar o checkout.
+
+### `POST /orders/:orderUuid/payment`
+
+Requer autenticacao e o header `Idempotency-Key` devolvido na criacao do pedido. Antes de abrir um
+novo checkout na AbacatePay, o endpoint confirma novamente que o pedido possui CPF/CNPJ com 11 ou
+14 digitos. Essa segunda verificacao protege pedidos antigos ou dados alterados entre a criacao do
+pedido e o pagamento. Sem documento, responde `400 BUSINESS_RULE_ERROR` com a mensagem
+`Informe um CPF ou CNPJ antes de iniciar o pagamento` e nao chama o provedor.
+
+Uma repeticao idempotente de um checkout que ja existe continua devolvendo o checkout persistido;
+ela nao e bloqueada por uma alteracao posterior no cadastro.
 
 ### `POST /shipping/orders/:orderUuid/quote`
 
@@ -2974,7 +3000,12 @@ Eventos processados:
 | `checkout.disputed`  | Marca o pagamento como `DISPUTED`                                                         |
 | `checkout.lost`      | Marca o pagamento como `LOST`                                                             |
 
-Cada `event.id` e persistido com restricao unica. Reentregas processadas respondem `200` sem repetir efeitos. Eventos validos que nao pertencem ao fluxo de checkout sao registrados e ignorados.
+Cada `event.id` e persistido com restricao unica. Reentregas processadas respondem `200` sem repetir
+efeitos. Se o webhook chegar antes de o checkout ser persistido localmente, ou enquanto outra
+entrega do mesmo evento ainda estiver sendo processada, a API responde `503 SERVICE_UNAVAILABLE`.
+A AbacatePay pode entao tentar novamente o mesmo `event.id`; a retentativa reutiliza o registro ja
+criado e nao duplica efeitos. Eventos validos que nao pertencem ao fluxo de checkout sao registrados
+e ignorados.
 
 A `completionUrl` da AbacatePay nao comprova pagamento. A fonte de verdade e o pedido consultado nesta API depois do processamento do webhook.
 
@@ -2993,10 +3024,10 @@ Depois de `checkout.completed`, uma tarefa persistente e unica por pedido compra
 Estados da tarefa:
 
 ```text
-PENDING | PROCESSING | RETRY_SCHEDULED | COMPLETED
+PENDING | PROCESSING | RETRY_SCHEDULED | COMPLETED | FAILED
 ```
 
-O fluxo consulta a operacao existente na Superfrete antes de repetir o checkout. Ao concluir, persiste protocolo, rastreio e URL da etiqueta e muda o pedido de `PAID` para `PROCESSING`.
+O fluxo consulta a operacao existente na Superfrete antes de repetir o checkout. Ao concluir, persiste protocolo, rastreio e URL da etiqueta e muda o pedido de `PAID` para `PROCESSING`. Depois de `FULFILLMENT_WORKER_MAX_ATTEMPTS`, ou quando o estado do pedido torna o processamento impossivel, a tarefa passa para `FAILED` e exige correcao operacional antes do retry administrativo.
 
 ### `POST /orders/:orderUuid/fulfillment/retry`
 
@@ -3020,12 +3051,25 @@ ABACATEPAY_RETURN_URL=https://loja.exemplo.com/checkout
 ABACATEPAY_COMPLETION_URL=https://loja.exemplo.com/checkout/success
 ABACATEPAY_WEBHOOK_SECRET=
 ABACATEPAY_TIMEOUT_MS=15000
+ABACATEPAY_EXPECTED_DEV_MODE=false
+SUPERFRETE_BASE_URL=https://api.superfrete.com/api/v0
+SUPERFRETE_EXPECTED_ENVIRONMENT=production
+CHECKOUT_ENABLED=true
 FULFILLMENT_WORKER_ENABLED=true
 FULFILLMENT_WORKER_INTERVAL_MS=30000
 FULFILLMENT_WORKER_LOCK_TIMEOUT_MS=300000
+FULFILLMENT_WORKER_MAX_ATTEMPTS=8
 ```
 
+`ABACATEPAY_EXPECTED_DEV_MODE` deve ser `true` em staging com chave de desenvolvimento e `false`
+em producao real. A aplicacao exige o valor explicitamente quando `NODE_ENV=production` e rejeita
+respostas e webhooks cujo `devMode` esteja ausente ou seja diferente do ambiente esperado.
+
 As configuracoes existentes `SUPERFRETE_*` continuam obrigatorias para cotacao e compra da etiqueta.
+Quando `NODE_ENV=production`, `SUPERFRETE_EXPECTED_ENVIRONMENT` tambem e obrigatoria. Use
+`sandbox` somente em staging intencional com a URL exata
+`https://sandbox.superfrete.com/api/v0`; producao real deve usar `production` com a URL exata
+`https://api.superfrete.com/api/v0`. Qualquer divergencia encerra a inicializacao.
 
 ### E2E completo do checkout em sandbox
 
