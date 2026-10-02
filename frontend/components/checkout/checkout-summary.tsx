@@ -3,9 +3,11 @@ import { formatCurrency } from "@/lib/utils";
 type CheckoutSummaryProps = {
     canPrepare: boolean;
     discount: number;
+    hasVerifiedShippingQuote: boolean;
     isPreparing: boolean;
     isRedirecting: boolean;
     isShippingConfirmed: boolean;
+    isShippingQuoteLoading: boolean;
     onOpenPayment: () => void;
     onPrepareOrder: () => void;
     serviceName: string;
@@ -17,9 +19,11 @@ type CheckoutSummaryProps = {
 export function CheckoutSummary({
     canPrepare,
     discount,
+    hasVerifiedShippingQuote,
     isPreparing,
     isRedirecting,
     isShippingConfirmed,
+    isShippingQuoteLoading,
     onOpenPayment,
     onPrepareOrder,
     serviceName,
@@ -49,7 +53,11 @@ export function CheckoutSummary({
                 <SummaryRow
                     label={serviceName}
                     value={
-                        shipping > 0 ? formatCurrency(shipping) : "A confirmar"
+                        isShippingQuoteLoading
+                            ? "Calculando..."
+                            : hasVerifiedShippingQuote
+                              ? formatCurrency(shipping)
+                              : "A confirmar"
                     }
                 />
                 <div className="border-t border-dashed border-slate-300 pt-4">
@@ -85,11 +93,17 @@ export function CheckoutSummary({
                 ) : (
                     <SummaryButton
                         disabled={isPreparing || !canPrepare}
-                        icon="arrow_forward"
+                        icon={
+                            isShippingQuoteLoading
+                                ? "progress_activity"
+                                : "arrow_forward"
+                        }
                         label={
-                            isPreparing
-                                ? "Confirmando pedido..."
-                                : "Confirmar pedido e frete"
+                            isShippingQuoteLoading
+                                ? "Calculando frete..."
+                                : isPreparing
+                                  ? "Confirmando pedido..."
+                                  : "Confirmar pedido e frete"
                         }
                         onClick={onPrepareOrder}
                     />

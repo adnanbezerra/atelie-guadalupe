@@ -144,8 +144,6 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
 
         const params = new URLSearchParams({
             serviceCode: String(shippingOption.serviceCode),
-            serviceName: shippingOption.name,
-            shippingPriceInCents: String(shippingOption.priceInCents),
         });
 
         return `/checkout?${params.toString()}`;
