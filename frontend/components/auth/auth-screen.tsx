@@ -201,18 +201,26 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                         ))}
 
                         {isLogin ? (
-                            <div className="mb-6 flex items-center space-x-3">
-                                <input
-                                    className="h-4 w-4 rounded border-[#F4F1ED] text-[#8C6D4F] focus:ring-[#8C6D4F]"
-                                    id="remember"
-                                    type="checkbox"
-                                />
-                                <label
-                                    className="text-sm text-[#334155]/80"
-                                    htmlFor="remember"
+                            <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <input
+                                        className="h-4 w-4 rounded border-[#F4F1ED] text-[#8C6D4F] focus:ring-[#8C6D4F]"
+                                        id="remember"
+                                        type="checkbox"
+                                    />
+                                    <label
+                                        className="text-sm text-[#334155]/80"
+                                        htmlFor="remember"
+                                    >
+                                        Lembrar de mim
+                                    </label>
+                                </div>
+                                <Link
+                                    className="text-sm font-bold text-primary underline-offset-4 hover:underline"
+                                    href={`/recuperar-senha${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
                                 >
-                                    Lembrar de mim
-                                </label>
+                                    Esqueci minha senha
+                                </Link>
                             </div>
                         ) : null}
 
