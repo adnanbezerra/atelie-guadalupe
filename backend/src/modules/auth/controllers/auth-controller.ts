@@ -61,7 +61,12 @@ export class AuthController {
 
     public requestPasswordReset = async (request: FastifyRequest, reply: FastifyReply) => {
         const input = this.fastify.validateSchema(requestPasswordResetSchema, request.body);
-        const result = await this.passwordResetService.request(input);
+        const result = await this.passwordResetService.request(input, (event) => {
+            request.log.info(
+                { passwordReset: event },
+                "Solicitacao de recuperacao de senha processada"
+            );
+        });
         return sendEither(reply, result, 202);
     };
 

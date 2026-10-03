@@ -7,6 +7,18 @@ import {
 } from "../../../src/generated/prisma/enums";
 import { EmailService } from "../../../src/modules/emails/email-service";
 import { escapeHtml, renderEmail } from "../../../src/modules/emails/email-templates";
+import { formatEmailSender } from "../../../src/modules/emails/resend-email-provider";
+
+test("email sender combines an arbitrary display name with the verified address", () => {
+    assert.equal(
+        formatEmailSender('Ateliê Guadalupe — "Oficial"', "envios@example.com"),
+        '"Ateliê Guadalupe — \\"Oficial\\"" <envios@example.com>'
+    );
+    assert.equal(
+        formatEmailSender("Atelie Guadalupe <legacy@example.com>"),
+        "Atelie Guadalupe <legacy@example.com>"
+    );
+});
 
 test("password reset email renders code, expiry and escaped customer name", () => {
     const rendered = renderEmail(
@@ -144,7 +156,10 @@ test("email worker records acceptance and marks the job sent", async () => {
         send: async () => ({ messageId: "resend-1" })
     };
 
-    const summary = await new EmailService(prisma as never, provider).processDue();
+    const events: Array<Record<string, unknown>> = [];
+    const summary = await new EmailService(prisma as never, provider).processDue(10, (event) =>
+        events.push(event)
+    );
 
     assert.deepEqual(summary, {
         selected: 1,
@@ -160,6 +175,16 @@ test("email worker records acceptance and marks the job sent", async () => {
     assert.deepEqual(job.payload, {});
     assert.equal(logs[0].status, EmailDeliveryStatus.ACCEPTED);
     assert.equal(logs[0].attemptNumber, 1);
+    assert.deepEqual(events, [
+        {
+            jobId: 1,
+            jobUuid: job.uuid,
+            type: EmailJobType.PASSWORD_RESET,
+            attempt: 1,
+            outcome: "SENT",
+            providerMessageId: "resend-1"
+        }
+    ]);
 });
 
 test("email worker stops after the initial call and three retries", async () => {

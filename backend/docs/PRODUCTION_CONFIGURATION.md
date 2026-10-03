@@ -21,6 +21,18 @@ No gerenciador de configuracao da release, antes de aceitar trafego:
 4. execute `pnpm run config:verify-production` no contexto da release, sem imprimir o ambiente;
 5. corrija qualquer `AUTO_FAIL`; nao prossiga para revisao manual enquanto ele existir.
 
+Configure remetente do Resend separando nome exibido e endereço verificado:
+
+```env
+EMAIL_FROM=Ateliê Guadalupe
+EMAIL_FROM_ADDRESS=envios@dominio-verificado
+EMAIL_REPLY_TO=contato@dominio-verificado
+EMAIL_WORKER_ENABLED=true
+```
+
+Por compatibilidade, `EMAIL_FROM=Atelie Guadalupe <envios@dominio-verificado>` continua aceito
+quando `EMAIL_FROM_ADDRESS` estiver ausente.
+
 `DATABASE_URL` deve preferir TLS por `sslmode=require`, `verify-ca` ou `verify-full`. Enquanto TLS
 nao estiver operacional, uma excecao explicita permite `sslmode=disable` somente para o host exato
 declarado:
@@ -70,7 +82,8 @@ Ambas conferem diretamente no deploy, secret manager e paineis, sem transcrever 
 7. Superfrete usa `https://api.superfrete.com/api/v0`,
    `SUPERFRETE_EXPECTED_ENVIRONMENT=production`, token de producao e user agent aprovado;
 8. numero de replicas vezes flags habilitadas corresponde a concorrencia planejada dos workers;
-9. Resend confirma dominio, `EMAIL_FROM` e `EMAIL_REPLY_TO`; envie teste somente na fase autorizada;
+9. Resend confirma dominio, `EMAIL_FROM_ADDRESS` e `EMAIL_REPLY_TO`; `EMAIL_FROM` contém o nome
+   exibido, por exemplo `Ateliê Guadalupe`; envie teste somente na fase autorizada;
 10. amostra do agregador de logs confirma ausencia de query string, tokens, secrets, documentos,
     enderecos, e-mails e corpos de resposta dos provedores;
 11. `CHECKOUT_ENABLED=false` permanece aplicado em todas replicas ate inicio controlado do smoke;

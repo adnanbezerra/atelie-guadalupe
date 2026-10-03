@@ -22,7 +22,8 @@ const validEnvironment: NodeJS.ProcessEnv = {
     ABACATEPAY_EXPECTED_DEV_MODE: "false",
     PAYMENT_LINK_PUBLIC_BASE_URL: "https://atelie.example.com/checkout/manual",
     RESEND_API_KEY: "resend-key",
-    EMAIL_FROM: "Atelie Guadalupe <contato@example.com>",
+    EMAIL_FROM: "Ateliê Guadalupe",
+    EMAIL_FROM_ADDRESS: "contato@example.com",
     EMAIL_REPLY_TO: "suporte@example.com",
     FRONTEND_URL: "https://atelie.example.com",
     FULFILLMENT_WORKER_ENABLED: "true",
@@ -297,8 +298,33 @@ test("production requires explicit worker flags and email reply-to", () => {
 
 test("production validates sender email without changing development defaults", () => {
     assert.throws(
-        () => validateEnv({ ...validEnvironment, EMAIL_FROM: "invalid sender" }),
-        /EMAIL_FROM: deve conter remetente de email valido/
+        () =>
+            validateEnv({
+                ...validEnvironment,
+                EMAIL_FROM: "invalid sender",
+                EMAIL_FROM_ADDRESS: undefined
+            }),
+        /EMAIL_FROM: deve conter remetente de email valido ou usar EMAIL_FROM_ADDRESS/
+    );
+
+    assert.equal(
+        validateEnv({
+            ...validEnvironment,
+            EMAIL_FROM: "Ateliê Guadalupe — Loja Oficial"
+        }).EMAIL_FROM,
+        "Ateliê Guadalupe — Loja Oficial"
+    );
+    assert.equal(
+        validateEnv({
+            ...validEnvironment,
+            EMAIL_FROM: "Atelie Guadalupe <contato@example.com>",
+            EMAIL_FROM_ADDRESS: undefined
+        }).EMAIL_FROM,
+        "Atelie Guadalupe <contato@example.com>"
+    );
+    assert.throws(
+        () => validateEnv({ ...validEnvironment, EMAIL_FROM: "Ateliê\nGuadalupe" }),
+        /EMAIL_FROM: nao deve conter quebras de linha/
     );
 
     const environment = validateEnv({ NODE_ENV: "test" });

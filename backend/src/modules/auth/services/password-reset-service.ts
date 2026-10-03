@@ -30,6 +30,11 @@ type ConfirmPasswordResetInput = {
     newPassword: string;
 };
 
+export type PasswordResetRequestEvent =
+    | { outcome: "NOT_ELIGIBLE" }
+    | { outcome: "COOLDOWN" }
+    | { outcome: "QUEUED"; emailJobUuid: string };
+
 function isSerializationConflict(error: unknown) {
     return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
 }
@@ -41,7 +46,8 @@ export class PasswordResetService {
     ) {}
 
     public async request(
-        input: RequestPasswordResetInput
+        input: RequestPasswordResetInput,
+        observe?: (event: PasswordResetRequestEvent) => void
     ): Promise<Either<AppError, { message: string }>> {
         const email = normalizeEmail(input.email);
         const user = await this.prisma.user.findUnique({
@@ -49,19 +55,22 @@ export class PasswordResetService {
             select: { id: true, name: true, email: true, isActive: true }
         });
 
-        if (!user?.isActive) return right({ message: GENERIC_REQUEST_MESSAGE });
+        if (!user?.isActive) {
+            observe?.({ outcome: "NOT_ELIGIBLE" });
+            return right({ message: GENERIC_REQUEST_MESSAGE });
+        }
 
         const code = generatePasswordResetCode();
         const challengeUuid = createUuid();
         const codeDigest = digestPasswordResetCode(challengeUuid, code, this.secret);
 
-        await this.serializable(async (transaction) => {
+        const event = await this.serializable<PasswordResetRequestEvent>(async (transaction) => {
             const now = new Date();
             const current = await transaction.passwordResetChallenge.findUnique({
                 where: { userId: user.id }
             });
             if (current && now.getTime() - current.lastSentAt.getTime() < RESEND_COOLDOWN_MS) {
-                return;
+                return { outcome: "COOLDOWN" };
             }
 
             if (current?.emailJobId) {
@@ -114,8 +123,10 @@ export class PasswordResetService {
                     consumedAt: null
                 }
             });
+            return { outcome: "QUEUED", emailJobUuid: emailJob.uuid };
         });
 
+        observe?.(event);
         return right({ message: GENERIC_REQUEST_MESSAGE });
     }
 

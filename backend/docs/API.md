@@ -297,6 +297,13 @@ Possiveis erros:
 - `422` e-mail inválido
 - `429` limite de solicitações excedido
 
+Observabilidade interna, sem registrar endereço ou código:
+
+- `passwordReset.outcome=NOT_ELIGIBLE`: conta ausente ou inativa
+- `passwordReset.outcome=COOLDOWN`: solicitação repetida antes de 60 segundos
+- `passwordReset.outcome=QUEUED`: job criado; `emailJobUuid` permite acompanhar o worker
+- worker registra início/desativação e resultado `SENT`, `RETRY_SCHEDULED` ou `FAILED`
+
 ## 8.4 `POST /auth/password-reset/confirm`
 
 Uso:

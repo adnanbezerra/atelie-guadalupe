@@ -166,10 +166,14 @@ function productionJwtSecretIssue(value: string) {
     return null;
 }
 
-function emailSenderIssue(value: string) {
+function emailSenderIssue(value: string, address?: string) {
+    if (/[\r\n]/.test(value)) return "nao deve conter quebras de linha";
+    if (address) return null;
     const bracketed = value.match(/^.+\s<([^<>]+)>$/);
-    const address = bracketed?.[1] ?? value;
-    return z.email().safeParse(address).success ? null : "deve conter remetente de email valido";
+    const legacyAddress = bracketed?.[1] ?? value;
+    return z.email().safeParse(legacyAddress).success
+        ? null
+        : "deve conter remetente de email valido ou usar EMAIL_FROM_ADDRESS";
 }
 
 function checkoutAllowedUsersIssue(value: string | undefined) {
@@ -250,6 +254,7 @@ const envSchema = z
         FULFILLMENT_TRANSACTION_TIMEOUT_MS: positiveInteger(70000),
         RESEND_API_KEY: optionalString,
         EMAIL_FROM: optionalString,
+        EMAIL_FROM_ADDRESS: optionalEmail,
         EMAIL_REPLY_TO: optionalEmail,
         FRONTEND_URL: optionalUrl,
         EMAIL_WORKER_ENABLED: enabledFlag,
@@ -473,7 +478,10 @@ const envSchema = z
             });
         }
         if (environment.EMAIL_FROM) {
-            const message = emailSenderIssue(environment.EMAIL_FROM);
+            const message = emailSenderIssue(
+                environment.EMAIL_FROM,
+                environment.EMAIL_FROM_ADDRESS
+            );
             if (message) context.addIssue({ code: "custom", path: ["EMAIL_FROM"], message });
         }
         if (environment.CHECKOUT_OBSERVABILITY_ENABLED !== "true") {

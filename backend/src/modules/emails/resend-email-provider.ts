@@ -21,12 +21,19 @@ export interface EmailProvider {
     send(message: EmailProviderMessage): Promise<{ messageId: string }>;
 }
 
+export function formatEmailSender(from: string, address?: string) {
+    if (!address) return from;
+    const displayName = from.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    return `"${displayName}" <${address}>`;
+}
+
 export class ResendEmailProvider implements EmailProvider {
     private resend?: Resend;
 
     public constructor(
         private readonly apiKey = process.env.RESEND_API_KEY ?? "",
         private readonly from = process.env.EMAIL_FROM ?? "",
+        private readonly fromAddress = process.env.EMAIL_FROM_ADDRESS,
         private readonly replyTo = process.env.EMAIL_REPLY_TO
     ) {}
 
@@ -41,7 +48,7 @@ export class ResendEmailProvider implements EmailProvider {
         this.resend ??= new Resend(this.apiKey);
         const { data, error } = await this.resend.emails.send(
             {
-                from: this.from,
+                from: formatEmailSender(this.from, this.fromAddress),
                 to: message.to,
                 subject: message.subject,
                 html: message.html,

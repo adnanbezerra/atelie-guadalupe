@@ -2,7 +2,10 @@ import * as assert from "node:assert";
 import { test } from "node:test";
 import { verifyPassword } from "../../src/core/security/password";
 import { EmailJobStatus } from "../../src/generated/prisma/enums";
-import { PasswordResetService } from "../../src/modules/auth/services/password-reset-service";
+import {
+    PasswordResetRequestEvent,
+    PasswordResetService
+} from "../../src/modules/auth/services/password-reset-service";
 
 type Challenge = {
     id: number;
@@ -130,22 +133,30 @@ test("password reset request is generic for unknown and inactive accounts", asyn
 test("password reset request enforces cooldown and replaces the previous code", async () => {
     const fixture = createFixture();
     const service = new PasswordResetService(fixture.prisma as never, "test-secret");
+    const events: PasswordResetRequestEvent[] = [];
+    const observe = (event: PasswordResetRequestEvent) => events.push(event);
 
-    await service.request({ email: "MARIA@EMAIL.COM" });
+    await service.request({ email: "MARIA@EMAIL.COM" }, observe);
     const firstCode = resetCode(fixture.emailJobs[0]);
     const firstDigest = fixture.getChallenge()?.codeDigest;
     assert.match(firstCode, /^\d{6}$/);
     assert.notEqual(fixture.getChallenge()?.codeDigest, firstCode);
 
-    await service.request({ email: "maria@email.com" });
+    await service.request({ email: "maria@email.com" }, observe);
     assert.equal(fixture.emailJobs.length, 1);
 
     fixture.passCooldown();
-    await service.request({ email: "maria@email.com" });
+    await service.request({ email: "maria@email.com" }, observe);
     assert.equal(fixture.emailJobs.length, 2);
     assert.equal(fixture.emailJobs[0].status, EmailJobStatus.CANCELLED);
     assert.deepEqual(fixture.emailJobs[0].payload, {});
     assert.notEqual(fixture.getChallenge()?.codeDigest, firstDigest);
+    assert.equal(events[0].outcome, "QUEUED");
+    if (events[0].outcome === "QUEUED") {
+        assert.match(events[0].emailJobUuid, /^[0-9a-f-]{36}$/);
+    }
+    assert.deepEqual(events[1], { outcome: "COOLDOWN" });
+    assert.equal(events[2].outcome, "QUEUED");
 });
 
 test("password reset confirmation consumes the code and revokes old tokens", async () => {

@@ -256,7 +256,8 @@ Mesmo com worker inicialmente desligado, validacao exige configuracao:
 
 ```env
 RESEND_API_KEY=<chave-staging>
-EMAIL_FROM=Atelie Guadalupe Staging <staging@dominio-validado>
+EMAIL_FROM=Ateliê Guadalupe Staging
+EMAIL_FROM_ADDRESS=staging@dominio-validado
 EMAIL_REPLY_TO=<email-controlado>
 EMAIL_WORKER_ENABLED=false
 ```

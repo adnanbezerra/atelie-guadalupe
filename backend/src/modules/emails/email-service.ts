@@ -20,6 +20,17 @@ export type EmailWorkerSummary = {
 
 type ProcessJobResult = "SENT" | "RETRY_SCHEDULED" | "FAILED" | "SKIPPED";
 
+export type EmailWorkerJobEvent = {
+    jobId: number;
+    jobUuid?: string;
+    type?: EmailJobType;
+    attempt?: number;
+    outcome: ProcessJobResult;
+    providerMessageId?: string;
+    errorCode?: string;
+    errorMessage?: string;
+};
+
 function errorDetails(error: unknown) {
     if (error instanceof EmailProviderError) {
         return { code: error.code.slice(0, 100), message: error.message.slice(0, 500) };
@@ -36,7 +47,7 @@ export class EmailService {
         private readonly provider: EmailProvider = new ResendEmailProvider()
     ) {}
 
-    public async processDue(limit = 10) {
+    public async processDue(limit = 10, observe?: (event: EmailWorkerJobEvent) => void) {
         const now = new Date();
         const staleBefore = new Date(
             now.getTime() - Number(process.env.EMAIL_WORKER_LOCK_TIMEOUT_MS ?? 300000)
@@ -124,16 +135,17 @@ export class EmailService {
             staleCancelled: expiredPasswordResets.count + expiredTransactionalEmails.count
         };
         for (const job of jobs) {
-            const result = await this.processJob(job.id);
-            if (result === "SENT") summary.sent += 1;
-            if (result === "RETRY_SCHEDULED") summary.retryScheduled += 1;
-            if (result === "FAILED") summary.failed += 1;
-            if (result === "SKIPPED") summary.skipped += 1;
+            const event = await this.processJob(job.id);
+            observe?.(event);
+            if (event.outcome === "SENT") summary.sent += 1;
+            if (event.outcome === "RETRY_SCHEDULED") summary.retryScheduled += 1;
+            if (event.outcome === "FAILED") summary.failed += 1;
+            if (event.outcome === "SKIPPED") summary.skipped += 1;
         }
         return summary;
     }
 
-    private async processJob(jobId: number): Promise<ProcessJobResult> {
+    private async processJob(jobId: number): Promise<EmailWorkerJobEvent> {
         const claimed = await this.prisma.emailJob.updateMany({
             where: {
                 id: jobId,
@@ -146,7 +158,7 @@ export class EmailService {
                 lockedAt: new Date()
             }
         });
-        if (claimed.count === 0) return "SKIPPED";
+        if (claimed.count === 0) return { jobId, outcome: "SKIPPED" };
 
         const job = await this.prisma.emailJob.findUniqueOrThrow({ where: { id: jobId } });
         let rendered;
@@ -165,7 +177,16 @@ export class EmailService {
                             : "Payload de email invalido"
                 }
             });
-            return "FAILED";
+            return {
+                jobId,
+                jobUuid: job.uuid,
+                type: job.type,
+                attempt: job.attempts,
+                outcome: "FAILED",
+                errorCode: "TEMPLATE_ERROR",
+                errorMessage:
+                    error instanceof Error ? error.message.slice(0, 500) : "Payload invalido"
+            };
         }
         const idempotencyKey = `email-job:${job.uuid}`;
         const log = await this.prisma.emailDeliveryLog.create({
@@ -210,7 +231,14 @@ export class EmailService {
                     }
                 })
             ]);
-            return "SENT";
+            return {
+                jobId,
+                jobUuid: job.uuid,
+                type: job.type,
+                attempt: job.attempts,
+                outcome: "SENT",
+                providerMessageId: result.messageId
+            };
         } catch (error) {
             const detail = errorDetails(error);
             const exhausted = job.attempts >= MAX_ATTEMPTS;
@@ -238,7 +266,15 @@ export class EmailService {
                     }
                 })
             ]);
-            return exhausted ? "FAILED" : "RETRY_SCHEDULED";
+            return {
+                jobId,
+                jobUuid: job.uuid,
+                type: job.type,
+                attempt: job.attempts,
+                outcome: exhausted ? "FAILED" : "RETRY_SCHEDULED",
+                errorCode: detail.code,
+                errorMessage: detail.message
+            };
         }
     }
 }
