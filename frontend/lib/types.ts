@@ -300,13 +300,23 @@ export type Order = {
     items: OrderItem[];
     payment?: {
         status: PaymentStatus;
+        method?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | string | null;
         providerCheckoutId: string | null;
         checkoutUrl: string | null;
         paidAmountInCents: number | null;
+        card?: {
+            brand: string | null;
+            lastFourDigits: string;
+        } | null;
     } | null;
     shipment?: {
         status: ShippingStatus;
+        selectedServiceCode?: number | null;
+        selectedServiceName?: string | null;
+        deliveryDays?: number | null;
+        estimatedDeliveryAt?: string | null;
         trackingCode: string | null;
+        trackingUrl?: string | null;
         labelUrl: string | null;
     } | null;
     fulfillment?: {

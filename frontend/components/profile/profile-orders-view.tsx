@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatCurrency } from "@/lib/format";
 import { formatProductSizeLabel } from "@/lib/utils";
 import type { Order } from "@/lib/types";
@@ -189,6 +190,20 @@ export function ProfileOrdersView({
                                         </div>
                                     ) : null}
                                 </div>
+                            </div>
+                            <div className="mt-5 flex justify-end border-t border-slate-100 pt-5">
+                                <Link
+                                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90"
+                                    href={`/perfil/pedidos/${order.uuid}`}
+                                >
+                                    Ver detalhes do pedido
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined text-lg"
+                                    >
+                                        arrow_forward
+                                    </span>
+                                </Link>
                             </div>
                         </article>
                     ))}

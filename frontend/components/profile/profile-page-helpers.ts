@@ -304,11 +304,15 @@ export function formatAddress(order: Order) {
     const address = order.address;
     return [
         `${address.street}, ${address.number}`,
+        address.apartmentNumber
+            ? `Apartamento ${address.apartmentNumber}`
+            : null,
         address.complement,
         address.neighborhood,
         address.city,
         address.state,
         address.zipCode ? `CEP ${formatCep(address.zipCode)}` : null,
+        address.reference ? `Referência: ${address.reference}` : null,
     ]
         .filter(Boolean)
         .join(" - ");

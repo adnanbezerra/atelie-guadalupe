@@ -10,16 +10,20 @@ import {
 } from "@/components/ui/dialog";
 
 type FeedbackDialogProps = {
+    confirmLabel?: string;
     description: string;
     open: boolean;
     title: string;
+    onConfirm?: () => void;
     onOpenChange: (open: boolean) => void;
 };
 
 export function FeedbackDialog({
+    confirmLabel = "Entendi",
     description,
     open,
     title,
+    onConfirm,
     onOpenChange,
 }: FeedbackDialogProps) {
     return (
@@ -39,9 +43,10 @@ export function FeedbackDialog({
                 <DialogClose asChild>
                     <button
                         className="mt-6 min-h-11 w-full rounded-lg bg-primary px-4 py-3 font-bold text-white transition hover:bg-primary/90"
+                        onClick={onConfirm}
                         type="button"
                     >
-                        Entendi
+                        {confirmLabel}
                     </button>
                 </DialogClose>
             </DialogContent>
