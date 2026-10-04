@@ -365,6 +365,8 @@ model OrderPayment {
   expectedAmountInCents Int
   paidAmountInCents     Int?
   providerMethod        String?
+  cardBrand             String?
+  cardLastFourDigits    String?       @db.Char(4)
   providerResponse      Json?
   refundPublicId        String?       @unique
   refundReason          String?

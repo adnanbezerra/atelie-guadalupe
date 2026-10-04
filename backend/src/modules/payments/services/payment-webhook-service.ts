@@ -26,15 +26,36 @@ export type AbacateWebhookPayload = {
             amount?: number;
             paidAmount?: number;
         };
-        payerInformation?: { method?: string };
+        payerInformation?: {
+            method?: string;
+            card?: { brand?: string; lastFourDigits?: string };
+            cardBrand?: string;
+            cardLastFourDigits?: string;
+        };
         reason?: string;
         refundPublicId?: string;
     };
 };
 
+type PayerInformation = NonNullable<AbacateWebhookPayload["data"]>["payerInformation"];
+
 export const ABACATEPAY_WEBHOOK_PUBLIC_KEY =
     "t9dXRhHHo3yDEj5pVDYz0frf7q6bMKyMRmxxCPIPp3RCplBfXRxqlC6ZpiWmOqj4L63qEaeUOtrCI8P0VMUgo6iIga2ri9ogaHFs0WIIywSMg0q7RmBfybe1E5XJcfC4IW3alNqym0tXoAKkzvfEjZxV6bE0oG2zJrNNYmUCKZyV0KZ3JS8Votf9EAWWYdiDkMkpbMdPggfh1EqHlVkMiTady6jOR3hyzGEHrIz2Ret0xHKMbiqkr9HS1JhNHDX9";
 const PROCESSING_MARKER = "__PROCESSING__";
+
+function cardSnapshot(payerInformation: PayerInformation) {
+    const brand = payerInformation?.card?.brand ?? payerInformation?.cardBrand;
+    const lastFourDigits =
+        payerInformation?.card?.lastFourDigits ?? payerInformation?.cardLastFourDigits;
+
+    return {
+        cardBrand: typeof brand === "string" && brand.trim() ? brand.trim() : undefined,
+        cardLastFourDigits:
+            typeof lastFourDigits === "string" && /^\d{4}$/.test(lastFourDigits)
+                ? lastFourDigits
+                : undefined
+    };
+}
 
 export type LatePaymentAlert = {
     orderUuid: string;
@@ -176,6 +197,7 @@ export class PaymentWebhookService {
                                         status: PaymentStatus.REFUND_PENDING,
                                         paidAmountInCents: checkout.paidAmount,
                                         providerMethod: payload.data?.payerInformation?.method,
+                                        ...cardSnapshot(payload.data?.payerInformation),
                                         paidAt: payment.paidAt ?? new Date(),
                                         refundReason:
                                             "Pagamento confirmado depois do cancelamento; acao manual necessaria"
@@ -199,6 +221,7 @@ export class PaymentWebhookService {
                                 status: PaymentStatus.PAID,
                                 paidAmountInCents: checkout.paidAmount,
                                 providerMethod: payload.data?.payerInformation?.method,
+                                ...cardSnapshot(payload.data?.payerInformation),
                                 paidAt: payment.paidAt ?? new Date()
                             }
                         });

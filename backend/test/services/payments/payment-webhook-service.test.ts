@@ -107,7 +107,10 @@ test("concurrent CARD completion persists method and produces effects once", asy
         ...checkoutPayload("event-concurrent"),
         data: {
             ...checkoutPayload("unused").data,
-            payerInformation: { method: "CARD" }
+            payerInformation: {
+                method: "CARD",
+                card: { brand: "Mastercard", lastFourDigits: "4242" }
+            }
         }
     };
     const first = service.process(cardPayload);
@@ -124,6 +127,8 @@ test("concurrent CARD completion persists method and produces effects once", asy
     assert.equal(paymentData?.status, PaymentStatus.PAID);
     assert.equal(paymentData?.paidAmountInCents, 5000);
     assert.equal(paymentData?.providerMethod, "CARD");
+    assert.equal(paymentData?.cardBrand, "Mastercard");
+    assert.equal(paymentData?.cardLastFourDigits, "4242");
     assert.ok(paymentData?.paidAt instanceof Date);
     assert.equal(orderTransitionCount, 1);
     assert.equal(paymentUpdateCount, 1);
