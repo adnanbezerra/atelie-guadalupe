@@ -1852,7 +1852,49 @@ Comportamento:
 
 Resposta:
 
-- retorna `order` no mesmo formato de `POST /orders`
+- retorna `order` com os mesmos campos basicos de `POST /orders`, acrescido dos resumos seguros de pagamento e frete:
+
+```json
+{
+    "success": true,
+    "data": {
+        "order": {
+            "paymentMethod": "CREDIT_CARD",
+            "payment": {
+                "status": "PAID",
+                "method": "CREDIT_CARD",
+                "providerCheckoutId": "bill_abc123",
+                "checkoutUrl": null,
+                "paidAmountInCents": 7680,
+                "card": {
+                    "brand": "Mastercard",
+                    "lastFourDigits": "4242"
+                }
+            },
+            "shipment": {
+                "status": "LABEL_PURCHASED",
+                "selectedServiceCode": 1,
+                "selectedServiceName": "PAC",
+                "deliveryDays": 7,
+                "estimatedDeliveryAt": null,
+                "trackingCode": "BR123456789",
+                "trackingUrl": "https://rastreamento.superfrete.com/#BR123456789",
+                "labelUrl": null
+            }
+        }
+    }
+}
+```
+
+Observacoes:
+
+- `payment.method` aceita `PIX`, `CREDIT_CARD`, `DEBIT_CARD` ou `null`
+- `payment.card` so e retornado quando existe snapshot valido de pagamento por cartao; pedidos antigos e pagamentos sem cartao retornam `null`
+- `payment.card.lastFourDigits` contem exatamente quatro digitos; PAN, CVV e token nunca sao retornados
+- `shipment.deliveryDays` vem do snapshot da cotacao escolhida
+- `shipment.estimatedDeliveryAt` fica `null` quando o provedor nao informa uma data absoluta confiavel
+- `shipment.trackingUrl` fica `null` antes de existir codigo de rastreio
+- campos internos dos provedores e payloads brutos nao fazem parte desta resposta
 
 ## 14.5 `PATCH /orders/:uuid/status`
 
