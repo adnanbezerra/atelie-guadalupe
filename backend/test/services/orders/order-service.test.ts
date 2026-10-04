@@ -356,6 +356,44 @@ test("order service restricts detail to order owner for USER role", async () => 
     assert.equal(result.success, false);
 });
 
+test("order service allows admin to read another user's order details", async () => {
+    const now = new Date();
+    const service = new OrderService(
+        { findByUuid: async () => ({ id: 1, uuid: "admin-1" }) } as never,
+        {} as never,
+        {} as never,
+        {
+            findByUuid: async () => ({
+                uuid: "order-1",
+                paymentIdempotencyKey: "payment-key",
+                userId: 2,
+                status: OrderStatus.PAID,
+                subtotalInCents: 1000,
+                shippingInCents: 0,
+                discountInCents: 0,
+                totalInCents: 1000,
+                notes: null,
+                placedAt: now,
+                createdAt: now,
+                updatedAt: now,
+                items: [],
+                payment: null,
+                shipment: null
+            })
+        } as never,
+        {} as never,
+        {} as never
+    );
+
+    const result = await service.detail(
+        { sub: "admin-1", role: RoleName.ADMIN },
+        "order-1"
+    );
+
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.value.order.uuid, "order-1");
+});
+
 test("order service lists current user orders with pagination", async () => {
     const service = new OrderService(
         {

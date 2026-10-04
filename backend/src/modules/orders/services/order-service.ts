@@ -22,7 +22,7 @@ import { ShippingService } from "../../shipping/services/shipping-service";
 import { validateSuperFreteRecipient } from "../../shipping/services/superfrete-client";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { OrderRepository } from "../repositories/order-repository";
-import { presentOrder } from "./order-presenter";
+import { presentOrder, presentOrderDetails } from "./order-presenter";
 
 type CreateOrderInput = {
     addressUuid: string;
@@ -356,7 +356,7 @@ export class OrderService {
     public async detail(
         currentUser: CurrentUser,
         orderUuid: string
-    ): Promise<Either<AppError, { order: ReturnType<typeof presentOrder> }>> {
+    ): Promise<Either<AppError, { order: ReturnType<typeof presentOrderDetails> }>> {
         const user = await this.userRepository.findByUuid(currentUser.sub);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
@@ -372,7 +372,7 @@ export class OrderService {
         }
 
         return right({
-            order: presentOrder(order)
+            order: presentOrderDetails(order)
         });
     }
 

@@ -44,11 +44,21 @@ type OrderEntity = {
     address?: AddressEntity | null;
     payment?: {
         status: string;
+        providerMethod: string | null;
         providerCheckoutId: string | null;
         checkoutUrl: string | null;
         paidAmountInCents: number | null;
+        cardBrand: string | null;
+        cardLastFourDigits: string | null;
     } | null;
-    shipment?: { status: string; trackingCode: string | null; labelUrl: string | null } | null;
+    shipment?: {
+        status: string;
+        selectedServiceCode: number | null;
+        selectedServiceName: string | null;
+        quotedServices: unknown;
+        trackingCode: string | null;
+        labelUrl: string | null;
+    } | null;
     fulfillmentJob?: {
         status: string;
         attempts: number;
@@ -56,6 +66,78 @@ type OrderEntity = {
         nextAttemptAt: Date;
     } | null;
 };
+
+type PaymentMethodValue = "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
+
+function presentPaymentMethod(order: OrderEntity): PaymentMethodValue | null {
+    const providerMethod = order.payment?.providerMethod?.toUpperCase();
+    if (providerMethod === "PIX") return "PIX";
+    if (providerMethod === "CREDIT_CARD") return "CREDIT_CARD";
+    if (providerMethod === "DEBIT_CARD") return "DEBIT_CARD";
+    if (providerMethod === "CARD") {
+        return order.paymentMethod === PaymentMethod.DEBIT_CARD
+            ? "DEBIT_CARD"
+            : "CREDIT_CARD";
+    }
+    return order.paymentMethod ?? null;
+}
+
+function presentPayment(order: OrderEntity) {
+    if (!order.payment) return null;
+
+    const method = presentPaymentMethod(order);
+    const lastFourDigits = order.payment.cardLastFourDigits;
+    const card =
+        (method === "CREDIT_CARD" || method === "DEBIT_CARD") &&
+        lastFourDigits !== null &&
+        /^\d{4}$/.test(lastFourDigits)
+            ? {
+                  brand: order.payment.cardBrand,
+                  lastFourDigits
+              }
+            : null;
+
+    return {
+        status: order.payment.status,
+        method,
+        providerCheckoutId: order.payment.providerCheckoutId,
+        checkoutUrl: order.payment.checkoutUrl,
+        paidAmountInCents: order.payment.paidAmountInCents,
+        card
+    };
+}
+
+function selectedDeliveryDays(shipment: NonNullable<OrderEntity["shipment"]>) {
+    if (!Array.isArray(shipment.quotedServices)) return null;
+
+    const selected = shipment.quotedServices.find((service) => {
+        if (!service || typeof service !== "object") return false;
+        return Reflect.get(service, "serviceCode") === shipment.selectedServiceCode;
+    });
+    if (!selected || typeof selected !== "object") return null;
+
+    const deliveryDays = Reflect.get(selected, "deliveryDays");
+    return typeof deliveryDays === "number" && Number.isFinite(deliveryDays)
+        ? deliveryDays
+        : null;
+}
+
+function presentShipment(shipment: OrderEntity["shipment"]) {
+    if (!shipment) return null;
+
+    return {
+        status: shipment.status,
+        selectedServiceCode: shipment.selectedServiceCode,
+        selectedServiceName: shipment.selectedServiceName,
+        deliveryDays: selectedDeliveryDays(shipment),
+        estimatedDeliveryAt: null,
+        trackingCode: shipment.trackingCode,
+        trackingUrl: shipment.trackingCode
+            ? `https://rastreamento.superfrete.com/#${encodeURIComponent(shipment.trackingCode)}`
+            : null,
+        labelUrl: shipment.labelUrl
+    };
+}
 
 function presentOrderItem(item: OrderItemEntity) {
     return {
@@ -111,5 +193,13 @@ export function presentOrder(order: OrderEntity) {
         shipment: order.shipment ?? null,
         fulfillment: order.fulfillmentJob ?? null,
         items: order.items.map((item) => presentOrderItem(item))
+    };
+}
+
+export function presentOrderDetails(order: OrderEntity) {
+    return {
+        ...presentOrder(order),
+        payment: presentPayment(order),
+        shipment: presentShipment(order.shipment)
     };
 }
