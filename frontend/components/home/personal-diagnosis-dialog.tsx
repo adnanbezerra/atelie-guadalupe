@@ -14,7 +14,7 @@ import {
 
 const WHATSAPP_PHONE = "5583988337598";
 const WHATSAPP_MESSAGE =
-    "Olá, vim pelo website e gostaria de fazer um diagnóstico personalizado!";
+    "Olá, vim pelo website e gostaria de pedir orientação sobre um creme personalizado!";
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
 const previewImage = "./personalizado.webp";
@@ -41,7 +41,7 @@ const defaultTrigger = (
         className="flex w-fit items-center gap-4 rounded-xl bg-primary px-10 py-5 font-bold text-white shadow-xl shadow-primary/30 transition hover:scale-[1.02]"
         type="button"
     >
-        Iniciar Diagnóstico Pessoal
+        Pedir orientação para meu creme
         <span className="material-symbols-outlined">arrow_forward</span>
     </button>
 );
@@ -86,21 +86,21 @@ export function PersonalDiagnosisDialog({
                             <DialogHeader className="space-y-4">
                                 <DialogTitle asChild>
                                     <h2 className="font-display text-3xl font-bold leading-tight text-slate-900 md:text-4xl">
-                                        Diagnóstico pessoal personalizado
+                                        Orientação para um creme personalizado
                                     </h2>
                                 </DialogTitle>
                                 <DialogDescription asChild>
-                                    <h2 className="text-base font-medium leading-relaxed text-slate-600 md:text-lg">
-                                        O nosso diagnóstico pessoal serve para
-                                        criarmos cremes específicos para a sua
-                                        questão de saúde.
-                                    </h2>
+                                    <p className="text-base font-medium leading-relaxed text-slate-600 md:text-lg">
+                                        Converse diretamente com o Ateliê sobre
+                                        suas preferências antes da preparação.
+                                    </p>
                                 </DialogDescription>
                             </DialogHeader>
 
                             <p className="max-w-xl text-base leading-relaxed text-slate-600 md:text-lg">
-                                Feito 100% para você, ele requer atendimento
-                                personalizado em nosso WhatsApp.
+                                A conversa acontece pelo WhatsApp para que os
+                                detalhes da encomenda fiquem claros antes do
+                                preparo.
                             </p>
                         </div>
 

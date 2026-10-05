@@ -109,23 +109,34 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <div className="relative z-20 mx-auto w-full max-w-7xl px-4 text-center sm:px-6 lg:px-8">
                         <div className="mx-auto max-w-2xl rounded-2xl bg-white/95 p-6 shadow-2xl sm:p-8 md:p-12">
                             <h1 className="text-balance font-display text-3xl font-bold leading-[1.08] text-slate-950 sm:text-4xl md:text-6xl">
-                                A Harmonia da Criação como Dom de Deus
+                                Cremes de sebo bovino e peças artesanais feitos
+                                no Ateliê
                             </h1>
                             <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-                                Cosméticos de puro sebo de boi e artesanato
-                                autoral que celebram a beleza da alma e o
-                                cuidado com o templo do Espírito.
+                                Conheça os produtos de beleza natural, peça
+                                orientação para uma fórmula personalizada ou
+                                explore o artesanato de inspiração católica.
                             </p>
-                            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+                            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
                                 <Link
                                     href="/beleza-natural"
                                     className="flex min-h-12 items-center justify-center rounded-lg bg-primary px-8 py-3 font-bold text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
                                 >
-                                    Beleza Natural
+                                    Comprar beleza natural
                                 </Link>
+                                <PersonalDiagnosisDialog
+                                    trigger={
+                                        <button
+                                            className="flex min-h-12 items-center justify-center rounded-lg border-2 border-primary bg-white px-8 py-3 font-bold text-primary hover:bg-primary/5"
+                                            type="button"
+                                        >
+                                            Pedir orientação
+                                        </button>
+                                    }
+                                />
                                 <Link
                                     href="/artesanato"
-                                    className="flex min-h-12 items-center justify-center rounded-lg border-2 border-primary bg-white px-8 py-3 font-bold text-primary hover:bg-primary/5"
+                                    className="flex min-h-12 items-center justify-center rounded-lg px-6 py-3 font-bold text-slate-700 underline decoration-primary/40 underline-offset-4 hover:text-primary"
                                 >
                                     Explorar Artesanato
                                 </Link>
@@ -149,31 +160,30 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             </div>
                             <div className="absolute -bottom-6 -right-6 hidden rounded-xl bg-primary p-6 text-white shadow-xl md:block">
                                 <p className="font-display text-2xl font-bold">
-                                    100%
+                                    Feito
                                 </p>
                                 <p className="text-xs font-bold uppercase tracking-wider">
-                                    Natural e Puro
+                                    sob encomenda
                                 </p>
                             </div>
                         </div>
                         <div className="flex flex-col gap-8">
                             <div>
                                 <h2 className="text-balance font-display text-3xl font-bold leading-tight text-slate-950 sm:text-4xl md:text-5xl">
-                                    Creme Personalizado: Unicidade de Cada
-                                    Criatura
+                                    Creme personalizado, preparado para você
                                 </h2>
                             </div>
                             <p className="text-lg leading-relaxed text-slate-600">
-                                Reconhecemos que cada pessoa é uma obra singular
-                                do Criador. Nossos especialistas preparam
-                                fórmulas de sebo bovino clarificado exclusivas
-                                que respeitam a identidade de sua pele.
+                                O atendimento começa por uma conversa no
+                                WhatsApp. Você conta suas preferências e combina
+                                diretamente com o Ateliê como será a preparação
+                                da fórmula de sebo bovino clarificado.
                             </p>
                             <ul className="space-y-4" role="list">
                                 {[
-                                    "Sebo de boi purificado para nutrir a sua pele",
-                                    "Óleos essenciais que honram a natureza",
-                                    "Produtos feitos em oração por uma alma cristã verdadeira",
+                                    "Conversa individual antes da preparação",
+                                    "Fórmula combinada diretamente com o Ateliê",
+                                    "Produção artesanal feita sob encomenda",
                                 ].map((item) => (
                                     <li
                                         key={item}
@@ -199,9 +209,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                     Testemunhos e Feedbacks
                                 </h2>
                                 <p className="mt-4 text-lg leading-relaxed text-slate-600">
-                                    Algumas das palavras que nossos clientes
-                                    fiéis falaram sobre a qualidade dos nossos
-                                    produtos.
+                                    Relatos em texto e vídeo publicados pelo
+                                    Ateliê sobre a experiência de seus clientes.
                                 </p>
                             </div>
                             <Link
@@ -325,6 +334,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                         Trabalho • Família • Oração
                                     </p>
                                 </div>
+                                <Link
+                                    className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-lg bg-primary px-5 py-3 font-bold text-white hover:bg-primary/90"
+                                    href="/beleza-natural"
+                                >
+                                    Conhecer os produtos de beleza
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined"
+                                    >
+                                        arrow_forward
+                                    </span>
+                                </Link>
                             </div>
                         </div>
                     </div>
