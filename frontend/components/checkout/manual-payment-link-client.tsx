@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { openPaymentLink } from "@/lib/api";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
+import { ApiError, openPaymentLink } from "@/lib/api";
+import { buildWhatsappLink } from "@/lib/whatsapp";
+
+const supportLink = buildWhatsappLink(
+    "Olá! Preciso de ajuda com um link de pagamento personalizado do Ateliê Guadalupe.",
+);
 
 export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
     const [error, setError] = useState<string | null>(null);
@@ -22,11 +21,28 @@ export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
             const payload = await openPaymentLink(uuid);
             window.location.assign(payload.checkoutUrl);
         } catch (reason) {
-            setError(
+            let message =
                 reason instanceof Error
                     ? reason.message
-                    : "Este link não está disponível para pagamento.",
-            );
+                    : "Este link não está disponível para pagamento.";
+
+            if (reason instanceof ApiError) {
+                if (reason.status === 404 || reason.status === 422) {
+                    message =
+                        "Não encontramos esta cobrança. Confira se o endereço foi copiado por completo ou peça um novo link ao atendimento.";
+                } else if (reason.status === 409) {
+                    message =
+                        "O pagamento ainda está sendo preparado. Aguarde alguns segundos e tente novamente.";
+                } else if (reason.status === 400) {
+                    message =
+                        "Esta cobrança não pode ser aberta agora. Ela pode ter expirado, já ter sido paga ou ter sido encerrada. Confirme com o atendimento.";
+                } else if (reason.status === 502 || reason.status === 503) {
+                    message =
+                        "O ambiente de pagamento está temporariamente indisponível. Nenhuma cobrança foi confirmada; tente novamente em instantes.";
+                }
+            }
+
+            setError(message);
             setIsOpening(false);
         }
     }
@@ -45,8 +61,15 @@ export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
                 <p className="mt-3 text-sm leading-6 text-slate-600">
                     {isOpening
                         ? "Você será encaminhado para o ambiente protegido da AbacatePay."
-                        : "Confira o endereço recebido e continue para o ambiente seguro de pagamento."}
+                        : "Confira se este endereço foi enviado pelo Ateliê Guadalupe. O valor, a descrição e a validade serão apresentados no ambiente seguro antes do pagamento."}
                 </p>
+                {!isOpening ? (
+                    <p className="mt-4 rounded-lg bg-[#f8f5ef] p-4 text-left text-sm leading-6 text-slate-700">
+                        Continuar apenas cria ou recupera a tela segura. O
+                        pagamento só acontece depois da sua confirmação nesse
+                        ambiente.
+                    </p>
+                ) : null}
                 {isOpening ? (
                     <span
                         aria-label="Carregando pagamento"
@@ -63,32 +86,28 @@ export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
                         Ir para o pagamento seguro
                     </button>
                 )}
+                {!isOpening ? (
+                    <a
+                        className="mt-4 inline-flex min-h-11 items-center justify-center px-3 py-2 text-sm font-bold text-primary underline-offset-4 hover:underline"
+                        href={supportLink}
+                        rel="noreferrer"
+                        target="_blank"
+                    >
+                        Confirmar esta cobrança com o atendimento
+                    </a>
+                ) : null}
             </section>
 
-            <Dialog
+            <FeedbackDialog
+                confirmLabel="Tentar novamente"
+                description={error ?? ""}
                 onOpenChange={(open) => !open && setError(null)}
                 open={error != null}
-            >
-                <DialogContent className="max-w-md rounded-xl bg-white p-6">
-                    <DialogHeader>
-                        <DialogTitle className="font-display text-2xl font-bold text-slate-950">
-                            Link indisponível
-                        </DialogTitle>
-                        <DialogDescription className="text-sm leading-6 text-slate-600">
-                            {error}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            className="rounded-lg bg-primary px-4 py-2 font-bold text-white"
-                            onClick={() => setError(null)}
-                            type="button"
-                        >
-                            Entendi
-                        </button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                onConfirm={() => void openCheckout()}
+                onSecondary={() => window.open(supportLink, "_blank")}
+                secondaryLabel="Falar com o atendimento"
+                title="Link indisponível"
+            />
         </main>
     );
 }
