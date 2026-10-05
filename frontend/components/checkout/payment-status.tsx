@@ -4,22 +4,33 @@ import { formatCurrency } from "@/lib/utils";
 import { getDeliveryMessage, getPaymentMessage } from "./checkout-utils";
 
 type PaymentStatusProps = {
+    isRedirecting: boolean;
     isRefreshing: boolean;
     order: Order;
     paymentConfirmed: boolean;
     paymentProblem: boolean;
     pollingTimedOut: boolean;
+    onOpenPayment: () => void;
     onRefresh: () => void;
 };
 
 export function PaymentStatus({
+    isRedirecting,
     isRefreshing,
     order,
     paymentConfirmed,
     paymentProblem,
     pollingTimedOut,
+    onOpenPayment,
     onRefresh,
 }: PaymentStatusProps) {
+    const canOpenPayment =
+        !paymentConfirmed &&
+        !paymentProblem &&
+        (order.status === "AWAITING_PAYMENT" ||
+            order.payment?.status === "CREATING" ||
+            order.payment?.status === "PENDING");
+
     return (
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_22rem]">
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
@@ -46,8 +57,22 @@ export function PaymentStatus({
                 </p>
                 {!paymentConfirmed && !paymentProblem ? (
                     <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                        {canOpenPayment ? (
+                            <button
+                                className="min-h-12 rounded-lg bg-primary px-5 py-3 font-bold text-white focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:opacity-60"
+                                disabled={isRedirecting}
+                                onClick={onOpenPayment}
+                                type="button"
+                            >
+                                {isRedirecting
+                                    ? "Abrindo pagamento..."
+                                    : order.payment?.checkoutUrl
+                                      ? "Voltar ao pagamento"
+                                      : "Ir para o pagamento seguro"}
+                            </button>
+                        ) : null}
                         <button
-                            className="min-h-12 rounded-lg bg-primary px-5 py-3 font-bold text-white focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:opacity-60"
+                            className="min-h-12 rounded-lg border border-slate-300 bg-white px-5 py-3 font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-primary/20 disabled:opacity-60"
                             disabled={isRefreshing}
                             onClick={onRefresh}
                             type="button"
@@ -56,14 +81,6 @@ export function PaymentStatus({
                                 ? "Atualizando..."
                                 : "Atualizar pagamento"}
                         </button>
-                        {order.payment?.checkoutUrl ? (
-                            <a
-                                className="min-h-12 rounded-lg border border-slate-300 bg-white px-5 py-3 text-center font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-primary/20"
-                                href={order.payment.checkoutUrl}
-                            >
-                                Voltar ao pagamento
-                            </a>
-                        ) : null}
                     </div>
                 ) : null}
             </div>

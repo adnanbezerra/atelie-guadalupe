@@ -66,7 +66,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [checkoutNotice, setCheckoutNotice] = useState<CheckoutError | null>(
         null,
     );
-    const [isAddressSaveConfirmed, setIsAddressSaveConfirmed] = useState(false);
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
 
     const hasValidServiceCode =
         Number.isInteger(quotedShipping.serviceCode) &&
@@ -512,14 +512,15 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const discount =
         order?.discountInCents ?? cartPromotionDiscount + cartCouponDiscount;
     const subtotal =
-        order?.subtotalInCents ??
-        (cart.data?.summary.subtotalInCents ?? 0) + cartPromotionDiscount;
+        order?.subtotalInCents ?? cart.data?.summary.subtotalInCents ?? 0;
     const shipping = order
         ? order.shippingInCents
         : hasVerifiedShippingQuote
           ? quotedShipping.priceInCents
           : 0;
-    const total = order?.totalInCents ?? subtotal + shipping;
+    const total =
+        order?.totalInCents ??
+        (cart.data?.summary.totalInCents ?? subtotal - discount) + shipping;
     const currentStep =
         paymentConfirmed || paymentProblem || awaitingPayment
             ? 3
@@ -562,7 +563,9 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                     <EmptyCheckout />
                 ) : paymentConfirmed || paymentProblem || awaitingPayment ? (
                     <PaymentStatus
+                        isRedirecting={isRedirecting}
                         isRefreshing={isRefreshing}
+                        onOpenPayment={() => void openPayment()}
                         onRefresh={() => void handleManualRefresh()}
                         order={order!}
                         paymentConfirmed={paymentConfirmed}
@@ -590,12 +593,10 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                 />
                             ) : null}
 
-                            {hasValidAddress ? (
+                            {hasValidAddress && !isEditingAddress ? (
                                 <DeliveryAddress
                                     address={userContext.address!}
-                                    showSavedConfirmation={
-                                        isAddressSaveConfirmed
-                                    }
+                                    onEdit={() => setIsEditingAddress(true)}
                                 />
                             ) : (
                                 <CheckoutAddressForm
@@ -606,9 +607,14 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                             description,
                                         })
                                     }
-                                    onSaved={() =>
-                                        setIsAddressSaveConfirmed(true)
-                                    }
+                                    onSaved={() => {
+                                        setIsEditingAddress(false);
+                                        setCheckoutNotice({
+                                            title: "Endereço atualizado",
+                                            description:
+                                                "O endereço de entrega foi salvo. Confira os dados antes de confirmar o pedido.",
+                                        });
+                                    }}
                                 />
                             )}
 

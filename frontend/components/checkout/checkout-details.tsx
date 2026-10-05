@@ -13,10 +13,10 @@ export type CheckoutDisplayItem = {
 
 export function DeliveryAddress({
     address,
-    showSavedConfirmation = false,
+    onEdit,
 }: {
     address: Address;
-    showSavedConfirmation?: boolean;
+    onEdit: () => void;
 }) {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -27,24 +27,19 @@ export function DeliveryAddress({
                 >
                     home_pin
                 </span>
-                <div>
-                    <h2 className="font-display text-xl font-bold text-slate-950">
-                        Entrega em
-                    </h2>
-                    {showSavedConfirmation ? (
-                        <p
-                            aria-live="polite"
-                            className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-[#167a45]"
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h2 className="font-display text-xl font-bold text-slate-950">
+                            Entrega em
+                        </h2>
+                        <button
+                            className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-primary hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20"
+                            onClick={onEdit}
+                            type="button"
                         >
-                            <span
-                                aria-hidden="true"
-                                className="material-symbols-outlined text-xl"
-                            >
-                                check_circle
-                            </span>
-                            Salvo com sucesso
-                        </p>
-                    ) : null}
+                            Alterar endereço
+                        </button>
+                    </div>
                     <address className="mt-2 not-italic text-sm leading-6 text-slate-600">
                         {address.street}, {address.number}
                         <br />
