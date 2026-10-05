@@ -382,7 +382,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         : userContext.isAuthenticated
                                           ? "Continuar para pagamento"
                                           : "Entrar para continuar"}
-                                    <span className="material-symbols-outlined text-[18px]">
+                                    <span className="material-symbols-outlined text-lg">
                                         arrow_forward
                                     </span>
                                 </Link>
@@ -414,7 +414,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                             <span className="material-symbols-outlined text-primary/60">
                                 eco
                             </span>
-                            <p className="text-[11px] italic leading-relaxed text-slate-500">
+                            <p className="text-xs italic leading-relaxed text-slate-500">
                                 Nota: Nossos produtos são feitos à mão em
                                 pequenos lotes. Pequenas variações de textura e
                                 cor são prova de sua origem artesanal.

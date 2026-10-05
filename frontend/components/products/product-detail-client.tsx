@@ -139,7 +139,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                         <span className="text-slate-900">{product.name}</span>
                     </nav>
 
-                    <span className="mb-4 w-fit rounded-full border border-primary/20 bg-white/70 px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-primary">
+                    <span className="mb-4 w-fit rounded-full border border-primary/20 bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-primary">
                         {product.line.name}
                     </span>
                     <h1 className="font-display text-4xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere] md:text-6xl">
@@ -223,7 +223,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 {isAdding
                                     ? "Adicionando"
                                     : "Adicionar ao carrinho"}
-                                <span className="material-symbols-outlined text-[20px]">
+                                <span className="material-symbols-outlined text-xl">
                                     shopping_bag
                                 </span>
                             </button>
@@ -264,7 +264,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     }
                 }}
                 open={feedback != null}
-                secondaryLabel={feedback?.added ? "Continuar comprando" : undefined}
+                secondaryLabel={
+                    feedback?.added ? "Continuar comprando" : undefined
+                }
                 title={feedback?.title ?? ""}
             />
         </main>
