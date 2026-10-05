@@ -70,7 +70,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
     return (
         <div className="min-h-screen bg-[#f6f6f8]">
-            <ServerHeader search={search} />
+            <ServerHeader search={search} searchPath="/beleza-natural" />
 
             <main>
                 <section className="relative flex min-h-[calc(100svh-8.5rem)] items-center overflow-hidden py-12 md:min-h-[78vh] md:py-20">

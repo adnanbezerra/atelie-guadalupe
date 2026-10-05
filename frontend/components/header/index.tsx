@@ -28,7 +28,7 @@ export default function Header({
                         aria-label="Buscar produtos"
                         className="min-h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-10 text-base outline-none placeholder:text-slate-500 focus:border-primary focus:ring-4 focus:ring-primary/15 sm:text-sm"
                         onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Buscar..."
+                        placeholder="Buscar produtos..."
                         value={search}
                     />
                 </div>

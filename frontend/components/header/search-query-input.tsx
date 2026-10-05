@@ -11,7 +11,7 @@ type SearchQueryInputProps = {
 
 export function SearchQueryInput({
     initialValue = "",
-    placeholder = "Buscar...",
+    placeholder = "Buscar produtos...",
     searchPath,
 }: SearchQueryInputProps) {
     const router = useRouter();
