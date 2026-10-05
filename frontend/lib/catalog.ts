@@ -6,14 +6,14 @@ export const COLLECTION_CONFIG = {
     beauty: {
         title: "Beleza Natural",
         description:
-            "Cosmeticos botanicos, saboaria artesanal e linhas de cuidado pensadas para o ritual diario.",
-        heroAccent: "Botica, sabonetes e formulas autorais",
+            "Produtos artesanais de beleza organizados pelas linhas disponíveis no catálogo.",
+        heroAccent: "Cremes e produtos de beleza feitos no Ateliê",
     },
     crafts: {
         title: "Artesanato e Artes Sacras",
         description:
-            "Ceramicas, presentes de fe e pecas para casa com presenca artesanal e simbolismo.",
-        heroAccent: "Casa, altar e presentes com assinatura manual",
+            "Peças artesanais de inspiração católica para a casa, a devoção e presentes.",
+        heroAccent: "Casa, devoção e presentes artesanais",
     },
 } as const;
 

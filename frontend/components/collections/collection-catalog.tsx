@@ -95,6 +95,7 @@ export function CollectionCatalog({
     const initialResourceError = initialProductsError ?? initialLinesError;
     const resourceError =
         productsResource.error ?? linesResource.error ?? initialResourceError;
+    const lineFilterAvailable = !initialLinesError && !linesResource.error;
     const pagination = productsResource.data?.pagination;
     const totalPages = pagination?.totalPages ?? 0;
     const pageNumbers = useMemo(() => {
@@ -320,29 +321,46 @@ export function CollectionCatalog({
 
                     <header className="mb-10 max-w-4xl md:mb-12">
                         <h1 className="text-balance font-display text-4xl font-bold leading-tight text-neutral-950 md:text-5xl">
-                            Artesanato Autoral e Sacro
+                            Artesanato e Arte Sacra
                         </h1>
                         <p className="mt-4 max-w-3xl text-base leading-7 text-neutral-600 sm:text-lg sm:leading-8">
-                            Peças exclusivas que unem a tradição da arte sacra
-                            católica à delicadeza do fazer manual. Cada item é
-                            criado com oração e técnica, transformando materiais
-                            nobres em expressões de fé e beleza para o seu lar e
-                            liturgia.
+                            Peças artesanais de inspiração católica para a casa,
+                            a devoção e presentes. Veja as fotos, descrições e
+                            valores disponíveis antes de escolher.
                         </p>
                     </header>
                     <div className="flex flex-col gap-12 lg:flex-row">
-                        <aside className="w-full rounded-xl bg-[#f8f5ef] p-4 lg:w-64 lg:flex-shrink-0 lg:self-start">
-                            <div className="space-y-8 lg:sticky lg:top-40">
-                                <ProductLineFilter
-                                    lines={productLines}
-                                    onChange={handleLineChange}
-                                    selectedUuid={lineUuid}
-                                    variant="crafts"
-                                />
-                            </div>
-                        </aside>
+                        {lineFilterAvailable ? (
+                            <aside className="order-2 w-full rounded-xl bg-[#f8f5ef] p-4 lg:order-1 lg:w-64 lg:flex-shrink-0 lg:self-start">
+                                <div className="space-y-8 lg:sticky lg:top-40">
+                                    <div className="hidden lg:block">
+                                        <ProductLineFilter
+                                            lines={productLines}
+                                            onChange={handleLineChange}
+                                            selectedUuid={lineUuid}
+                                            variant="crafts"
+                                        />
+                                    </div>
+                                </div>
+                            </aside>
+                        ) : null}
 
-                        <div className="min-w-0 flex-1">
+                        <div className="order-1 min-w-0 flex-1 lg:order-2">
+                            {lineFilterAvailable ? (
+                                <details className="mb-6 rounded-xl bg-[#f8f5ef] p-4 lg:hidden">
+                                    <summary className="min-h-11 cursor-pointer py-3 font-bold text-[#4A3728]">
+                                        Filtrar por linha
+                                    </summary>
+                                    <div className="pt-3">
+                                        <ProductLineFilter
+                                            lines={productLines}
+                                            onChange={handleLineChange}
+                                            selectedUuid={lineUuid}
+                                            variant="crafts"
+                                        />
+                                    </div>
+                                </details>
+                            ) : null}
                             <CatalogStatus
                                 count={filteredProducts.length}
                                 isLoading={productsResource.isLoading}
@@ -361,7 +379,8 @@ export function CollectionCatalog({
                                         />
                                     ))}
                                 </div>
-                            ) : !productsResource.isLoading && !resourceError ? (
+                            ) : !productsResource.isLoading &&
+                              !resourceError ? (
                                 <CatalogEmpty
                                     hasFilters={Boolean(
                                         search.trim() || lineUuid,
@@ -431,24 +450,23 @@ export function CollectionCatalog({
                     >
                         chevron_right
                     </span>
-                    <span className="font-medium text-slate-900">Cremes</span>
+                    <span className="font-medium text-slate-900">Produtos</span>
                 </nav>
 
-                <section className="mb-10 md:mb-12">
+                <section className="mb-6 md:mb-12">
                     <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-3">
                         <div className="flex flex-col justify-center lg:col-span-2">
                             <h1 className="text-balance font-display text-4xl font-bold leading-tight text-slate-950 md:text-5xl">
-                                Cremes de Sebo Bovino Clarificado
+                                Beleza natural feita no Ateliê
                             </h1>
                             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-                                Fórmulas de sebo clarificado feitos por uma
-                                especialista, sem odor e sem reações negativas,
-                                ricas em óleos essenciais puros. Hidratação
-                                profunda que respeita o equilíbrio natural da
-                                sua pele.
+                                Cremes artesanais à base de sebo bovino
+                                clarificado. Consulte a descrição de cada
+                                produto para conhecer sua composição e escolha a
+                                opção disponível no catálogo.
                             </p>
                         </div>
-                        <div className="aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 shadow-lg lg:aspect-square">
+                        <div className="hidden aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 shadow-lg sm:block lg:aspect-square">
                             <Image
                                 alt="Creme natural artesanal do Ateliê Guadalupe"
                                 className="h-full w-full object-cover"
@@ -462,7 +480,7 @@ export function CollectionCatalog({
                 </section>
 
                 <div className="flex flex-col gap-10 md:flex-row">
-                    <aside className="w-full space-y-8 md:w-64 md:flex-shrink-0 md:self-start">
+                    <aside className="order-2 w-full space-y-8 md:order-1 md:w-64 md:flex-shrink-0 md:self-start">
                         <div className="relative flex min-h-[300px] items-end overflow-hidden rounded-xl bg-primary p-6 md:min-h-[330px]">
                             <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.08),rgba(15,23,42,0.86)),url('/personalizado.webp')] bg-cover bg-center" />
                             <div className="relative z-10 w-full">
@@ -470,9 +488,9 @@ export function CollectionCatalog({
                                     Crie seu Creme Personalizado
                                 </h3>
                                 <p className="mt-3 text-sm leading-6 text-white/80">
-                                    Receba atendimento personalizado para os
-                                    ativos e o cuidado ideal para a sua
-                                    necessidade.
+                                    Converse sobre suas preferências e combine
+                                    os detalhes da preparação diretamente com o
+                                    Ateliê.
                                 </p>
                                 <PersonalDiagnosisDialog
                                     trigger={
@@ -486,15 +504,34 @@ export function CollectionCatalog({
                                 />
                             </div>
                         </div>
-                        <ProductLineFilter
-                            lines={productLines}
-                            onChange={handleLineChange}
-                            selectedUuid={lineUuid}
-                            variant="beauty"
-                        />
+                        {lineFilterAvailable ? (
+                            <div className="hidden md:block">
+                                <ProductLineFilter
+                                    lines={productLines}
+                                    onChange={handleLineChange}
+                                    selectedUuid={lineUuid}
+                                    variant="beauty"
+                                />
+                            </div>
+                        ) : null}
                     </aside>
 
-                    <div className="min-w-0 flex-1">
+                    <div className="order-1 min-w-0 flex-1 md:order-2">
+                        {lineFilterAvailable ? (
+                            <details className="mb-6 rounded-xl bg-white p-4 shadow-sm md:hidden">
+                                <summary className="min-h-11 cursor-pointer py-3 font-bold text-primary">
+                                    Filtrar por linha
+                                </summary>
+                                <div className="pt-3">
+                                    <ProductLineFilter
+                                        lines={productLines}
+                                        onChange={handleLineChange}
+                                        selectedUuid={lineUuid}
+                                        variant="beauty"
+                                    />
+                                </div>
+                            </details>
+                        ) : null}
                         <CatalogStatus
                             count={filteredProducts.length}
                             isLoading={productsResource.isLoading}

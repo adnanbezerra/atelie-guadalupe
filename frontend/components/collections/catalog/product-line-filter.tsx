@@ -58,6 +58,10 @@ export function ProductLineFilter({
                 <legend className="mb-2 w-full border-b border-slate-200 pb-3 text-sm font-bold">
                     Linhas de produtos
                 </legend>
+                <p className="mb-3 text-sm leading-5 text-slate-600">
+                    Cada linha reúne fórmulas relacionadas. Para uma necessidade
+                    específica, busque pelo nome ou pela descrição do produto.
+                </p>
                 <div className="space-y-1">{content}</div>
             </fieldset>
         );
@@ -71,6 +75,9 @@ export function ProductLineFilter({
                 </span>
                 Linhas de produtos
             </legend>
+            <p className="mb-3 text-sm leading-5 text-neutral-600">
+                Use as linhas para ver os grupos já cadastrados no catálogo.
+            </p>
             <div className="space-y-1">{content}</div>
         </fieldset>
     );

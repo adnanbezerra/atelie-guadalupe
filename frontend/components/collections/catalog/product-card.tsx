@@ -80,23 +80,28 @@ export function ProductCard({
                 >
                     <CatalogPrice product={product} />
                 </span>
-                <button
-                    className={
-                        isCraft
-                            ? "min-h-11 rounded bg-[#4A3728] px-4 py-2 text-xs font-bold tracking-wider text-white uppercase hover:bg-[#38291e] disabled:cursor-not-allowed disabled:opacity-60"
-                            : "min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                    }
-                    aria-busy={isPending}
-                    disabled={isPending}
-                    onClick={() => onBuy(product)}
-                    type="button"
-                >
-                    {isPending
-                        ? "Adicionando"
-                        : product.priceOptions.length
-                          ? "Comprar"
-                          : "Consultar"}
-                </button>
+                {isCraft ? (
+                    <Link
+                        className="flex min-h-11 items-center rounded bg-[#4A3728] px-4 py-2 text-xs font-bold tracking-wider text-white uppercase hover:bg-[#38291e]"
+                        href={`/produto/${product.slug}`}
+                    >
+                        Ver detalhes
+                    </Link>
+                ) : (
+                    <button
+                        aria-busy={isPending}
+                        className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isPending}
+                        onClick={() => onBuy(product)}
+                        type="button"
+                    >
+                        {isPending
+                            ? "Adicionando"
+                            : product.priceOptions.length
+                              ? "Escolher tamanho"
+                              : "Pedir orientação"}
+                    </button>
+                )}
             </div>
         </article>
     );
