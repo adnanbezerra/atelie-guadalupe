@@ -6,14 +6,8 @@ import {
     ShippingQuotePanel,
     type CartShippingOption,
 } from "@/components/cart/shipping-quote-panel";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { ProductImage } from "@/components/shared/product-image";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/hooks/use-user";
@@ -118,6 +112,8 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
     const userContext = useUser();
     const [shippingOption, setShippingOption] =
         useState<CartShippingOption | null>(null);
+    const [isClearConfirmationOpen, setIsClearConfirmationOpen] =
+        useState(false);
     const total = cart.data?.summary.totalInCents ?? 0;
     const couponDiscount = cart.data?.summary.couponDiscountInCents ?? 0;
     const backendPromotionDiscount =
@@ -209,39 +205,53 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     {formatCurrency(item.totalPriceInCents)}
                                 </p>
                             </div>
-                            <div className="col-span-2 flex w-fit items-center gap-1 rounded-lg bg-slate-50 p-1 sm:col-span-1">
+                            <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:justify-end">
+                                <div className="flex items-center gap-1 rounded-lg bg-slate-50 p-1">
+                                    <button
+                                        aria-label={`Diminuir quantidade de ${item.name}`}
+                                        className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                        disabled={
+                                            cart.isPending || item.quantity <= 1
+                                        }
+                                        onClick={() =>
+                                            cart.updateItem(
+                                                item.uuid,
+                                                item.quantity - 1,
+                                            )
+                                        }
+                                        type="button"
+                                    >
+                                        -
+                                    </button>
+                                    <span className="min-w-8 text-center text-sm font-bold">
+                                        {item.quantity}
+                                    </span>
+                                    <button
+                                        aria-label={`Aumentar quantidade de ${item.name}`}
+                                        className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                        disabled={cart.isPending}
+                                        onClick={() =>
+                                            cart.updateItem(
+                                                item.uuid,
+                                                item.quantity + 1,
+                                            )
+                                        }
+                                        type="button"
+                                    >
+                                        +
+                                    </button>
+                                </div>
                                 <button
-                                    aria-label={`Diminuir quantidade de ${item.name}`}
-                                    className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={
-                                        cart.isPending || item.quantity <= 1
-                                    }
-                                    onClick={() =>
-                                        cart.updateItem(
-                                            item.uuid,
-                                            item.quantity - 1,
-                                        )
-                                    }
-                                    type="button"
-                                >
-                                    -
-                                </button>
-                                <span className="min-w-8 text-center text-sm font-bold">
-                                    {item.quantity}
-                                </span>
-                                <button
-                                    aria-label={`Aumentar quantidade de ${item.name}`}
-                                    className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                                    aria-label={`Remover ${item.name} do carrinho`}
+                                    className="flex min-h-11 items-center gap-1 rounded-lg px-3 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={cart.isPending}
-                                    onClick={() =>
-                                        cart.updateItem(
-                                            item.uuid,
-                                            item.quantity + 1,
-                                        )
-                                    }
+                                    onClick={() => cart.removeItem(item.uuid)}
                                     type="button"
                                 >
-                                    +
+                                    <span className="material-symbols-outlined text-lg">
+                                        delete
+                                    </span>
+                                    Remover
                                 </button>
                             </div>
                         </div>
@@ -431,7 +441,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         cart.isPending ||
                                         !cart.data?.items.length
                                     }
-                                    onClick={() => cart.clearCart()}
+                                    onClick={() =>
+                                        setIsClearConfirmationOpen(true)
+                                    }
                                     type="button"
                                 >
                                     Limpar carrinho
@@ -454,34 +466,25 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     </div>
                 </aside>
             </div>
-            <Dialog
+            <FeedbackDialog
+                confirmLabel="Limpar carrinho"
+                description="Todos os produtos serão removidos do carrinho. Esta ação não pode ser desfeita."
+                onConfirm={() => void cart.clearCart()}
+                onOpenChange={setIsClearConfirmationOpen}
+                open={isClearConfirmationOpen}
+                secondaryLabel="Manter produtos"
+                title="Remover todos os produtos?"
+            />
+            <FeedbackDialog
+                description={cart.error ?? ""}
                 onOpenChange={(open) => {
                     if (!open) {
                         cart.dismissError();
                     }
                 }}
                 open={cart.error != null}
-            >
-                <DialogContent className="max-w-md rounded-xl bg-white p-6">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">
-                            Não foi possível atualizar o carrinho
-                        </DialogTitle>
-                        <DialogDescription className="text-sm leading-6 text-slate-600">
-                            {cart.error}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
-                            onClick={() => cart.dismissError()}
-                            type="button"
-                        >
-                            Entendi
-                        </button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                title="Não foi possível atualizar o carrinho"
+            />
         </main>
     );
 }
