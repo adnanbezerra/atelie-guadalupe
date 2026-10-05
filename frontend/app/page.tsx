@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PersonalDiagnosisDialog } from "@/components/home/personal-diagnosis-dialog";
+import { TestimonialsFeedbackDialog } from "@/components/home/testimonials-feedback-dialog";
 import { SiteFooter } from "@/components/site/site-footer";
 import { fetchActiveTestimonials } from "@/lib/server-api";
 import { ServerHeader } from "@/components/header/server";
@@ -67,6 +68,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         testimonialsResult.status === "fulfilled"
             ? testimonialsResult.value.testimonials
             : [];
+    const testimonialsError =
+        testimonialsResult.status === "rejected"
+            ? testimonialsResult.reason instanceof Error
+                ? testimonialsResult.reason.message
+                : "A consulta ao serviço de depoimentos falhou."
+            : null;
 
     return (
         <div className="min-h-screen bg-[#f6f6f8]">
@@ -254,6 +261,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         </div>
                     </div>
                 </section>
+
+                <TestimonialsFeedbackDialog error={testimonialsError} />
 
                 <section className="bg-[#fdfaf6] py-16 md:py-24">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

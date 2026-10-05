@@ -35,8 +35,10 @@ type CollectionCatalogProps = {
         heroAccent: string;
     };
     initialCatalog?: ProductsPayload;
+    initialLinesError?: string | null;
     initialLineUuid?: string;
     initialPage?: number;
+    initialProductsError?: string | null;
     initialSearch?: string;
     lines: ProductLine[];
 };
@@ -45,8 +47,10 @@ export function CollectionCatalog({
     collectionKey,
     config,
     initialCatalog,
+    initialLinesError = null,
     initialLineUuid = "",
     initialPage = 1,
+    initialProductsError = null,
     initialSearch = "",
     lines: initialLines,
 }: CollectionCatalogProps) {
@@ -88,7 +92,9 @@ export function CollectionCatalog({
         },
     );
     const productLines = linesResource.lines;
-    const resourceError = productsResource.error ?? linesResource.error;
+    const initialResourceError = initialProductsError ?? initialLinesError;
+    const resourceError =
+        productsResource.error ?? linesResource.error ?? initialResourceError;
     const pagination = productsResource.data?.pagination;
     const totalPages = pagination?.totalPages ?? 0;
     const pageNumbers = useMemo(() => {
@@ -251,9 +257,21 @@ export function CollectionCatalog({
             ? `Olá, vim pelo website e gostaria de consultar o produto ${consultProductName}.`
             : "Olá, vim pelo website e gostaria de consultar um produto.",
     );
+    const handleRetry = () => {
+        setDismissedError(resourceError);
+
+        if (initialResourceError) {
+            router.refresh();
+            return;
+        }
+
+        void productsResource.refresh();
+    };
     const feedbackDialog = (
         <FeedbackDialog
+            confirmLabel={feedback ? undefined : "Tentar novamente"}
             description={feedback?.description ?? resourceError ?? ""}
+            onConfirm={feedback ? undefined : handleRetry}
             onOpenChange={(open) => {
                 if (open) return;
 
@@ -343,7 +361,7 @@ export function CollectionCatalog({
                                         />
                                     ))}
                                 </div>
-                            ) : !productsResource.isLoading ? (
+                            ) : !productsResource.isLoading && !resourceError ? (
                                 <CatalogEmpty
                                     hasFilters={Boolean(
                                         search.trim() || lineUuid,
@@ -495,7 +513,7 @@ export function CollectionCatalog({
                                     />
                                 ))}
                             </div>
-                        ) : !productsResource.isLoading ? (
+                        ) : !productsResource.isLoading && !resourceError ? (
                             <CatalogEmpty
                                 hasFilters={Boolean(search.trim() || lineUuid)}
                                 onClear={() => {

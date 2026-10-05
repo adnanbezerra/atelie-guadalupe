@@ -2,19 +2,8 @@ import { CollectionCatalog } from "@/components/collections/collection-catalog";
 import { SiteFooter } from "@/components/site/site-footer";
 import { COLLECTION_CONFIG } from "@/lib/catalog";
 import { fetchProductLines, fetchProducts } from "@/lib/server-api";
-import type { ProductsPayload } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-const emptyCatalog: ProductsPayload = {
-    items: [],
-    pagination: {
-        page: 1,
-        pageSize: 24,
-        total: 0,
-        totalPages: 0,
-    },
-};
 
 type BeautyCollectionPageProps = {
     searchParams?: Promise<{
@@ -55,7 +44,19 @@ export default async function BeautyCollectionPage({
     const products =
         productsResult.status === "fulfilled"
             ? productsResult.value
-            : emptyCatalog;
+            : undefined;
+    const linesError =
+        linesResult.status === "rejected"
+            ? linesResult.reason instanceof Error
+                ? linesResult.reason.message
+                : "A consulta às linhas de produtos falhou."
+            : null;
+    const productsError =
+        productsResult.status === "rejected"
+            ? productsResult.reason instanceof Error
+                ? productsResult.reason.message
+                : "A consulta aos produtos falhou."
+            : null;
 
     return (
         <>
@@ -66,6 +67,8 @@ export default async function BeautyCollectionPage({
                 initialLineUuid={lineUuid}
                 initialPage={page}
                 initialSearch={search}
+                initialLinesError={linesError}
+                initialProductsError={productsError}
                 lines={lines}
             />
             <SiteFooter />

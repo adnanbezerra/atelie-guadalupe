@@ -43,6 +43,18 @@ export default async function CraftsCollectionPage({
         productsResult.status === "fulfilled"
             ? productsResult.value
             : undefined;
+    const linesError =
+        linesResult.status === "rejected"
+            ? linesResult.reason instanceof Error
+                ? linesResult.reason.message
+                : "A consulta às linhas de produtos falhou."
+            : null;
+    const productsError =
+        productsResult.status === "rejected"
+            ? productsResult.reason instanceof Error
+                ? productsResult.reason.message
+                : "A consulta aos produtos falhou."
+            : null;
 
     return (
         <>
@@ -53,6 +65,8 @@ export default async function CraftsCollectionPage({
                 initialLineUuid={lineUuid}
                 initialPage={page}
                 initialSearch={search}
+                initialLinesError={linesError}
+                initialProductsError={productsError}
                 lines={lines}
             />
             <SiteFooter />
