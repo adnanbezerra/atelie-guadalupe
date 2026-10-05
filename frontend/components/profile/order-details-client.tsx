@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     formatAddress,
@@ -17,6 +17,7 @@ import { getOrder } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import { formatProductSizeLabel } from "@/lib/utils";
+import { buildWhatsappLink } from "@/lib/whatsapp";
 
 type OrderDetailsClientProps = {
     orderUuid: string;
@@ -50,16 +51,71 @@ const paymentStatusLabels: Record<string, string> = {
 };
 
 const deliveryStatusLabels: Record<string, string> = {
-    PENDING: "Aguardando confirmação do pagamento",
-    AWAITING_PAYMENT: "Aguardando confirmação do pagamento",
-    PAID: "Pagamento confirmado",
-    PROCESSING: "Pedido em preparação",
-    SHIPPED: "Pedido enviado",
-    DELIVERED: "Pedido entregue",
-    CANCELLED: "Entrega cancelada",
+    DRAFT: "Frete ainda não confirmado",
+    QUOTED: "Frete cotado",
+    CONFIRMED: "Frete confirmado",
+    CHECKOUT_REQUESTED: "Etiqueta sendo emitida",
+    LABEL_PURCHASED: "Etiqueta emitida",
+    CANCELLED: "Frete cancelado",
+};
+
+const fulfillmentStatusLabels: Record<string, string> = {
+    PENDING: "Envio aguardando processamento",
+    PROCESSING: "Preparando a etiqueta de envio",
+    RETRY_SCHEDULED: "Nova tentativa de envio agendada",
+    COMPLETED: "Etiqueta de envio emitida",
+    FAILED: "Falha ao preparar o envio",
 };
 
 const DEFAULT_TRACKING_URL = "https://rastreamento.superfrete.com/";
+const supportLink = buildWhatsappLink(
+    "Olá! Preciso de ajuda com o status de um pedido do Ateliê Guadalupe.",
+);
+
+const paymentProblemStatuses = new Set([
+    "REFUND_PENDING",
+    "REFUNDED",
+    "DISPUTED",
+    "LOST",
+]);
+
+function getOrderException(order: Order) {
+    if (order.status === "CANCELLED") {
+        return {
+            title: "Pedido cancelado",
+            description: "Este pedido não seguirá para preparação ou entrega.",
+        };
+    }
+    if (paymentProblemStatuses.has(order.payment?.status ?? "")) {
+        return {
+            title:
+                paymentStatusLabels[order.payment?.status ?? ""] ??
+                "Pagamento precisa de atenção",
+            description:
+                "O histórico do pedido foi preservado. Fale com o atendimento para entender os próximos passos.",
+        };
+    }
+    if (order.fulfillment?.status === "FAILED") {
+        return {
+            title: "Pagamento confirmado; envio precisa de atenção",
+            description:
+                "A preparação da etiqueta falhou. O pagamento continua confirmado e o atendimento pode acompanhar a correção.",
+        };
+    }
+    return null;
+}
+
+function isTransientOrder(order: Order) {
+    return (
+        ["PENDING", "AWAITING_PAYMENT", "PAID", "PROCESSING"].includes(
+            order.status,
+        ) ||
+        ["CREATING", "PENDING"].includes(order.payment?.status ?? "") ||
+        ["PENDING", "PROCESSING", "RETRY_SCHEDULED"].includes(
+            order.fulfillment?.status ?? "",
+        )
+    );
+}
 
 function formatOrderDate(value: string) {
     return new Intl.DateTimeFormat("pt-BR", {
@@ -72,23 +128,31 @@ function formatOrderDate(value: string) {
 }
 
 function OrderProgress({ order }: { order: Order }) {
-    if (order.status === "CANCELLED") {
+    const exception = getOrderException(order);
+
+    if (exception) {
         return (
             <div className="mt-7 flex items-start gap-3 rounded-xl bg-red-50 p-4 text-red-800">
                 <span aria-hidden="true" className="material-symbols-outlined">
                     cancel
                 </span>
                 <div>
-                    <p className="font-bold">Pedido cancelado</p>
+                    <p className="font-bold">{exception.title}</p>
                     <p className="mt-1 text-sm leading-6">
-                        Este pedido não seguirá para preparação ou entrega.
+                        {exception.description}
                     </p>
                 </div>
             </div>
         );
     }
 
-    const currentStep = statusStep[order.status] ?? 0;
+    const paymentPaid =
+        order.payment?.status === "PAID" ||
+        ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(order.status);
+    const fulfillmentStarted = Boolean(order.fulfillment);
+    const currentStep = paymentPaid
+        ? Math.max(statusStep[order.status] ?? 1, fulfillmentStarted ? 2 : 1)
+        : 0;
 
     return (
         <ol className="mt-8 grid gap-0 md:grid-cols-5">
@@ -134,7 +198,15 @@ function OrderProgress({ order }: { order: Order }) {
     );
 }
 
-function OrderDetails({ order }: { order: Order }) {
+function OrderDetails({
+    isRefreshing,
+    onRefresh,
+    order,
+}: {
+    isRefreshing: boolean;
+    onRefresh: () => void;
+    order: Order;
+}) {
     const card = order.payment?.card;
     const itemsCount = order.items.reduce(
         (total, item) => total + item.quantity,
@@ -146,6 +218,23 @@ function OrderDetails({ order }: { order: Order }) {
         : null;
     const shipment = order.shipment;
     const trackingUrl = shipment?.trackingUrl ?? DEFAULT_TRACKING_URL;
+    const exception = getOrderException(order);
+    const awaitingPayment =
+        !exception &&
+        !["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(
+            order.status,
+        ) &&
+        order.payment?.status !== "PAID";
+    const overallStatusLabel = exception
+        ? exception.title
+        : awaitingPayment
+          ? (paymentStatusLabels[order.payment?.status ?? ""] ??
+            "Aguardando pagamento")
+          : order.fulfillment?.status
+            ? (fulfillmentStatusLabels[order.fulfillment.status] ??
+              orderStatusLabels[order.status] ??
+              order.status)
+            : (orderStatusLabels[order.status] ?? order.status);
 
     return (
         <>
@@ -170,9 +259,9 @@ function OrderDetails({ order }: { order: Order }) {
                         </p>
                     </div>
                     <span
-                        className={`w-fit rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] ring-1 ${orderStatusClasses[order.status] ?? "bg-slate-50 text-slate-700 ring-slate-200"}`}
+                        className={`w-fit rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] ring-1 ${exception ? "bg-red-50 text-red-700 ring-red-200" : (orderStatusClasses[order.status] ?? "bg-slate-50 text-slate-700 ring-slate-200")}`}
                     >
-                        {orderStatusLabels[order.status] ?? order.status}
+                        {overallStatusLabel}
                     </span>
                 </div>
                 <OrderProgress order={order} />
@@ -279,7 +368,9 @@ function OrderDetails({ order }: { order: Order }) {
                                     ? (paymentStatusLabels[
                                           order.payment.status
                                       ] ?? order.payment.status)
-                                    : "Status do pagamento não informado"}
+                                    : awaitingPayment
+                                      ? "Aguardando pagamento"
+                                      : "Status do pagamento não informado"}
                             </p>
                         </div>
                         <div className="border-t border-slate-100 p-6 md:border-t-0 md:p-8">
@@ -297,10 +388,18 @@ function OrderDetails({ order }: { order: Order }) {
                                     "Método de entrega não informado"}
                             </p>
                             <p className="mt-1 text-sm leading-6 text-slate-600">
-                                {deliveryStatusLabels[order.status] ??
-                                    orderStatusLabels[order.status] ??
-                                    order.status}
+                                {shipment?.status
+                                    ? (deliveryStatusLabels[shipment.status] ??
+                                      shipment.status)
+                                    : "Status do frete não informado"}
                             </p>
+                            {order.fulfillment?.status ? (
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    {fulfillmentStatusLabels[
+                                        order.fulfillment.status
+                                    ] ?? order.fulfillment.status}
+                                </p>
+                            ) : null}
                             {shipment?.estimatedDeliveryAt ? (
                                 <p className="mt-3 text-sm text-slate-600">
                                     Previsão:{" "}
@@ -400,6 +499,36 @@ function OrderDetails({ order }: { order: Order }) {
                             </a>
                         </div>
                     ) : null}
+                    <div className="mt-6 space-y-3 border-t border-slate-100 pt-6">
+                        {awaitingPayment ? (
+                            <Link
+                                className="flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary/90"
+                                href={`/checkout?orderUuid=${encodeURIComponent(order.uuid)}`}
+                            >
+                                Continuar pagamento
+                            </Link>
+                        ) : null}
+                        <button
+                            className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-primary/20 disabled:opacity-60"
+                            disabled={isRefreshing}
+                            onClick={onRefresh}
+                            type="button"
+                        >
+                            {isRefreshing
+                                ? "Atualizando pedido..."
+                                : "Atualizar status"}
+                        </button>
+                        {exception ? (
+                            <a
+                                className="flex min-h-11 w-full items-center justify-center rounded-lg px-4 py-3 text-center text-sm font-bold text-primary hover:bg-primary/5"
+                                href={supportLink}
+                                rel="noreferrer"
+                                target="_blank"
+                            >
+                                Falar com o atendimento
+                            </a>
+                        ) : null}
+                    </div>
                 </aside>
             </div>
         </>
@@ -411,12 +540,24 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
     const token = useApiToken();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
+
+    const loadOrder = useCallback(
+        async (signal?: AbortSignal) => {
+            if (!token) return null;
+            const result = await getOrder(token, orderUuid, signal);
+            setOrder(result.order);
+            return result.order;
+        },
+        [orderUuid, token],
+    );
 
     useEffect(() => {
         const controller = new AbortController();
 
-        async function loadOrder() {
+        async function loadInitialOrder() {
             if (!token) {
                 setError("Faça login para consultar este pedido.");
                 setIsLoading(false);
@@ -426,12 +567,7 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
             try {
                 setIsLoading(true);
                 setError(null);
-                const result = await getOrder(
-                    token,
-                    orderUuid,
-                    controller.signal,
-                );
-                setOrder(result.order);
+                await loadOrder(controller.signal);
             } catch (requestError) {
                 if (controller.signal.aborted) return;
 
@@ -445,10 +581,60 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
             }
         }
 
-        void loadOrder();
+        void loadInitialOrder();
 
         return () => controller.abort();
-    }, [orderUuid, token]);
+    }, [loadOrder, token]);
+
+    const shouldPoll = Boolean(order && isTransientOrder(order));
+
+    useEffect(() => {
+        if (!shouldPoll) return;
+
+        const controller = new AbortController();
+        const deadline = Date.now() + 60_000;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+        async function poll() {
+            try {
+                const currentOrder = await loadOrder(controller.signal);
+                if (
+                    currentOrder &&
+                    isTransientOrder(currentOrder) &&
+                    Date.now() < deadline
+                ) {
+                    timeoutId = setTimeout(poll, 5000);
+                }
+            } catch {
+                // Mantém o último estado válido e deixa a atualização manual disponível.
+            }
+        }
+
+        timeoutId = setTimeout(poll, 5000);
+
+        return () => {
+            controller.abort();
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [loadOrder, shouldPoll]);
+
+    async function refreshOrder() {
+        setIsRefreshing(true);
+        try {
+            await loadOrder();
+            setNotice(
+                "Os dados de pagamento e entrega foram consultados novamente.",
+            );
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : "Não foi possível atualizar este pedido.",
+            );
+        } finally {
+            setIsRefreshing(false);
+        }
+    }
 
     return (
         <main className="mx-auto min-h-screen max-w-6xl px-4 py-10 font-public md:px-8 md:py-14">
@@ -481,7 +667,11 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
 
             {!isLoading && order ? (
                 <div className="mt-8">
-                    <OrderDetails order={order} />
+                    <OrderDetails
+                        isRefreshing={isRefreshing}
+                        onRefresh={() => void refreshOrder()}
+                        order={order}
+                    />
                 </div>
             ) : null}
 
@@ -501,7 +691,13 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
                     );
                 }}
                 open={Boolean(error)}
-                title="Não foi possível abrir o pedido"
+                title="Não foi possível consultar o pedido"
+            />
+            <FeedbackDialog
+                description={notice ?? ""}
+                onOpenChange={(open) => !open && setNotice(null)}
+                open={Boolean(notice)}
+                title="Pedido atualizado"
             />
         </main>
     );

@@ -51,7 +51,8 @@ export type FulfillmentStatus =
     | "PENDING"
     | "PROCESSING"
     | "RETRY_SCHEDULED"
-    | "COMPLETED";
+    | "COMPLETED"
+    | "FAILED";
 
 export type ProductLine = {
     uuid: string;
