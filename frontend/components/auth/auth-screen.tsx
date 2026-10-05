@@ -98,8 +98,18 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
     const searchParams = useSearchParams();
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const isLogin = mode === "login";
     const nextPath = searchParams.get("next");
+    const safeNextPath =
+        nextPath?.startsWith("/") && !nextPath.startsWith("//")
+            ? nextPath
+            : null;
+    const loginContext = safeNextPath?.startsWith("/checkout")
+        ? "Entre para continuar sua compra com segurança."
+        : safeNextPath?.startsWith("/perfil")
+          ? "Entre para acessar sua conta e seus pedidos."
+          : "Bem-vindo de volta. Entre na sua conta para continuar.";
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -137,10 +147,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             const adminTarget = nextPath?.startsWith("/admin")
                 ? nextPath
                 : "/admin";
-            const userTarget =
-                nextPath?.startsWith("/") && !nextPath.startsWith("//")
-                    ? nextPath
-                    : "/";
+            const userTarget = safeNextPath ?? "/";
             router.push(isAdmin ? adminTarget : userTarget);
             router.refresh();
         } catch (caughtError) {
@@ -164,7 +171,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                         </h1>
                         <p className="font-medium text-[#334155]/70">
                             {isLogin
-                                ? "Bem-vindo de volta. Entre na sua conta para continuar."
+                                ? loginContext
                                 : "Crie sua conta para continuar."}
                         </p>
                     </div>
@@ -194,27 +201,44 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                                         name={field.id}
                                         placeholder={field.placeholder}
                                         required
-                                        type={field.type}
+                                        type={
+                                            field.id === "password" &&
+                                            showPassword
+                                                ? "text"
+                                                : field.type
+                                        }
                                     />
+                                    {field.id === "password" ? (
+                                        <button
+                                            aria-label={
+                                                showPassword
+                                                    ? "Ocultar senha"
+                                                    : "Mostrar senha"
+                                            }
+                                            className="absolute right-2 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg text-[#334155]/70 transition hover:bg-white/70 hover:text-[#1A2E44] focus:outline-none focus:ring-2 focus:ring-[#8C6D4F]"
+                                            onClick={() =>
+                                                setShowPassword(
+                                                    (current) => !current,
+                                                )
+                                            }
+                                            type="button"
+                                        >
+                                            <span
+                                                aria-hidden="true"
+                                                className="material-symbols-outlined text-xl"
+                                            >
+                                                {showPassword
+                                                    ? "visibility_off"
+                                                    : "visibility"}
+                                            </span>
+                                        </button>
+                                    ) : null}
                                 </div>
                             </div>
                         ))}
 
                         {isLogin ? (
-                            <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex items-center space-x-3">
-                                    <input
-                                        className="h-4 w-4 rounded border-[#F4F1ED] text-[#8C6D4F] focus:ring-[#8C6D4F]"
-                                        id="remember"
-                                        type="checkbox"
-                                    />
-                                    <label
-                                        className="text-sm text-[#334155]/80"
-                                        htmlFor="remember"
-                                    >
-                                        Lembrar de mim
-                                    </label>
-                                </div>
+                            <div className="mb-6 flex justify-end">
                                 <Link
                                     className="text-sm font-bold text-primary underline-offset-4 hover:underline"
                                     href={`/recuperar-senha${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
@@ -248,6 +272,12 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                                 href={`${isLogin ? "/cadastro" : "/login"}${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
                             >
                                 {isLogin ? "Criar conta" : "Entrar"}
+                            </Link>
+                            <Link
+                                className="block min-h-11 w-full py-3 text-center text-sm font-bold text-primary underline-offset-4 hover:underline"
+                                href="/"
+                            >
+                                Voltar para a loja
                             </Link>
                         </div>
                     </form>
