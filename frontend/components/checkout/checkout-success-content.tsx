@@ -248,7 +248,9 @@ export function CheckoutSuccessContent() {
                                     : "/perfil#pedidos"
                             }
                         >
-                            {order ? "Ver detalhes do pedido" : "Ver meus pedidos"}
+                            {order
+                                ? "Ver detalhes do pedido"
+                                : "Ver meus pedidos"}
                         </Link>
                     ) : (
                         <Link
