@@ -4,7 +4,7 @@ import { ServerHeader } from "@/components/header/server";
 import { SiteFooter } from "@/components/site/site-footer";
 
 export const metadata: Metadata = {
-    title: "Pagamento recebido | Ateliê Guadalupe",
+    title: "Verificar pagamento | Ateliê Guadalupe",
 };
 
 export default function CheckoutSuccessPage() {
