@@ -77,7 +77,7 @@ export function PersonalDiagnosisDialog({
                             className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/10 bg-white/80 text-slate-500 transition hover:bg-white hover:text-slate-900"
                             aria-label="Fechar"
                         >
-                            <span className="material-symbols-outlined text-[20px]">
+                            <span className="material-symbols-outlined text-xl">
                                 close
                             </span>
                         </DialogClose>
