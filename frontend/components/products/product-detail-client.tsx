@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { ProductImage } from "@/components/shared/product-image";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { useCart } from "@/hooks/use-cart";
 import type { PriceOption, Product } from "@/lib/types";
 import {
@@ -28,11 +29,17 @@ function getCollectionLabel(product: Product) {
 }
 
 export function ProductDetailClient({ product }: ProductDetailClientProps) {
+    const router = useRouter();
     const cart = useCart();
     const [selectedOption, setSelectedOption] = useState<PriceOption | null>(
         null,
     );
     const [isAdding, setIsAdding] = useState(false);
+    const [feedback, setFeedback] = useState<{
+        title: string;
+        description: string;
+        added: boolean;
+    } | null>(null);
     const discountPercent = normalizeDiscountPercent(
         product.promotionDiscountPercent,
     );
@@ -50,7 +57,12 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     async function handleAddToCart() {
         if (!selectedOption) {
-            toast.error("Escolha um tamanho antes de adicionar ao carrinho.");
+            setFeedback({
+                title: "Escolha uma opção",
+                description:
+                    "Selecione uma das opções disponíveis antes de adicionar o produto ao carrinho.",
+                added: false,
+            });
             return;
         }
 
@@ -65,14 +77,18 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             });
 
             if (errorMessage) {
-                toast.error("Não foi possível adicionar ao carrinho.", {
+                setFeedback({
+                    title: "Não foi possível adicionar ao carrinho",
                     description: errorMessage,
+                    added: false,
                 });
                 return;
             }
 
-            toast.success("Produto adicionado ao carrinho.", {
-                description: `Tamanho: ${formatProductSizeLabel(selectedOption.grams)}`,
+            setFeedback({
+                title: "Produto adicionado ao carrinho",
+                description: `${product.name} — ${formatProductSizeLabel(selectedOption.grams)}.`,
+                added: true,
             });
         } finally {
             setIsAdding(false);
@@ -101,7 +117,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 </div>
 
                 <div className="flex flex-col">
-                    <nav className="mb-8 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500">
+                    <nav
+                        aria-label="Navegação estrutural"
+                        className="mb-8 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500"
+                    >
                         <Link className="hover:text-primary" href="/">
                             Home
                         </Link>
@@ -123,7 +142,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     <span className="mb-4 w-fit rounded-full border border-primary/20 bg-white/70 px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-primary">
                         {product.line.name}
                     </span>
-                    <h1 className="font-display text-4xl font-black leading-tight text-slate-950 md:text-6xl">
+                    <h1 className="font-display text-4xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere] md:text-6xl">
                         {product.name}
                     </h1>
                     <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
@@ -136,7 +155,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                         <div className="mt-10">
                             <div className="mb-4 flex items-center justify-between gap-4">
                                 <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">
-                                    Escolha o tamanho
+                                    {product.category === "ARTISANAL"
+                                        ? "Escolha uma opção"
+                                        : "Escolha o tamanho"}
                                 </h2>
                                 {!selectedOption ? (
                                     <span className="text-xs font-bold text-primary">
@@ -144,7 +165,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                     </span>
                                 ) : null}
                             </div>
-                            <div className="sm:grid-cols-2">
+                            <div className="grid gap-3 sm:grid-cols-2">
                                 {priceOptions.map((option) => {
                                     const isSelected =
                                         selectedOption?.size === option.size;
@@ -158,8 +179,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                             aria-pressed={isSelected}
                                             className={
                                                 isSelected
-                                                    ? "mr-4 rounded-2xl border-2 border-primary bg-[#F1F5F9] p-5 text-left shadow-xl shadow-primary/10"
-                                                    : "mr-4 rounded-2xl border border-slate-200 bg-white/80 p-5 text-left shadow-sm transition hover:border-primary/60 hover:bg-white"
+                                                    ? "rounded-2xl border-2 border-primary bg-[#F1F5F9] p-5 text-left shadow-xl shadow-primary/10"
+                                                    : "rounded-2xl border border-slate-200 bg-white/80 p-5 text-left shadow-sm transition hover:border-primary/60 hover:bg-white"
                                             }
                                             key={option.size}
                                             onClick={() =>
@@ -228,6 +249,24 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     )}
                 </div>
             </section>
+            <FeedbackDialog
+                confirmLabel={feedback?.added ? "Abrir carrinho" : "Entendi"}
+                description={feedback?.description ?? ""}
+                onConfirm={() => {
+                    if (feedback?.added) {
+                        router.push("/carrinho");
+                    }
+                }}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setFeedback(null);
+                        cart.dismissError();
+                    }
+                }}
+                open={feedback != null}
+                secondaryLabel={feedback?.added ? "Continuar comprando" : undefined}
+                title={feedback?.title ?? ""}
+            />
         </main>
     );
 }

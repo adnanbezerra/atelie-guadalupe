@@ -15,6 +15,7 @@ import {
     User,
 } from "@/lib/types";
 import { buildQuery } from "@/lib/utils";
+import { ApiError } from "@/lib/api-error";
 
 type RequestOptions = {
     method?: string;
@@ -46,7 +47,7 @@ async function serverApi<T>(path: string, options: RequestOptions = {}) {
 
     if (!response.ok || !payload.success) {
         const message = payload.error?.message ?? "Falha ao consultar a API.";
-        throw new Error(message);
+        throw new ApiError(message, response.status, payload.error?.code);
     }
 
     return payload.data;

@@ -37,18 +37,9 @@ import {
     isAuthSessionFailureEndpoint,
     isExpiredAccessTokenError,
 } from "@/lib/auth-session";
+import { ApiError } from "@/lib/api-error";
 
-export class ApiError extends Error {
-    status: number;
-    code?: string;
-
-    constructor(message: string, status: number, code?: string) {
-        super(message);
-        this.name = "ApiError";
-        this.status = status;
-        this.code = code;
-    }
-}
+export { ApiError } from "@/lib/api-error";
 
 type RequestOptions = {
     method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
