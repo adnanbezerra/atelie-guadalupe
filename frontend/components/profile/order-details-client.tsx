@@ -235,6 +235,10 @@ function OrderDetails({
               orderStatusLabels[order.status] ??
               order.status)
             : (orderStatusLabels[order.status] ?? order.status);
+    const overallStatusClassName = exception
+        ? "bg-red-50 text-red-800 ring-red-200"
+        : (orderStatusClasses[order.status] ??
+          "bg-slate-50 text-slate-700 ring-slate-200");
 
     return (
         <>
@@ -259,7 +263,7 @@ function OrderDetails({
                         </p>
                     </div>
                     <span
-                        className={`w-fit rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] ring-1 ${exception ? "bg-red-50 text-red-700 ring-red-200" : (orderStatusClasses[order.status] ?? "bg-slate-50 text-slate-700 ring-slate-200")}`}
+                        className={`w-fit rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] ring-1 ${overallStatusClassName}`}
                     >
                         {overallStatusLabel}
                     </span>
