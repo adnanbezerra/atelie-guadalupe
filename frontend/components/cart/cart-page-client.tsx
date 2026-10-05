@@ -12,7 +12,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/hooks/use-user";
 import { Cart } from "@/lib/types";
-import { buildWhatsappLink } from "@/lib/whatsapp";
 import {
     formatCurrency,
     formatProductSizeLabel,
@@ -48,65 +47,6 @@ function getItemPromotionDiscountInCents(item: CartItem) {
     );
 }
 
-function buildCartWhatsappMessage(
-    cart: Cart | null,
-    shippingOption: CartShippingOption | null,
-) {
-    if (!cart?.items.length) {
-        return "Olá, vim pelo website e gostaria de pedir um orçamento.";
-    }
-
-    const itemLines = cart.items
-        .map(
-            (item) =>
-                `- ${item.quantity}x ${item.name} - Tamanho: ${formatProductSizeLabel(item.grams)}: ${formatCurrency(item.totalPriceInCents)}`,
-        )
-        .join("\n");
-    const promotionDiscount =
-        cart.summary.promotionDiscountInCents ??
-        cart.items.reduce(
-            (sum, item) => sum + getItemPromotionDiscountInCents(item),
-            0,
-        );
-    const discounts = [
-        promotionDiscount > 0
-            ? `Desconto promocional: -${formatCurrency(promotionDiscount)}`
-            : null,
-        cart.summary.couponDiscountInCents > 0
-            ? `Cupom: -${formatCurrency(cart.summary.couponDiscountInCents)}`
-            : null,
-    ]
-        .filter(Boolean)
-        .join("\n");
-
-    return [
-        "Olá, vim pelo website e gostaria de pedir orçamento de frete para estes produtos:",
-        itemLines,
-        discounts,
-        `Total estimado dos produtos: ${formatCurrency(cart.summary.totalInCents)}`,
-        shippingOption
-            ? [
-                  `Forma de recebimento: ${shippingOption.name}`,
-                  shippingOption.destinationLabel
-                      ? `Destino: ${shippingOption.destinationLabel}`
-                      : null,
-                  shippingOption.priceInCents > 0
-                      ? `Frete: ${formatCurrency(shippingOption.priceInCents)}`
-                      : "Frete: grátis",
-              ]
-                  .filter(Boolean)
-                  .join("\n")
-            : null,
-        shippingOption
-            ? `Total estimado com frete: ${formatCurrency(
-                  cart.summary.totalInCents + shippingOption.priceInCents,
-              )}`
-            : null,
-    ]
-        .filter(Boolean)
-        .join("\n\n");
-}
-
 export function CartPageClient({ initialCart }: CartPageClientProps) {
     const cart = useCart(initialCart);
     const userContext = useUser();
@@ -114,6 +54,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
         useState<CartShippingOption | null>(null);
     const [isClearConfirmationOpen, setIsClearConfirmationOpen] =
         useState(false);
+    const [unavailableItem, setUnavailableItem] = useState<CartItem | null>(
+        null,
+    );
     const total = cart.data?.summary.totalInCents ?? 0;
     const couponDiscount = cart.data?.summary.couponDiscountInCents ?? 0;
     const backendPromotionDiscount =
@@ -129,13 +72,13 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
         (cart.data?.summary.subtotalInCents ?? 0) +
         (backendPromotionDiscount === undefined ? promotionDiscount : 0);
     const hasItems = Boolean(cart.data?.items.length);
-    const orderTotal = total + (shippingOption?.priceInCents ?? 0);
-    const whatsappLink = buildWhatsappLink(
-        buildCartWhatsappMessage(cart.data, shippingOption),
+    const hasUnavailableItems = Boolean(
+        cart.data?.items.some((item) => !item.isAvailable),
     );
+    const orderTotal = total + (shippingOption?.priceInCents ?? 0);
     const checkoutHref = (() => {
-        if (!hasItems || !shippingOption) return undefined;
-        if (shippingOption.kind === "pickup") return whatsappLink;
+        if (!hasItems || !shippingOption || hasUnavailableItems)
+            return undefined;
         if (!userContext.isAuthenticated) return "/login?next=%2Fcarrinho";
 
         const params = new URLSearchParams({
@@ -204,6 +147,18 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                 <p className="mt-1 font-bold text-primary">
                                     {formatCurrency(item.totalPriceInCents)}
                                 </p>
+                                {!item.isAvailable ? (
+                                    <button
+                                        className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100"
+                                        onClick={() => setUnavailableItem(item)}
+                                        type="button"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">
+                                            error
+                                        </span>
+                                        Item indisponível
+                                    </button>
+                                ) : null}
                             </div>
                             <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:justify-end">
                                 <div className="flex items-center gap-1 rounded-lg bg-slate-50 p-1">
@@ -211,7 +166,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         aria-label={`Diminuir quantidade de ${item.name}`}
                                         className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                                         disabled={
-                                            cart.isPending || item.quantity <= 1
+                                            cart.isPending ||
+                                            !item.isAvailable ||
+                                            item.quantity <= 1
                                         }
                                         onClick={() =>
                                             cart.updateItem(
@@ -229,7 +186,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     <button
                                         aria-label={`Aumentar quantidade de ${item.name}`}
                                         className="flex size-11 items-center justify-center rounded-md transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                                        disabled={cart.isPending}
+                                        disabled={
+                                            cart.isPending || !item.isAvailable
+                                        }
                                         onClick={() =>
                                             cart.updateItem(
                                                 item.uuid,
@@ -323,7 +282,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                 </div>
 
                 <aside className="flex flex-col gap-6 self-start lg:sticky lg:top-24">
-                    {hasItems ? (
+                    {hasItems && !hasUnavailableItems ? (
                         <ShippingQuotePanel
                             items={cartItems}
                             onSelectionChange={handleShippingSelection}
@@ -402,7 +361,7 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                             {formatCurrency(orderTotal)}
                                         </span>
                                     </div>
-                                    {shippingOption?.kind === "delivery" ? (
+                                    {shippingOption ? (
                                         <p className="mt-2 text-right text-xs leading-5 text-slate-500">
                                             Frete confirmado ao finalizar o
                                             pedido.
@@ -410,12 +369,16 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     ) : null}
                                 </div>
                                 <Link
-                                    aria-disabled={!hasItems || !shippingOption}
+                                    aria-disabled={
+                                        !hasItems ||
+                                        !shippingOption ||
+                                        hasUnavailableItems
+                                    }
                                     className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-bold text-white shadow-md shadow-primary/20 transition hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-60"
                                     href={checkoutHref ?? "/carrinho"}
                                 >
-                                    {shippingOption?.kind === "pickup"
-                                        ? "Combinar retirada"
+                                    {hasUnavailableItems
+                                        ? "Remova itens indisponíveis"
                                         : userContext.isAuthenticated
                                           ? "Continuar para pagamento"
                                           : "Entrar para continuar"}
@@ -427,12 +390,6 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     <p className="mb-4 text-center text-xs font-semibold leading-5 text-slate-500">
                                         Calcule e escolha como receber antes de
                                         finalizar.
-                                    </p>
-                                ) : null}
-                                {shippingOption?.kind === "pickup" ? (
-                                    <p className="mb-4 text-center text-xs font-semibold leading-5 text-slate-500">
-                                        A retirada é combinada diretamente com o
-                                        ateliê pelo WhatsApp.
                                     </p>
                                 ) : null}
                                 <button
@@ -474,6 +431,27 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                 open={isClearConfirmationOpen}
                 secondaryLabel="Manter produtos"
                 title="Remover todos os produtos?"
+            />
+            <FeedbackDialog
+                confirmLabel="Remover item"
+                description={
+                    unavailableItem
+                        ? `${unavailableItem.name} não pode seguir para o pagamento. Remova o item para continuar a compra.`
+                        : ""
+                }
+                onConfirm={() => {
+                    if (unavailableItem) {
+                        void cart.removeItem(unavailableItem.uuid);
+                    }
+                }}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setUnavailableItem(null);
+                    }
+                }}
+                open={unavailableItem != null}
+                secondaryLabel="Manter no carrinho"
+                title="Este item está indisponível"
             />
             <FeedbackDialog
                 description={cart.error ?? ""}

@@ -29,8 +29,7 @@ type AddressPreview = {
 
 export type CartShippingOption = {
     id: string;
-    kind: "pickup" | "delivery";
-    serviceCode?: number;
+    serviceCode: number;
     name: string;
     priceInCents: number;
     deliveryLabel: string;
@@ -41,14 +40,6 @@ type ShippingQuotePanelProps = {
     items: Cart["items"];
     selectedOption: CartShippingOption | null;
     onSelectionChange: (option: CartShippingOption | null) => void;
-};
-
-const pickupOption: CartShippingOption = {
-    id: "atelier-pickup",
-    kind: "pickup",
-    name: "Retirar no Ateliê",
-    priceInCents: 0,
-    deliveryLabel: "Combine o horário e busque seu pedido no ateliê.",
 };
 
 function getDeliveryLabel(service: ShippingQuoteService) {
@@ -247,15 +238,15 @@ export function ShippingQuotePanel({
 
             if (!payload.quotedServices.length) {
                 setQuoteError(
-                    "Nenhuma entrega foi encontrada para este CEP. A retirada no ateliê continua disponível.",
+                    "Nenhuma opção de entrega foi encontrada para este CEP. Confira o endereço e tente novamente.",
                 );
             }
         } catch (caughtError) {
             setQuotedServices([]);
             setQuoteError(
                 caughtError instanceof Error
-                    ? `${caughtError.message} A retirada no ateliê continua disponível.`
-                    : "Não foi possível calcular as entregas. A retirada no ateliê continua disponível.",
+                    ? caughtError.message
+                    : "Não foi possível calcular a entrega. Confira sua conexão e tente novamente.",
             );
         } finally {
             setIsQuoting(false);
@@ -265,7 +256,6 @@ export function ShippingQuotePanel({
     function selectDelivery(service: ShippingQuoteService) {
         onSelectionChange({
             id: `shipping-${service.serviceCode}`,
-            kind: "delivery",
             serviceCode: service.serviceCode,
             name: service.serviceName,
             priceInCents: service.priceInCents,
@@ -328,9 +318,6 @@ export function ShippingQuotePanel({
                         </label>
                         <div className="relative mt-2">
                             <input
-                                aria-describedby={
-                                    cepError ? "shipping-zip-error" : undefined
-                                }
                                 aria-invalid={Boolean(cepError)}
                                 autoComplete="postal-code"
                                 className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pr-11 text-base font-semibold text-slate-900 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
@@ -352,14 +339,6 @@ export function ShippingQuotePanel({
                                     : "pin_drop"}
                             </span>
                         </div>
-                        {cepError ? (
-                            <p
-                                className="mt-2 text-sm font-semibold text-red-700"
-                                id="shipping-zip-error"
-                            >
-                                {cepError}
-                            </p>
-                        ) : null}
                     </div>
                 ) : null}
 
@@ -451,47 +430,11 @@ export function ShippingQuotePanel({
                     {isQuoting ? "Calculando entrega..." : "Calcular entrega"}
                 </button>
 
-                {quoteError ? (
-                    <p
-                        className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-5 text-amber-900"
-                        role="status"
-                    >
-                        {quoteError}
-                    </p>
-                ) : null}
-
-                {hasCalculated && !isQuoting ? (
+                {hasCalculated && !isQuoting && quotedServices.length ? (
                     <fieldset className="space-y-3">
                         <legend className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-700">
                             Escolha uma opção
                         </legend>
-
-                        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/15">
-                            <input
-                                checked={selectedOption?.id === pickupOption.id}
-                                className="mt-1 accent-[#1940b3]"
-                                name="shipping-option"
-                                onChange={() => onSelectionChange(pickupOption)}
-                                type="radio"
-                                value={pickupOption.id}
-                            />
-                            <span className="material-symbols-outlined text-[#d1a054]">
-                                storefront
-                            </span>
-                            <span className="min-w-0 flex-1">
-                                <span className="flex items-start justify-between gap-3">
-                                    <span className="font-bold text-slate-900">
-                                        {pickupOption.name}
-                                    </span>
-                                    <span className="font-black text-emerald-700">
-                                        Grátis
-                                    </span>
-                                </span>
-                                <span className="mt-1 block text-sm leading-5 text-slate-600">
-                                    {pickupOption.deliveryLabel}
-                                </span>
-                            </span>
-                        </label>
 
                         {quotedServices.map((service) => {
                             const optionId = `shipping-${service.serviceCode}`;
@@ -536,6 +479,20 @@ export function ShippingQuotePanel({
                 ) : null}
             </div>
 
+            <FeedbackDialog
+                confirmLabel="Tentar novamente"
+                description={quoteError ?? ""}
+                onConfirm={() => void handleQuote()}
+                onOpenChange={(open) => !open && setQuoteError(null)}
+                open={quoteError != null}
+                title="Não foi possível calcular a entrega"
+            />
+            <FeedbackDialog
+                description={cepError ?? ""}
+                onOpenChange={(open) => !open && setCepError(null)}
+                open={cepError != null}
+                title="Confira o CEP"
+            />
             <FeedbackDialog
                 description={saveError ?? ""}
                 onOpenChange={(open) => !open && setSaveError(null)}

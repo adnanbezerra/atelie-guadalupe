@@ -1,7 +1,13 @@
 "use client";
 
-import { type ComponentProps, type FormEvent, useRef, useState } from "react";
-import { toast } from "sonner";
+import {
+    type ComponentProps,
+    type FormEvent,
+    useEffect,
+    useRef,
+    useState,
+} from "react";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     fetchViaCepAddress,
     formatCep,
@@ -61,8 +67,21 @@ export function SavedAddressEditDialog({
     const [isCepLoading, setIsCepLoading] = useState(false);
     const [cepError, setCepError] = useState<string | null>(null);
     const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
+    const [feedback, setFeedback] = useState<{
+        title: string;
+        description: string;
+    } | null>(null);
     const lastCepRequestRef = useRef("");
     const formRef = useRef<HTMLFormElement | null>(null);
+
+    useEffect(() => {
+        if (hasSubmitAttempted && profile.error) {
+            setFeedback({
+                title: "Não foi possível salvar o endereço",
+                description: profile.error,
+            });
+        }
+    }, [hasSubmitAttempted, profile.error]);
 
     function setAddressField(name: string, value: string) {
         const field = formRef.current?.elements.namedItem(name);
@@ -148,7 +167,11 @@ export function SavedAddressEditDialog({
 
         onSaved();
         setIsOpen(false);
-        toast.success("Endereço atualizado com sucesso.");
+        setFeedback({
+            title: "Endereço atualizado",
+            description:
+                "O novo endereço será usado para calcular as opções de entrega.",
+        });
     }
 
     return (
@@ -240,11 +263,6 @@ export function SavedAddressEditDialog({
                                 ) : null}
                             </div>
                             <input
-                                aria-describedby={
-                                    cepError
-                                        ? "edit-shipping-zip-error"
-                                        : undefined
-                                }
                                 aria-invalid={Boolean(cepError)}
                                 autoComplete="postal-code"
                                 className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15"
@@ -265,15 +283,6 @@ export function SavedAddressEditDialog({
                                 required
                                 type="text"
                             />
-                            {cepError ? (
-                                <p
-                                    className="px-1 text-sm font-semibold text-red-700"
-                                    id="edit-shipping-zip-error"
-                                    role="alert"
-                                >
-                                    {cepError}
-                                </p>
-                            ) : null}
                         </div>
 
                         <AddressDialogInput
@@ -345,15 +354,6 @@ export function SavedAddressEditDialog({
                             placeholder="Brasil"
                             required
                         />
-
-                        {hasSubmitAttempted && profile.error ? (
-                            <p
-                                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 sm:col-span-2"
-                                role="alert"
-                            >
-                                {profile.error}
-                            </p>
-                        ) : null}
                     </div>
 
                     <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-[#d1a054]/20 bg-white/70 px-6 py-5 sm:flex-row sm:justify-end sm:px-8">
@@ -386,6 +386,18 @@ export function SavedAddressEditDialog({
                     </div>
                 </form>
             </DialogContent>
+            <FeedbackDialog
+                description={cepError ?? ""}
+                onOpenChange={(open) => !open && setCepError(null)}
+                open={cepError != null}
+                title="Confira o CEP"
+            />
+            <FeedbackDialog
+                description={feedback?.description ?? ""}
+                onOpenChange={(open) => !open && setFeedback(null)}
+                open={feedback != null}
+                title={feedback?.title ?? ""}
+            />
         </Dialog>
     );
 }
