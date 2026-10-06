@@ -205,6 +205,26 @@ export class PaymentLinkService {
         );
     }
 
+    public async preview(
+        uuid: string
+    ): Promise<Either<AppError, { paymentLink: ReturnType<typeof presentPublicPaymentLink> }>> {
+        const paymentLink = await this.findByUuid(uuid);
+        if (!paymentLink) return left(AppError.notFound("Link de pagamento nao encontrado"));
+
+        const isExpired =
+            paymentLink.expiresAt !== null &&
+            paymentLink.expiresAt <= new Date() &&
+            (paymentLink.status === PaymentLinkStatus.ACTIVE ||
+                paymentLink.status === PaymentLinkStatus.PENDING);
+
+        return right({
+            paymentLink: presentPublicPaymentLink({
+                ...paymentLink,
+                status: isExpired ? PaymentLinkStatus.EXPIRED : paymentLink.status
+            })
+        });
+    }
+
     public async list(query: ListPaymentLinksInput) {
         await this.prisma.paymentLink.updateMany({
             where: {

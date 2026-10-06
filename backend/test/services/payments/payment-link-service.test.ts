@@ -74,6 +74,59 @@ test("admin creates a personalized payment link with amount, description and exp
     assert.deepStrictEqual(persistedInput?.expiresAt, new Date("2029-08-06T00:00:00.000Z"));
 });
 
+test("public payment preview returns only safe fields without side effects", async () => {
+    const stored = paymentLink({
+        providerCheckoutId: "bill_private",
+        checkoutUrl: "https://pay.example/private",
+        refundReason: "private reason"
+    });
+    let findCalls = 0;
+    const prisma = {
+        paymentLink: {
+            findUnique: async () => {
+                findCalls += 1;
+                return stored;
+            }
+        }
+    };
+    const service = new PaymentLinkService(prisma as never, {} as never);
+
+    const result = await service.preview(stored.uuid);
+
+    assert.equal(result.success, true);
+    assert.equal(findCalls, 1);
+    if (result.success) {
+        assert.deepStrictEqual(result.value.paymentLink, {
+            uuid: stored.uuid,
+            amountInCents: 12500,
+            description: "Encomenda personalizada",
+            expiresAt: null,
+            status: PaymentLinkStatus.ACTIVE
+        });
+    }
+});
+
+test("public payment preview reports elapsed active link as expired without persisting", async () => {
+    const stored = paymentLink({ expiresAt: new Date("2020-01-01T00:00:00.000Z") });
+    const prisma = { paymentLink: { findUnique: async () => stored } };
+    const service = new PaymentLinkService(prisma as never, {} as never);
+
+    const result = await service.preview(stored.uuid);
+
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.value.paymentLink.status, PaymentLinkStatus.EXPIRED);
+});
+
+test("public payment preview returns not found for an unknown uuid", async () => {
+    const prisma = { paymentLink: { findUnique: async () => null } };
+    const service = new PaymentLinkService(prisma as never, {} as never);
+
+    const result = await service.preview("0195f4aa-7f18-7db5-9f32-06f4a9a2b499");
+
+    assert.equal(result.success, false);
+    if (!result.success) assert.equal(result.value.statusCode, 404);
+});
+
 test("public payment endpoint creates and persists a hosted checkout", async () => {
     const stored = paymentLink();
     let checkoutInput: Record<string, unknown> | undefined;

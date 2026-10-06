@@ -12,6 +12,7 @@ const paymentLinkRoutes: FastifyPluginAsync = async (fastify) => {
 
     fastify.post("/", { preHandler: adminHandlers }, controller.create);
     fastify.get("/", { preHandler: adminHandlers }, controller.list);
+    fastify.get("/:uuid", controller.preview);
     fastify.post("/:uuid/payment", controller.pay);
 };
 

@@ -23,6 +23,11 @@ export class PaymentLinkController {
         return sendEither(reply, await this.service.pay(params.uuid));
     };
 
+    public preview = async (request: FastifyRequest, reply: FastifyReply) => {
+        const params = this.fastify.validateSchema(paymentLinkUuidParamSchema, request.params);
+        return sendEither(reply, await this.service.preview(params.uuid));
+    };
+
     public list = async (request: FastifyRequest, reply: FastifyReply) => {
         const query = this.fastify.validateSchema(listPaymentLinksQuerySchema, request.query);
         return sendEither(reply, await this.service.list(query));

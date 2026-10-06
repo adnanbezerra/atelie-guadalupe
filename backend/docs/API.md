@@ -2991,6 +2991,34 @@ Resposta `201`:
 
 Se `PAYMENT_LINK_PUBLIC_BASE_URL` nao estiver configurada, `paymentUrl` sera `null`; o frontend pode montar a URL publica usando o `uuid`.
 
+#### `GET /payment-links/:uuid`
+
+Endpoint publico e sem efeito colateral para carregar a previa da cobranca antes de criar checkout.
+Nao chama a AbacatePay e nao expoe dados administrativos ou identificadores do provedor.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "paymentLink": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "amountInCents": 12500,
+            "description": "Encomenda personalizada para Maria",
+            "expiresAt": "2026-08-16T02:59:59.000Z",
+            "status": "ACTIVE"
+        }
+    }
+}
+```
+
+Estados possiveis: `ACTIVE`, `CREATING`, `PENDING`, `PAID`, `EXPIRED`, `REFUNDED`, `DISPUTED` e
+`LOST`. Estados nao pagaveis tambem retornam `200`; o frontend deve explicar o estado e desabilitar
+a acao de pagamento. Um link `ACTIVE` ou `PENDING` cujo prazo ja passou e apresentado como
+`EXPIRED`, sem gravacao no banco. UUID inexistente retorna `404 RESOURCE_NOT_FOUND`; UUID invalido
+retorna `422 VALIDATION_ERROR`.
+
 #### `POST /payment-links/:uuid/payment`
 
 Endpoint publico usado pela pagina compartilhada para criar ou recuperar o checkout hospedado. Nao recebe body e retorna sempre o mesmo checkout depois que ele foi criado.
