@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { AdminMarketingPanel } from "@/components/admin/admin-marketing-panel";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { useOrders } from "@/hooks/use-orders";
 import { MarketingPayload, Order } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -63,28 +65,60 @@ function dayKey(date: Date) {
     return date.toISOString().slice(0, 10);
 }
 
+const paidOrderStatuses = new Set(["PAID", "PROCESSING", "SHIPPED", "DELIVERED"]);
+
+function isPaidOrder(order: Order) {
+    if (order.payment) {
+        return order.payment.status === "PAID";
+    }
+
+    return paidOrderStatuses.has(order.status);
+}
+
+function getQueueLabel(order: Order) {
+    if (order.fulfillment?.status === "FAILED") {
+        return { label: "Falha operacional", rank: 0 };
+    }
+
+    if (order.status === "PENDING" || order.status === "AWAITING_PAYMENT") {
+        return { label: "Acompanhar pagamento", rank: 1 };
+    }
+
+    if (order.status === "PAID" || order.status === "PROCESSING") {
+        return { label: "Preparar pedido", rank: 2 };
+    }
+
+    if (order.status === "SHIPPED") {
+        return { label: "Acompanhar envio", rank: 3 };
+    }
+
+    return null;
+}
+
 export function AdminDashboardClient({
     initialOrders,
     initialMarketing,
 }: AdminDashboardClientProps) {
     const orders = useOrders(initialOrders);
     const { user } = useProfile();
+    const [isErrorDismissed, setIsErrorDismissed] = useState(false);
 
     const metrics = useMemo(() => {
         const currentMonth = monthKey(new Date().toISOString());
         const currentOrders = orders.data.filter(
             (order) => monthKey(order.placedAt) === currentMonth,
         );
-        const totalSales = currentOrders.reduce(
+        const paidOrders = currentOrders.filter(isPaidOrder);
+        const totalSales = paidOrders.reduce(
             (total, order) => total + order.totalInCents,
             0,
         );
         const averageTicket =
-            currentOrders.length > 0 ? totalSales / currentOrders.length : 0;
+            paidOrders.length > 0 ? totalSales / paidOrders.length : 0;
 
         return {
             totalSales,
-            currentOrders,
+            paidOrders,
             averageTicket,
         };
     }, [orders.data]);
@@ -106,7 +140,7 @@ export function AdminDashboardClient({
             days.map((day) => [day.key, day.totalInCents]),
         );
 
-        for (const order of orders.data) {
+        for (const order of orders.data.filter(isPaidOrder)) {
             const key = dayKey(new Date(order.placedAt));
 
             if (totalsByDay.has(key)) {
@@ -127,6 +161,28 @@ export function AdminDashboardClient({
         1,
     );
     const chartAxisDays = [0, 9, 19, 29].map((index) => salesHistory[index]);
+    const queue = useMemo(
+        () =>
+            orders.data
+                .map((order) => ({ order, queue: getQueueLabel(order) }))
+                .filter(
+                    (
+                        item,
+                    ): item is {
+                        order: Order;
+                        queue: { label: string; rank: number };
+                    } => item.queue !== null,
+                )
+                .sort(
+                    (left, right) =>
+                        left.queue.rank - right.queue.rank ||
+                        new Date(left.order.placedAt).getTime() -
+                            new Date(right.order.placedAt).getTime(),
+                )
+                .slice(0, 8),
+        [orders.data],
+    );
+    const metricsUnavailable = Boolean(orders.error);
 
     return (
         <>
@@ -134,18 +190,12 @@ export function AdminDashboardClient({
                 <h2 className="text-xl font-bold tracking-tight">
                     Visão Geral do Ateliê
                 </h2>
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <span className="material-symbols-outlined absolute top-1/2 left-3 -translate-y-1/2 text-slate-400">
-                            search
-                        </span>
-                        <input
-                            className="w-64 rounded-lg bg-slate-100 py-2 pr-4 pl-10 text-sm outline-none"
-                            placeholder="Procurar pedido..."
-                            type="text"
-                        />
-                    </div>
-                </div>
+                <Link
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    href="/admin/produtos"
+                >
+                    Gerenciar produtos
+                </Link>
             </header>
 
             <div className="space-y-8 p-8">
@@ -165,24 +215,36 @@ export function AdminDashboardClient({
                             icon: "payments",
                             iconClass: "bg-primary/10 text-primary",
                             badgeClass: "bg-emerald-50 text-emerald-600",
-                            label: "Vendas Totais (Mês)",
-                            value: formatCurrency(metrics.totalSales),
+                            label: "Receita paga (mês)",
+                            value: metricsUnavailable
+                                ? "Indisponível"
+                                : orders.isLoading
+                                  ? "Carregando"
+                                  : formatCurrency(metrics.totalSales),
                         },
                         {
                             icon: "shopping_bag",
                             iconClass: "bg-amber-100 text-amber-600",
                             badgeClass: "bg-emerald-50 text-emerald-600",
-                            label: "Pedidos este Mês",
-                            value: `${metrics.currentOrders.length}`,
+                            label: "Pedidos pagos (mês)",
+                            value: metricsUnavailable
+                                ? "Indisponível"
+                                : orders.isLoading
+                                  ? "Carregando"
+                                  : `${metrics.paidOrders.length}`,
                         },
                         {
                             icon: "receipt_long",
                             iconClass: "bg-indigo-100 text-indigo-600",
                             badgeClass: "text-slate-400",
-                            label: "Ticket Médio",
-                            value: formatCurrency(
-                                Math.round(metrics.averageTicket),
-                            ),
+                            label: "Ticket médio pago",
+                            value: metricsUnavailable
+                                ? "Indisponível"
+                                : orders.isLoading
+                                  ? "Carregando"
+                                  : formatCurrency(
+                                        Math.round(metrics.averageTicket),
+                                    ),
                         },
                     ].map((item) => (
                         <div
@@ -212,11 +274,8 @@ export function AdminDashboardClient({
                     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
                         <div className="mb-6 flex items-center justify-between">
                             <h3 className="text-lg font-bold">
-                                Histórico de Vendas
+                                Receita paga — últimos 30 dias
                             </h3>
-                            <select className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-sm">
-                                <option>Últimos 30 dias</option>
-                            </select>
                         </div>
                         <div className="flex h-[250px] flex-col justify-end">
                             <div className="grid h-48 grid-cols-[repeat(30,minmax(0,1fr))] items-end gap-1 px-2">
@@ -265,29 +324,28 @@ export function AdminDashboardClient({
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div className="flex items-center justify-between border-b border-slate-200 p-6">
-                        <h3 className="text-lg font-bold">Pedidos Recentes</h3>
-                        <button className="text-sm font-bold text-primary">
-                            Ver todos
-                        </button>
+                        <div>
+                            <h3 className="text-lg font-bold">
+                                Fila operacional
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Pagamento, preparo, envio e falhas que exigem atenção.
+                            </p>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
                                     <th className="px-6 py-4">ID Pedido</th>
-                                    <th className="px-6 py-4">Cliente</th>
                                     <th className="px-6 py-4">Data</th>
                                     <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Próxima ação</th>
                                     <th className="px-6 py-4">Total</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {(orders.data.length
-                                    ? orders.data
-                                    : initialOrders
-                                )
-                                    .slice(0, 6)
-                                    .map((order) => {
+                                {queue.map(({ order, queue: queueItem }) => {
                                         const status =
                                             orderStatuses[order.status] ??
                                             unknownOrderStatus;
@@ -298,10 +356,12 @@ export function AdminDashboardClient({
                                                 key={order.uuid}
                                             >
                                                 <td className="px-6 py-4 text-sm font-bold">
-                                                    #{order.uuid.slice(0, 8)}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm">
-                                                    Cliente
+                                                    <Link
+                                                        className="text-primary hover:underline"
+                                                        href={`/perfil/pedidos/${order.uuid}`}
+                                                    >
+                                                        #{order.uuid.slice(0, 8)}
+                                                    </Link>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-500">
                                                     {formatDate(order.placedAt)}
@@ -312,6 +372,9 @@ export function AdminDashboardClient({
                                                     >
                                                         {status.label}
                                                     </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-semibold text-slate-700">
+                                                    {queueItem.label}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-bold">
                                                     {formatCurrency(
@@ -324,8 +387,24 @@ export function AdminDashboardClient({
                             </tbody>
                         </table>
                     </div>
+                    {!orders.isLoading && !orders.error && queue.length === 0 ? (
+                        <p className="border-t border-slate-100 px-6 py-8 text-center text-sm text-slate-500">
+                            Nenhum pedido exige ação agora.
+                        </p>
+                    ) : null}
                 </div>
             </div>
+            <FeedbackDialog
+                confirmLabel="Recarregar painel"
+                description={
+                    orders.error ??
+                    "Não foi possível carregar os pedidos. Recarregue para tentar novamente."
+                }
+                onConfirm={() => window.location.reload()}
+                onOpenChange={(open) => setIsErrorDismissed(!open)}
+                open={Boolean(orders.error) && !isErrorDismissed}
+                title="Pedidos indisponíveis"
+            />
         </>
     );
 }
