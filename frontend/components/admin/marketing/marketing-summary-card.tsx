@@ -6,6 +6,7 @@ type MarketingSummaryCardProps = ComponentPropsWithoutRef<"button"> & {
     couponItems: PreviewItem[];
     promotionsCount: number;
     promotionItems: PreviewItem[];
+    unavailable?: boolean;
 };
 
 export const MarketingSummaryCard = forwardRef<
@@ -17,6 +18,7 @@ export const MarketingSummaryCard = forwardRef<
         couponItems,
         promotionsCount,
         promotionItems,
+        unavailable = false,
         ...buttonProps
     },
     ref,
@@ -48,13 +50,21 @@ export const MarketingSummaryCard = forwardRef<
                         empty="Nenhuma promoção ativa"
                         icon="local_offer"
                         items={promotionItems}
-                        label={`${promotionsCount} promoções`}
+                        label={
+                            unavailable
+                                ? "— promoções"
+                                : `${promotionsCount} promoções`
+                        }
+                        unavailable={unavailable}
                     />
                     <MarketingPreviewList
                         empty="Nenhum cupom ativo"
                         icon="confirmation_number"
                         items={couponItems}
-                        label={`${couponsCount} cupons`}
+                        label={
+                            unavailable ? "— cupons" : `${couponsCount} cupons`
+                        }
+                        unavailable={unavailable}
                     />
                 </div>
 
@@ -71,11 +81,13 @@ function MarketingPreviewList({
     icon,
     items,
     label,
+    unavailable,
 }: {
     empty: string;
     icon: string;
     items: PreviewItem[];
     label: string;
+    unavailable: boolean;
 }) {
     return (
         <section className="border-b border-slate-100 px-6 py-4 last:border-b-0">
@@ -103,8 +115,8 @@ function MarketingPreviewList({
                         </div>
                     ))
                 ) : (
-                    <p className="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-4 text-sm font-semibold text-slate-400">
-                        {empty}
+                    <p className="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-4 text-sm font-semibold text-slate-500">
+                        {unavailable ? "Dados ainda não carregados" : empty}
                     </p>
                 )}
             </div>

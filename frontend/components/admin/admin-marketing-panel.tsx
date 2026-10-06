@@ -32,6 +32,9 @@ export function AdminMarketingPanel({
         description: string;
     } | null>(null);
     const [isErrorDismissed, setIsErrorDismissed] = useState(false);
+    const [hasLoadedMarketing, setHasLoadedMarketing] = useState(
+        initialMarketing !== null,
+    );
 
     const activePromotions = useMemo(
         () =>
@@ -55,7 +58,9 @@ export function AdminMarketingPanel({
                     setOpen(nextOpen);
                     if (nextOpen) {
                         setIsErrorDismissed(false);
-                        void marketing.refreshMarketing();
+                        void marketing
+                            .refreshMarketing()
+                            .finally(() => setHasLoadedMarketing(true));
                     }
                 }}
             >
@@ -83,6 +88,11 @@ export function AdminMarketingPanel({
                                 )} · ${promotionScopeLabel(promotion)}`,
                             }))}
                         promotionsCount={activePromotions.length}
+                        unavailable={
+                            (!hasLoadedMarketing &&
+                                initialMarketing === null) ||
+                            Boolean(marketing.error)
+                        }
                     />
                 </DialogTrigger>
 
