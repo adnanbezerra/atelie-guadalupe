@@ -59,6 +59,15 @@ type AddressToUpsert = {
     userId: number | null;
 };
 
+type ListUsersInput = {
+    page: number;
+    pageSize: number;
+    search?: string;
+    role?: RoleName;
+    isActive?: boolean;
+    sort: "CREATED_AT_DESC" | "CREATED_AT_ASC" | "NAME_ASC" | "NAME_DESC";
+};
+
 const requiredAddressFields = [
     "zipCode",
     "street",
@@ -76,15 +85,40 @@ export class UserService {
         private readonly addressRepository?: AddressRepository
     ) {}
 
-    public async listUsers(): Promise<Either<AppError, { users: Array<Record<string, unknown>> }>> {
-        const users = await this.userRepository.findAll();
+    public async listUsers(
+        query: ListUsersInput = {
+            page: 1,
+            pageSize: 20,
+            sort: "CREATED_AT_DESC"
+        }
+    ): Promise<
+        Either<
+            AppError,
+            {
+                users: Array<Record<string, unknown>>;
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    totalPages: number;
+                };
+            }
+        >
+    > {
+        const result = await this.userRepository.listPaginated(query);
 
         return right({
-            users: users.map((user) => ({
+            users: result.users.map((user) => ({
                 ...presentUser(user),
                 address: user.address ? presentAddress(user.address) : null,
                 addresses: user.address ? [presentAddress(user.address)] : []
-            }))
+            })),
+            pagination: {
+                page: query.page,
+                pageSize: query.pageSize,
+                total: result.total,
+                totalPages: Math.ceil(result.total / query.pageSize)
+            }
         });
     }
 

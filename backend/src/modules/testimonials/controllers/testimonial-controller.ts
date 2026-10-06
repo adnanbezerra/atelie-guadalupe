@@ -2,7 +2,11 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "../../../core/errors/app-error";
 import { sendEither } from "../../../core/http/send-either";
 import { UploadVideoInput } from "../../../core/storage/image-storage";
-import { testimonialUuidParamSchema, upsertTestimonialSchema } from "../schemas/testimonial-schema";
+import {
+    listTestimonialsQuerySchema,
+    testimonialUuidParamSchema,
+    upsertTestimonialSchema
+} from "../schemas/testimonial-schema";
 import { TestimonialService } from "../services/testimonial-service";
 
 const testimonialVideoFileSizeLimitBytes = 100 * 1024 * 1024;
@@ -13,8 +17,9 @@ export class TestimonialController {
         private readonly testimonialService: TestimonialService
     ) {}
 
-    public listAll = async (_request: FastifyRequest, reply: FastifyReply) => {
-        return sendEither(reply, await this.testimonialService.listAll());
+    public listAll = async (request: FastifyRequest, reply: FastifyReply) => {
+        const query = this.fastify.validateSchema(listTestimonialsQuerySchema, request.query);
+        return sendEither(reply, await this.testimonialService.listAll(query));
     };
 
     public listActive = async (_request: FastifyRequest, reply: FastifyReply) => {

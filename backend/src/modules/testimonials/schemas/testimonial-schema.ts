@@ -11,6 +11,17 @@ export const testimonialUuidParamSchema = z.object({
     uuid: z.uuid()
 });
 
+export const listTestimonialsQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    type: testimonialTypeSchema.optional(),
+    isActive: z
+        .enum(["true", "false"])
+        .transform((value) => value === "true")
+        .optional(),
+    sort: z.enum(["CREATED_AT_DESC", "CREATED_AT_ASC"]).default("CREATED_AT_DESC")
+});
+
 export const upsertTestimonialSchema = z
     .object({
         uuid: z.uuid().optional(),

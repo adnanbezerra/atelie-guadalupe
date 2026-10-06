@@ -1,8 +1,15 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { OrderStatus, PaymentMethod } from "../../../generated/prisma/enums";
+import {
+    FulfillmentJobStatus,
+    OrderStatus,
+    PaymentMethod,
+    PaymentStatus,
+    ShippingStatus
+} from "../../../generated/prisma/enums";
 import { sendEither } from "../../../core/http/send-either";
 import {
     createOrderSchema,
+    listOrdersQuerySchema,
     orderUuidParamSchema,
     updateOrderStatusSchema
 } from "../schemas/order-schema";
@@ -24,10 +31,20 @@ export class OrderController {
     };
 
     public list = async (request: FastifyRequest, reply: FastifyReply) => {
-        const result = await this.orderService.list({
-            sub: request.currentUser!.sub,
-            role: request.currentUser!.role
-        });
+        const query = this.fastify.validateSchema(listOrdersQuerySchema, request.query);
+        const result = await this.orderService.list(
+            {
+                sub: request.currentUser!.sub,
+                role: request.currentUser!.role
+            },
+            {
+                ...query,
+                status: query.status as OrderStatus | undefined,
+                paymentStatus: query.paymentStatus as PaymentStatus | undefined,
+                shipmentStatus: query.shipmentStatus as ShippingStatus | undefined,
+                fulfillmentStatus: query.fulfillmentStatus as FulfillmentJobStatus | undefined
+            }
+        );
         return sendEither(reply, result);
     };
 

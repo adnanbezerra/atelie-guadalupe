@@ -15,19 +15,50 @@ type UpsertTestimonialInput = {
     isActive: boolean;
 };
 
+type ListTestimonialsInput = {
+    page: number;
+    pageSize: number;
+    type?: TestimonialType;
+    isActive?: boolean;
+    sort: "CREATED_AT_DESC" | "CREATED_AT_ASC";
+};
+
 export class TestimonialService {
     public constructor(
         private readonly testimonialRepository: TestimonialRepository,
         private readonly imageStorage: ImageStorage
     ) {}
 
-    public async listAll(): Promise<
-        Either<AppError, { testimonials: Array<ReturnType<typeof presentTestimonial>> }>
+    public async listAll(
+        query: ListTestimonialsInput = {
+            page: 1,
+            pageSize: 20,
+            sort: "CREATED_AT_DESC"
+        }
+    ): Promise<
+        Either<
+            AppError,
+            {
+                testimonials: Array<ReturnType<typeof presentTestimonial>>;
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    totalPages: number;
+                };
+            }
+        >
     > {
-        const testimonials = await this.testimonialRepository.listAll();
+        const result = await this.testimonialRepository.listPaginated(query);
 
         return right({
-            testimonials: testimonials.map((testimonial) => presentTestimonial(testimonial))
+            testimonials: result.testimonials.map((testimonial) => presentTestimonial(testimonial)),
+            pagination: {
+                page: query.page,
+                pageSize: query.pageSize,
+                total: result.total,
+                totalPages: Math.ceil(result.total / query.pageSize)
+            }
         });
     }
 

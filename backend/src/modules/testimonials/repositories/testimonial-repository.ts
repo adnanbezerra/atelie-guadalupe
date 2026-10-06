@@ -1,4 +1,13 @@
 import { Prisma, PrismaClient, Testimonial } from "../../../generated/prisma/client";
+import { TestimonialType } from "../../../generated/prisma/enums";
+
+type ListTestimonialsInput = {
+    page: number;
+    pageSize: number;
+    type?: TestimonialType;
+    isActive?: boolean;
+    sort: "CREATED_AT_DESC" | "CREATED_AT_ASC";
+};
 
 export class TestimonialRepository {
     public constructor(private readonly prisma: PrismaClient) {}
@@ -9,6 +18,23 @@ export class TestimonialRepository {
                 createdAt: "desc"
             }
         });
+    }
+
+    public async listPaginated(query: ListTestimonialsInput) {
+        const where: Prisma.TestimonialWhereInput = {
+            ...(query.type ? { type: query.type } : {}),
+            ...(typeof query.isActive === "boolean" ? { isActive: query.isActive } : {})
+        };
+        const [testimonials, total] = await this.prisma.$transaction([
+            this.prisma.testimonial.findMany({
+                where,
+                orderBy: { createdAt: query.sort === "CREATED_AT_ASC" ? "asc" : "desc" },
+                skip: (query.page - 1) * query.pageSize,
+                take: query.pageSize
+            }),
+            this.prisma.testimonial.count({ where })
+        ]);
+        return { testimonials, total };
     }
 
     public listActive() {

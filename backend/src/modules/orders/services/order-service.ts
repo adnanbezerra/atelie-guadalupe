@@ -1,8 +1,11 @@
 import {
     EmailJobType,
+    FulfillmentJobStatus,
     OrderStatus,
     PaymentMethod,
-    RoleName
+    PaymentStatus,
+    RoleName,
+    ShippingStatus
 } from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
@@ -42,6 +45,15 @@ type CurrentUser = {
 type PaginationInput = {
     page: number;
     pageSize: number;
+};
+
+type ListOrdersInput = PaginationInput & {
+    status?: OrderStatus;
+    paymentStatus?: PaymentStatus;
+    shipmentStatus?: ShippingStatus;
+    fulfillmentStatus?: FulfillmentJobStatus;
+    search?: string;
+    sort: "CREATED_AT_DESC" | "CREATED_AT_ASC" | "TOTAL_DESC" | "TOTAL_ASC";
 };
 
 type CartWithItems = NonNullable<Awaited<ReturnType<CartRepository["findByUserId"]>>>;
@@ -297,20 +309,44 @@ export class OrderService {
     }
 
     public async list(
-        currentUser: CurrentUser
-    ): Promise<Either<AppError, { orders: Array<ReturnType<typeof presentOrder>> }>> {
+        currentUser: CurrentUser,
+        query: ListOrdersInput = {
+            page: 1,
+            pageSize: 20,
+            sort: "CREATED_AT_DESC"
+        }
+    ): Promise<
+        Either<
+            AppError,
+            {
+                orders: Array<ReturnType<typeof presentOrder>>;
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    totalPages: number;
+                };
+            }
+        >
+    > {
         const user = await this.userRepository.findByUuid(currentUser.sub);
         if (!user) {
             return left(AppError.notFound("Usuario nao encontrado"));
         }
 
-        const orders =
-            currentUser.role === RoleName.USER
-                ? await this.orderRepository.listByUserId(user.id)
-                : await this.orderRepository.listAll();
+        const result = await this.orderRepository.listPaginated({
+            ...query,
+            ...(currentUser.role === RoleName.USER ? { userId: user.id } : {})
+        });
 
         return right({
-            orders: orders.map((order) => presentOrder(order))
+            orders: result.orders.map((order) => presentOrder(order)),
+            pagination: {
+                page: query.page,
+                pageSize: query.pageSize,
+                total: result.total,
+                totalPages: Math.ceil(result.total / query.pageSize)
+            }
         });
     }
 

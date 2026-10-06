@@ -606,7 +606,16 @@ Autenticacao:
 
 Uso:
 
-- lista todos os usuarios do sistema para area administrativa
+- lista paginada de usuarios para area administrativa
+
+Query params:
+
+- `page`: padrao `1`
+- `pageSize`: padrao `20`, maximo `100`
+- `search`: busca parcial por nome, email ou documento
+- `role`: `ADMIN`, `SUBADMIN` ou `USER`
+- `isActive`: `true` ou `false`
+- `sort`: `CREATED_AT_DESC` (padrao), `CREATED_AT_ASC`, `NAME_ASC` ou `NAME_DESC`
 
 Resposta `200`:
 
@@ -660,7 +669,13 @@ Resposta `200`:
                     }
                 ]
             }
-        ]
+        ],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 1,
+            "totalPages": 1
+        }
     }
 }
 ```
@@ -1821,6 +1836,19 @@ Comportamento:
 - `USER` ve apenas os proprios pedidos
 - `ADMIN` e `SUBADMIN` veem todos
 
+Query params:
+
+- `page`: padrao `1`
+- `pageSize`: padrao `20`, maximo `100`
+- `status`: status do pedido
+- `paymentStatus`: `CREATING`, `PENDING`, `EXPIRED`, `PAID`, `REFUND_PENDING`, `REFUNDED`, `DISPUTED` ou `LOST`
+- `shipmentStatus`: `DRAFT`, `QUOTED`, `CONFIRMED`, `CHECKOUT_REQUESTED`, `LABEL_PURCHASED` ou `CANCELLED`
+- `fulfillmentStatus`: `PENDING`, `PROCESSING`, `RETRY_SCHEDULED`, `COMPLETED` ou `FAILED`
+- `search`: UUID exato do pedido ou busca parcial por nome/email do cliente
+- `sort`: `CREATED_AT_DESC` (padrao), `CREATED_AT_ASC`, `TOTAL_DESC` ou `TOTAL_ASC`
+
+Para `USER`, filtros sempre operam somente sobre os proprios pedidos.
+
 Resposta `200`:
 
 ```json
@@ -1846,7 +1874,13 @@ Resposta `200`:
                 "address": null,
                 "items": []
             }
-        ]
+        ],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 1,
+            "totalPages": 1
+        }
     }
 }
 ```
@@ -2721,13 +2755,27 @@ Autenticacao:
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
 
+Query params:
+
+- `page`: padrao `1`
+- `pageSize`: padrao `20`, maximo `100`
+- `type`: `TEXT` ou `VIDEO`
+- `isActive`: `true` ou `false`
+- `sort`: `CREATED_AT_DESC` (padrao) ou `CREATED_AT_ASC`
+
 Resposta `200`:
 
 ```json
 {
     "success": true,
     "data": {
-        "testimonials": []
+        "testimonials": [],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 0,
+            "totalPages": 0
+        }
     }
 }
 ```

@@ -4,6 +4,7 @@ import { RoleName } from "../../../generated/prisma/enums";
 import {
     changeMyPasswordSchema,
     createManagedUserSchema,
+    listUsersQuerySchema,
     myOrdersQuerySchema,
     updateManagedUserSchema,
     updateMeSchema,
@@ -19,8 +20,12 @@ export class UserController {
         private readonly orderService?: OrderService
     ) {}
 
-    public listUsers = async (_request: FastifyRequest, reply: FastifyReply) => {
-        const result = await this.userService.listUsers();
+    public listUsers = async (request: FastifyRequest, reply: FastifyReply) => {
+        const query = this.fastify.validateSchema(listUsersQuerySchema, request.query);
+        const result = await this.userService.listUsers({
+            ...query,
+            role: query.role as RoleName | undefined
+        });
         return sendEither(reply, result);
     };
 

@@ -1,6 +1,13 @@
 import { Prisma, PrismaClient } from "../../../generated/prisma/client";
 import { AppError } from "../../../core/errors/app-error";
-import { OrderStatus, PaymentMethod, ProductSize } from "../../../generated/prisma/enums";
+import {
+    FulfillmentJobStatus,
+    OrderStatus,
+    PaymentMethod,
+    PaymentStatus,
+    ProductSize,
+    ShippingStatus
+} from "../../../generated/prisma/enums";
 
 type CreateOrderInput = {
     uuid: string;
@@ -38,6 +45,27 @@ type CouponRedemptionGuard = {
     userId: number;
     maxUses: number;
 };
+
+type ListOrdersInput = {
+    page: number;
+    pageSize: number;
+    userId?: number;
+    status?: OrderStatus;
+    paymentStatus?: PaymentStatus;
+    shipmentStatus?: ShippingStatus;
+    fulfillmentStatus?: FulfillmentJobStatus;
+    search?: string;
+    sort: "CREATED_AT_DESC" | "CREATED_AT_ASC" | "TOTAL_DESC" | "TOTAL_ASC";
+};
+
+const orderInclude = {
+    items: true,
+    address: true,
+    payment: true,
+    shipment: true,
+    fulfillmentJob: true,
+    user: { include: { role: true } }
+} as const;
 
 export class OrderRepository {
     public constructor(private readonly prisma: PrismaClient) {}
@@ -264,6 +292,60 @@ export class OrderRepository {
                 createdAt: "desc"
             }
         });
+    }
+
+    public async listPaginated(query: ListOrdersInput) {
+        const uuidSearch = query.search?.match(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        )
+            ? query.search
+            : undefined;
+        const where: Prisma.OrderWhereInput = {
+            ...(query.userId ? { userId: query.userId } : {}),
+            ...(query.status ? { status: query.status } : {}),
+            ...(query.paymentStatus ? { payment: { is: { status: query.paymentStatus } } } : {}),
+            ...(query.shipmentStatus ? { shipment: { is: { status: query.shipmentStatus } } } : {}),
+            ...(query.fulfillmentStatus
+                ? { fulfillmentJob: { is: { status: query.fulfillmentStatus } } }
+                : {}),
+            ...(query.search
+                ? {
+                      OR: [
+                          ...(uuidSearch ? [{ uuid: uuidSearch }] : []),
+                          {
+                              user: {
+                                  is: { name: { contains: query.search, mode: "insensitive" } }
+                              }
+                          },
+                          {
+                              user: {
+                                  is: { email: { contains: query.search, mode: "insensitive" } }
+                              }
+                          }
+                      ]
+                  }
+                : {})
+        };
+        const orderBy =
+            query.sort === "TOTAL_ASC"
+                ? { totalInCents: "asc" as const }
+                : query.sort === "TOTAL_DESC"
+                  ? { totalInCents: "desc" as const }
+                  : {
+                        createdAt:
+                            query.sort === "CREATED_AT_ASC" ? ("asc" as const) : ("desc" as const)
+                    };
+        const [orders, total] = await this.prisma.$transaction([
+            this.prisma.order.findMany({
+                where,
+                include: orderInclude,
+                orderBy,
+                skip: (query.page - 1) * query.pageSize,
+                take: query.pageSize
+            }),
+            this.prisma.order.count({ where })
+        ]);
+        return { orders, total };
     }
 
     public findByUuid(uuid: string) {

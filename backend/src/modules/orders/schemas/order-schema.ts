@@ -25,3 +25,48 @@ export const updateOrderStatusSchema = z.object({
 export const orderUuidParamSchema = z.object({
     uuid: z.uuid()
 });
+
+export const listOrdersQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    status: z
+        .enum([
+            "PENDING",
+            "AWAITING_PAYMENT",
+            "PAID",
+            "PROCESSING",
+            "SHIPPED",
+            "DELIVERED",
+            "CANCELLED"
+        ])
+        .optional(),
+    paymentStatus: z
+        .enum([
+            "CREATING",
+            "PENDING",
+            "EXPIRED",
+            "PAID",
+            "REFUND_PENDING",
+            "REFUNDED",
+            "DISPUTED",
+            "LOST"
+        ])
+        .optional(),
+    shipmentStatus: z
+        .enum([
+            "DRAFT",
+            "QUOTED",
+            "CONFIRMED",
+            "CHECKOUT_REQUESTED",
+            "LABEL_PURCHASED",
+            "CANCELLED"
+        ])
+        .optional(),
+    fulfillmentStatus: z
+        .enum(["PENDING", "PROCESSING", "RETRY_SCHEDULED", "COMPLETED", "FAILED"])
+        .optional(),
+    search: z.string().trim().min(1).max(160).optional(),
+    sort: z
+        .enum(["CREATED_AT_DESC", "CREATED_AT_ASC", "TOTAL_DESC", "TOTAL_ASC"])
+        .default("CREATED_AT_DESC")
+});

@@ -157,7 +157,7 @@ test("list users returns presented users with address aliases", async () => {
     };
 
     const userRepository = {
-        findAll: async () => [user]
+        listPaginated: async () => ({ users: [user], total: 1 })
     };
 
     const service = new UserService(userRepository as never, {} as never);
@@ -169,6 +169,12 @@ test("list users returns presented users with address aliases", async () => {
         assert.equal(result.value.users[0].uuid, user.uuid);
         assert.deepEqual(result.value.users[0].address, address);
         assert.deepEqual(result.value.users[0].addresses, [address]);
+        assert.deepEqual(result.value.pagination, {
+            page: 1,
+            pageSize: 20,
+            total: 1,
+            totalPages: 1
+        });
     }
 });
 

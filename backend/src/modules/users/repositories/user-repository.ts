@@ -21,6 +21,15 @@ type UpdateUserInput = {
     roleId?: number;
 };
 
+type ListUsersInput = {
+    page: number;
+    pageSize: number;
+    search?: string;
+    role?: RoleName;
+    isActive?: boolean;
+    sort: "CREATED_AT_DESC" | "CREATED_AT_ASC" | "NAME_ASC" | "NAME_DESC";
+};
+
 export class UserRepository {
     public constructor(private readonly prisma: PrismaClient) {}
 
@@ -34,6 +43,42 @@ export class UserRepository {
                 createdAt: "desc"
             }
         });
+    }
+
+    public async listPaginated(query: ListUsersInput) {
+        const where: Prisma.UserWhereInput = {
+            ...(query.search
+                ? {
+                      OR: [
+                          { name: { contains: query.search, mode: "insensitive" } },
+                          { email: { contains: query.search, mode: "insensitive" } },
+                          { document: { contains: query.search } }
+                      ]
+                  }
+                : {}),
+            ...(query.role ? { role: { is: { name: query.role } } } : {}),
+            ...(typeof query.isActive === "boolean" ? { isActive: query.isActive } : {})
+        };
+        const orderBy =
+            query.sort === "NAME_ASC"
+                ? { name: "asc" as const }
+                : query.sort === "NAME_DESC"
+                  ? { name: "desc" as const }
+                  : {
+                        createdAt:
+                            query.sort === "CREATED_AT_ASC" ? ("asc" as const) : ("desc" as const)
+                    };
+        const [users, total] = await this.prisma.$transaction([
+            this.prisma.user.findMany({
+                where,
+                include: { role: true, address: true },
+                orderBy,
+                skip: (query.page - 1) * query.pageSize,
+                take: query.pageSize
+            }),
+            this.prisma.user.count({ where })
+        ]);
+        return { users, total };
     }
 
     public findByEmail(email: string) {
