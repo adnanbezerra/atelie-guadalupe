@@ -15,9 +15,9 @@ const productRoutes: FastifyPluginAsync = async (fastify) => {
     const controller = new ProductController(fastify, productService);
 
     fastify.get("/lines", controller.listLines);
-    fastify.get("/", controller.list);
+    fastify.get("/", { preHandler: [fastify.authenticateOptional] }, controller.list);
     fastify.get("/slug/:slug", controller.detailBySlug);
-    fastify.get("/:uuid", controller.detail);
+    fastify.get("/:uuid", { preHandler: [fastify.authenticateOptional] }, controller.detail);
 
     fastify.post(
         "/lines",

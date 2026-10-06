@@ -1,4 +1,4 @@
-import { ProductSize } from "../../../generated/prisma/enums";
+import { ProductSize, RoleName } from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { ImageStorage, UploadImageInput } from "../../../core/storage/image-storage";
@@ -46,6 +46,12 @@ type ListProductsInput = {
     minPriceInCents?: number;
     maxPriceInCents?: number;
     inStock?: boolean;
+    status?: "ACTIVE" | "INACTIVE" | "ALL";
+};
+
+type ProductUpdateInput = UpdateProductInput & {
+    removeImage?: boolean;
+    isActive?: boolean;
 };
 
 export class ProductService {
@@ -116,9 +122,15 @@ export class ProductService {
     }
 
     public async list(
-        query: ListProductsInput
+        query: ListProductsInput,
+        role?: RoleName
     ): Promise<Either<AppError, Record<string, unknown>>> {
-        const result = await this.productRepository.listActive(query);
+        const status = query.status ?? "ACTIVE";
+        if (status !== "ACTIVE" && !this.isAdministrativeRole(role)) {
+            return left(AppError.forbidden("Usuario sem permissao para listar produtos inativos"));
+        }
+
+        const result = await this.productRepository.list({ ...query, status });
         const promotionsByCategory = await this.findActivePromotionsByCategory(
             result.items.map((item) => item.category)
         );
@@ -140,10 +152,11 @@ export class ProductService {
     }
 
     public async detail(
-        productUuid: string
+        productUuid: string,
+        role?: RoleName
     ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
         const product = await this.productRepository.findByUuid(productUuid);
-        if (!product || !product.isActive) {
+        if (!product || (!product.isActive && !this.isAdministrativeRole(role))) {
             return left(AppError.notFound("Produto nao encontrado"));
         }
 
@@ -206,14 +219,14 @@ export class ProductService {
 
     public async update(
         productUuid: string,
-        input: UpdateProductInput
+        input: ProductUpdateInput
     ): Promise<Either<AppError, { product: ReturnType<typeof presentProduct> }>> {
         const existingProduct = await this.productRepository.findByUuid(productUuid);
         if (!existingProduct) {
             return left(AppError.notFound("Produto nao encontrado"));
         }
 
-        const { image, lineUuid, ...restInput } = input;
+        const { image, lineUuid, removeImage, ...restInput } = input;
         const nextCategory = input.category ?? existingProduct.category;
         const data: {
             name?: string;
@@ -225,6 +238,8 @@ export class ProductService {
             description?: string | null;
             shortDescription?: string;
             longDescription?: string;
+            isActive?: boolean;
+            imageUrl?: string | null;
         } = {
             ...restInput,
             ...(input.name ? { name: input.name.trim(), slug: slugify(input.name) } : {}),
@@ -271,6 +286,7 @@ export class ProductService {
             }
         }
 
+        let nextLine = existingProduct.line;
         if (lineUuid) {
             const line = await this.productRepository.findLineByUuid(lineUuid);
             if (!line) {
@@ -278,6 +294,7 @@ export class ProductService {
             }
 
             data.lineId = line.id;
+            nextLine = line;
         }
 
         if (nextCategory === "ARTISANAL" && typeof input.stock === "number") {
@@ -286,6 +303,29 @@ export class ProductService {
 
         if (nextCategory === "ARTISANAL" && typeof input.shippingWeightGrams === "number") {
             data.shippingWeightGrams = input.shippingWeightGrams;
+        }
+
+        if (input.isActive === true) {
+            const activationError = this.validateActivation({
+                category: nextCategory,
+                stock: data.stock ?? existingProduct.stock,
+                shippingWeightGrams:
+                    data.shippingWeightGrams ?? existingProduct.shippingWeightGrams,
+                name: data.name ?? existingProduct.name,
+                shortDescription: data.shortDescription ?? existingProduct.shortDescription,
+                longDescription: data.longDescription ?? existingProduct.longDescription,
+                line: nextLine
+            });
+            if (activationError) return left(activationError);
+        }
+
+        if (removeImage) {
+            try {
+                await this.imageStorage.deleteProductImageByUrl(existingProduct.imageUrl);
+            } catch {
+                return left(AppError.serviceUnavailable("Nao foi possivel remover a imagem"));
+            }
+            data.imageUrl = null;
         }
 
         let imageUrl: string | undefined;
@@ -310,7 +350,6 @@ export class ProductService {
             return left(AppError.notFound("Produto nao encontrado"));
         }
 
-        await this.imageStorage.deleteProductImageByUrl(existingProduct.imageUrl);
         await this.productRepository.updateByUuid(productUuid, {
             isActive: false
         });
@@ -343,5 +382,39 @@ export class ProductService {
         );
 
         return new Map(entries);
+    }
+
+    private isAdministrativeRole(role?: RoleName): boolean {
+        return role === RoleName.ADMIN || role === RoleName.SUBADMIN;
+    }
+
+    private validateActivation(product: {
+        category: ProductCategory;
+        stock: number | null;
+        shippingWeightGrams: number | null;
+        name: string;
+        shortDescription: string;
+        longDescription: string;
+        line: { price70gInCents: number; price100gInCents: number };
+    }): AppError | null {
+        if (
+            !product.name.trim() ||
+            !product.shortDescription.trim() ||
+            !product.longDescription.trim()
+        ) {
+            return AppError.business("Produto incompleto nao pode ser ativado");
+        }
+        if (product.line.price70gInCents <= 0 || product.line.price100gInCents <= 0) {
+            return AppError.business("Produto sem opcoes de preco validas nao pode ser ativado");
+        }
+        if (
+            product.category === "ARTISANAL" &&
+            (typeof product.stock !== "number" ||
+                typeof product.shippingWeightGrams !== "number" ||
+                product.shippingWeightGrams <= 0)
+        ) {
+            return AppError.business("Produto artesanal sem estoque ou peso nao pode ser ativado");
+        }
+        return null;
     }
 }

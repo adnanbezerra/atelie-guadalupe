@@ -116,3 +116,34 @@ test("authenticate rejects a token with an old auth version", async (_t) => {
     assert.equal(response.statusCode, 401);
     assert.equal(response.json().error.message, "Access token invalido");
 });
+
+test("optional authentication accepts public requests and loads a supplied token", async (_t) => {
+    const fastify = Fastify();
+    fastify.decorate("prisma", authPrisma() as never);
+    await fastify.register(Support);
+    await fastify.register(jwt, { secret: "test-secret" });
+    await fastify.register(Auth);
+    fastify.get("/optional", { preHandler: [fastify.authenticateOptional] }, async (request) => ({
+        role: request.currentUser?.role ?? null
+    }));
+    await fastify.ready();
+    _t.after(() => fastify.close());
+
+    const publicResponse = await fastify.inject({ method: "GET", url: "/optional" });
+    const token = fastify.jwt.sign({
+        sub: "0195f4aa-7f18-7db5-9f32-06f4a9a2b101",
+        email: "admin@example.com",
+        role: "ADMIN",
+        name: "Admin"
+    });
+    const adminResponse = await fastify.inject({
+        method: "GET",
+        url: "/optional",
+        headers: { authorization: `Bearer ${token}` }
+    });
+
+    assert.equal(publicResponse.statusCode, 200);
+    assert.equal(publicResponse.json().role, null);
+    assert.equal(adminResponse.statusCode, 200);
+    assert.equal(adminResponse.json().role, "ADMIN");
+});

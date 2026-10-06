@@ -9,7 +9,7 @@ export type UploadVideoInput = UploadImageInput;
 export interface ImageStorage {
     uploadProductImage(input: UploadImageInput): Promise<string>;
     uploadTestimonialVideo(input: UploadVideoInput): Promise<string>;
-    deleteProductImageByUrl(url: string): Promise<void>;
+    deleteProductImageByUrl(url: string | null): Promise<void>;
     deleteTestimonialVideoByUrl(url: string): Promise<void>;
     isConfigured(): boolean;
 }

@@ -1,6 +1,8 @@
 const mediaPathPattern = /^\/media\/(?:images|videos)\/[a-f0-9]{24}$/i;
 
-export function normalizePublicMediaUrl(url: string): string {
+export function normalizePublicMediaUrl(url: string | null): string | null {
+    if (!url) return null;
+
     try {
         const parsedUrl = new URL(url);
         if (isLocalHost(parsedUrl.hostname) && mediaPathPattern.test(parsedUrl.pathname)) {

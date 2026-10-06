@@ -45,6 +45,7 @@ type ProductListQuery = {
     minPriceInCents?: number;
     maxPriceInCents?: number;
     inStock?: boolean;
+    status?: "ACTIVE" | "INACTIVE" | "ALL";
 };
 
 const productWithLineInclude = {
@@ -109,9 +110,13 @@ export class ProductRepository {
         });
     }
 
-    public async listActive(query: ProductListQuery) {
+    public async list(query: ProductListQuery) {
         const where = {
-            isActive: true,
+            ...((query.status ?? "ACTIVE") === "ACTIVE"
+                ? { isActive: true }
+                : query.status === "INACTIVE"
+                  ? { isActive: false }
+                  : {}),
             ...(query.search
                 ? { name: { contains: query.search, mode: "insensitive" as const } }
                 : {}),

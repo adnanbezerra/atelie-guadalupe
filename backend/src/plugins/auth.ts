@@ -40,6 +40,14 @@ export default fp(async (fastify) => {
         }
     );
 
+    fastify.decorate(
+        "authenticateOptional",
+        async function (request: FastifyRequest, reply: FastifyReply) {
+            if (!request.headers.authorization) return;
+            await fastify.authenticate(request, reply);
+        }
+    );
+
     fastify.decorate("authorize", function (allowedRoles: AllowedRole[]) {
         return async function (request: FastifyRequest, _reply: FastifyReply) {
             const currentUser = request.currentUser;
@@ -58,6 +66,7 @@ export default fp(async (fastify) => {
 declare module "fastify" {
     export interface FastifyInstance {
         authenticate(request: FastifyRequest, reply: FastifyReply): Promise<void>;
+        authenticateOptional(request: FastifyRequest, reply: FastifyReply): Promise<void>;
         authorize(
             allowedRoles: AllowedRole[]
         ): (request: FastifyRequest, reply: FastifyReply) => Promise<void>;

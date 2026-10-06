@@ -23,7 +23,7 @@ export class ProductController {
 
     public list = async (request: FastifyRequest, reply: FastifyReply) => {
         const query = this.fastify.validateSchema(listProductsQuerySchema, request.query);
-        const result = await this.productService.list(query);
+        const result = await this.productService.list(query, request.currentUser?.role);
         return sendEither(reply, result);
     };
 
@@ -35,7 +35,7 @@ export class ProductController {
 
     public detail = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(productUuidParamSchema, request.params);
-        const result = await this.productService.detail(params.uuid);
+        const result = await this.productService.detail(params.uuid, request.currentUser?.role);
         return sendEither(reply, result);
     };
 
@@ -110,6 +110,8 @@ export class ProductController {
 
         this.coerceOptionalInteger(body, "stock");
         this.coerceOptionalInteger(body, "shippingWeightGrams");
+        this.coerceOptionalBoolean(body, "removeImage");
+        this.coerceOptionalBoolean(body, "isActive");
 
         if (image) {
             body.image = image;
@@ -127,5 +129,18 @@ export class ProductController {
 
         const value = body[field].trim();
         body[field] = value.length > 0 ? Number(value) : undefined;
+    }
+
+    private coerceOptionalBoolean(body: Record<string, unknown>, field: string): void {
+        if (typeof body[field] !== "string") return;
+        if (body[field] === "true") {
+            body[field] = true;
+            return;
+        }
+        if (body[field] === "false") {
+            body[field] = false;
+            return;
+        }
+        throw AppError.validation(`${field} deve ser true ou false`);
     }
 }

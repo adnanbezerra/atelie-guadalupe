@@ -17,7 +17,7 @@ type ProductEntity = {
     uuid: string;
     slug: string;
     name: string;
-    imageUrl: string;
+    imageUrl: string | null;
     category: ProductCategory;
     stock: number | null;
     shippingWeightGrams?: number | null;

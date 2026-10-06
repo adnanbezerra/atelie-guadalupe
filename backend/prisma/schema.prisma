@@ -229,7 +229,7 @@ model Product {
   category            ProductCategory @default(ARTISANAL)
   name                String
   slug                String          @unique
-  imageUrl            String
+  imageUrl            String?
   stock               Int?
   shippingWeightGrams Int?
   description         String?         @db.Text

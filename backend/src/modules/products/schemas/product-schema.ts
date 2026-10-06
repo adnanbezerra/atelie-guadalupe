@@ -80,6 +80,8 @@ export const updateProductSchema = z
         category: productCategorySchema.optional(),
         lineUuid: z.uuid().optional(),
         image: imageUploadSchema.optional(),
+        removeImage: z.boolean().optional(),
+        isActive: z.boolean().optional(),
         stock: z.int().min(0).optional(),
         shippingWeightGrams: z.int().positive().optional(),
         description: z.string().trim().min(1).max(20000).optional(),
@@ -88,6 +90,10 @@ export const updateProductSchema = z
     })
     .refine((data) => Object.keys(data).length > 0, {
         message: "Informe ao menos um campo para atualizacao"
+    })
+    .refine((data) => !(data.image && data.removeImage), {
+        message: "Nao envie image e removeImage ao mesmo tempo",
+        path: ["removeImage"]
     });
 
 export const productUuidParamSchema = z.object({
@@ -116,7 +122,8 @@ export const listProductsQuerySchema = z
         category: publicProductCategorySchema.optional(),
         minPriceInCents: z.coerce.number().int().min(1).optional(),
         maxPriceInCents: z.coerce.number().int().min(1).optional(),
-        inStock: z.coerce.boolean().optional()
+        inStock: z.coerce.boolean().optional(),
+        status: z.enum(["ACTIVE", "INACTIVE", "ALL"]).default("ACTIVE")
     })
     .refine(
         (data) => (!data.minPriceInCents && !data.maxPriceInCents) || typeof data.size === "string",

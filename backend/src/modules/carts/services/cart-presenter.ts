@@ -12,7 +12,7 @@ type CartItemEntity = {
     product: {
         uuid: string;
         category: ProductCategory;
-        imageUrl: string;
+        imageUrl: string | null;
         stock: number | null;
         isActive: boolean;
         activePromotion?: {

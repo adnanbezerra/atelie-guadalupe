@@ -24,7 +24,7 @@ type CreateOrderInput = {
         productId?: number;
         productSize: ProductSize;
         productNameSnapshot: string;
-        imageUrlSnapshot?: string;
+        imageUrlSnapshot?: string | null;
         quantity: number;
         unitPriceInCents: number;
         totalPriceInCents: number;

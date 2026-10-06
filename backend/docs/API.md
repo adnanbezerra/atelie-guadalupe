@@ -930,6 +930,7 @@ Query params:
 - `minPriceInCents`
 - `maxPriceInCents`
 - `inStock`
+- `status`: `ACTIVE` (padrao), `INACTIVE` ou `ALL`
 
 Exemplo:
 
@@ -942,6 +943,8 @@ Observacao:
 - para usar `minPriceInCents` e/ou `maxPriceInCents`, e obrigatorio informar `size`
 - `category=ARTESANATO` filtra produtos `ARTISANAL`; `category=BELEZA` filtra produtos `SELFCARE`
 - `inStock=true` considera produtos `ARTISANAL` com `stock > 0` e todos os produtos `SELFCARE`
+- `INACTIVE` e `ALL` exigem token de `ADMIN` ou `SUBADMIN`; sem permissao, retornam `403`
+- chamadas publicas e chamadas sem `status` retornam somente produtos ativos
 
 Resposta `200`:
 
@@ -1009,6 +1012,10 @@ Resposta `200`:
 Uso:
 
 - detalhe publico do produto
+- detalhe administrativo de produto ativo ou inativo quando enviado token de `ADMIN` ou `SUBADMIN`
+
+Produto inativo retorna `404` para chamada publica. `imageUrl` pode ser `null` quando a imagem foi
+removida.
 
 Resposta `200`:
 
@@ -1319,6 +1326,8 @@ name=Novo nome
 category=ARTISANAL
 lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
 image=<novo.jpg>
+removeImage=false
+isActive=true
 stock=4
 shippingWeightGrams=120
 description=Descricao longa opcional atualizada
@@ -1330,6 +1339,9 @@ Observacoes:
 
 - qualquer campo e opcional
 - se enviar `image`, o backend substitui a imagem anterior no storage
+- `removeImage=true` remove a imagem e retorna `imageUrl: null`; nao pode ser combinado com `image`
+- `isActive=true` reativa e `isActive=false` desativa; repetir o estado atual e idempotente
+- a reativacao rejeita produto sem textos obrigatorios, precos validos ou, para artesanato, estoque e peso
 - `category` aceita `SELFCARE` ou `ARTISANAL`
 - para mudar `SELFCARE` para `ARTISANAL`, informe `stock` e `shippingWeightGrams`
 - para `SELFCARE`, nao envie `stock` nem `shippingWeightGrams`

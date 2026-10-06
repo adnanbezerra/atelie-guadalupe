@@ -2,9 +2,39 @@ import * as assert from "node:assert";
 import { test } from "node:test";
 import {
     listProductLinesQuerySchema,
-    listProductsQuerySchema
+    listProductsQuerySchema,
+    updateProductSchema
 } from "../../src/modules/products/schemas/product-schema";
 import { ProductService } from "../../src/modules/products/services/product-service";
+import { RoleName } from "../../src/generated/prisma/enums";
+
+function storedProduct(overrides: Record<string, unknown> = {}) {
+    return {
+        id: 1,
+        uuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b201",
+        slug: "sabonete-lavanda",
+        name: "Sabonete Lavanda",
+        category: "ARTISANAL",
+        imageUrl: "/media/images/507f1f77bcf86cd799439011",
+        stock: 8,
+        shippingWeightGrams: 250,
+        description: null,
+        shortDescription: "Natural com lavanda",
+        longDescription: "Sabonete natural com oleo essencial de lavanda.",
+        isActive: true,
+        line: {
+            id: 1,
+            uuid: "line-1",
+            slug: "linha-sabonetes",
+            name: "Linha Sabonetes",
+            price70gInCents: 2590,
+            price100gInCents: 3700
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ...overrides
+    };
+}
 
 test("product list query maps public categories to product categories", () => {
     assert.equal(listProductsQuerySchema.parse({ category: "ARTESANATO" }).category, "ARTISANAL");
@@ -17,6 +47,19 @@ test("product line list query maps public categories to product categories", () 
         "ARTISANAL"
     );
     assert.equal(listProductLinesQuerySchema.parse({ category: "BELEZA" }).category, "SELFCARE");
+});
+
+test("product update rejects image upload combined with image removal", () => {
+    const result = updateProductSchema.safeParse({
+        removeImage: true,
+        image: {
+            filename: "lavanda.jpg",
+            contentType: "image/jpeg",
+            buffer: Buffer.from("image")
+        }
+    });
+
+    assert.equal(result.success, false);
 });
 
 test("product service creates slug from product name", async () => {
@@ -95,7 +138,7 @@ test("product service lists active promotion on products", async () => {
         endsAt: null
     };
     const repository = {
-        listActive: async () => ({
+        list: async () => ({
             items: [
                 {
                     uuid: "product-1",
@@ -243,4 +286,106 @@ test("product service returns not found for missing product detail by slug", asy
         assert.equal(result.value.statusCode, 404);
         assert.equal(result.value.message, "Produto nao encontrado");
     }
+});
+
+test("product service removes an image and clears its database reference", async () => {
+    const product = storedProduct();
+    let deletedUrl: string | null | undefined;
+    let persisted: Record<string, unknown> | undefined;
+    const repository = {
+        findByUuid: async () => product,
+        updateByUuid: async (_uuid: string, input: Record<string, unknown>) => {
+            persisted = input;
+            return { ...product, ...input };
+        }
+    };
+    const imageStorage = {
+        deleteProductImageByUrl: async (url: string | null) => {
+            deletedUrl = url;
+        }
+    };
+    const marketingRepository = { findBestActivePromotionForCategory: async () => null };
+    const service = new ProductService(
+        repository as never,
+        marketingRepository as never,
+        imageStorage as never
+    );
+
+    const result = await service.update(product.uuid, { removeImage: true });
+
+    assert.equal(result.success, true);
+    assert.equal(deletedUrl, product.imageUrl);
+    assert.equal(persisted?.imageUrl, null);
+    if (result.success) assert.equal(result.value.product.imageUrl, null);
+});
+
+test("product service keeps the image reference when storage removal fails", async () => {
+    const product = storedProduct();
+    let updateCalls = 0;
+    const repository = {
+        findByUuid: async () => product,
+        updateByUuid: async () => {
+            updateCalls += 1;
+            return product;
+        }
+    };
+    const imageStorage = {
+        deleteProductImageByUrl: async () => {
+            throw new Error("storage unavailable");
+        }
+    };
+    const service = new ProductService(repository as never, {} as never, imageStorage as never);
+
+    const result = await service.update(product.uuid, { removeImage: true });
+
+    assert.equal(result.success, false);
+    assert.equal(updateCalls, 0);
+    if (!result.success) assert.equal(result.value.statusCode, 503);
+});
+
+test("product service restricts inactive listings to administrative roles", async () => {
+    let listCalls = 0;
+    const repository = {
+        list: async () => {
+            listCalls += 1;
+            return { items: [], total: 0 };
+        }
+    };
+    const service = new ProductService(repository as never, {} as never, {} as never);
+
+    const publicResult = await service.list({ page: 1, pageSize: 20, status: "INACTIVE" });
+    const adminResult = await service.list(
+        { page: 1, pageSize: 20, status: "INACTIVE" },
+        RoleName.ADMIN
+    );
+
+    assert.equal(publicResult.success, false);
+    assert.equal(adminResult.success, true);
+    assert.equal(listCalls, 1);
+});
+
+test("product service lets an admin read and reactivate an inactive complete product", async () => {
+    const product = storedProduct({ isActive: false });
+    const repository = {
+        findByUuid: async () => product,
+        updateByUuid: async (_uuid: string, input: Record<string, unknown>) => ({
+            ...product,
+            ...input
+        })
+    };
+    const marketingRepository = { findBestActivePromotionForCategory: async () => null };
+    const service = new ProductService(
+        repository as never,
+        marketingRepository as never,
+        {} as never
+    );
+
+    const publicDetail = await service.detail(product.uuid);
+    const adminDetail = await service.detail(product.uuid, RoleName.ADMIN);
+    const reactivated = await service.update(product.uuid, { isActive: true });
+
+    assert.equal(publicDetail.success, false);
+    assert.equal(adminDetail.success, true);
+    assert.equal(reactivated.success, true);
+    if (reactivated.success) assert.equal(reactivated.value.product.isActive, true);
 });

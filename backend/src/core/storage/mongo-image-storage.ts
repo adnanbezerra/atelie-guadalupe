@@ -70,17 +70,17 @@ export class MongoImageStorage implements ImageStorage {
         return this.mediaUrl("videos", uploadStream.id.toString());
     }
 
-    public async deleteProductImageByUrl(url: string): Promise<void> {
-        if (!this.bucket) {
-            return;
-        }
+    public async deleteProductImageByUrl(url: string | null): Promise<void> {
+        if (!url) return;
 
         const imageId = this.extractImageId(url);
-        if (!imageId) {
-            return;
+        if (!imageId) return;
+
+        if (!this.bucket) {
+            throw AppError.serviceUnavailable("Storage de imagens nao configurado");
         }
 
-        await this.bucket.delete(new ObjectId(imageId)).catch(() => undefined);
+        await this.bucket.delete(new ObjectId(imageId));
     }
 
     public async deleteTestimonialVideoByUrl(url: string): Promise<void> {
