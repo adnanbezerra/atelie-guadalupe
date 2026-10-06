@@ -61,7 +61,7 @@ export function RecentPaymentLinks({
             ) : paymentLinks.length ? (
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[780px] text-left text-sm">
-                        <thead className="bg-slate-50 font-public text-[0.68rem] font-bold uppercase tracking-[0.12em] text-slate-500">
+                        <thead className="bg-slate-50 font-public text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
                             <tr>
                                 <th className="px-6 py-3">Cobrança</th>
                                 <th className="px-6 py-3">Criada por</th>
@@ -117,7 +117,7 @@ function PaymentLinkRow({
                 >
                     {paymentLink.description}
                 </p>
-                <p className="mt-1 font-mono text-[0.68rem] text-slate-400">
+                <p className="mt-1 font-mono text-xs text-slate-400">
                     {paymentLink.uuid.slice(0, 8)}
                 </p>
             </td>
@@ -161,14 +161,15 @@ function PaymentLinkRow({
                         aria-label={`Copiar link da cobrança ${paymentLink.description}`}
                         className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
                         onClick={() => {
-                            void copyText(getPublicPaymentUrl(paymentLink)).catch(
-                                (error) =>
-                                    onError(
-                                        "Não foi possível copiar",
-                                        error instanceof Error
-                                            ? error.message
-                                            : "Selecione e copie o link manualmente.",
-                                    ),
+                            void copyText(
+                                getPublicPaymentUrl(paymentLink),
+                            ).catch((error) =>
+                                onError(
+                                    "Não foi possível copiar",
+                                    error instanceof Error
+                                        ? error.message
+                                        : "Selecione e copie o link manualmente.",
+                                ),
                             );
                         }}
                         type="button"

@@ -61,7 +61,9 @@ export function AdminTestimonialsClient({
     const [editorOpen, setEditorOpen] = useState(false);
     const [editing, setEditing] = useState<Testimonial | null>(null);
     const [preview, setPreview] = useState<Testimonial | null>(null);
-    const [pendingDelete, setPendingDelete] = useState<Testimonial | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Testimonial | null>(
+        null,
+    );
     const [isUploading, setIsUploading] = useState(false);
     const [feedback, setFeedback] = useState<{
         title: string;
@@ -577,8 +579,7 @@ export function AdminTestimonialsClient({
                     const testimonial = pendingDelete;
                     setPendingDelete(null);
                     void handleTestimonialAction(
-                        () =>
-                            testimonials.deleteTestimonial(testimonial.uuid),
+                        () => testimonials.deleteTestimonial(testimonial.uuid),
                         "O testemunho foi excluído permanentemente.",
                     );
                 }}
@@ -610,7 +611,7 @@ export function AdminTestimonialsClient({
                     Boolean(feedback) ||
                     Boolean(
                         testimonials.error &&
-                            testimonials.error !== dismissedError,
+                        testimonials.error !== dismissedError,
                     ) ||
                     Boolean(initialError && !dismissedInitialError)
                 }
@@ -645,9 +646,7 @@ function TestimonialForm({
     const [title, setTitle] = useState(initialValue?.title ?? "");
     const [text, setText] = useState(initialValue?.text ?? "");
     const [video, setVideo] = useState<File | null>(null);
-    const [isActive, setIsActive] = useState(
-        initialValue?.isActive ?? true,
-    );
+    const [isActive, setIsActive] = useState(initialValue?.isActive ?? true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
@@ -945,7 +944,7 @@ function TypeOption({
                 <span className="block text-sm font-bold text-slate-800">
                     {label}
                 </span>
-                <span className="block text-[10px] text-slate-500">
+                <span className="block text-xs text-slate-500">
                     {description}
                 </span>
             </span>

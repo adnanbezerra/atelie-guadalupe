@@ -89,7 +89,9 @@ export function BillingReviewDialog({
                         onClick={onConfirm}
                         type="button"
                     >
-                        {isSubmitting ? "Criando cobrança..." : "Criar cobrança"}
+                        {isSubmitting
+                            ? "Criando cobrança..."
+                            : "Criar cobrança"}
                     </button>
                 </div>
             </DialogContent>
@@ -139,7 +141,9 @@ export function GeneratedLinkDialog({
                                 </span>
                             </div>
                             <div className="mt-3 border-b border-slate-200 pb-3 text-sm">
-                                <span className="text-slate-500">Descrição</span>
+                                <span className="text-slate-500">
+                                    Descrição
+                                </span>
                                 <p className="mt-1 [overflow-wrap:anywhere] font-semibold text-slate-950">
                                     {paymentLink.description}
                                 </p>
@@ -153,7 +157,7 @@ export function GeneratedLinkDialog({
                                 </span>
                             </div>
                             <label
-                                className="mt-4 block font-public text-[0.68rem] font-bold uppercase tracking-[0.12em] text-slate-500"
+                                className="mt-4 block font-public text-xs font-bold uppercase tracking-[0.12em] text-slate-500"
                                 htmlFor="generated-payment-link"
                             >
                                 Link para compartilhar
