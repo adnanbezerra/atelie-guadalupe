@@ -304,10 +304,7 @@ export function getInitialView(): ProfileView {
         return "dados";
     }
 
-    return window.location.hash === "#pedidos" ||
-        window.location.hash === "#pagamento"
-        ? (window.location.hash.slice(1) as ProfileView)
-        : "dados";
+    return window.location.hash === "#pedidos" ? "pedidos" : "dados";
 }
 
 export function formatAddress(order: Order) {

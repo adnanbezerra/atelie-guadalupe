@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { formatCurrency } from "@/lib/format";
 import { formatProductSizeLabel } from "@/lib/utils";
-import type { Order } from "@/lib/types";
+import type { Order, Pagination } from "@/lib/types";
 import {
     formatAddress,
     formatPaymentMethod,
@@ -15,6 +15,8 @@ import {
 type ProfileOrdersViewProps = {
     orders: Order[];
     isLoading: boolean;
+    pagination: Pagination;
+    onPageChange: (page: number) => void;
 };
 
 const SUPERFRETE_TRACKING_URL = "https://rastreamento.superfrete.com/";
@@ -22,6 +24,8 @@ const SUPERFRETE_TRACKING_URL = "https://rastreamento.superfrete.com/";
 export function ProfileOrdersView({
     orders,
     isLoading,
+    pagination,
+    onPageChange,
 }: ProfileOrdersViewProps) {
     return (
         <div className="space-y-5">
@@ -37,7 +41,8 @@ export function ProfileOrdersView({
                         </p>
                     </div>
                     <span className="w-fit rounded-full bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-500">
-                        {orders.length} pedidos
+                        {pagination.total}{" "}
+                        {pagination.total === 1 ? "pedido" : "pedidos"}
                     </span>
                 </div>
 
@@ -70,7 +75,11 @@ export function ProfileOrdersView({
                     </div>
                 ) : null}
 
-                <div className="space-y-4">
+                <div
+                    aria-busy={isLoading}
+                    aria-live="polite"
+                    className={isLoading ? "hidden" : "space-y-4"}
+                >
                     {orders.map((order) => (
                         <article
                             className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm ring-1 ring-slate-50 md:p-6"
@@ -208,6 +217,41 @@ export function ProfileOrdersView({
                         </article>
                     ))}
                 </div>
+
+                {!isLoading && pagination.totalPages > 1 ? (
+                    <nav
+                        aria-label="Páginas do histórico de pedidos"
+                        className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-6 sm:flex-row"
+                    >
+                        <p className="text-sm font-medium text-slate-600">
+                            Página {pagination.page} de {pagination.totalPages}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                disabled={pagination.page <= 1}
+                                onClick={() =>
+                                    onPageChange(pagination.page - 1)
+                                }
+                                type="button"
+                            >
+                                Página anterior
+                            </button>
+                            <button
+                                className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                                disabled={
+                                    pagination.page >= pagination.totalPages
+                                }
+                                onClick={() =>
+                                    onPageChange(pagination.page + 1)
+                                }
+                                type="button"
+                            >
+                                Próxima página
+                            </button>
+                        </div>
+                    </nav>
+                ) : null}
             </div>
         </div>
     );

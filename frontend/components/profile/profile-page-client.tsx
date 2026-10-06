@@ -22,7 +22,12 @@ import { clearAuthSession } from "@/lib/auth-session";
 export function ProfilePageClient() {
     const router = useRouter();
     const profile = useProfile();
-    const orders = useOrders([], { scope: "me", page: 1, pageSize: 10 });
+    const [ordersPage, setOrdersPage] = useState(1);
+    const orders = useOrders([], {
+        scope: "me",
+        page: ordersPage,
+        pageSize: 10,
+    });
     const user = profile.user;
     const primaryAddress = getPrimaryAddress(user?.address, user?.addresses);
     const [activeView, setActiveView] = useState<ProfileView>("dados");
@@ -45,10 +50,19 @@ export function ProfilePageClient() {
     const resourceError = profile.error ?? orders.error;
 
     useEffect(() => {
-        setActiveView(getInitialView());
+        function syncViewWithHash() {
+            const view = getInitialView();
+            setActiveView(view);
+
+            if (window.location.hash && window.location.hash !== "#pedidos") {
+                window.history.replaceState(null, "", "/perfil");
+            }
+        }
+
+        syncViewWithHash();
 
         function handleHashChange() {
-            setActiveView(getInitialView());
+            syncViewWithHash();
         }
 
         window.addEventListener("hashchange", handleHashChange);
@@ -320,6 +334,11 @@ export function ProfilePageClient() {
                                 }
                                 href={item.href}
                                 key={item.href}
+                                aria-current={
+                                    item.view === activeView
+                                        ? "page"
+                                        : undefined
+                                }
                             >
                                 <span
                                     aria-hidden="true"
@@ -396,7 +415,9 @@ export function ProfilePageClient() {
                     {activeView === "pedidos" ? (
                         <ProfileOrdersView
                             isLoading={orders.isLoading}
+                            onPageChange={setOrdersPage}
                             orders={orders.data}
+                            pagination={orders.pagination}
                         />
                     ) : null}
                 </section>

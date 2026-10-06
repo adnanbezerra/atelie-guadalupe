@@ -83,12 +83,16 @@ export function ProfileDataView({
             >
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                     <div className="space-y-2">
-                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        <label
+                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            htmlFor="profile-name"
+                        >
                             Nome Completo
                         </label>
                         <input
                             className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
                             defaultValue={user?.name ?? ""}
+                            id="profile-name"
                             name="name"
                             placeholder={
                                 isLoading ? "Carregando..." : "Seu nome"
@@ -98,12 +102,16 @@ export function ProfileDataView({
                     </div>
 
                     <div className="space-y-2">
-                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        <label
+                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            htmlFor="profile-email"
+                        >
                             E-mail
                         </label>
                         <input
                             className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
                             defaultValue={user?.email ?? ""}
+                            id="profile-email"
                             name="email"
                             placeholder={
                                 isLoading ? "Carregando..." : "seu@email.com"
@@ -113,12 +121,16 @@ export function ProfileDataView({
                     </div>
 
                     <div className="space-y-2">
-                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        <label
+                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            htmlFor="profile-document"
+                        >
                             CPF ou CNPJ
                         </label>
                         <input
                             className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
                             defaultValue={formatDocument(user?.document ?? "")}
+                            id="profile-document"
                             inputMode="numeric"
                             maxLength={18}
                             name="document"
@@ -133,12 +145,16 @@ export function ProfileDataView({
                     </div>
 
                     <div className="space-y-2">
-                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        <label
+                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            htmlFor="profile-phone"
+                        >
                             Telefone
                         </label>
                         <input
                             className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
                             defaultValue={formatPhone(user?.phone ?? "")}
+                            id="profile-phone"
                             inputMode="tel"
                             maxLength={15}
                             name="phone"
@@ -153,12 +169,16 @@ export function ProfileDataView({
                     </div>
 
                     <div className="space-y-2">
-                        <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        <label
+                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            htmlFor="profile-birth-date"
+                        >
                             Data de Nascimento
                         </label>
                         <div className="relative" ref={birthCalendarRef}>
                             <button
                                 className="flex w-full items-center justify-between rounded-2xl border-none bg-slate-50 px-5 py-4 text-left font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
+                                id="profile-birth-date"
                                 onClick={() =>
                                     setIsBirthCalendarOpen(
                                         (current) => !current,
@@ -214,6 +234,7 @@ export function ProfileDataView({
                                             </span>
                                         </button>
                                         <select
+                                            aria-label="Mês"
                                             className="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-slate-900"
                                             onChange={(event) =>
                                                 setCalendarMonth(
@@ -242,6 +263,7 @@ export function ProfileDataView({
                                             )}
                                         </select>
                                         <select
+                                            aria-label="Ano"
                                             className="h-10 w-24 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-slate-900"
                                             onChange={(event) =>
                                                 setCalendarMonth(
@@ -336,7 +358,10 @@ export function ProfileDataView({
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                         <div className="space-y-2 md:col-span-2">
                             <div className="flex items-center justify-between gap-4 px-1">
-                                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                <label
+                                    className="text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                                    htmlFor="profile-zip-code"
+                                >
                                     CEP
                                 </label>
                                 {isCepLoading ? (
@@ -350,6 +375,7 @@ export function ProfileDataView({
                                 defaultValue={formatCep(
                                     primaryAddress?.zipCode ?? "",
                                 )}
+                                id="profile-zip-code"
                                 inputMode="numeric"
                                 maxLength={9}
                                 name="zipCode"
@@ -413,14 +439,14 @@ export function ProfileDataView({
 
                 <div className="mt-10 flex flex-col items-center gap-4 border-t border-slate-50 pt-6 sm:flex-row">
                     <button
-                        className="w-full rounded-2xl bg-slate-900 px-10 py-4 font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 sm:w-auto"
+                        className="w-full rounded-2xl bg-slate-900 px-10 py-4 font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                         disabled={isSubmitting || !isDirty}
                         type="submit"
                     >
                         {isSubmitting ? "Salvando..." : "Salvar Alterações"}
                     </button>
                     <button
-                        className="w-full px-10 py-4 font-bold text-slate-500 transition-all hover:text-slate-900 sm:w-auto"
+                        className="w-full px-10 py-4 font-bold text-slate-500 transition-all hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                         disabled={isSubmitting || !isDirty}
                         onClick={onCancel}
                         type="button"
@@ -450,12 +476,16 @@ function AddressInput({
 }) {
     return (
         <div className={wide ? "space-y-2 md:col-span-2" : "space-y-2"}>
-            <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            <label
+                className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                htmlFor={`profile-${name}`}
+            >
                 {label}
             </label>
             <input
                 className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
                 defaultValue={defaultValue}
+                id={`profile-${name}`}
                 maxLength={maxLength}
                 name={name}
                 placeholder={placeholder}
