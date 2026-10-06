@@ -1,10 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
     DialogHeader,
@@ -12,221 +11,343 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAdminUsers } from "@/hooks/use-admin-users";
-import { User, UserRole } from "@/lib/types";
+import type { User, UserRole } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
 
-type AdminUsersClientProps = {
+type Props = {
+    initialError: { message: string; status: number | null } | null;
     initialUsers: User[];
 };
+type ManagedRole = "ADMIN" | "SUBADMIN" | "USER";
+type AccessAction =
+    | { kind: "role"; role: ManagedRole; user: User }
+    | { kind: "status"; isActive: boolean; user: User };
 
-export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
+const roleDetails: Record<ManagedRole, { label: string; description: string }> = {
+    USER: {
+        label: "Cliente",
+        description: "Compra e gerencia somente a própria conta.",
+    },
+    SUBADMIN: {
+        label: "Equipe",
+        description: "Opera produtos e pedidos, sem gerenciar acessos.",
+    },
+    ADMIN: {
+        label: "Administrador",
+        description: "Acesso total, inclusive criação e revogação de usuários.",
+    },
+};
+
+function isManagedRole(role: UserRole): role is ManagedRole {
+    return role === "ADMIN" || role === "SUBADMIN" || role === "USER";
+}
+
+export function AdminUsersClient({ initialError, initialUsers }: Props) {
     const users = useAdminUsers(initialUsers);
-
-    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [formState, setFormState] = useState({
-        name: "",
-        email: "",
-        password: "",
-        role: "USER" as UserRole,
-    });
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [search, setSearch] = useState("");
+    const [group, setGroup] = useState<"TEAM" | "CUSTOMERS">("TEAM");
+    const [status, setStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+    const [role, setRole] = useState<"ALL" | ManagedRole>("ALL");
+    const [pendingAction, setPendingAction] = useState<AccessAction | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [dismissedLoadError, setDismissedLoadError] = useState(false);
+    const [ignoredInitialError, setIgnoredInitialError] = useState(false);
     const [feedback, setFeedback] = useState<{
         title: string;
         description: string;
     } | null>(null);
+    const [form, setForm] = useState({
+        name: "",
+        email: "",
+        document: "",
+        password: "",
+        role: "SUBADMIN" as "ADMIN" | "SUBADMIN",
+    });
+
+    const filteredUsers = useMemo(() => {
+        const query = search.trim().toLocaleLowerCase("pt-BR");
+        return users.data.filter((user) => {
+            const userRole = isManagedRole(user.role) ? user.role : "USER";
+            return (
+                (group === "CUSTOMERS" ? userRole === "USER" : userRole !== "USER") &&
+                (role === "ALL" || userRole === role) &&
+                (status === "ALL" ||
+                    (status === "ACTIVE" ? user.isActive : !user.isActive)) &&
+                (!query ||
+                    [user.name, user.email, user.document, roleDetails[userRole].label]
+                        .join(" ")
+                        .toLocaleLowerCase("pt-BR")
+                        .includes(query))
+            );
+        });
+    }, [group, role, search, status, users.data]);
+
+    const counts = useMemo(
+        () => ({
+            customers: users.data.filter((user) => user.role === "USER").length,
+            team: users.data.filter((user) => user.role !== "USER").length,
+        }),
+        [users.data],
+    );
 
     async function handleCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        const document = form.document.replace(/\D/g, "");
+        if (!form.name.trim() || !form.email.trim()) {
+            setFeedback({
+                title: "Confira os dados",
+                description: "Informe nome e e-mail para criar o acesso.",
+            });
+            return;
+        }
+        if (document.length !== 11 && document.length !== 14) {
+            setFeedback({
+                title: "Confira o CPF ou CNPJ",
+                description: "O documento deve conter 11 ou 14 dígitos.",
+            });
+            return;
+        }
+        if (
+            form.password.length < 8 ||
+            form.password.length > 72 ||
+            !/[a-z]/.test(form.password) ||
+            !/[A-Z]/.test(form.password) ||
+            !/\d/.test(form.password) ||
+            !/[^A-Za-z0-9]/.test(form.password)
+        ) {
+            setFeedback({
+                title: "Confira a senha inicial",
+                description:
+                    "Use de 8 a 72 caracteres, com maiúscula, minúscula, número e símbolo.",
+            });
+            return;
+        }
+
+        setIsCreating(true);
         try {
-            await users.createUser(formState);
-            setFormState({
+            await users.createUser({
+                ...form,
+                name: form.name.trim(),
+                email: form.email.trim(),
+                document,
+            });
+            setForm({
                 name: "",
                 email: "",
+                document: "",
                 password: "",
                 role: "SUBADMIN",
             });
-            setIsCreateDialogOpen(false);
+            setIsCreateOpen(false);
             setFeedback({
-                title: "Usuário criado",
-                description: "O acesso foi criado com sucesso.",
-            });
-        } catch (reason) {
-            setFeedback({
-                title: "Não foi possível criar o usuário",
+                title: "Acesso criado",
                 description:
-                    reason instanceof Error
-                        ? reason.message
+                    "A conta foi criada. A API ainda não oferece convite ou troca obrigatória de senha; compartilhe a senha inicial por um canal seguro.",
+            });
+        } catch (error) {
+            setFeedback({
+                title: "Não foi possível criar o acesso",
+                description:
+                    error instanceof Error
+                        ? error.message
                         : "Tente novamente em alguns instantes.",
             });
+        } finally {
+            setIsCreating(false);
         }
     }
 
-    return (
-        <div className="flex min-h-full flex-col overflow-hidden font-sans text-slate-900">
-            <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
-                <div className="flex items-center gap-2 text-slate-500">
-                    <span className="text-sm">Painel de Controle</span>
-                    <span
-                        aria-hidden="true"
-                        className="material-symbols-outlined text-sm"
-                    >
-                        chevron_right
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                        Administradores
-                    </span>
-                </div>
-                <div className="flex items-center gap-4">
-                    <button
-                        aria-label="Ver notificações"
-                        className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100"
-                    >
-                        <span
-                            aria-hidden="true"
-                            className="material-symbols-outlined"
-                        >
-                            notifications
-                        </span>
-                        <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
-                    </button>
-                    <button
-                        aria-label="Abrir busca"
-                        className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
-                    >
-                        <span
-                            aria-hidden="true"
-                            className="material-symbols-outlined"
-                        >
-                            search
-                        </span>
-                    </button>
-                </div>
-            </header>
+    async function confirmAccessAction() {
+        if (!pendingAction) return;
+        setIsUpdating(true);
+        try {
+            await users.updateUser(
+                pendingAction.user.uuid,
+                pendingAction.kind === "role"
+                    ? { role: pendingAction.role }
+                    : { isActive: pendingAction.isActive },
+            );
+            setFeedback({
+                title: "Acesso atualizado",
+                description:
+                    pendingAction.kind === "role"
+                        ? `${pendingAction.user.name} agora tem o papel ${roleDetails[pendingAction.role].label}.`
+                        : pendingAction.isActive
+                          ? `O acesso de ${pendingAction.user.name} foi restaurado.`
+                          : `O acesso de ${pendingAction.user.name} foi revogado.`,
+            });
+            setPendingAction(null);
+        } catch (error) {
+            setFeedback({
+                title: "Não foi possível atualizar o acesso",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Tente novamente em alguns instantes.",
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    }
 
-            <div className="p-8">
-                <div className="mx-auto max-w-6xl">
-                    <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h1 className="font-display text-3xl font-bold text-slate-900">
-                                Gestão de Usuários
-                            </h1>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Visualize e gerencie as permissões e acessos da
-                                sua equipe interna.
-                            </p>
-                        </div>
-                        <Dialog
-                            open={isCreateDialogOpen}
-                            onOpenChange={(open) => {
-                                setIsCreateDialogOpen(open);
-                            }}
-                        >
-                            <DialogTrigger asChild>
-                                <button className="flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90">
-                                    <span
-                                        aria-hidden="true"
-                                        className="material-symbols-outlined text-xl"
-                                    >
-                                        person_add
-                                    </span>
-                                    <span>Cadastrar Usuário</span>
-                                </button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-lg overflow-hidden rounded-xl bg-white p-0">
-                                <DialogClose asChild>
-                                    <button
-                                        aria-label="Fechar"
-                                        className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                                    >
-                                        <span
-                                            aria-hidden="true"
-                                            className="material-symbols-outlined text-xl"
-                                        >
-                                            close
-                                        </span>
-                                    </button>
-                                </DialogClose>
-                                <DialogHeader className="border-b border-slate-200 p-6">
-                                    <DialogTitle className="font-display text-2xl font-bold text-slate-900">
-                                        Cadastrar Usuário
-                                    </DialogTitle>
-                                    <DialogDescription className="text-sm text-slate-500">
-                                        Crie um acesso para a equipe interna.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <form
-                                    className="space-y-4 p-6"
-                                    onSubmit={handleCreate}
-                                >
+    const loadError =
+        !dismissedLoadError &&
+        (users.error || (!ignoredInitialError && initialError?.message));
+
+    return (
+        <div className="min-h-full bg-[#f6f6f8] text-slate-900">
+            <div className="mx-auto w-full max-w-7xl px-5 py-8 md:px-8 md:py-10">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                    <div className="max-w-2xl">
+                        <h1 className="font-display text-3xl font-bold text-slate-950">
+                            Gestão de acessos
+                        </h1>
+                        <p className="mt-2 text-sm leading-6 text-slate-600 md:text-base">
+                            Clientes cuidam da própria conta. Equipe opera a loja;
+                            administrador também controla acessos. Use sempre o menor
+                            privilégio necessário.
+                        </p>
+                    </div>
+                    <Dialog
+                        open={isCreateOpen}
+                        onOpenChange={(open) => !isCreating && setIsCreateOpen(open)}
+                    >
+                        <DialogTrigger asChild>
+                            <button className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white">
+                                <span aria-hidden="true" className="material-symbols-outlined">
+                                    person_add
+                                </span>
+                                Criar acesso da equipe
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-xl bg-white p-0">
+                            <DialogHeader className="border-b border-slate-200 p-6">
+                                <DialogTitle className="font-display text-2xl font-bold text-slate-950">
+                                    Criar acesso da equipe
+                                </DialogTitle>
+                                <DialogDescription className="leading-6 text-slate-600">
+                                    Não existe convite no contrato atual. Esta ação cria
+                                    a conta imediatamente com uma senha inicial.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <form className="space-y-4 p-6" onSubmit={handleCreate}>
+                                <Field label="Nome">
                                     <input
-                                        aria-label="Nome"
-                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        autoComplete="name"
+                                        className="h-12 w-full rounded-lg border border-slate-300 px-3 text-base"
                                         onChange={(event) =>
-                                            setFormState((current) => ({
+                                            setForm((current) => ({
                                                 ...current,
                                                 name: event.target.value,
                                             }))
                                         }
-                                        placeholder="Nome"
-                                        value={formState.name}
+                                        value={form.name}
                                     />
+                                </Field>
+                                <Field label="E-mail">
                                     <input
-                                        aria-label="E-mail"
-                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        autoComplete="email"
+                                        className="h-12 w-full rounded-lg border border-slate-300 px-3 text-base"
                                         onChange={(event) =>
-                                            setFormState((current) => ({
+                                            setForm((current) => ({
                                                 ...current,
                                                 email: event.target.value,
                                             }))
                                         }
-                                        placeholder="E-mail"
-                                        value={formState.email}
+                                        type="email"
+                                        value={form.email}
                                     />
+                                </Field>
+                                <Field label="CPF ou CNPJ">
                                     <input
-                                        aria-label="Senha temporária"
-                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        className="h-12 w-full rounded-lg border border-slate-300 px-3 text-base"
+                                        inputMode="numeric"
+                                        maxLength={18}
                                         onChange={(event) =>
-                                            setFormState((current) => ({
+                                            setForm((current) => ({
+                                                ...current,
+                                                document: event.target.value,
+                                            }))
+                                        }
+                                        value={form.document}
+                                    />
+                                </Field>
+                                <Field label="Senha inicial">
+                                    <input
+                                        autoComplete="new-password"
+                                        className="h-12 w-full rounded-lg border border-slate-300 px-3 text-base"
+                                        onChange={(event) =>
+                                            setForm((current) => ({
                                                 ...current,
                                                 password: event.target.value,
                                             }))
                                         }
-                                        placeholder="Senha temporária"
                                         type="password"
-                                        value={formState.password}
+                                        value={form.password}
                                     />
+                                    <p className="mt-1.5 text-xs leading-5 text-slate-600">
+                                        8–72 caracteres, com maiúscula, minúscula,
+                                        número e símbolo. Compartilhe por canal seguro.
+                                    </p>
+                                </Field>
+                                <Field label="Papel">
                                     <select
-                                        aria-label="Cargo ou função"
-                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                                        className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-base"
                                         onChange={(event) =>
-                                            setFormState((current) => ({
+                                            setForm((current) => ({
                                                 ...current,
-                                                role: event.target
-                                                    .value as UserRole,
+                                                role: event.target.value as
+                                                    | "ADMIN"
+                                                    | "SUBADMIN",
                                             }))
                                         }
-                                        value={formState.role}
+                                        value={form.role}
                                     >
-                                        <option value="USER">Usuário</option>
-                                        <option value="SUBADMIN">
-                                            Subadministrador
-                                        </option>
-                                        <option value="ADMIN">
-                                            Administrador
-                                        </option>
+                                        <option value="SUBADMIN">Equipe</option>
+                                        <option value="ADMIN">Administrador</option>
                                     </select>
-                                    <button
-                                        className="w-full rounded-lg bg-primary py-3 font-bold text-white"
-                                        type="submit"
-                                    >
-                                        Criar
-                                    </button>
-                                </form>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
+                                    <p className="mt-1.5 text-xs leading-5 text-slate-600">
+                                        Equipe é a opção recomendada. Administrador
+                                        também pode criar, alterar e revogar acessos.
+                                    </p>
+                                </Field>
+                                <button
+                                    className="min-h-12 w-full rounded-lg bg-primary px-4 py-3 font-bold text-white disabled:opacity-60"
+                                    disabled={isCreating}
+                                    type="submit"
+                                >
+                                    {isCreating ? "Criando acesso..." : "Criar acesso"}
+                                </button>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
 
-                    <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-                        <div className="relative flex-1">
+                <div className="mt-8 flex flex-wrap gap-2" role="tablist">
+                    <GroupButton
+                        active={group === "TEAM"}
+                        label={`Equipe (${counts.team})`}
+                        onClick={() => {
+                            setGroup("TEAM");
+                            setRole("ALL");
+                        }}
+                    />
+                    <GroupButton
+                        active={group === "CUSTOMERS"}
+                        label={`Clientes (${counts.customers})`}
+                        onClick={() => {
+                            setGroup("CUSTOMERS");
+                            setRole("USER");
+                        }}
+                    />
+                </div>
+
+                <section className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="grid gap-3 border-b border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_12rem_12rem]">
+                        <label className="relative">
+                            <span className="sr-only">Pesquisar nesta lista</span>
                             <span
                                 aria-hidden="true"
                                 className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -234,117 +355,266 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                                 search
                             </span>
                             <input
-                                aria-label="Pesquisar usuários"
-                                className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm"
-                                placeholder="Pesquisar por nome, cargo ou e-mail..."
+                                className="h-11 w-full rounded-lg border border-slate-300 pl-10 pr-3 text-base"
+                                onChange={(event) => setSearch(event.target.value)}
+                                placeholder="Nome, e-mail ou documento"
+                                value={search}
                             />
-                        </div>
-                        <button className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium">
-                            <span
-                                aria-hidden="true"
-                                className="material-symbols-outlined"
-                            >
-                                filter_list
-                            </span>
-                            <span>Filtros</span>
-                        </button>
+                        </label>
+                        <select
+                            aria-label="Filtrar por papel"
+                            className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                            disabled={group === "CUSTOMERS"}
+                            onChange={(event) =>
+                                setRole(event.target.value as "ALL" | ManagedRole)
+                            }
+                            value={role}
+                        >
+                            <option value="ALL">Todos os papéis</option>
+                            {group === "TEAM" ? (
+                                <>
+                                    <option value="SUBADMIN">Equipe</option>
+                                    <option value="ADMIN">Administrador</option>
+                                </>
+                            ) : (
+                                <option value="USER">Cliente</option>
+                            )}
+                        </select>
+                        <select
+                            aria-label="Filtrar por status"
+                            className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                            onChange={(event) =>
+                                setStatus(
+                                    event.target.value as
+                                        | "ALL"
+                                        | "ACTIVE"
+                                        | "INACTIVE",
+                                )
+                            }
+                            value={status}
+                        >
+                            <option value="ALL">Todos os status</option>
+                            <option value="ACTIVE">Acesso ativo</option>
+                            <option value="INACTIVE">Acesso revogado</option>
+                        </select>
+                        <p className="text-xs leading-5 text-slate-500 md:col-span-3">
+                            Busca e filtros aplicados à lista completa retornada pela
+                            API. O contrato atual não oferece paginação.
+                        </p>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    {users.data.length === 0 && !loadError ? (
+                        <EmptyState
+                            description={
+                                group === "TEAM"
+                                    ? "Nenhum acesso de equipe foi cadastrado."
+                                    : "Nenhum cliente foi cadastrado."
+                            }
+                            title={group === "TEAM" ? "Equipe vazia" : "Nenhum cliente"}
+                        />
+                    ) : filteredUsers.length === 0 ? (
+                        <EmptyState
+                            description="Ajuste a busca ou os filtros para ver outros resultados."
+                            title="Nenhum resultado"
+                        />
+                    ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left">
-                                <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50">
-                                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                                            Nome do Usuário
-                                        </th>
-                                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                                            Cargo / Função
-                                        </th>
-                                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                                            E-mail
-                                        </th>
-                                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
-                                            Ações
-                                        </th>
+                            <table className="w-full min-w-[860px] text-left">
+                                <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
+                                    <tr>
+                                        <th className="px-6 py-4">Pessoa</th>
+                                        <th className="px-6 py-4">Documento</th>
+                                        <th className="px-6 py-4">Papel</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-right">Acesso</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
-                                    {users.data.map((user) => (
-                                        <tr
-                                            key={user.uuid}
-                                            className="transition-colors hover:bg-slate-50"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                                                        {getInitials(user.name)}
+                                    {filteredUsers.map((user) => {
+                                        const userRole = isManagedRole(user.role)
+                                            ? user.role
+                                            : "USER";
+                                        return (
+                                            <tr key={user.uuid}>
+                                                <td className="max-w-xs px-6 py-4">
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                                                            {getInitials(user.name)}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="truncate font-semibold text-slate-950">
+                                                                {user.name}
+                                                            </p>
+                                                            <p className="truncate text-sm text-slate-600">
+                                                                {user.email}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-sm font-medium text-slate-900">
-                                                        {user.name}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                                                    {user.role}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-500">
-                                                {user.email}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span
-                                                    className={`flex items-center gap-1.5 text-xs font-bold ${
-                                                        user.isActive
-                                                            ? "text-emerald-600"
-                                                            : "text-slate-400"
-                                                    }`}
-                                                >
-                                                    <span
-                                                        className={`size-1.5 rounded-full ${
-                                                            user.isActive
-                                                                ? "bg-emerald-500"
-                                                                : "bg-slate-400"
-                                                        }`}
-                                                    />
-                                                    {user.isActive
-                                                        ? "Ativo"
-                                                        : "Pendente"}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    aria-label={`Abrir ações de ${user.name}`}
-                                                    className="text-slate-400 transition-colors hover:text-primary"
-                                                >
-                                                    <span
-                                                        aria-hidden="true"
-                                                        className="material-symbols-outlined"
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-700">
+                                                    {user.document}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <select
+                                                        aria-label={`Alterar papel de ${user.name}`}
+                                                        className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                                                        onChange={(event) =>
+                                                            setPendingAction({
+                                                                kind: "role",
+                                                                role: event.target
+                                                                    .value as ManagedRole,
+                                                                user,
+                                                            })
+                                                        }
+                                                        value={userRole}
                                                     >
-                                                        more_vert
-                                                    </span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                        <option value="USER">Cliente</option>
+                                                        <option value="SUBADMIN">Equipe</option>
+                                                        <option value="ADMIN">Administrador</option>
+                                                    </select>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-semibold">
+                                                    {user.isActive ? (
+                                                        <span className="text-emerald-700">
+                                                            Acesso ativo
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-500">
+                                                            Acesso revogado
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button
+                                                        className={
+                                                            user.isActive
+                                                                ? "rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50"
+                                                                : "rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                                                        }
+                                                        onClick={() =>
+                                                            setPendingAction({
+                                                                kind: "status",
+                                                                isActive: !user.isActive,
+                                                                user,
+                                                            })
+                                                        }
+                                                        type="button"
+                                                    >
+                                                        {user.isActive
+                                                            ? "Revogar acesso"
+                                                            : "Restaurar acesso"}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
+                    )}
+                </section>
             </div>
+
             <FeedbackDialog
-                description={feedback?.description ?? ""}
+                confirmLabel={isUpdating ? "Atualizando..." : "Confirmar alteração"}
+                description={
+                    pendingAction?.kind === "role"
+                        ? `${pendingAction.user.name} passará a ter o papel ${roleDetails[pendingAction.role].label}. ${roleDetails[pendingAction.role].description}`
+                        : pendingAction
+                          ? `${pendingAction.isActive ? "Restaurar" : "Revogar"} o acesso de ${pendingAction.user.name}? ${pendingAction.isActive ? "A pessoa poderá entrar novamente." : "A pessoa deixará de acessar o sistema."}`
+                          : ""
+                }
+                onConfirm={() => void confirmAccessAction()}
                 onOpenChange={(open) => {
-                    if (!open) setFeedback(null);
+                    if (!open && !isUpdating) setPendingAction(null);
                 }}
-                open={Boolean(feedback)}
-                title={feedback?.title ?? ""}
+                open={pendingAction != null}
+                secondaryLabel="Cancelar"
+                title={
+                    pendingAction?.kind === "role"
+                        ? "Confirmar novo papel"
+                        : "Confirmar mudança de acesso"
+                }
             />
+            <FeedbackDialog
+                confirmLabel={loadError ? "Tentar novamente" : "Entendi"}
+                description={feedback?.description ?? users.error ?? initialError?.message ?? ""}
+                onConfirm={
+                    loadError
+                        ? () => {
+                              setDismissedLoadError(true);
+                              setIgnoredInitialError(true);
+                              void users.refresh().then(() =>
+                                  setDismissedLoadError(false),
+                              );
+                          }
+                        : undefined
+                }
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setFeedback(null);
+                        setDismissedLoadError(true);
+                    }
+                }}
+                open={Boolean(feedback || loadError)}
+                title={
+                    feedback?.title ??
+                    ((!ignoredInitialError && initialError?.status === 403) ||
+                    users.error?.includes("não permite")
+                        ? "Acesso não autorizado"
+                        : "Não foi possível carregar os usuários")
+                }
+            />
+        </div>
+    );
+}
+
+function Field({ children, label }: { children: React.ReactNode; label: string }) {
+    return (
+        <label className="block">
+            <span className="mb-1.5 block text-sm font-bold text-slate-800">{label}</span>
+            {children}
+        </label>
+    );
+}
+
+function GroupButton({
+    active,
+    label,
+    onClick,
+}: {
+    active: boolean;
+    label: string;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            aria-selected={active}
+            className={
+                active
+                    ? "rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white"
+                    : "rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700"
+            }
+            onClick={onClick}
+            role="tab"
+            type="button"
+        >
+            {label}
+        </button>
+    );
+}
+
+function EmptyState({ description, title }: { description: string; title: string }) {
+    return (
+        <div className="px-6 py-14 text-center">
+            <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-4xl text-slate-300"
+            >
+                group_off
+            </span>
+            <h2 className="mt-3 font-bold text-slate-950">{title}</h2>
+            <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
     );
 }

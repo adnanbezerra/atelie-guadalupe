@@ -383,6 +383,7 @@ export function createAdminUser(
     body: {
         name: string;
         email: string;
+        document: string;
         password: string;
         role: string;
     },
@@ -392,6 +393,21 @@ export function createAdminUser(
         token,
         body,
     });
+}
+
+export function updateAdminUser(
+    token: string,
+    userUuid: string,
+    body: Partial<Pick<User, "name" | "role" | "isActive">>,
+) {
+    return request<{ user: User }>(
+        `/users/${encodeURIComponent(userUuid)}`,
+        {
+            method: "PATCH",
+            token,
+            body,
+        },
+    );
 }
 
 export function createOrder(
