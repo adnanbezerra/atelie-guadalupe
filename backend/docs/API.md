@@ -3278,6 +3278,61 @@ Resposta `200`:
 }
 ```
 
+## 21. Dashboard administrativo
+
+### `GET /admin/dashboard`
+
+Requer `ADMIN` ou `SUBADMIN`.
+
+Query obrigatoria:
+
+- `from`: data/hora ISO 8601 com offset
+- `to`: data/hora ISO 8601 com offset, igual ou posterior a `from`
+
+Receita, pedidos pagos e ticket medio usam somente pagamentos `PAID` cujo `paidAt` esta no periodo.
+Contagens operacionais e prioridades usam pedidos criados no periodo. Estoque considera todos os
+produtos artesanais ativos: sem estoque significa `stock <= 0`; baixo estoque significa de 1 a 5
+unidades. `priorityOrders` retorna no maximo 10 itens, ordenados por fulfillment falho, pago para
+preparar, em processamento para enviar e aguardando pagamento.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "period": {
+            "from": "2026-10-01T00:00:00.000Z",
+            "to": "2026-10-31T23:59:59.999Z"
+        },
+        "metrics": {
+            "paidRevenueInCents": 250000,
+            "paidOrders": 20,
+            "averagePaidTicketInCents": 12500,
+            "awaitingPaymentOrders": 3,
+            "ordersToPrepare": 4,
+            "ordersToShip": 2,
+            "failedFulfillments": 1,
+            "outOfStockProducts": 5,
+            "lowStockProducts": 3
+        },
+        "priorityOrders": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b501",
+                "status": "PAID",
+                "paymentStatus": "PAID",
+                "shipmentStatus": "CONFIRMED",
+                "fulfillmentStatus": "FAILED",
+                "totalInCents": 12500,
+                "placedAt": "2026-10-05T12:00:00.000Z"
+            }
+        ]
+    }
+}
+```
+
+Consulta ou validacao falha retorna erro; a API nunca converte falha em metricas zeradas.
+
 ### Variaveis de ambiente
 
 ```env
