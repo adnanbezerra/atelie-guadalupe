@@ -6,6 +6,8 @@ import { BillingPreview } from "./billing/billing-preview";
 import {
     BillingError,
     BillingErrorDialog,
+    BillingReview,
+    BillingReviewDialog,
     GeneratedLinkDialog,
 } from "./billing/billing-dialogs";
 import { RecentPaymentLinks } from "./billing/recent-payment-links";
@@ -40,6 +42,7 @@ export function AdminBillingClient({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [billingError, setBillingError] = useState<BillingError | null>(null);
+    const [review, setReview] = useState<BillingReview | null>(null);
 
     const amountInCents = useMemo(() => parseAmountInCents(amount), [amount]);
     const previewDescription =
@@ -78,7 +81,7 @@ export function AdminBillingClient({
         void loadPaymentLinks();
     }, [loadPaymentLinks]);
 
-    async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
         const normalizedDescription = description.trim();
@@ -121,13 +124,30 @@ export function AdminBillingClient({
             return;
         }
 
+        const recentAmounts = paymentLinks.map((item) => item.amountInCents);
+        const isUnusual =
+            recentAmounts.length >= 3 &&
+            (amountInCents < Math.min(...recentAmounts) ||
+                amountInCents > Math.max(...recentAmounts));
+
+        setReview({
+            amountInCents,
+            description: normalizedDescription,
+            expiresAt: expiration?.toISOString() ?? null,
+            isUnusual,
+        });
+    }
+
+    async function handleConfirm() {
+        if (!review || !token) return;
+
         setIsSubmitting(true);
 
         try {
             const payload = await createPaymentLink(token, {
-                amountInCents,
-                description: normalizedDescription,
-                ...(expiration ? { expiresAt: expiration.toISOString() } : {}),
+                amountInCents: review.amountInCents,
+                description: review.description,
+                ...(review.expiresAt ? { expiresAt: review.expiresAt } : {}),
             });
 
             setPaymentLinks((current) =>
@@ -139,6 +159,7 @@ export function AdminBillingClient({
                 ].slice(0, RECENT_LINKS_LIMIT),
             );
             setGeneratedPaymentLink(payload.paymentLink);
+            setReview(null);
             setIsCopied(false);
             setAmount("");
             setDescription("");
@@ -209,6 +230,9 @@ export function AdminBillingClient({
 
                 <RecentPaymentLinks
                     isLoading={isLoading}
+                    onError={(title, errorDescription) =>
+                        setBillingError({ title, description: errorDescription })
+                    }
                     onRefresh={() => void loadPaymentLinks()}
                     paymentLinks={paymentLinks}
                 />
@@ -224,6 +248,14 @@ export function AdminBillingClient({
                     }
                 }}
                 paymentLink={generatedPaymentLink}
+            />
+            <BillingReviewDialog
+                isSubmitting={isSubmitting}
+                onConfirm={() => void handleConfirm()}
+                onOpenChange={(open) => {
+                    if (!open && !isSubmitting) setReview(null);
+                }}
+                review={review}
             />
             <BillingErrorDialog
                 error={billingError}

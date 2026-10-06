@@ -1,18 +1,25 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PaymentLink } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
-import { formatDateTime, statusDetails } from "./utils";
+import {
+    copyText,
+    formatDateTime,
+    getPublicPaymentUrl,
+    statusDetails,
+} from "./utils";
 
 type RecentPaymentLinksProps = {
     isLoading: boolean;
     onRefresh: () => void;
     paymentLinks: PaymentLink[];
+    onError: (title: string, description: string) => void;
 };
 
 export function RecentPaymentLinks({
     isLoading,
     onRefresh,
     paymentLinks,
+    onError,
 }: RecentPaymentLinksProps) {
     return (
         <section className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -61,12 +68,14 @@ export function RecentPaymentLinks({
                                 <th className="px-6 py-3">Valor</th>
                                 <th className="px-6 py-3">Status</th>
                                 <th className="px-6 py-3">Data</th>
+                                <th className="px-6 py-3 text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {paymentLinks.map((paymentLink) => (
                                 <PaymentLinkRow
                                     key={paymentLink.uuid}
+                                    onError={onError}
                                     paymentLink={paymentLink}
                                 />
                             ))}
@@ -90,7 +99,13 @@ export function RecentPaymentLinks({
     );
 }
 
-function PaymentLinkRow({ paymentLink }: { paymentLink: PaymentLink }) {
+function PaymentLinkRow({
+    paymentLink,
+    onError,
+}: {
+    paymentLink: PaymentLink;
+    onError: (title: string, description: string) => void;
+}) {
     const status = statusDetails[paymentLink.status];
 
     return (
@@ -132,6 +147,54 @@ function PaymentLinkRow({ paymentLink }: { paymentLink: PaymentLink }) {
                         Pago em {formatDateTime(paymentLink.paidAt)}
                     </p>
                 ) : null}
+                {paymentLink.expiresAt ? (
+                    <p className="mt-1 text-xs text-slate-500">
+                        Vence em {formatDateTime(paymentLink.expiresAt)}
+                    </p>
+                ) : (
+                    <p className="mt-1 text-xs text-slate-500">Sem expiração</p>
+                )}
+            </td>
+            <td className="px-6 py-4">
+                <div className="flex justify-end gap-2">
+                    <button
+                        aria-label={`Copiar link da cobrança ${paymentLink.description}`}
+                        className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+                        onClick={() => {
+                            void copyText(getPublicPaymentUrl(paymentLink)).catch(
+                                (error) =>
+                                    onError(
+                                        "Não foi possível copiar",
+                                        error instanceof Error
+                                            ? error.message
+                                            : "Selecione e copie o link manualmente.",
+                                    ),
+                            );
+                        }}
+                        type="button"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined text-lg"
+                        >
+                            content_copy
+                        </span>
+                    </button>
+                    <a
+                        aria-label={`Abrir cobrança ${paymentLink.description}`}
+                        className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+                        href={getPublicPaymentUrl(paymentLink)}
+                        rel="noreferrer"
+                        target="_blank"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined text-lg"
+                        >
+                            open_in_new
+                        </span>
+                    </a>
+                </div>
             </td>
         </tr>
     );

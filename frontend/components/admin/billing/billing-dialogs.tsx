@@ -8,9 +8,94 @@ import {
 } from "@/components/ui/dialog";
 import type { PaymentLink } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
-import { getPublicPaymentUrl } from "./utils";
+import { formatDateTime, getPublicPaymentUrl } from "./utils";
 
 export type BillingError = { title: string; description: string };
+
+export type BillingReview = {
+    amountInCents: number;
+    description: string;
+    expiresAt: string | null;
+    isUnusual: boolean;
+};
+
+export function BillingReviewDialog({
+    isSubmitting,
+    onConfirm,
+    onOpenChange,
+    review,
+}: {
+    isSubmitting: boolean;
+    onConfirm: () => void;
+    onOpenChange: (open: boolean) => void;
+    review: BillingReview | null;
+}) {
+    return (
+        <Dialog open={review != null} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-lg rounded-xl bg-white p-6">
+                <DialogHeader>
+                    <DialogTitle className="font-display text-2xl font-bold text-slate-950">
+                        Revisar cobrança
+                    </DialogTitle>
+                    <DialogDescription className="text-sm leading-6 text-slate-600">
+                        Confira os dados antes de criar o link. A emissão não
+                        poderá ser desfeita por esta tela.
+                    </DialogDescription>
+                </DialogHeader>
+                {review ? (
+                    <dl className="mt-5 space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
+                        <div className="flex justify-between gap-4">
+                            <dt className="text-slate-500">Valor</dt>
+                            <dd className="font-bold text-slate-950">
+                                {formatCurrency(review.amountInCents)}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-slate-500">Descrição</dt>
+                            <dd className="mt-1 [overflow-wrap:anywhere] font-semibold text-slate-950">
+                                {review.description}
+                            </dd>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                            <dt className="text-slate-500">Validade</dt>
+                            <dd className="text-right font-semibold text-slate-950">
+                                {review.expiresAt
+                                    ? formatDateTime(review.expiresAt)
+                                    : "Sem expiração"}
+                            </dd>
+                        </div>
+                    </dl>
+                ) : null}
+                {review?.isUnusual ? (
+                    <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                        Este valor está fora da faixa das cobranças recentes.
+                        Isso pode ser correto, mas vale conferir antes de
+                        emitir.
+                    </p>
+                ) : null}
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <DialogClose asChild>
+                        <button
+                            className="min-h-11 rounded-lg border border-slate-300 bg-white px-5 py-2.5 font-bold text-slate-700"
+                            disabled={isSubmitting}
+                            type="button"
+                        >
+                            Voltar e corrigir
+                        </button>
+                    </DialogClose>
+                    <button
+                        className="min-h-11 rounded-lg bg-primary px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isSubmitting}
+                        onClick={onConfirm}
+                        type="button"
+                    >
+                        {isSubmitting ? "Criando cobrança..." : "Criar cobrança"}
+                    </button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 type GeneratedLinkDialogProps = {
     paymentLink: PaymentLink | null;
@@ -51,6 +136,20 @@ export function GeneratedLinkDialog({
                                 <span className="text-slate-500">Valor</span>
                                 <span className="font-bold text-slate-950">
                                     {formatCurrency(paymentLink.amountInCents)}
+                                </span>
+                            </div>
+                            <div className="mt-3 border-b border-slate-200 pb-3 text-sm">
+                                <span className="text-slate-500">Descrição</span>
+                                <p className="mt-1 [overflow-wrap:anywhere] font-semibold text-slate-950">
+                                    {paymentLink.description}
+                                </p>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between gap-4 text-sm">
+                                <span className="text-slate-500">Validade</span>
+                                <span className="text-right font-semibold text-slate-950">
+                                    {paymentLink.expiresAt
+                                        ? formatDateTime(paymentLink.expiresAt)
+                                        : "Sem expiração"}
                                 </span>
                             </div>
                             <label
