@@ -234,13 +234,17 @@ export function PasswordResetScreen() {
     }, []);
 
     useEffect(() => {
-        if (cooldown <= 0) {
-            window.localStorage.removeItem(COOLDOWN_STORAGE_KEY);
-            return;
-        }
+        if (cooldown <= 0) return;
 
         const timeout = window.setTimeout(
-            () => setCooldown((current) => Math.max(0, current - 1)),
+            () =>
+                setCooldown((current) => {
+                    const nextCooldown = Math.max(0, current - 1);
+                    if (nextCooldown === 0) {
+                        window.localStorage.removeItem(COOLDOWN_STORAGE_KEY);
+                    }
+                    return nextCooldown;
+                }),
             1000,
         );
 
