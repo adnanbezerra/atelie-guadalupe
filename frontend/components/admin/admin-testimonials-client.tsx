@@ -20,6 +20,7 @@ import type {
 
 type AdminTestimonialsClientProps = {
     initialData: TestimonialsPayload;
+    initialError: { message: string; status: number | null } | null;
 };
 
 const videoTypes = ["video/mp4", "video/webm", "video/quicktime"];
@@ -51,17 +52,23 @@ function getBodyPreview(testimonial: Testimonial) {
 
 export function AdminTestimonialsClient({
     initialData,
+    initialError,
 }: AdminTestimonialsClientProps) {
     const testimonials = useAdminTestimonials(initialData);
     const [typeFilter, setTypeFilter] = useState<"ALL" | TestimonialType>(
         "ALL",
     );
-    const [open, setOpen] = useState(false);
+    const [editorOpen, setEditorOpen] = useState(false);
+    const [editing, setEditing] = useState<Testimonial | null>(null);
+    const [preview, setPreview] = useState<Testimonial | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Testimonial | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
     const [feedback, setFeedback] = useState<{
         title: string;
         description: string;
     } | null>(null);
     const [dismissedError, setDismissedError] = useState<string | null>(null);
+    const [dismissedInitialError, setDismissedInitialError] = useState(false);
 
     async function handleTestimonialAction(
         action: () => Promise<void>,
@@ -143,14 +150,26 @@ export function AdminTestimonialsClient({
                         </p>
                     </div>
                     <Dialog
-                        open={open}
+                        open={editorOpen}
                         onOpenChange={(nextOpen) => {
-                            setOpen(nextOpen);
-                            setFeedback(null);
+                            if (!nextOpen && isUploading) {
+                                setFeedback({
+                                    title: "Envio em andamento",
+                                    description:
+                                        "Aguarde o término do upload antes de fechar esta janela.",
+                                });
+                                return;
+                            }
+
+                            setEditorOpen(nextOpen);
+                            if (!nextOpen) setEditing(null);
                         }}
                     >
                         <DialogTrigger asChild>
-                            <button className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white">
+                            <button
+                                className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white"
+                                onClick={() => setEditing(null)}
+                            >
                                 <span
                                     aria-hidden="true"
                                     className="material-symbols-outlined"
@@ -163,27 +182,45 @@ export function AdminTestimonialsClient({
                         <DialogContent className="max-h-[90vh] overflow-y-auto rounded-xl bg-slate-50">
                             <DialogHeader className="border-b border-slate-200 bg-white p-6">
                                 <DialogTitle className="text-2xl font-extrabold tracking-tight text-slate-900">
-                                    Cadastrar testemunho
+                                    {editing
+                                        ? "Editar testemunho"
+                                        : "Cadastrar testemunho"}
                                 </DialogTitle>
                                 <DialogDescription className="text-sm text-slate-500">
-                                    Use texto ou vídeo conforme contrato de `PUT
-                                    /testimonials`.
+                                    Revise conteúdo e publicação antes de
+                                    salvar.
                                 </DialogDescription>
                             </DialogHeader>
                             <TestimonialForm
+                                initialValue={editing}
+                                onFeedback={(title, description) =>
+                                    setFeedback({ title, description })
+                                }
+                                onUploadingChange={setIsUploading}
                                 onSubmit={async (payload, options) => {
                                     try {
                                         setFeedback(null);
                                         setDismissedError(null);
-                                        await testimonials.createTestimonial(
-                                            payload,
-                                            options,
-                                        );
-                                        setOpen(false);
+                                        if ("uuid" in payload) {
+                                            await testimonials.updateTestimonial(
+                                                payload,
+                                                options,
+                                            );
+                                        } else {
+                                            await testimonials.createTestimonial(
+                                                payload,
+                                                options,
+                                            );
+                                        }
+                                        setEditorOpen(false);
+                                        setEditing(null);
                                         setFeedback({
-                                            title: "Testemunho criado",
-                                            description:
-                                                "O testemunho foi salvo com sucesso.",
+                                            title: editing
+                                                ? "Testemunho atualizado"
+                                                : "Testemunho criado",
+                                            description: editing
+                                                ? "As alterações foram salvas."
+                                                : "O testemunho foi salvo com sucesso.",
                                         });
                                     } catch (error) {
                                         setFeedback({
@@ -348,6 +385,37 @@ export function AdminTestimonialsClient({
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    aria-label="Pré-visualizar testemunho"
+                                                    className="rounded-lg p-2 transition-colors hover:bg-blue-100 hover:text-primary"
+                                                    onClick={() =>
+                                                        setPreview(testimonial)
+                                                    }
+                                                    type="button"
+                                                >
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="material-symbols-outlined text-lg"
+                                                    >
+                                                        visibility
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    aria-label="Editar testemunho"
+                                                    className="rounded-lg p-2 transition-colors hover:bg-blue-100 hover:text-primary"
+                                                    onClick={() => {
+                                                        setEditing(testimonial);
+                                                        setEditorOpen(true);
+                                                    }}
+                                                    type="button"
+                                                >
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="material-symbols-outlined text-lg"
+                                                    >
+                                                        edit
+                                                    </span>
+                                                </button>
                                                 {testimonial.isActive ? (
                                                     <button
                                                         aria-label="Desativar testemunho"
@@ -370,19 +438,64 @@ export function AdminTestimonialsClient({
                                                             visibility_off
                                                         </span>
                                                     </button>
-                                                ) : null}
+                                                ) : (
+                                                    <button
+                                                        aria-label="Reativar testemunho"
+                                                        className="rounded-lg p-2 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
+                                                        onClick={() => {
+                                                            const payload =
+                                                                testimonial.type ===
+                                                                "TEXT"
+                                                                    ? {
+                                                                          uuid: testimonial.uuid,
+                                                                          type: "TEXT" as const,
+                                                                          ...(testimonial.title
+                                                                              ? {
+                                                                                    title: testimonial.title,
+                                                                                }
+                                                                              : {}),
+                                                                          text:
+                                                                              testimonial.text ??
+                                                                              "",
+                                                                          isActive: true,
+                                                                      }
+                                                                    : {
+                                                                          uuid: testimonial.uuid,
+                                                                          type: "VIDEO" as const,
+                                                                          ...(testimonial.title
+                                                                              ? {
+                                                                                    title: testimonial.title,
+                                                                                }
+                                                                              : {}),
+                                                                          isActive: true,
+                                                                      };
+
+                                                            void handleTestimonialAction(
+                                                                () =>
+                                                                    testimonials.updateTestimonial(
+                                                                        payload,
+                                                                    ),
+                                                                "O testemunho voltou a aparecer na vitrine.",
+                                                            );
+                                                        }}
+                                                        type="button"
+                                                    >
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="material-symbols-outlined text-lg"
+                                                        >
+                                                            visibility
+                                                        </span>
+                                                    </button>
+                                                )}
                                                 <button
                                                     aria-label="Excluir testemunho"
                                                     className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600"
-                                                    onClick={() => {
-                                                        void handleTestimonialAction(
-                                                            () =>
-                                                                testimonials.deleteTestimonial(
-                                                                    testimonial.uuid,
-                                                                ),
-                                                            "O testemunho foi excluído.",
-                                                        );
-                                                    }}
+                                                    onClick={() =>
+                                                        setPendingDelete(
+                                                            testimonial,
+                                                        )
+                                                    }
                                                     type="button"
                                                 >
                                                     <span
@@ -411,8 +524,78 @@ export function AdminTestimonialsClient({
                     </div>
                 </div>
             </div>
+            <Dialog
+                open={preview != null}
+                onOpenChange={(open) => {
+                    if (!open) setPreview(null);
+                }}
+            >
+                <DialogContent className="max-w-xl rounded-xl bg-white p-6">
+                    <DialogHeader>
+                        <DialogTitle className="font-display text-2xl font-bold text-slate-950">
+                            Prévia do testemunho
+                        </DialogTitle>
+                        <DialogDescription>
+                            Visualização do conteúdo salvo para a vitrine.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {preview ? (
+                        <article className="mt-4 rounded-xl bg-slate-50 p-5">
+                            {preview.title ? (
+                                <h3 className="font-bold text-slate-950">
+                                    {preview.title}
+                                </h3>
+                            ) : null}
+                            {preview.type === "TEXT" ? (
+                                <p className="mt-2 whitespace-pre-wrap [overflow-wrap:anywhere] leading-7 text-slate-700">
+                                    {preview.text}
+                                </p>
+                            ) : preview.videoUrl ? (
+                                <video
+                                    className="mt-3 max-h-[55vh] w-full rounded-lg bg-slate-950"
+                                    controls
+                                    src={preview.videoUrl}
+                                />
+                            ) : (
+                                <p className="mt-2 text-slate-600">
+                                    Vídeo indisponível para prévia.
+                                </p>
+                            )}
+                        </article>
+                    ) : null}
+                </DialogContent>
+            </Dialog>
             <FeedbackDialog
-                description={feedback?.description ?? testimonials.error ?? ""}
+                confirmLabel="Excluir permanentemente"
+                description={
+                    pendingDelete
+                        ? `“${getPreview(pendingDelete)}” será removido permanentemente, incluindo o arquivo de vídeo associado. Esta ação não pode ser desfeita.`
+                        : ""
+                }
+                onConfirm={() => {
+                    if (!pendingDelete) return;
+                    const testimonial = pendingDelete;
+                    setPendingDelete(null);
+                    void handleTestimonialAction(
+                        () =>
+                            testimonials.deleteTestimonial(testimonial.uuid),
+                        "O testemunho foi excluído permanentemente.",
+                    );
+                }}
+                onOpenChange={(open) => {
+                    if (!open) setPendingDelete(null);
+                }}
+                open={pendingDelete != null}
+                secondaryLabel="Cancelar"
+                title="Excluir testemunho?"
+            />
+            <FeedbackDialog
+                description={
+                    feedback?.description ??
+                    testimonials.error ??
+                    initialError?.message ??
+                    ""
+                }
                 onOpenChange={(nextOpen) => {
                     if (nextOpen) return;
 
@@ -420,18 +603,22 @@ export function AdminTestimonialsClient({
                         setFeedback(null);
                     } else {
                         setDismissedError(testimonials.error);
+                        setDismissedInitialError(true);
                     }
                 }}
                 open={
                     Boolean(feedback) ||
                     Boolean(
                         testimonials.error &&
-                        testimonials.error !== dismissedError,
-                    )
+                            testimonials.error !== dismissedError,
+                    ) ||
+                    Boolean(initialError && !dismissedInitialError)
                 }
                 title={
                     feedback?.title ??
-                    "Não foi possível carregar os testemunhos"
+                    (initialError?.status === 403
+                        ? "Acesso não autorizado"
+                        : "Não foi possível carregar os testemunhos")
                 }
             />
         </div>
@@ -439,20 +626,28 @@ export function AdminTestimonialsClient({
 }
 
 function TestimonialForm({
+    initialValue,
+    onFeedback,
     onSubmit,
+    onUploadingChange,
 }: {
+    initialValue: Testimonial | null;
+    onFeedback: (title: string, description: string) => void;
     onSubmit: (
-        payload: CreateTestimonialInput,
+        payload: CreateTestimonialInput | UpdateTestimonialInput,
         options?: { onUploadProgress?: (progress: number) => void },
     ) => Promise<void>;
+    onUploadingChange: (uploading: boolean) => void;
 }) {
-    const [type, setType] = useState<TestimonialType>("TEXT");
-    const [title, setTitle] = useState("");
-    const [text, setText] = useState("");
+    const [type, setType] = useState<TestimonialType>(
+        initialValue?.type ?? "TEXT",
+    );
+    const [title, setTitle] = useState(initialValue?.title ?? "");
+    const [text, setText] = useState(initialValue?.text ?? "");
     const [video, setVideo] = useState<File | null>(null);
-    const [isActive, setIsActive] = useState(true);
-    const [formError, setFormError] = useState<string | null>(null);
-    const [videoError, setVideoError] = useState<string | null>(null);
+    const [isActive, setIsActive] = useState(
+        initialValue?.isActive ?? true,
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
@@ -467,36 +662,46 @@ function TestimonialForm({
                 }
 
                 if (type === "TEXT" && !text.trim()) {
-                    setFormError("Informe o texto do testemunho.");
+                    onFeedback(
+                        "Confira o testemunho",
+                        "Informe o texto do testemunho.",
+                    );
                     return;
                 }
 
-                if (type === "VIDEO" && !video) {
-                    setFormError(null);
-                    setVideoError("Informe um vídeo para cadastrar.");
+                if (
+                    type === "VIDEO" &&
+                    !video &&
+                    initialValue?.type !== "VIDEO"
+                ) {
+                    onFeedback(
+                        "Confira o vídeo",
+                        "Informe um vídeo para cadastrar.",
+                    );
                     return;
                 }
 
-                setFormError(null);
-                setVideoError(null);
-
-                const payload: CreateTestimonialInput =
+                const common = {
+                    ...(initialValue ? { uuid: initialValue.uuid } : {}),
+                    ...(title.trim() ? { title: title.trim() } : {}),
+                    isActive,
+                };
+                const payload: CreateTestimonialInput | UpdateTestimonialInput =
                     type === "TEXT"
                         ? {
+                              ...common,
                               type,
-                              ...(title.trim() ? { title: title.trim() } : {}),
                               text: text.trim(),
-                              isActive,
                           }
                         : {
+                              ...common,
                               type,
-                              ...(title.trim() ? { title: title.trim() } : {}),
-                              video: video as File,
-                              isActive,
+                              ...(video ? { video } : {}),
                           };
 
                 setIsSubmitting(true);
                 setUploadProgress(type === "VIDEO" ? 0 : null);
+                onUploadingChange(type === "VIDEO");
 
                 void onSubmit(payload, {
                     onUploadProgress: (progress) => {
@@ -507,6 +712,7 @@ function TestimonialForm({
                     .finally(() => {
                         setIsSubmitting(false);
                         setUploadProgress(null);
+                        onUploadingChange(false);
                     });
             }}
         >
@@ -536,7 +742,6 @@ function TestimonialForm({
                                     onChange={() => {
                                         setType("TEXT");
                                         setVideo(null);
-                                        setVideoError(null);
                                     }}
                                 />
                                 <TypeOption
@@ -547,7 +752,6 @@ function TestimonialForm({
                                     onChange={() => {
                                         setType("VIDEO");
                                         setText("");
-                                        setFormError(null);
                                     }}
                                 />
                             </div>
@@ -593,7 +797,8 @@ function TestimonialForm({
                                             if (
                                                 !videoTypes.includes(file.type)
                                             ) {
-                                                setVideoError(
+                                                onFeedback(
+                                                    "Formato de vídeo inválido",
                                                     "Formato de vídeo inválido.",
                                                 );
                                                 return;
@@ -602,24 +807,18 @@ function TestimonialForm({
                                             if (
                                                 file.size > maxVideoSizeInBytes
                                             ) {
-                                                setVideoError(
+                                                onFeedback(
+                                                    "Vídeo muito grande",
                                                     "Vídeo deve ter no máximo 100 MB.",
                                                 );
                                                 return;
                                             }
 
-                                            setFormError(null);
-                                            setVideoError(null);
                                             setVideo(file);
                                         }}
                                         type="file"
                                     />
                                 </label>
-                                {videoError ? (
-                                    <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                                        {videoError}
-                                    </p>
-                                ) : null}
                                 {uploadProgress !== null ? (
                                     <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
                                         <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-blue-700">
@@ -675,12 +874,6 @@ function TestimonialForm({
                     </label>
                 </section>
 
-                {formError ? (
-                    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                        {formError}
-                    </p>
-                ) : null}
-
                 <button
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-blue-200 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={isSubmitting}
@@ -692,7 +885,11 @@ function TestimonialForm({
                     >
                         {isSubmitting ? "progress_activity" : "save"}
                     </span>
-                    {isSubmitting ? "Enviando..." : "Cadastrar Testemunho"}
+                    {isSubmitting
+                        ? "Salvando..."
+                        : initialValue
+                          ? "Salvar alterações"
+                          : "Cadastrar testemunho"}
                 </button>
             </div>
         </form>
