@@ -1,27 +1,31 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import {
-    useAdminProducts,
-    type AdminProductsPayload,
-} from "@/hooks/use-admin-products";
+import { useEffect, useState } from "react";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
+import { ProductImage } from "@/components/shared/product-image";
+import { useApiToken } from "@/hooks/use-api-token";
+import { useProductLines } from "@/hooks/use-products";
+import { createProduct, updateProduct } from "@/lib/api";
 import type {
     CreateProductInput,
     Product,
     ProductCategory,
+    ProductLine,
     UpdateProductInput,
 } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getLowestPriceOption } from "@/lib/utils";
 
 type AdminProductEditorClientProps = {
-    initialData: AdminProductsPayload;
+    initialLines: ProductLine[];
+    initialProduct?: Product | null;
+    loadError?: string | null;
+    notFound?: boolean;
     productUuid?: string;
 };
 
 type ProductFormPayload = CreateProductInput | UpdateProductInput;
+type Feedback = { title: string; description: string; returnToList?: boolean };
 
 function isCreateProductPayload(
     payload: ProductFormPayload,
@@ -37,134 +41,146 @@ function isCreateProductPayload(
 }
 
 export function AdminProductEditorClient({
-    initialData,
+    initialLines,
+    initialProduct = null,
+    loadError = null,
+    notFound = false,
     productUuid,
 }: AdminProductEditorClientProps) {
     const router = useRouter();
-    const products = useAdminProducts(initialData);
-    const product = useMemo(
-        () =>
-            productUuid
-                ? (products.data.items.find(
-                      (item) => item.uuid === productUuid,
-                  ) ?? null)
-                : null,
-        [productUuid, products.data.items],
-    );
+    const token = useApiToken();
+    const lines = useProductLines(initialLines);
+    const [feedback, setFeedback] = useState<Feedback | null>(null);
+    const [isLoadErrorDismissed, setIsLoadErrorDismissed] = useState(false);
     const isEditing = Boolean(productUuid);
 
-    if (isEditing && !product) {
-        return (
-            <div className="flex flex-col">
-                <AdminProductTopbar title="Produto não encontrado" />
-                <div className="p-8">
-                    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <p className="text-sm text-slate-600">
-                            Não foi possível localizar este produto na listagem.
-                        </p>
-                        <Link
-                            className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white"
-                            href="/admin/produtos"
-                        >
-                            Voltar para produtos
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        );
+    async function saveProduct(payload: ProductFormPayload) {
+        if (!token) {
+            setFeedback({
+                title: "Sessão necessária",
+                description: "Entre novamente para salvar o produto.",
+            });
+            return false;
+        }
+
+        try {
+            if (initialProduct) {
+                await updateProduct(token, initialProduct.uuid, payload);
+                setFeedback({
+                    title: "Produto atualizado",
+                    description: "As vitrines já usam os dados salvos.",
+                    returnToList: true,
+                });
+                return true;
+            }
+
+            if (!isCreateProductPayload(payload)) {
+                setFeedback({
+                    title: "Cadastro incompleto",
+                    description:
+                        "Informe imagem, nome, linha e descrições antes de cadastrar.",
+                });
+                return false;
+            }
+
+            await createProduct(token, payload);
+            setFeedback({
+                title: "Produto cadastrado",
+                description:
+                    "O produto foi salvo e já pode aparecer na vitrine.",
+                returnToList: true,
+            });
+            return true;
+        } catch (error) {
+            setFeedback({
+                title: "Não foi possível salvar",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Revise os dados e tente novamente.",
+            });
+            return false;
+        }
     }
+
+    const resolvedLoadError = loadError ?? lines.error;
 
     return (
         <div className="flex flex-col">
             <AdminProductTopbar
                 title={isEditing ? "Editar Produto" : "Cadastrar Novo Produto"}
             />
-            <div className="mx-auto w-full max-w-6xl p-6 md:p-8">
-                <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="mx-auto w-full max-w-6xl p-4 md:p-8">
+                <div className="mb-8">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
+                        <p className="text-sm font-bold text-primary">
                             Catálogo
                         </p>
-                        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
-                            {isEditing
-                                ? "Editar produto"
-                                : "Adicionar novo produto"}
+                        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">
+                            {isEditing ? "Editar produto" : "Adicionar produto"}
                         </h1>
                     </div>
-                    <Link
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50"
-                        href="/admin/produtos"
-                    >
-                        <span className="material-symbols-outlined text-lg">
-                            arrow_back
-                        </span>
-                        Produtos
-                    </Link>
                 </div>
 
-                <ProductForm
-                    key={product?.uuid ?? "new"}
-                    lines={products.data.lines}
-                    onSubmit={async (payload) => {
-                        try {
-                            if (product) {
-                                await products.updateProduct(
-                                    product.uuid,
-                                    payload,
-                                );
-                                toast.success("Produto salvo com sucesso.", {
-                                    description:
-                                        "As vitrines já usam os dados atualizados.",
-                                });
-                                return;
-                            }
-
-                            if (!isCreateProductPayload(payload)) {
-                                toast.error("Não foi possível cadastrar.", {
-                                    description:
-                                        "Informe imagem, nome, linha e descrições.",
-                                });
-                                return;
-                            }
-
-                            await products.createProduct(payload);
-                            router.push("/admin/produtos");
-                        } catch (error) {
-                            const detail =
-                                error instanceof Error ? error.message : null;
-                            toast.error("Não foi possível salvar o produto.", {
-                                description: detail ?? "Tente novamente.",
-                            });
-                        }
-                    }}
-                    product={product}
-                />
+                {(!isEditing || initialProduct) && lines.data.length ? (
+                    <ProductForm
+                        key={initialProduct?.uuid ?? "new"}
+                        lines={lines.data}
+                        onSubmit={saveProduct}
+                        product={initialProduct}
+                    />
+                ) : null}
             </div>
+
+            <FeedbackDialog
+                confirmLabel="Voltar para produtos"
+                description={
+                    resolvedLoadError ??
+                    (notFound
+                        ? "Este produto não existe ou não está mais disponível."
+                        : "Não foi possível abrir este produto.")
+                }
+                onConfirm={() => router.push("/admin/produtos")}
+                onOpenChange={(open) => setIsLoadErrorDismissed(!open)}
+                open={
+                    Boolean(
+                        resolvedLoadError ||
+                        (isEditing && !initialProduct) ||
+                        !lines.data.length,
+                    ) && !isLoadErrorDismissed
+                }
+                title={
+                    notFound ? "Produto não encontrado" : "Dados indisponíveis"
+                }
+            />
+            <FeedbackDialog
+                description={feedback?.description ?? ""}
+                onConfirm={() => {
+                    if (feedback?.returnToList) {
+                        router.push("/admin/produtos");
+                    }
+                }}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        if (feedback?.returnToList) {
+                            router.push("/admin/produtos");
+                        }
+                        setFeedback(null);
+                    }
+                }}
+                open={Boolean(feedback)}
+                title={feedback?.title ?? "Aviso"}
+            />
         </div>
     );
 }
 
 function AdminProductTopbar({ title }: { title: string }) {
     return (
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm md:px-8">
-            <div className="flex min-w-0 items-center gap-4">
-                <h2 className="truncate text-lg font-extrabold tracking-tight text-slate-900 md:text-xl">
-                    {title}
-                </h2>
-                <span className="hidden rounded bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase text-blue-700 sm:inline-flex">
-                    Painel Administrativo
-                </span>
-            </div>
-            <div className="flex items-center gap-3">
-                <Link
-                    className="rounded-full p-2 text-slate-400 hover:text-primary"
-                    href="/"
-                >
-                    <span className="material-symbols-outlined">
-                        storefront
-                    </span>
-                </Link>
-            </div>
+        <header className="sticky top-0 z-10 flex min-h-16 items-center border-b border-slate-200 bg-white px-4 py-3 md:px-8">
+            <h2 className="truncate text-lg font-extrabold tracking-tight text-slate-900 md:text-xl">
+                {title}
+            </h2>
         </header>
     );
 }
@@ -175,206 +191,305 @@ function ProductForm({
     onSubmit,
 }: {
     product: Product | null;
-    lines: AdminProductsPayload["lines"];
-    onSubmit: (payload: ProductFormPayload) => Promise<void>;
+    lines: ProductLine[];
+    onSubmit: (payload: ProductFormPayload) => Promise<boolean>;
 }) {
-    const [name, setName] = useState(product?.name ?? "");
-    const [lineUuid, setLineUuid] = useState(
-        product?.line.uuid ?? lines[0]?.uuid ?? "",
-    );
-    const [category, setCategory] = useState<ProductCategory>(
-        product?.category ?? "ARTISANAL",
-    );
+    const router = useRouter();
+    const initialName = product?.name ?? "";
+    const initialLineUuid = product?.line.uuid ?? lines[0]?.uuid ?? "";
+    const initialCategory = product?.category ?? "ARTISANAL";
+    const initialShortDescription = product?.shortDescription ?? "";
+    const initialLongDescription = product?.longDescription ?? "";
+    const initialStock = String(product?.stock ?? 0);
+    const initialWeight = String(product?.shippingWeightGrams ?? 0);
+    const initialSnapshot = JSON.stringify({
+        name: initialName,
+        lineUuid: initialLineUuid,
+        category: initialCategory,
+        shortDescription: initialShortDescription,
+        longDescription: initialLongDescription,
+        stock: initialStock,
+        shippingWeightGrams: initialWeight,
+        image: null,
+    });
+    const [name, setName] = useState(initialName);
+    const [lineUuid, setLineUuid] = useState(initialLineUuid);
+    const [category, setCategory] = useState<ProductCategory>(initialCategory);
     const [shortDescription, setShortDescription] = useState(
-        product?.shortDescription ?? "",
+        initialShortDescription,
     );
     const [longDescription, setLongDescription] = useState(
-        product?.longDescription ?? "",
+        initialLongDescription,
     );
-    const [stock, setStock] = useState(String(product?.stock ?? 0));
-    const [shippingWeightGrams, setShippingWeightGrams] = useState(
-        String(product?.shippingWeightGrams ?? 0),
-    );
+    const [stock, setStock] = useState(initialStock);
+    const [shippingWeightGrams, setShippingWeightGrams] =
+        useState(initialWeight);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState(product?.imageUrl ?? "");
-    const [formError, setFormError] = useState<string | null>(null);
-    const firstPrice = product?.priceOptions[0]?.priceInCents;
+    const [validationError, setValidationError] = useState<string | null>(null);
+    const [pendingPayload, setPendingPayload] =
+        useState<ProductFormPayload | null>(null);
+    const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [savedSnapshot, setSavedSnapshot] = useState(initialSnapshot);
+    const currentSnapshot = JSON.stringify({
+        name,
+        lineUuid,
+        category,
+        shortDescription,
+        longDescription,
+        stock,
+        shippingWeightGrams,
+        image: imageFile
+            ? `${imageFile.name}:${imageFile.size}:${imageFile.lastModified}`
+            : null,
+    });
+    const isDirty = currentSnapshot !== savedSnapshot;
+    const selectedLine = lines.find((line) => line.uuid === lineUuid);
+    const productPrice = getLowestPriceOption(product?.priceOptions ?? []);
+    const selectedLinePrice = Math.min(
+            selectedLine?.price70gInCents ?? Number.POSITIVE_INFINITY,
+            selectedLine?.price100gInCents ?? Number.POSITIVE_INFINITY,
+        );
+    const previewPriceInCents =
+        lineUuid === product?.line.uuid
+            ? (productPrice?.priceInCents ?? selectedLinePrice)
+            : selectedLinePrice;
+
+    useEffect(() => {
+        function warnBeforeUnload(event: BeforeUnloadEvent) {
+            if (!isDirty) return;
+            event.preventDefault();
+        }
+
+        window.addEventListener("beforeunload", warnBeforeUnload);
+        return () =>
+            window.removeEventListener("beforeunload", warnBeforeUnload);
+    }, [isDirty]);
+
+    useEffect(
+        () => () => {
+            if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+        },
+        [previewUrl],
+    );
+
+    function buildPayload() {
+        const trimmedName = name.trim();
+        const trimmedShortDescription = shortDescription.trim();
+        const trimmedLongDescription = longDescription.trim();
+
+        if (!product && !imageFile) {
+            setValidationError("Escolha uma imagem para cadastrar o produto.");
+            return null;
+        }
+
+        if (
+            !trimmedName ||
+            !trimmedShortDescription ||
+            !trimmedLongDescription
+        ) {
+            setValidationError(
+                "Preencha nome, descrição curta e descrição completa.",
+            );
+            return null;
+        }
+
+        if (!lineUuid || !lines.some((line) => line.uuid === lineUuid)) {
+            setValidationError("Escolha uma linha de produto válida.");
+            return null;
+        }
+
+        const payload: ProductFormPayload = {
+            name: trimmedName,
+            category,
+            lineUuid,
+            shortDescription: trimmedShortDescription,
+            longDescription: trimmedLongDescription,
+            description: trimmedLongDescription,
+            ...(imageFile ? { image: imageFile } : {}),
+        };
+
+        if (category === "ARTISANAL") {
+            const numericStock = Number(stock);
+            const numericWeight = Number(shippingWeightGrams);
+
+            if (
+                !stock.trim() ||
+                !Number.isFinite(numericStock) ||
+                !Number.isInteger(numericStock) ||
+                numericStock < 0
+            ) {
+                setValidationError(
+                    "Informe um estoque inteiro igual ou maior que zero.",
+                );
+                return null;
+            }
+
+            if (
+                !shippingWeightGrams.trim() ||
+                !Number.isFinite(numericWeight) ||
+                !Number.isInteger(numericWeight) ||
+                numericWeight <= 0
+            ) {
+                setValidationError("Informe um peso inteiro maior que zero.");
+                return null;
+            }
+
+            payload.stock = numericStock;
+            payload.shippingWeightGrams = numericWeight;
+        }
+
+        return payload;
+    }
+
+    async function submitPayload(payload: ProductFormPayload) {
+        if (isSubmitting) return;
+
+        try {
+            setIsSubmitting(true);
+            const saved = await onSubmit(payload);
+            if (saved) setSavedSnapshot(currentSnapshot);
+        } finally {
+            setIsSubmitting(false);
+            setPendingPayload(null);
+        }
+    }
+
+    function requestExit() {
+        if (isDirty) {
+            setIsExitDialogOpen(true);
+            return;
+        }
+
+        router.push("/admin/produtos");
+    }
 
     return (
-        <form
-            className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3"
-            onSubmit={(event) => {
-                event.preventDefault();
+        <>
+            <form
+                className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    if (isSubmitting) return;
 
-                if (!product && !imageFile) {
-                    setFormError("Informe uma imagem para cadastrar.");
-                    return;
-                }
+                    const payload = buildPayload();
+                    if (!payload) return;
 
-                if (
-                    !name ||
-                    !lineUuid ||
-                    !shortDescription ||
-                    !longDescription
-                ) {
-                    setFormError("Preencha nome, linha e descrições.");
-                    return;
-                }
+                    const changesStructure = Boolean(
+                        product &&
+                        (category !== product.category ||
+                            lineUuid !== product.line.uuid),
+                    );
 
-                if (category === "ARTISANAL") {
-                    const numericStock = Number(stock);
-                    const numericWeight = Number(shippingWeightGrams);
-
-                    if (numericStock < 0 || numericWeight <= 0) {
-                        setFormError("Informe estoque e peso válidos.");
+                    if (changesStructure) {
+                        setPendingPayload(payload);
                         return;
                     }
-                }
 
-                setFormError(null);
-
-                const payload: ProductFormPayload = {
-                    name,
-                    category,
-                    lineUuid,
-                    shortDescription,
-                    longDescription,
-                    description: longDescription || shortDescription,
-                    ...(imageFile ? { image: imageFile } : {}),
-                };
-
-                if (category === "ARTISANAL") {
-                    payload.stock = Number(stock);
-                    payload.shippingWeightGrams = Number(shippingWeightGrams);
-                }
-
-                void onSubmit(payload);
-            }}
-        >
-            <div className="space-y-6 lg:col-span-2">
-                <section className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h3 className="mb-6 text-sm font-bold uppercase tracking-wider text-slate-400">
-                        Informações Gerais
-                    </h3>
-                    <div className="space-y-4">
-                        <Field label="Nome do Produto">
-                            <input
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                onChange={(event) =>
-                                    setName(event.target.value)
-                                }
-                                placeholder="Ex: Vela de Lavanda com Florais"
-                                value={name}
-                            />
-                        </Field>
-                        <Field label="Descrição curta">
-                            <input
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                onChange={(event) =>
-                                    setShortDescription(event.target.value)
-                                }
-                                placeholder="Resumo para vitrines e cartões"
-                                value={shortDescription}
-                            />
-                        </Field>
-                        <Field label="Descrição">
-                            <div className="overflow-hidden rounded-lg border border-slate-200">
-                                <div className="flex gap-2 border-b border-slate-200 bg-slate-50 p-2">
-                                    {[
-                                        "format_bold",
-                                        "format_italic",
-                                        "format_list_bulleted",
-                                        "link",
-                                    ].map((icon) => (
-                                        <button
-                                            className="rounded p-1 text-slate-500 hover:bg-white"
-                                            key={icon}
-                                            type="button"
-                                        >
-                                            <span className="material-symbols-outlined text-sm">
-                                                {icon}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
+                    void submitPayload(payload);
+                }}
+            >
+                <div className="space-y-6 lg:col-span-2">
+                    <section className="rounded-xl border border-slate-200 bg-white p-6">
+                        <h3 className="mb-6 text-sm font-bold text-slate-700">
+                            Informações gerais
+                        </h3>
+                        <div className="space-y-4">
+                            <Field label="Nome do produto">
+                                <input
+                                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                    maxLength={160}
+                                    onChange={(event) =>
+                                        setName(event.target.value)
+                                    }
+                                    placeholder="Ex: Vela de Lavanda"
+                                    value={name}
+                                />
+                            </Field>
+                            <Field label="Descrição curta">
+                                <input
+                                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                    maxLength={240}
+                                    onChange={(event) =>
+                                        setShortDescription(event.target.value)
+                                    }
+                                    placeholder="Resumo usado na vitrine"
+                                    value={shortDescription}
+                                />
+                            </Field>
+                            <Field label="Descrição completa">
                                 <textarea
-                                    className="min-h-40 w-full border-0 px-3 py-3 text-sm outline-none focus:ring-0"
+                                    className="min-h-40 w-full rounded-lg border border-slate-200 px-3 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                    maxLength={4000}
                                     onChange={(event) =>
                                         setLongDescription(event.target.value)
                                     }
-                                    placeholder="Descreva os benefícios e a arte por trás deste produto..."
+                                    placeholder="Descreva materiais, processo e cuidados reais."
                                     value={longDescription}
                                 />
-                            </div>
-                        </Field>
-                    </div>
-                </section>
+                            </Field>
+                        </div>
+                    </section>
 
-                <section className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h3 className="mb-6 text-sm font-bold uppercase tracking-wider text-slate-400">
-                        Preços e Estoque
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                            <Field label="Preço base">
+                    <section className="rounded-xl border border-slate-200 bg-white p-6">
+                        <h3 className="mb-6 text-sm font-bold text-slate-700">
+                            Estoque e frete
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <Field label="Estoque">
                                 <input
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-500 outline-none"
-                                    disabled
-                                    value={
-                                        firstPrice
-                                            ? formatCurrency(firstPrice)
-                                            : "Definido pela linha"
+                                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                    disabled={category !== "ARTISANAL"}
+                                    min="0"
+                                    onChange={(event) =>
+                                        setStock(event.target.value)
                                     }
+                                    step="1"
+                                    type="number"
+                                    value={stock}
                                 />
                             </Field>
-                        </div>
-                        <div className="rounded-lg border border-blue-100 bg-blue-50/30 p-4">
-                            <Field label="SKU">
+                            <Field label="Peso para frete (gramas)">
                                 <input
-                                    className="w-full rounded-lg border border-blue-100 bg-white px-3 py-2.5 text-sm text-slate-500 outline-none"
-                                    disabled
-                                    value={product?.slug ?? "Gerado ao salvar"}
+                                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                    disabled={category !== "ARTISANAL"}
+                                    min="1"
+                                    onChange={(event) =>
+                                        setShippingWeightGrams(
+                                            event.target.value,
+                                        )
+                                    }
+                                    step="1"
+                                    type="number"
+                                    value={shippingWeightGrams}
                                 />
                             </Field>
                         </div>
-                        <Field label="Estoque">
-                            <input
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
-                                disabled={category !== "ARTISANAL"}
-                                min="0"
-                                onChange={(event) =>
-                                    setStock(event.target.value)
-                                }
-                                type="number"
-                                value={stock}
-                            />
-                        </Field>
-                        <Field label="Peso para frete (gramas)">
-                            <input
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
-                                disabled={category !== "ARTISANAL"}
-                                min="1"
-                                onChange={(event) =>
-                                    setShippingWeightGrams(event.target.value)
-                                }
-                                type="number"
-                                value={shippingWeightGrams}
-                            />
-                        </Field>
-                    </div>
-                </section>
+                    </section>
 
-                <section className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h3 className="mb-6 text-sm font-bold uppercase tracking-wider text-slate-400">
-                        Imagem do Produto
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                        <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 transition hover:border-primary hover:bg-blue-50 hover:text-primary">
-                            <span className="material-symbols-outlined">
+                    <section className="rounded-xl border border-slate-200 bg-white p-6">
+                        <h3 className="mb-2 text-sm font-bold text-slate-700">
+                            Imagem do produto
+                        </h3>
+                        <p className="mb-5 text-sm text-slate-500">
+                            O contrato atual permite substituir, mas não remover
+                            uma imagem salva.
+                        </p>
+                        <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-600 transition hover:border-primary hover:bg-blue-50 hover:text-primary">
+                            <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined"
+                            >
                                 add_a_photo
                             </span>
-                            <span className="text-[10px] font-bold uppercase">
-                                Upload
+                            <span className="text-sm font-bold">
+                                {product
+                                    ? "Substituir imagem"
+                                    : "Escolher imagem"}
+                            </span>
+                            <span className="text-xs">
+                                JPG, PNG ou WebP, até 5 MB
                             </span>
                             <input
                                 accept="image/png,image/jpeg,image/webp"
@@ -384,145 +499,227 @@ function ProductForm({
                                     if (!file) return;
 
                                     if (file.size > 5 * 1024 * 1024) {
-                                        setFormError(
-                                            "Imagem deve ter no máximo 5 MB.",
+                                        setValidationError(
+                                            "A imagem deve ter no máximo 5 MB.",
                                         );
                                         return;
                                     }
 
-                                    setFormError(null);
-                                    setImageFile(file);
-                                    if (previewUrl.startsWith("blob:")) {
-                                        URL.revokeObjectURL(previewUrl);
+                                    if (
+                                        ![
+                                            "image/jpeg",
+                                            "image/png",
+                                            "image/webp",
+                                        ].includes(file.type)
+                                    ) {
+                                        setValidationError(
+                                            "Escolha uma imagem JPG, PNG ou WebP.",
+                                        );
+                                        return;
                                     }
+
+                                    setImageFile(file);
                                     setPreviewUrl(URL.createObjectURL(file));
                                 }}
                                 type="file"
                             />
                         </label>
-                        {previewUrl ? (
-                            <div className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                <img
-                                    alt="Prévia do produto"
-                                    aria-label="Prévia do produto"
-                                    className="h-full w-full object-cover"
-                                    src={previewUrl}
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                                    <button
-                                        className="rounded-full bg-white p-2 text-red-500 shadow-lg"
-                                        onClick={() => {
-                                            setImageFile(null);
-                                            if (
-                                                previewUrl.startsWith("blob:")
-                                            ) {
-                                                URL.revokeObjectURL(previewUrl);
-                                            }
-                                            setPreviewUrl("");
-                                        }}
-                                        type="button"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">
-                                            delete
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
+                        {imageFile ? (
+                            <button
+                                className="mt-3 min-h-11 rounded-lg border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                                onClick={() => {
+                                    setImageFile(null);
+                                    setPreviewUrl(product?.imageUrl ?? "");
+                                }}
+                                type="button"
+                            >
+                                Descartar imagem escolhida
+                            </button>
                         ) : null}
-                    </div>
-                </section>
-            </div>
-
-            <div className="space-y-6">
-                <section className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h3 className="mb-6 text-sm font-bold uppercase tracking-wider text-slate-400">
-                        Status e Tipo
-                    </h3>
-                    <div className="space-y-6">
-                        <div>
-                            <span className="mb-3 block text-xs font-bold text-slate-600">
-                                Status do Produto
-                            </span>
-                            <span className="inline-flex items-center gap-3">
-                                <span className="relative inline-flex h-6 w-11 rounded-full bg-primary">
-                                    <span className="absolute right-0.5 top-0.5 size-5 rounded-full bg-white" />
-                                </span>
-                                <span className="text-sm font-medium text-slate-700">
-                                    {product?.isActive === false
-                                        ? "Inativo"
-                                        : "Ativo"}
-                                </span>
-                            </span>
-                        </div>
-                        <div className="h-px bg-slate-100" />
-                        <div>
-                            <span className="mb-3 block text-xs font-bold text-slate-600">
-                                Tipo de Produto
-                            </span>
-                            <div className="space-y-2">
-                                <CategoryOption
-                                    checked={category === "ARTISANAL"}
-                                    description="Item físico com estoque e frete"
-                                    label="Artesanato"
-                                    onChange={() => setCategory("ARTISANAL")}
-                                />
-                                <CategoryOption
-                                    checked={category === "SELFCARE"}
-                                    description="Linha de beleza sem estoque manual"
-                                    label="Beleza Natural"
-                                    onChange={() => setCategory("SELFCARE")}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h3 className="mb-6 text-sm font-bold uppercase tracking-wider text-slate-400">
-                        Classificação
-                    </h3>
-                    <Field label="Linha">
-                        <select
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                            onChange={(event) =>
-                                setLineUuid(event.target.value)
-                            }
-                            value={lineUuid}
-                        >
-                            {lines.map((line) => (
-                                <option key={line.uuid} value={line.uuid}>
-                                    {line.name}
-                                </option>
-                            ))}
-                        </select>
-                    </Field>
-                </section>
-
-                {formError ? (
-                    <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                        {formError}
-                    </p>
-                ) : null}
-
-                <div className="space-y-3 pt-2">
-                    <button
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-white shadow-lg shadow-blue-200 transition hover:brightness-110"
-                        type="submit"
-                    >
-                        <span className="material-symbols-outlined text-sm">
-                            save
-                        </span>
-                        {product ? "Salvar Produto" : "Cadastrar Produto"}
-                    </button>
-                    <Link
-                        className="block w-full rounded-xl border border-slate-200 bg-white py-4 text-center font-bold text-slate-500 transition hover:bg-slate-50"
-                        href="/admin/produtos"
-                    >
-                        Cancelar
-                    </Link>
+                    </section>
                 </div>
-            </div>
-        </form>
+
+                <div className="space-y-6">
+                    <section className="rounded-xl border border-slate-200 bg-white p-6">
+                        <h3 className="mb-6 text-sm font-bold text-slate-700">
+                            Tipo e linha
+                        </h3>
+                        <div className="space-y-2">
+                            <CategoryOption
+                                checked={category === "ARTISANAL"}
+                                description="Item com estoque e peso de frete"
+                                label="Artesanato"
+                                onChange={() => setCategory("ARTISANAL")}
+                            />
+                            <CategoryOption
+                                checked={category === "SELFCARE"}
+                                description="Produto sem estoque manual"
+                                label="Beleza Natural"
+                                onChange={() => setCategory("SELFCARE")}
+                            />
+                        </div>
+                        <div className="mt-5">
+                            <Field label="Linha">
+                                <select
+                                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                    onChange={(event) =>
+                                        setLineUuid(event.target.value)
+                                    }
+                                    value={lineUuid}
+                                >
+                                    {lines.map((line) => (
+                                        <option
+                                            key={line.uuid}
+                                            value={line.uuid}
+                                        >
+                                            {line.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+                        </div>
+                    </section>
+
+                    <ProductCardPreview
+                        category={category}
+                        description={shortDescription}
+                        imageUrl={previewUrl}
+                        lineName={selectedLine?.name ?? "Linha"}
+                        name={name}
+                        priceInCents={previewPriceInCents}
+                    />
+
+                    <div className="space-y-3 pt-2">
+                        {isDirty ? (
+                            <p className="text-center text-sm font-medium text-amber-800">
+                                Alterações ainda não salvas
+                            </p>
+                        ) : null}
+                        <button
+                            aria-busy={isSubmitting}
+                            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={isSubmitting || !isDirty}
+                            type="submit"
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-sm"
+                            >
+                                save
+                            </span>
+                            {isSubmitting
+                                ? "Salvando"
+                                : product
+                                  ? "Salvar produto"
+                                  : "Cadastrar produto"}
+                        </button>
+                        <button
+                            className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-600 hover:bg-slate-50"
+                            onClick={requestExit}
+                            type="button"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <FeedbackDialog
+                description={validationError ?? ""}
+                onOpenChange={(open) => {
+                    if (!open) setValidationError(null);
+                }}
+                open={Boolean(validationError)}
+                title="Revise o formulário"
+            />
+            <FeedbackDialog
+                confirmLabel="Salvar alterações"
+                description="Tipo ou linha foram alterados. Isso muda estoque, frete e preços exibidos na vitrine. Confirme somente após revisar a prévia."
+                onConfirm={() => {
+                    if (pendingPayload) void submitPayload(pendingPayload);
+                }}
+                onOpenChange={(open) => {
+                    if (!open && !isSubmitting) setPendingPayload(null);
+                }}
+                open={Boolean(pendingPayload)}
+                secondaryLabel="Revisar"
+                title="Confirmar mudança estrutural?"
+            />
+            <FeedbackDialog
+                confirmLabel="Descartar alterações"
+                description="As alterações feitas desde o último salvamento serão perdidas."
+                onConfirm={() => router.push("/admin/produtos")}
+                onOpenChange={setIsExitDialogOpen}
+                open={isExitDialogOpen}
+                secondaryLabel="Continuar editando"
+                title="Sair sem salvar?"
+            />
+        </>
+    );
+}
+
+function ProductCardPreview({
+    category,
+    description,
+    imageUrl,
+    lineName,
+    name,
+    priceInCents,
+}: {
+    category: ProductCategory;
+    description: string;
+    imageUrl: string;
+    lineName: string;
+    name: string;
+    priceInCents: number;
+}) {
+    const isCraft = category === "ARTISANAL";
+    const hasPrice = Number.isFinite(priceInCents) && priceInCents > 0;
+
+    return (
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <h3 className="mb-4 text-sm font-bold text-slate-700">
+                Prévia da vitrine
+            </h3>
+            <article className="flex flex-col">
+                <div
+                    className={`relative mb-4 overflow-hidden bg-slate-100 ${isCraft ? "aspect-[4/5] rounded-lg" : "aspect-square rounded-xl"}`}
+                >
+                    <ProductImage
+                        alt={name.trim() || "Prévia do produto"}
+                        className="h-full w-full object-cover"
+                        sizes="320px"
+                        src={imageUrl}
+                        unoptimized={imageUrl.startsWith("blob:")}
+                    />
+                    <span className="absolute bottom-3 left-3 rounded bg-white/90 px-2 py-1 text-xs font-bold uppercase tracking-wider text-primary">
+                        {lineName}
+                    </span>
+                </div>
+                <h4
+                    className={
+                        isCraft
+                            ? "text-lg font-medium text-slate-900"
+                            : "font-display text-lg font-bold text-slate-900"
+                    }
+                >
+                    {name.trim() || "Nome do produto"}
+                </h4>
+                <p className="mt-1 line-clamp-2 min-h-10 text-sm leading-5 text-slate-600">
+                    {description.trim() || "A descrição curta aparecerá aqui."}
+                </p>
+                <div className="mt-4 flex items-end justify-between gap-3">
+                    <span className="font-bold text-slate-900">
+                        {hasPrice
+                            ? formatCurrency(priceInCents)
+                            : "Sob consulta"}
+                    </span>
+                    <span className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">
+                        {isCraft ? "Ver detalhes" : "Escolher tamanho"}
+                    </span>
+                </div>
+            </article>
+        </section>
     );
 }
 
@@ -535,7 +732,7 @@ function Field({
 }) {
     return (
         <label className="block">
-            <span className="mb-1 block text-xs font-bold text-slate-600">
+            <span className="mb-1 block text-sm font-bold text-slate-700">
                 {label}
             </span>
             {children}
@@ -555,7 +752,7 @@ function CategoryOption({
     onChange: () => void;
 }) {
     return (
-        <label className="flex cursor-pointer items-center rounded-lg border border-slate-200 p-3 transition hover:border-primary">
+        <label className="flex min-h-16 cursor-pointer items-center rounded-lg border border-slate-200 p-3 transition hover:border-primary">
             <input
                 checked={checked}
                 className="text-primary focus:ring-primary"
@@ -563,11 +760,11 @@ function CategoryOption({
                 onChange={onChange}
                 type="radio"
             />
-            <span className="ml-3">
+            <span className="ml-3 min-w-0">
                 <span className="block text-sm font-bold text-slate-800">
                     {label}
                 </span>
-                <span className="block text-[10px] text-slate-500">
+                <span className="block text-xs text-slate-500">
                     {description}
                 </span>
             </span>

@@ -81,6 +81,12 @@ export async function fetchProductBySlug(slug: string) {
     );
 }
 
+export async function fetchProductByUuid(productUuid: string) {
+    return serverApi<{ product: Product }>(
+        `/products/${encodeURIComponent(productUuid)}`,
+    );
+}
+
 export async function fetchCart() {
     return serverApi<{ cart: Cart }>("/cart").then((payload) => payload.cart);
 }

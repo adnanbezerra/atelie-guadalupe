@@ -1,6 +1,6 @@
 import { AdminProductEditorClient } from "@/components/admin/admin-product-editor-client";
-import type { AdminProductsPayload } from "@/hooks/use-admin-products";
-import { fetchProductLines, fetchProducts } from "@/lib/server-api";
+import { ApiError } from "@/lib/api-error";
+import { fetchProductByUuid, fetchProductLines } from "@/lib/server-api";
 
 export default async function AdminEditProductPage({
     params,
@@ -8,34 +8,32 @@ export default async function AdminEditProductPage({
     params: Promise<{ uuid: string }>;
 }) {
     const { uuid } = await params;
-    const [linesResult, productsResult] = await Promise.allSettled([
+    const [linesResult, productResult] = await Promise.allSettled([
         fetchProductLines(),
-        fetchProducts({ page: 1, pageSize: 100 }),
+        fetchProductByUuid(uuid),
     ]);
-
-    const products =
-        productsResult.status === "fulfilled"
-            ? productsResult.value
-            : {
-                  items: [],
-                  pagination: {
-                      page: 1,
-                      pageSize: 100,
-                      total: 0,
-                      totalPages: 0,
-                  },
-              };
     const lines =
         linesResult.status === "fulfilled" ? linesResult.value.lines : [];
-
-    const initialData: AdminProductsPayload = {
-        ...products,
-        lines,
-    };
+    const product =
+        productResult.status === "fulfilled"
+            ? productResult.value.product
+            : null;
+    const productError =
+        productResult.status === "rejected" ? productResult.reason : null;
+    const notFound =
+        productError instanceof ApiError && productError.status === 404;
+    const loadError = notFound
+        ? "Este produto não existe ou não está mais disponível."
+        : productError || linesResult.status === "rejected"
+          ? "Não foi possível carregar os dados do produto."
+          : null;
 
     return (
         <AdminProductEditorClient
-            initialData={initialData}
+            initialLines={lines}
+            initialProduct={product}
+            loadError={loadError}
+            notFound={notFound}
             productUuid={uuid}
         />
     );

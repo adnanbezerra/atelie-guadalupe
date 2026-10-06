@@ -274,6 +274,12 @@ export function getProductBySlug(slug: string) {
     );
 }
 
+export function getProductByUuid(productUuid: string) {
+    return request<{ product: Product }>(
+        `/products/${encodeURIComponent(productUuid)}`,
+    );
+}
+
 export function getProductLines(query?: { category?: string }) {
     return request<{ lines: ProductLine[] }>("/products/lines", { query });
 }
