@@ -20,12 +20,12 @@ Trabalho:
 
 1. Confirmar suporte atual para produto por UUID, paginação, usuários, pedidos, testemunhos e cobranças.
 2. Criar `docs/IMPECCABLE_API_GAPS.md` para lacunas reais:
-   - prévia pública de link manual antes de criar pagamento;
-   - atributos estruturados por tipo de produto: ingredientes/uso ou material/técnica/dimensão/unidade;
-   - retirada local, se produto exigir;
-   - remoção persistente de imagem;
-   - ativação/reativação de produto;
-   - agregações/paginação administrativas quando contrato atual não sustentar métrica completa.
+    - prévia pública de link manual antes de criar pagamento;
+    - atributos estruturados por tipo de produto: ingredientes/uso ou material/técnica/dimensão/unidade;
+    - retirada local, se produto exigir;
+    - remoção persistente de imagem;
+    - ativação/reativação de produto;
+    - agregações/paginação administrativas quando contrato atual não sustentar métrica completa.
 3. Implementar apenas helpers/tipos exigidos por contratos já existentes.
 
 Aceite: nenhuma UI depende de endpoint inventado; lacunas têm request/response/erros propostos.
