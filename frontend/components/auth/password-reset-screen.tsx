@@ -26,11 +26,13 @@ type ApiEnvelope =
 type Feedback = {
     title: string;
     description: string;
+    confirmLabel?: string;
     redirectToLogin?: boolean;
     focusCode?: boolean;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const COOLDOWN_STORAGE_KEY = "atelie-password-reset-cooldown";
 const PASSWORD_PATTERN =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 
@@ -206,7 +208,36 @@ export function PasswordResetScreen() {
     const loginHref = `/login${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
 
     useEffect(() => {
-        if (cooldown <= 0) return;
+        try {
+            const stored = window.localStorage.getItem(COOLDOWN_STORAGE_KEY);
+            if (!stored) return;
+
+            const parsed = JSON.parse(stored) as {
+                email?: string;
+                expiresAt?: number;
+            };
+            const remaining = Math.ceil(
+                ((parsed.expiresAt ?? 0) - Date.now()) / 1000,
+            );
+
+            if (remaining <= 0 || !parsed.email) {
+                window.localStorage.removeItem(COOLDOWN_STORAGE_KEY);
+                return;
+            }
+
+            setEmail(parsed.email);
+            setStage("confirm");
+            setCooldown(remaining);
+        } catch {
+            window.localStorage.removeItem(COOLDOWN_STORAGE_KEY);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (cooldown <= 0) {
+            window.localStorage.removeItem(COOLDOWN_STORAGE_KEY);
+            return;
+        }
 
         const timeout = window.setTimeout(
             () => setCooldown((current) => Math.max(0, current - 1)),
@@ -249,10 +280,18 @@ export function PasswordResetScreen() {
             setCode("");
             setStage("confirm");
             setCooldown(60);
+            window.localStorage.setItem(
+                COOLDOWN_STORAGE_KEY,
+                JSON.stringify({
+                    email: normalizedEmail,
+                    expiresAt: Date.now() + 60_000,
+                }),
+            );
             setFeedback({
                 title: "Confira seu e-mail",
                 description:
-                    "Se existir uma conta ativa com esse e-mail, você receberá um código de recuperação. Ele vale por 10 minutos.",
+                    "Se existir uma conta ativa com esse e-mail, você receberá um código enviado pelo Ateliê Guadalupe. Ele vale por 10 minutos. Confira também as pastas de spam e lixo eletrônico.",
+                confirmLabel: "Digitar o código",
                 focusCode: true,
             });
         } catch {
@@ -312,6 +351,7 @@ export function PasswordResetScreen() {
                 title: "Senha redefinida",
                 description:
                     "Sua nova senha foi salva. Entre novamente para acessar sua conta.",
+                confirmLabel: "Ir para o login",
                 redirectToLogin: true,
             });
         } catch {
@@ -344,6 +384,12 @@ export function PasswordResetScreen() {
         <div className="flex min-h-screen items-center justify-center bg-background p-4 font-public antialiased sm:p-6 lg:p-0">
             <main className="flex min-h-[700px] w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-[0_28px_70px_-34px_rgba(15,23,42,0.5)] lg:grid lg:grid-cols-2">
                 <section className="flex flex-col justify-center p-7 sm:p-12 lg:p-16 xl:p-20">
+                    <Link
+                        className="mb-5 font-display text-xl font-bold text-foreground lg:hidden"
+                        href="/"
+                    >
+                        Ateliê Guadalupe
+                    </Link>
                     <Link
                         className="mb-10 inline-flex min-h-11 w-fit items-center gap-2 rounded-lg px-1 text-sm font-bold text-primary underline-offset-4 hover:underline"
                         href={loginHref}
@@ -418,6 +464,9 @@ export function PasswordResetScreen() {
                                     setCode("");
                                     setNewPassword("");
                                     setCooldown(0);
+                                    window.localStorage.removeItem(
+                                        COOLDOWN_STORAGE_KEY,
+                                    );
                                 }}
                                 type="button"
                             >
@@ -603,6 +652,7 @@ export function PasswordResetScreen() {
             </main>
 
             <FeedbackDialog
+                confirmLabel={feedback?.confirmLabel}
                 description={feedback?.description ?? ""}
                 onOpenChange={handleFeedbackChange}
                 open={Boolean(feedback)}
