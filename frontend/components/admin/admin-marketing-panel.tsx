@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useAdminMarketing } from "@/hooks/use-admin-marketing";
 import type { MarketingPayload } from "@/lib/types";
@@ -27,6 +27,11 @@ export function AdminMarketingPanel({
     const [open, setOpen] = useState(false);
     const [tab, setTab] = useState<MarketingTab>("promotions");
     const [editor, setEditor] = useState<MarketingEditor | null>(null);
+    const [feedback, setFeedback] = useState<{
+        title: string;
+        description: string;
+    } | null>(null);
+    const [isErrorDismissed, setIsErrorDismissed] = useState(false);
 
     const activePromotions = useMemo(
         () =>
@@ -49,6 +54,7 @@ export function AdminMarketingPanel({
                 onOpenChange={(nextOpen) => {
                     setOpen(nextOpen);
                     if (nextOpen) {
+                        setIsErrorDismissed(false);
                         void marketing.refreshMarketing();
                     }
                 }}
@@ -83,16 +89,43 @@ export function AdminMarketingPanel({
                 <MarketingManagementDialog
                     activeCoupons={activeCoupons}
                     activePromotions={activePromotions}
-                    error={marketing.error}
                     onCreateCoupon={() => setEditor({ kind: "coupon" })}
                     onCreatePromotion={() => setEditor({ kind: "promotion" })}
                     onDeactivateCoupon={async (uuid) => {
-                        await marketing.deactivateCoupon(uuid);
-                        toast.success("Cupom cancelado.");
+                        try {
+                            await marketing.deactivateCoupon(uuid);
+                            setFeedback({
+                                title: "Cupom cancelado",
+                                description:
+                                    "O cupom não poderá mais ser usado em novas compras.",
+                            });
+                        } catch (error) {
+                            setFeedback({
+                                title: "Não foi possível cancelar o cupom",
+                                description:
+                                    error instanceof Error
+                                        ? error.message
+                                        : "Tente novamente.",
+                            });
+                        }
                     }}
                     onDeactivatePromotion={async (uuid) => {
-                        await marketing.deactivatePromotion(uuid);
-                        toast.success("Promoção desativada.");
+                        try {
+                            await marketing.deactivatePromotion(uuid);
+                            setFeedback({
+                                title: "Promoção desativada",
+                                description:
+                                    "A promoção deixou de ser aplicada a novas compras.",
+                            });
+                        } catch (error) {
+                            setFeedback({
+                                title: "Não foi possível desativar a promoção",
+                                description:
+                                    error instanceof Error
+                                        ? error.message
+                                        : "Tente novamente.",
+                            });
+                        }
                     }}
                     onEditCoupon={(item) => setEditor({ kind: "coupon", item })}
                     onEditPromotion={(item) =>
@@ -114,32 +147,88 @@ export function AdminMarketingPanel({
                 onSubmitCoupon={async (payload) => {
                     if (editor?.kind !== "coupon") return;
 
-                    if (editor.item) {
-                        await marketing.updateCoupon(editor.item.uuid, payload);
-                        toast.success("Cupom atualizado.");
-                    } else {
-                        await marketing.createCoupon(payload);
-                        toast.success("Cupom criado.");
-                    }
+                    try {
+                        if (editor.item) {
+                            await marketing.updateCoupon(
+                                editor.item.uuid,
+                                payload,
+                            );
+                            setFeedback({
+                                title: "Cupom atualizado",
+                                description:
+                                    "As novas regras já estão valendo.",
+                            });
+                        } else {
+                            await marketing.createCoupon(payload);
+                            setFeedback({
+                                title: "Cupom criado",
+                                description: "O novo cupom já pode ser usado.",
+                            });
+                        }
 
-                    setEditor(null);
+                        setEditor(null);
+                    } catch (error) {
+                        setFeedback({
+                            title: "Não foi possível salvar o cupom",
+                            description:
+                                error instanceof Error
+                                    ? error.message
+                                    : "Revise os dados e tente novamente.",
+                        });
+                    }
                 }}
                 onSubmitPromotion={async (payload) => {
                     if (editor?.kind !== "promotion") return;
 
-                    if (editor.item) {
-                        await marketing.updatePromotion(
-                            editor.item.uuid,
-                            payload,
-                        );
-                        toast.success("Promoção atualizada.");
-                    } else {
-                        await marketing.createPromotion(payload);
-                        toast.success("Promoção criada.");
-                    }
+                    try {
+                        if (editor.item) {
+                            await marketing.updatePromotion(
+                                editor.item.uuid,
+                                payload,
+                            );
+                            setFeedback({
+                                title: "Promoção atualizada",
+                                description:
+                                    "As novas regras já estão valendo.",
+                            });
+                        } else {
+                            await marketing.createPromotion(payload);
+                            setFeedback({
+                                title: "Promoção criada",
+                                description:
+                                    "A nova promoção já pode ser aplicada.",
+                            });
+                        }
 
-                    setEditor(null);
+                        setEditor(null);
+                    } catch (error) {
+                        setFeedback({
+                            title: "Não foi possível salvar a promoção",
+                            description:
+                                error instanceof Error
+                                    ? error.message
+                                    : "Revise os dados e tente novamente.",
+                        });
+                    }
                 }}
+            />
+            <FeedbackDialog
+                description={
+                    feedback?.description ??
+                    marketing.error ??
+                    "Não foi possível concluir a operação."
+                }
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setFeedback(null);
+                        setIsErrorDismissed(true);
+                    }
+                }}
+                open={
+                    Boolean(feedback) ||
+                    (Boolean(marketing.error) && !isErrorDismissed)
+                }
+                title={feedback?.title ?? "Marketing indisponível"}
             />
         </>
     );

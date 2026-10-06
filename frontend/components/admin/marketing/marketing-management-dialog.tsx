@@ -11,7 +11,6 @@ import type { MarketingTab } from "./types";
 type MarketingManagementDialogProps = {
     activeCoupons: MarketingCoupon[];
     activePromotions: MarketingPromotion[];
-    error: string | null;
     onCreateCoupon: () => void;
     onCreatePromotion: () => void;
     onDeactivateCoupon: (uuid: string) => Promise<void>;
@@ -25,7 +24,6 @@ type MarketingManagementDialogProps = {
 export function MarketingManagementDialog({
     activeCoupons,
     activePromotions,
-    error,
     onCreateCoupon,
     onCreatePromotion,
     onDeactivateCoupon,
@@ -65,11 +63,6 @@ export function MarketingManagementDialog({
                             onClick={() => onTabChange("coupons")}
                         />
                     </div>
-                    {error ? (
-                        <p className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-xs font-semibold text-red-700">
-                            {error}
-                        </p>
-                    ) : null}
                 </aside>
 
                 <main className="p-5">
