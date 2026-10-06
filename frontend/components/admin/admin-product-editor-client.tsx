@@ -248,9 +248,9 @@ function ProductForm({
     const selectedLine = lines.find((line) => line.uuid === lineUuid);
     const productPrice = getLowestPriceOption(product?.priceOptions ?? []);
     const selectedLinePrice = Math.min(
-            selectedLine?.price70gInCents ?? Number.POSITIVE_INFINITY,
-            selectedLine?.price100gInCents ?? Number.POSITIVE_INFINITY,
-        );
+        selectedLine?.price70gInCents ?? Number.POSITIVE_INFINITY,
+        selectedLine?.price100gInCents ?? Number.POSITIVE_INFINITY,
+    );
     const previewPriceInCents =
         lineUuid === product?.line.uuid
             ? (productPrice?.priceInCents ?? selectedLinePrice)
@@ -476,7 +476,7 @@ function ProductForm({
                             O contrato atual permite substituir, mas não remover
                             uma imagem salva.
                         </p>
-                        <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-600 transition hover:border-primary hover:bg-blue-50 hover:text-primary">
+                        <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-blue-800 transition hover:border-primary hover:bg-blue-50 hover:text-primary">
                             <span
                                 aria-hidden="true"
                                 className="material-symbols-outlined"
