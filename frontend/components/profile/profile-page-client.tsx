@@ -30,6 +30,10 @@ export function ProfilePageClient() {
     const [calendarMonth, setCalendarMonth] = useState(new Date());
     const [isBirthCalendarOpen, setIsBirthCalendarOpen] = useState(false);
     const [isCepLoading, setIsCepLoading] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+    const [pendingDestination, setPendingDestination] = useState<
+        { type: "href"; href: string } | { type: "logout" } | null
+    >(null);
     const [feedback, setFeedback] = useState<{
         title: string;
         description: string;
@@ -91,10 +95,73 @@ export function ProfilePageClient() {
         };
     }, [isBirthCalendarOpen]);
 
+    useEffect(() => {
+        if (!isDirty) return;
+
+        function handleBeforeUnload(event: BeforeUnloadEvent) {
+            event.preventDefault();
+        }
+
+        function handleLinkClick(event: MouseEvent) {
+            if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+            ) {
+                return;
+            }
+
+            const target = event.target;
+            const anchor =
+                target instanceof Element ? target.closest("a[href]") : null;
+            if (!(anchor instanceof HTMLAnchorElement) || anchor.target) return;
+
+            const destination = new URL(anchor.href, window.location.href);
+            if (destination.origin !== window.location.origin) return;
+
+            const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+            const href = `${destination.pathname}${destination.search}${destination.hash}`;
+            if (href === current) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            setPendingDestination({ type: "href", href });
+        }
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        document.addEventListener("click", handleLinkClick, true);
+
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+            document.removeEventListener("click", handleLinkClick, true);
+        };
+    }, [isDirty]);
+
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setDismissedError(null);
         const formData = new FormData(event.currentTarget);
+        const documentDigits = onlyDigits(
+            String(formData.get("document") ?? ""),
+            14,
+        );
+
+        if (
+            documentDigits &&
+            documentDigits.length !== 11 &&
+            documentDigits.length !== 14
+        ) {
+            setFeedback({
+                title: "Confira o CPF ou CNPJ",
+                description:
+                    "Informe um CPF com 11 dígitos ou um CNPJ com 14 dígitos.",
+            });
+            return;
+        }
+
         const payload = buildDirtyProfilePayload(
             formData,
             user,
@@ -108,6 +175,7 @@ export function ProfilePageClient() {
         const updatedUser = await profile.updateProfile(payload);
 
         if (updatedUser) {
+            setIsDirty(false);
             setFeedback({
                 title: "Dados atualizados",
                 description: payload.address
@@ -122,7 +190,32 @@ export function ProfilePageClient() {
 
         if (field instanceof HTMLInputElement) {
             field.value = value;
+            setIsDirty(true);
         }
+    }
+
+    function handleProfileChange() {
+        if (!profileFormRef.current) return;
+
+        const payload = buildDirtyProfilePayload(
+            new FormData(profileFormRef.current),
+            user,
+            primaryAddress,
+        );
+        setIsDirty(Object.keys(payload).length > 0);
+    }
+
+    function handleCancel() {
+        profileFormRef.current?.reset();
+        const initialBirthDate = user?.birthDate
+            ? new Date(user.birthDate)
+            : undefined;
+        setBirthDate(initialBirthDate);
+        if (initialBirthDate && !Number.isNaN(initialBirthDate.getTime())) {
+            setCalendarMonth(initialBirthDate);
+        }
+        setIsBirthCalendarOpen(false);
+        setIsDirty(false);
     }
 
     async function handleZipCodeChange(value: string) {
@@ -173,9 +266,36 @@ export function ProfilePageClient() {
     }
 
     function handleLogout() {
+        if (isDirty) {
+            setPendingDestination({ type: "logout" });
+            return;
+        }
+
         clearAuthSession();
         router.push("/");
         router.refresh();
+    }
+
+    function confirmLeave() {
+        const destination = pendingDestination;
+        setPendingDestination(null);
+        setIsDirty(false);
+
+        if (destination?.type === "logout") {
+            clearAuthSession();
+            router.push("/");
+            router.refresh();
+            return;
+        }
+
+        if (destination?.type === "href") {
+            router.push(destination.href);
+            if (destination.href.endsWith("#pedidos")) {
+                setActiveView("pedidos");
+            } else if (destination.href === "/perfil") {
+                setActiveView("dados");
+            }
+        }
     }
 
     return (
@@ -200,7 +320,6 @@ export function ProfilePageClient() {
                                 }
                                 href={item.href}
                                 key={item.href}
-                                onClick={() => setActiveView(item.view)}
                             >
                                 <span
                                     aria-hidden="true"
@@ -255,8 +374,12 @@ export function ProfilePageClient() {
                             calendarMonth={calendarMonth}
                             isBirthCalendarOpen={isBirthCalendarOpen}
                             isCepLoading={isCepLoading}
+                            isDirty={isDirty}
                             isLoading={profile.isLoading}
                             isSubmitting={profile.isSubmitting}
+                            onCancel={handleCancel}
+                            onChange={handleProfileChange}
+                            onDirty={() => setIsDirty(true)}
                             onSubmit={handleSubmit}
                             onZipCodeChange={(value) => {
                                 void handleZipCodeChange(value);
@@ -294,6 +417,17 @@ export function ProfilePageClient() {
                     Boolean(resourceError && resourceError !== dismissedError)
                 }
                 title={feedback?.title ?? "Não foi possível carregar os dados"}
+            />
+            <FeedbackDialog
+                confirmLabel="Sair sem salvar"
+                description="Há alterações que ainda não foram salvas. Se você sair agora, elas serão perdidas."
+                onConfirm={confirmLeave}
+                onOpenChange={(open) => {
+                    if (!open) setPendingDestination(null);
+                }}
+                open={Boolean(pendingDestination)}
+                secondaryLabel="Continuar editando"
+                title="Descartar alterações?"
             />
         </main>
     );

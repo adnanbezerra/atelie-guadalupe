@@ -141,6 +141,20 @@ export function formatCpf(value: string) {
         .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
 }
 
+export function formatDocument(value: string) {
+    const digits = onlyDigits(value, 14);
+
+    if (digits.length <= 11) {
+        return formatCpf(digits);
+    }
+
+    return digits
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
+}
+
 export function formatPhone(value: string) {
     const digits = onlyDigits(value, 11);
 
@@ -203,7 +217,7 @@ export function buildDirtyProfilePayload(
     addDirtyField(
         payload,
         "document",
-        cleanDigits(getFormString(formData, "document"), 11),
+        cleanDigits(getFormString(formData, "document"), 14),
         user?.document,
     );
     addDirtyField(

@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import type { Address, User } from "@/lib/types";
 import {
     formatCep,
-    formatCpf,
+    formatDocument,
     formatDateLabel,
     formatDateValue,
     formatPhone,
@@ -23,6 +23,7 @@ type ProfileDataViewProps = {
     primaryAddress: Address | null;
     isLoading: boolean;
     isSubmitting: boolean;
+    isDirty: boolean;
     birthDate?: Date;
     calendarMonth: Date;
     isBirthCalendarOpen: boolean;
@@ -30,6 +31,9 @@ type ProfileDataViewProps = {
     profileFormRef: RefObject<HTMLFormElement | null>;
     birthCalendarRef: RefObject<HTMLDivElement | null>;
     onSubmit: FormEventHandler<HTMLFormElement>;
+    onChange: FormEventHandler<HTMLFormElement>;
+    onCancel: () => void;
+    onDirty: () => void;
     onZipCodeChange: (value: string) => void;
     setBirthDate: Dispatch<SetStateAction<Date | undefined>>;
     setCalendarMonth: Dispatch<SetStateAction<Date>>;
@@ -41,6 +45,7 @@ export function ProfileDataView({
     primaryAddress,
     isLoading,
     isSubmitting,
+    isDirty,
     birthDate,
     calendarMonth,
     isBirthCalendarOpen,
@@ -48,6 +53,9 @@ export function ProfileDataView({
     profileFormRef,
     birthCalendarRef,
     onSubmit,
+    onChange,
+    onCancel,
+    onDirty,
     onZipCodeChange,
     setBirthDate,
     setCalendarMonth,
@@ -69,6 +77,7 @@ export function ProfileDataView({
             <form
                 className="space-y-8"
                 key={user?.uuid ?? "empty-profile"}
+                onChange={onChange}
                 onSubmit={onSubmit}
                 ref={profileFormRef}
             >
@@ -105,20 +114,20 @@ export function ProfileDataView({
 
                     <div className="space-y-2">
                         <label className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                            CPF
+                            CPF ou CNPJ
                         </label>
                         <input
                             className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-800 transition-all focus:ring-2 focus:ring-slate-900"
-                            defaultValue={formatCpf(user?.document ?? "")}
+                            defaultValue={formatDocument(user?.document ?? "")}
                             inputMode="numeric"
-                            maxLength={14}
+                            maxLength={18}
                             name="document"
                             onChange={(event) => {
-                                event.currentTarget.value = formatCpf(
+                                event.currentTarget.value = formatDocument(
                                     event.currentTarget.value,
                                 );
                             }}
-                            placeholder="123.456.789-00"
+                            placeholder="CPF ou CNPJ"
                             type="text"
                         />
                     </div>
@@ -298,6 +307,7 @@ export function ProfileDataView({
                                         onMonthChange={setCalendarMonth}
                                         onSelect={(date) => {
                                             setBirthDate(date);
+                                            onDirty();
                                             if (date) {
                                                 setCalendarMonth(date);
                                             }
@@ -404,13 +414,15 @@ export function ProfileDataView({
                 <div className="mt-10 flex flex-col items-center gap-4 border-t border-slate-50 pt-6 sm:flex-row">
                     <button
                         className="w-full rounded-2xl bg-slate-900 px-10 py-4 font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 sm:w-auto"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !isDirty}
                         type="submit"
                     >
                         {isSubmitting ? "Salvando..." : "Salvar Alterações"}
                     </button>
                     <button
                         className="w-full px-10 py-4 font-bold text-slate-500 transition-all hover:text-slate-900 sm:w-auto"
+                        disabled={isSubmitting || !isDirty}
+                        onClick={onCancel}
                         type="button"
                     >
                         Cancelar
