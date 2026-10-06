@@ -84,7 +84,7 @@ export function ProfileDataView({
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                     <div className="space-y-2">
                         <label
-                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            className="px-1 text-xs font-bold uppercase tracking-widest text-slate-500"
                             htmlFor="profile-name"
                         >
                             Nome Completo
@@ -103,7 +103,7 @@ export function ProfileDataView({
 
                     <div className="space-y-2">
                         <label
-                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            className="px-1 text-xs font-bold uppercase tracking-widest text-slate-500"
                             htmlFor="profile-email"
                         >
                             E-mail
@@ -122,7 +122,7 @@ export function ProfileDataView({
 
                     <div className="space-y-2">
                         <label
-                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            className="px-1 text-xs font-bold uppercase tracking-widest text-slate-500"
                             htmlFor="profile-document"
                         >
                             CPF ou CNPJ
@@ -146,7 +146,7 @@ export function ProfileDataView({
 
                     <div className="space-y-2">
                         <label
-                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            className="px-1 text-xs font-bold uppercase tracking-widest text-slate-500"
                             htmlFor="profile-phone"
                         >
                             Telefone
@@ -170,7 +170,7 @@ export function ProfileDataView({
 
                     <div className="space-y-2">
                         <label
-                            className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                            className="px-1 text-xs font-bold uppercase tracking-widest text-slate-500"
                             htmlFor="profile-birth-date"
                         >
                             Data de Nascimento
@@ -359,7 +359,7 @@ export function ProfileDataView({
                         <div className="space-y-2 md:col-span-2">
                             <div className="flex items-center justify-between gap-4 px-1">
                                 <label
-                                    className="text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                                    className="text-xs font-bold uppercase tracking-widest text-slate-500"
                                     htmlFor="profile-zip-code"
                                 >
                                     CEP
@@ -477,7 +477,7 @@ function AddressInput({
     return (
         <div className={wide ? "space-y-2 md:col-span-2" : "space-y-2"}>
             <label
-                className="px-1 text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                className="px-1 text-xs font-bold uppercase tracking-widest text-slate-500"
                 htmlFor={`profile-${name}`}
             >
                 {label}

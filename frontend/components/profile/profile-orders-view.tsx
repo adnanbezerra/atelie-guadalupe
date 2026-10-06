@@ -87,7 +87,7 @@ export function ProfileOrdersView({
                         >
                             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                 <div>
-                                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
                                         Pedido
                                     </p>
                                     <h3 className="mt-1 text-xl font-extrabold text-slate-900">
@@ -117,7 +117,7 @@ export function ProfileOrdersView({
 
                             <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
                                 <div className="rounded-2xl bg-slate-50 p-4">
-                                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
                                         Itens pedidos
                                     </p>
                                     <div className="mt-3 space-y-3">
@@ -152,7 +152,7 @@ export function ProfileOrdersView({
 
                                 <div className="grid gap-4">
                                     <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
                                             Endereço de entrega
                                         </p>
                                         <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
@@ -160,7 +160,7 @@ export function ProfileOrdersView({
                                         </p>
                                     </div>
                                     <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
                                             Método de pagamento
                                         </p>
                                         <p className="mt-2 text-sm font-semibold text-slate-700">

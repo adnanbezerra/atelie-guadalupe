@@ -342,7 +342,7 @@ export function ProfilePageClient() {
                             >
                                 <span
                                     aria-hidden="true"
-                                    className="material-symbols-outlined text-[20px]"
+                                    className="material-symbols-outlined text-xl"
                                     style={
                                         item.view === activeView
                                             ? {
@@ -373,7 +373,7 @@ export function ProfilePageClient() {
                             >
                                 <span
                                     aria-hidden="true"
-                                    className="material-symbols-outlined text-[20px]"
+                                    className="material-symbols-outlined text-xl"
                                 >
                                     logout
                                 </span>
