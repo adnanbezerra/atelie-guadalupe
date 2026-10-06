@@ -16,6 +16,7 @@ import type {
     Testimonial,
     TestimonialsPayload,
     TestimonialType,
+    UpdateTestimonialInput,
 } from "@/lib/types";
 
 type AdminTestimonialsClientProps = {
@@ -680,23 +681,44 @@ function TestimonialForm({
                     return;
                 }
 
-                const common = {
-                    ...(initialValue ? { uuid: initialValue.uuid } : {}),
-                    ...(title.trim() ? { title: title.trim() } : {}),
-                    isActive,
-                };
-                const payload: CreateTestimonialInput | UpdateTestimonialInput =
-                    type === "TEXT"
+                const normalizedTitle = title.trim();
+                let payload: CreateTestimonialInput | UpdateTestimonialInput;
+
+                if (type === "TEXT") {
+                    payload = initialValue
                         ? {
-                              ...common,
+                              uuid: initialValue.uuid,
                               type,
+                              ...(normalizedTitle
+                                  ? { title: normalizedTitle }
+                                  : {}),
                               text: text.trim(),
+                              isActive,
                           }
                         : {
-                              ...common,
                               type,
-                              ...(video ? { video } : {}),
+                              ...(normalizedTitle
+                                  ? { title: normalizedTitle }
+                                  : {}),
+                              text: text.trim(),
+                              isActive,
                           };
+                } else if (initialValue) {
+                    payload = {
+                        uuid: initialValue.uuid,
+                        type,
+                        ...(normalizedTitle ? { title: normalizedTitle } : {}),
+                        ...(video ? { video } : {}),
+                        isActive,
+                    };
+                } else {
+                    payload = {
+                        type,
+                        ...(normalizedTitle ? { title: normalizedTitle } : {}),
+                        video: video as File,
+                        isActive,
+                    };
+                }
 
                 setIsSubmitting(true);
                 setUploadProgress(type === "VIDEO" ? 0 : null);

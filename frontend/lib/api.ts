@@ -400,14 +400,11 @@ export function updateAdminUser(
     userUuid: string,
     body: Partial<Pick<User, "name" | "role" | "isActive">>,
 ) {
-    return request<{ user: User }>(
-        `/users/${encodeURIComponent(userUuid)}`,
-        {
-            method: "PATCH",
-            token,
-            body,
-        },
-    );
+    return request<{ user: User }>(`/users/${encodeURIComponent(userUuid)}`, {
+        method: "PATCH",
+        token,
+        body,
+    });
 }
 
 export function createOrder(

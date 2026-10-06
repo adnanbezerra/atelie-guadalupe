@@ -23,20 +23,22 @@ type AccessAction =
     | { kind: "role"; role: ManagedRole; user: User }
     | { kind: "status"; isActive: boolean; user: User };
 
-const roleDetails: Record<ManagedRole, { label: string; description: string }> = {
-    USER: {
-        label: "Cliente",
-        description: "Compra e gerencia somente a própria conta.",
-    },
-    SUBADMIN: {
-        label: "Equipe",
-        description: "Opera produtos e pedidos, sem gerenciar acessos.",
-    },
-    ADMIN: {
-        label: "Administrador",
-        description: "Acesso total, inclusive criação e revogação de usuários.",
-    },
-};
+const roleDetails: Record<ManagedRole, { label: string; description: string }> =
+    {
+        USER: {
+            label: "Cliente",
+            description: "Compra e gerencia somente a própria conta.",
+        },
+        SUBADMIN: {
+            label: "Equipe",
+            description: "Opera produtos e pedidos, sem gerenciar acessos.",
+        },
+        ADMIN: {
+            label: "Administrador",
+            description:
+                "Acesso total, inclusive criação e revogação de usuários.",
+        },
+    };
 
 function isManagedRole(role: UserRole): role is ManagedRole {
     return role === "ADMIN" || role === "SUBADMIN" || role === "USER";
@@ -50,7 +52,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
     const [group, setGroup] = useState<"TEAM" | "CUSTOMERS">("TEAM");
     const [status, setStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
     const [role, setRole] = useState<"ALL" | ManagedRole>("ALL");
-    const [pendingAction, setPendingAction] = useState<AccessAction | null>(null);
+    const [pendingAction, setPendingAction] = useState<AccessAction | null>(
+        null,
+    );
     const [isUpdating, setIsUpdating] = useState(false);
     const [dismissedLoadError, setDismissedLoadError] = useState(false);
     const [ignoredInitialError, setIgnoredInitialError] = useState(false);
@@ -71,12 +75,19 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
         return users.data.filter((user) => {
             const userRole = isManagedRole(user.role) ? user.role : "USER";
             return (
-                (group === "CUSTOMERS" ? userRole === "USER" : userRole !== "USER") &&
+                (group === "CUSTOMERS"
+                    ? userRole === "USER"
+                    : userRole !== "USER") &&
                 (role === "ALL" || userRole === role) &&
                 (status === "ALL" ||
                     (status === "ACTIVE" ? user.isActive : !user.isActive)) &&
                 (!query ||
-                    [user.name, user.email, user.document, roleDetails[userRole].label]
+                    [
+                        user.name,
+                        user.email,
+                        user.document,
+                        roleDetails[userRole].label,
+                    ]
                         .join(" ")
                         .toLocaleLowerCase("pt-BR")
                         .includes(query))
@@ -205,18 +216,23 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             Gestão de acessos
                         </h1>
                         <p className="mt-2 text-sm leading-6 text-slate-600 md:text-base">
-                            Clientes cuidam da própria conta. Equipe opera a loja;
-                            administrador também controla acessos. Use sempre o menor
-                            privilégio necessário.
+                            Clientes cuidam da própria conta. Equipe opera a
+                            loja; administrador também controla acessos. Use
+                            sempre o menor privilégio necessário.
                         </p>
                     </div>
                     <Dialog
                         open={isCreateOpen}
-                        onOpenChange={(open) => !isCreating && setIsCreateOpen(open)}
+                        onOpenChange={(open) =>
+                            !isCreating && setIsCreateOpen(open)
+                        }
                     >
                         <DialogTrigger asChild>
                             <button className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white">
-                                <span aria-hidden="true" className="material-symbols-outlined">
+                                <span
+                                    aria-hidden="true"
+                                    className="material-symbols-outlined"
+                                >
                                     person_add
                                 </span>
                                 Criar acesso da equipe
@@ -228,11 +244,15 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                     Criar acesso da equipe
                                 </DialogTitle>
                                 <DialogDescription className="leading-6 text-slate-600">
-                                    Não existe convite no contrato atual. Esta ação cria
-                                    a conta imediatamente com uma senha inicial.
+                                    Não existe convite no contrato atual. Esta
+                                    ação cria a conta imediatamente com uma
+                                    senha inicial.
                                 </DialogDescription>
                             </DialogHeader>
-                            <form className="space-y-4 p-6" onSubmit={handleCreate}>
+                            <form
+                                className="space-y-4 p-6"
+                                onSubmit={handleCreate}
+                            >
                                 <Field label="Nome">
                                     <input
                                         autoComplete="name"
@@ -288,8 +308,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                         value={form.password}
                                     />
                                     <p className="mt-1.5 text-xs leading-5 text-slate-600">
-                                        8–72 caracteres, com maiúscula, minúscula,
-                                        número e símbolo. Compartilhe por canal seguro.
+                                        8–72 caracteres, com maiúscula,
+                                        minúscula, número e símbolo. Compartilhe
+                                        por canal seguro.
                                     </p>
                                 </Field>
                                 <Field label="Papel">
@@ -306,11 +327,14 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                         value={form.role}
                                     >
                                         <option value="SUBADMIN">Equipe</option>
-                                        <option value="ADMIN">Administrador</option>
+                                        <option value="ADMIN">
+                                            Administrador
+                                        </option>
                                     </select>
                                     <p className="mt-1.5 text-xs leading-5 text-slate-600">
-                                        Equipe é a opção recomendada. Administrador
-                                        também pode criar, alterar e revogar acessos.
+                                        Equipe é a opção recomendada.
+                                        Administrador também pode criar, alterar
+                                        e revogar acessos.
                                     </p>
                                 </Field>
                                 <button
@@ -318,7 +342,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                     disabled={isCreating}
                                     type="submit"
                                 >
-                                    {isCreating ? "Criando acesso..." : "Criar acesso"}
+                                    {isCreating
+                                        ? "Criando acesso..."
+                                        : "Criar acesso"}
                                 </button>
                             </form>
                         </DialogContent>
@@ -347,7 +373,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                 <section className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div className="grid gap-3 border-b border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_12rem_12rem]">
                         <label className="relative">
-                            <span className="sr-only">Pesquisar nesta lista</span>
+                            <span className="sr-only">
+                                Pesquisar nesta lista
+                            </span>
                             <span
                                 aria-hidden="true"
                                 className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -356,7 +384,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             </span>
                             <input
                                 className="h-11 w-full rounded-lg border border-slate-300 pl-10 pr-3 text-base"
-                                onChange={(event) => setSearch(event.target.value)}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
                                 placeholder="Nome, e-mail ou documento"
                                 value={search}
                             />
@@ -366,7 +396,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
                             disabled={group === "CUSTOMERS"}
                             onChange={(event) =>
-                                setRole(event.target.value as "ALL" | ManagedRole)
+                                setRole(
+                                    event.target.value as "ALL" | ManagedRole,
+                                )
                             }
                             value={role}
                         >
@@ -398,8 +430,8 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             <option value="INACTIVE">Acesso revogado</option>
                         </select>
                         <p className="text-xs leading-5 text-slate-500 md:col-span-3">
-                            Busca e filtros aplicados à lista completa retornada pela
-                            API. O contrato atual não oferece paginação.
+                            Busca e filtros aplicados à lista completa retornada
+                            pela API. O contrato atual não oferece paginação.
                         </p>
                     </div>
 
@@ -410,7 +442,11 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                     ? "Nenhum acesso de equipe foi cadastrado."
                                     : "Nenhum cliente foi cadastrado."
                             }
-                            title={group === "TEAM" ? "Equipe vazia" : "Nenhum cliente"}
+                            title={
+                                group === "TEAM"
+                                    ? "Equipe vazia"
+                                    : "Nenhum cliente"
+                            }
                         />
                     ) : filteredUsers.length === 0 ? (
                         <EmptyState
@@ -426,12 +462,16 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                         <th className="px-6 py-4">Documento</th>
                                         <th className="px-6 py-4">Papel</th>
                                         <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4 text-right">Acesso</th>
+                                        <th className="px-6 py-4 text-right">
+                                            Acesso
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
                                     {filteredUsers.map((user) => {
-                                        const userRole = isManagedRole(user.role)
+                                        const userRole = isManagedRole(
+                                            user.role,
+                                        )
                                             ? user.role
                                             : "USER";
                                         return (
@@ -439,7 +479,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                                 <td className="max-w-xs px-6 py-4">
                                                     <div className="flex min-w-0 items-center gap-3">
                                                         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                                                            {getInitials(user.name)}
+                                                            {getInitials(
+                                                                user.name,
+                                                            )}
                                                         </div>
                                                         <div className="min-w-0">
                                                             <p className="truncate font-semibold text-slate-950">
@@ -461,16 +503,23 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                                         onChange={(event) =>
                                                             setPendingAction({
                                                                 kind: "role",
-                                                                role: event.target
+                                                                role: event
+                                                                    .target
                                                                     .value as ManagedRole,
                                                                 user,
                                                             })
                                                         }
                                                         value={userRole}
                                                     >
-                                                        <option value="USER">Cliente</option>
-                                                        <option value="SUBADMIN">Equipe</option>
-                                                        <option value="ADMIN">Administrador</option>
+                                                        <option value="USER">
+                                                            Cliente
+                                                        </option>
+                                                        <option value="SUBADMIN">
+                                                            Equipe
+                                                        </option>
+                                                        <option value="ADMIN">
+                                                            Administrador
+                                                        </option>
                                                     </select>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-semibold">
@@ -494,7 +543,8 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                                                         onClick={() =>
                                                             setPendingAction({
                                                                 kind: "status",
-                                                                isActive: !user.isActive,
+                                                                isActive:
+                                                                    !user.isActive,
                                                                 user,
                                                             })
                                                         }
@@ -516,7 +566,9 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
             </div>
 
             <FeedbackDialog
-                confirmLabel={isUpdating ? "Atualizando..." : "Confirmar alteração"}
+                confirmLabel={
+                    isUpdating ? "Atualizando..." : "Confirmar alteração"
+                }
                 description={
                     pendingAction?.kind === "role"
                         ? `${pendingAction.user.name} passará a ter o papel ${roleDetails[pendingAction.role].label}. ${roleDetails[pendingAction.role].description}`
@@ -538,15 +590,20 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
             />
             <FeedbackDialog
                 confirmLabel={loadError ? "Tentar novamente" : "Entendi"}
-                description={feedback?.description ?? users.error ?? initialError?.message ?? ""}
+                description={
+                    feedback?.description ??
+                    users.error ??
+                    initialError?.message ??
+                    ""
+                }
                 onConfirm={
                     loadError
                         ? () => {
                               setDismissedLoadError(true);
                               setIgnoredInitialError(true);
-                              void users.refresh().then(() =>
-                                  setDismissedLoadError(false),
-                              );
+                              void users
+                                  .refresh()
+                                  .then(() => setDismissedLoadError(false));
                           }
                         : undefined
                 }
@@ -569,10 +626,18 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
     );
 }
 
-function Field({ children, label }: { children: React.ReactNode; label: string }) {
+function Field({
+    children,
+    label,
+}: {
+    children: React.ReactNode;
+    label: string;
+}) {
     return (
         <label className="block">
-            <span className="mb-1.5 block text-sm font-bold text-slate-800">{label}</span>
+            <span className="mb-1.5 block text-sm font-bold text-slate-800">
+                {label}
+            </span>
             {children}
         </label>
     );
@@ -604,7 +669,13 @@ function GroupButton({
     );
 }
 
-function EmptyState({ description, title }: { description: string; title: string }) {
+function EmptyState({
+    description,
+    title,
+}: {
+    description: string;
+    title: string;
+}) {
     return (
         <div className="px-6 py-14 text-center">
             <span

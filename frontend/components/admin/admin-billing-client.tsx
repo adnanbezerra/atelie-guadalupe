@@ -231,7 +231,10 @@ export function AdminBillingClient({
                 <RecentPaymentLinks
                     isLoading={isLoading}
                     onError={(title, errorDescription) =>
-                        setBillingError({ title, description: errorDescription })
+                        setBillingError({
+                            title,
+                            description: errorDescription,
+                        })
                     }
                     onRefresh={() => void loadPaymentLinks()}
                     paymentLinks={paymentLinks}
