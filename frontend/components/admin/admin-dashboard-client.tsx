@@ -65,7 +65,12 @@ function dayKey(date: Date) {
     return date.toISOString().slice(0, 10);
 }
 
-const paidOrderStatuses = new Set(["PAID", "PROCESSING", "SHIPPED", "DELIVERED"]);
+const paidOrderStatuses = new Set([
+    "PAID",
+    "PROCESSING",
+    "SHIPPED",
+    "DELIVERED",
+]);
 
 function isPaidOrder(order: Order) {
     if (order.payment) {
@@ -329,7 +334,8 @@ export function AdminDashboardClient({
                                 Fila operacional
                             </h3>
                             <p className="mt-1 text-sm text-slate-500">
-                                Pagamento, preparo, envio e falhas que exigem atenção.
+                                Pagamento, preparo, envio e falhas que exigem
+                                atenção.
                             </p>
                         </div>
                     </div>
@@ -346,48 +352,50 @@ export function AdminDashboardClient({
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {queue.map(({ order, queue: queueItem }) => {
-                                        const status =
-                                            orderStatuses[order.status] ??
-                                            unknownOrderStatus;
+                                    const status =
+                                        orderStatuses[order.status] ??
+                                        unknownOrderStatus;
 
-                                        return (
-                                            <tr
-                                                className="transition-colors hover:bg-slate-50"
-                                                key={order.uuid}
-                                            >
-                                                <td className="px-6 py-4 text-sm font-bold">
-                                                    <Link
-                                                        className="text-primary hover:underline"
-                                                        href={`/perfil/pedidos/${order.uuid}`}
-                                                    >
-                                                        #{order.uuid.slice(0, 8)}
-                                                    </Link>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-500">
-                                                    {formatDate(order.placedAt)}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span
-                                                        className={`inline-flex whitespace-nowrap rounded px-2.5 py-1 text-xs font-bold ring-1 ${status.className}`}
-                                                    >
-                                                        {status.label}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-semibold text-slate-700">
-                                                    {queueItem.label}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-bold">
-                                                    {formatCurrency(
-                                                        order.totalInCents,
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                    return (
+                                        <tr
+                                            className="transition-colors hover:bg-slate-50"
+                                            key={order.uuid}
+                                        >
+                                            <td className="px-6 py-4 text-sm font-bold">
+                                                <Link
+                                                    className="text-primary hover:underline"
+                                                    href={`/perfil/pedidos/${order.uuid}`}
+                                                >
+                                                    #{order.uuid.slice(0, 8)}
+                                                </Link>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-500">
+                                                {formatDate(order.placedAt)}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span
+                                                    className={`inline-flex whitespace-nowrap rounded px-2.5 py-1 text-xs font-bold ring-1 ${status.className}`}
+                                                >
+                                                    {status.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-semibold text-slate-700">
+                                                {queueItem.label}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-bold">
+                                                {formatCurrency(
+                                                    order.totalInCents,
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
-                    {!orders.isLoading && !orders.error && queue.length === 0 ? (
+                    {!orders.isLoading &&
+                    !orders.error &&
+                    queue.length === 0 ? (
                         <p className="border-t border-slate-100 px-6 py-8 text-center text-sm text-slate-500">
                             Nenhum pedido exige ação agora.
                         </p>
