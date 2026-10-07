@@ -3,15 +3,74 @@
 import { useState } from "react";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { ApiError, openPaymentLink } from "@/lib/api";
+import type { PaymentLinkPreview, PaymentLinkStatus } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 import { buildWhatsappLink } from "@/lib/whatsapp";
 
 const supportLink = buildWhatsappLink(
     "Olá! Preciso de ajuda com um link de pagamento personalizado do Ateliê Guadalupe.",
 );
 
-export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
-    const [error, setError] = useState<string | null>(null);
+const statusContent: Record<
+    PaymentLinkStatus,
+    { label: string; description: string }
+> = {
+    ACTIVE: {
+        label: "Disponível para pagamento",
+        description: "Revise os dados abaixo antes de continuar.",
+    },
+    PENDING: {
+        label: "Pagamento iniciado",
+        description: "Você pode reabrir o ambiente seguro para concluir.",
+    },
+    CREATING: {
+        label: "Pagamento sendo preparado",
+        description: "Aguarde alguns segundos e atualize esta página.",
+    },
+    PAID: {
+        label: "Cobrança paga",
+        description: "Esta cobrança já foi confirmada.",
+    },
+    EXPIRED: {
+        label: "Cobrança expirada",
+        description: "Peça um novo link ao atendimento.",
+    },
+    REFUNDED: {
+        label: "Pagamento reembolsado",
+        description: "O valor desta cobrança foi devolvido.",
+    },
+    DISPUTED: {
+        label: "Pagamento em análise",
+        description: "Fale com o atendimento para acompanhar o caso.",
+    },
+    LOST: {
+        label: "Pagamento não confirmado",
+        description: "Fale com o atendimento antes de tentar novamente.",
+    },
+};
+
+function formatExpiry(value: string | null) {
+    if (!value) return "Sem prazo definido";
+    return new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "long",
+        timeStyle: "short",
+    }).format(new Date(value));
+}
+
+export function ManualPaymentLinkClient({
+    initialError,
+    preview,
+    uuid,
+}: {
+    initialError: string | null;
+    preview: PaymentLinkPreview | null;
+    uuid: string;
+}) {
+    const [error, setError] = useState<string | null>(initialError);
     const [isOpening, setIsOpening] = useState(false);
+    const payable =
+        preview?.status === "ACTIVE" || preview?.status === "PENDING";
+    const status = preview ? statusContent[preview.status] : null;
 
     async function openCheckout() {
         setIsOpening(true);
@@ -56,19 +115,41 @@ export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
                 <h1 className="mt-5 font-display text-3xl font-bold text-slate-950">
                     {isOpening
                         ? "Abrindo pagamento seguro"
-                        : "Pagamento personalizado"}
+                        : preview?.description || "Pagamento personalizado"}
                 </h1>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
                     {isOpening
                         ? "Você será encaminhado para o ambiente protegido da AbacatePay."
-                        : "Confira se este endereço foi enviado pelo Ateliê Guadalupe. O valor, a descrição e a validade serão apresentados no ambiente seguro antes do pagamento."}
+                        : status?.description ||
+                          "Não foi possível carregar os dados desta cobrança."}
                 </p>
-                {!isOpening ? (
-                    <p className="mt-4 rounded-lg bg-[#f8f5ef] p-4 text-left text-sm leading-6 text-slate-700">
-                        Continuar apenas cria ou recupera a tela segura. O
-                        pagamento só acontece depois da sua confirmação nesse
-                        ambiente.
-                    </p>
+                {!isOpening && preview ? (
+                    <dl className="mt-6 space-y-4 rounded-lg bg-[#f8f5ef] p-5 text-left">
+                        <div>
+                            <dt className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                                Valor
+                            </dt>
+                            <dd className="mt-1 text-2xl font-extrabold text-slate-950">
+                                {formatCurrency(preview.amountInCents)}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                                Situação
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                                {status?.label}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                                Validade
+                            </dt>
+                            <dd className="mt-1 text-sm text-slate-700">
+                                {formatExpiry(preview.expiresAt)}
+                            </dd>
+                        </div>
+                    </dl>
                 ) : null}
                 {isOpening ? (
                     <span
@@ -77,7 +158,7 @@ export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
                     >
                         progress_activity
                     </span>
-                ) : (
+                ) : payable ? (
                     <button
                         className="mt-6 min-h-12 rounded-lg bg-primary px-6 py-3 font-bold text-white focus:outline-none focus:ring-4 focus:ring-primary/30"
                         onClick={() => void openCheckout()}
@@ -85,7 +166,15 @@ export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
                     >
                         Ir para o pagamento seguro
                     </button>
-                )}
+                ) : preview ? (
+                    <button
+                        className="mt-6 min-h-12 rounded-lg border border-slate-300 bg-slate-100 px-6 py-3 font-bold text-slate-500"
+                        disabled
+                        type="button"
+                    >
+                        Pagamento indisponível
+                    </button>
+                ) : null}
                 {!isOpening ? (
                     <a
                         className="mt-4 inline-flex min-h-11 items-center justify-center px-3 py-2 text-sm font-bold text-primary underline-offset-4 hover:underline"
@@ -99,11 +188,17 @@ export function ManualPaymentLinkClient({ uuid }: { uuid: string }) {
             </section>
 
             <FeedbackDialog
-                confirmLabel="Tentar novamente"
+                confirmLabel={preview ? "Tentar novamente" : "Atualizar página"}
                 description={error ?? ""}
                 onOpenChange={(open) => !open && setError(null)}
                 open={error != null}
-                onConfirm={() => void openCheckout()}
+                onConfirm={() => {
+                    if (preview) {
+                        void openCheckout();
+                        return;
+                    }
+                    window.location.reload();
+                }}
                 onSecondary={() => window.open(supportLink, "_blank")}
                 secondaryLabel="Falar com o atendimento"
                 title="Link indisponível"
