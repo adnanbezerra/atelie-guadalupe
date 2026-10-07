@@ -131,6 +131,27 @@ Recurso nao encontrado.
 
 Conflito de negocio, como email duplicado ou slug de produto ja existente.
 
+### `429 RATE_LIMIT_EXCEEDED`
+
+Muitas requisicoes foram feitas pelo mesmo IP no intervalo configurado. O frontend deve exibir
+`error.message` e pode usar o header `Retry-After` para informar quando tentar novamente.
+
+```json
+{
+    "success": false,
+    "error": {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "Muitas tentativas. Tente novamente mais tarde.",
+        "details": [
+            {
+                "limit": 3,
+                "timeWindow": "15 minutes"
+            }
+        ]
+    }
+}
+```
+
 ### `400 BUSINESS_RULE_ERROR`
 
 Regra de negocio invalida, como carrinho vazio ou estoque insuficiente.
@@ -275,6 +296,13 @@ Possiveis erros:
 
 - `422` e-mail inválido
 - `429` limite de solicitações excedido
+
+Observabilidade interna, sem registrar endereço ou código:
+
+- `passwordReset.outcome=NOT_ELIGIBLE`: conta ausente ou inativa
+- `passwordReset.outcome=COOLDOWN`: solicitação repetida antes de 60 segundos
+- `passwordReset.outcome=QUEUED`: job criado; `emailJobUuid` permite acompanhar o worker
+- worker registra início/desativação e resultado `SENT`, `RETRY_SCHEDULED` ou `FAILED`
 
 ## 8.4 `POST /auth/password-reset/confirm`
 
@@ -578,7 +606,16 @@ Autenticacao:
 
 Uso:
 
-- lista todos os usuarios do sistema para area administrativa
+- lista paginada de usuarios para area administrativa
+
+Query params:
+
+- `page`: padrao `1`
+- `pageSize`: padrao `20`, maximo `100`
+- `search`: busca parcial por nome, email ou documento
+- `role`: `ADMIN`, `SUBADMIN` ou `USER`
+- `isActive`: `true` ou `false`
+- `sort`: `CREATED_AT_DESC` (padrao), `CREATED_AT_ASC`, `NAME_ASC` ou `NAME_DESC`
 
 Resposta `200`:
 
@@ -632,7 +669,13 @@ Resposta `200`:
                     }
                 ]
             }
-        ]
+        ],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 1,
+            "totalPages": 1
+        }
     }
 }
 ```
@@ -902,6 +945,7 @@ Query params:
 - `minPriceInCents`
 - `maxPriceInCents`
 - `inStock`
+- `status`: `ACTIVE` (padrao), `INACTIVE` ou `ALL`
 
 Exemplo:
 
@@ -914,6 +958,8 @@ Observacao:
 - para usar `minPriceInCents` e/ou `maxPriceInCents`, e obrigatorio informar `size`
 - `category=ARTESANATO` filtra produtos `ARTISANAL`; `category=BELEZA` filtra produtos `SELFCARE`
 - `inStock=true` considera produtos `ARTISANAL` com `stock > 0` e todos os produtos `SELFCARE`
+- `INACTIVE` e `ALL` exigem token de `ADMIN` ou `SUBADMIN`; sem permissao, retornam `403`
+- chamadas publicas e chamadas sem `status` retornam somente produtos ativos
 
 Resposta `200`:
 
@@ -981,6 +1027,10 @@ Resposta `200`:
 Uso:
 
 - detalhe publico do produto
+- detalhe administrativo de produto ativo ou inativo quando enviado token de `ADMIN` ou `SUBADMIN`
+
+Produto inativo retorna `404` para chamada publica. `imageUrl` pode ser `null` quando a imagem foi
+removida.
 
 Resposta `200`:
 
@@ -1291,6 +1341,8 @@ name=Novo nome
 category=ARTISANAL
 lineUuid=0195f4aa-7f18-7db5-9f32-06f4a9a2b210
 image=<novo.jpg>
+removeImage=false
+isActive=true
 stock=4
 shippingWeightGrams=120
 description=Descricao longa opcional atualizada
@@ -1302,6 +1354,9 @@ Observacoes:
 
 - qualquer campo e opcional
 - se enviar `image`, o backend substitui a imagem anterior no storage
+- `removeImage=true` remove a imagem e retorna `imageUrl: null`; nao pode ser combinado com `image`
+- `isActive=true` reativa e `isActive=false` desativa; repetir o estado atual e idempotente
+- a reativacao rejeita produto sem textos obrigatorios, precos validos ou, para artesanato, estoque e peso
 - `category` aceita `SELFCARE` ou `ARTISANAL`
 - para mudar `SELFCARE` para `ARTISANAL`, informe `stock` e `shippingWeightGrams`
 - para `SELFCARE`, nao envie `stock` nem `shippingWeightGrams`
@@ -1781,6 +1836,19 @@ Comportamento:
 - `USER` ve apenas os proprios pedidos
 - `ADMIN` e `SUBADMIN` veem todos
 
+Query params:
+
+- `page`: padrao `1`
+- `pageSize`: padrao `20`, maximo `100`
+- `status`: status do pedido
+- `paymentStatus`: `CREATING`, `PENDING`, `EXPIRED`, `PAID`, `REFUND_PENDING`, `REFUNDED`, `DISPUTED` ou `LOST`
+- `shipmentStatus`: `DRAFT`, `QUOTED`, `CONFIRMED`, `CHECKOUT_REQUESTED`, `LABEL_PURCHASED` ou `CANCELLED`
+- `fulfillmentStatus`: `PENDING`, `PROCESSING`, `RETRY_SCHEDULED`, `COMPLETED` ou `FAILED`
+- `search`: UUID exato do pedido ou busca parcial por nome/email do cliente
+- `sort`: `CREATED_AT_DESC` (padrao), `CREATED_AT_ASC`, `TOTAL_DESC` ou `TOTAL_ASC`
+
+Para `USER`, filtros sempre operam somente sobre os proprios pedidos.
+
 Resposta `200`:
 
 ```json
@@ -1806,7 +1874,13 @@ Resposta `200`:
                 "address": null,
                 "items": []
             }
-        ]
+        ],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 1,
+            "totalPages": 1
+        }
     }
 }
 ```
@@ -1824,7 +1898,49 @@ Comportamento:
 
 Resposta:
 
-- retorna `order` no mesmo formato de `POST /orders`
+- retorna `order` com os mesmos campos basicos de `POST /orders`, acrescido dos resumos seguros de pagamento e frete:
+
+```json
+{
+    "success": true,
+    "data": {
+        "order": {
+            "paymentMethod": "CREDIT_CARD",
+            "payment": {
+                "status": "PAID",
+                "method": "CREDIT_CARD",
+                "providerCheckoutId": "bill_abc123",
+                "checkoutUrl": null,
+                "paidAmountInCents": 7680,
+                "card": {
+                    "brand": "Mastercard",
+                    "lastFourDigits": "4242"
+                }
+            },
+            "shipment": {
+                "status": "LABEL_PURCHASED",
+                "selectedServiceCode": 1,
+                "selectedServiceName": "PAC",
+                "deliveryDays": 7,
+                "estimatedDeliveryAt": null,
+                "trackingCode": "BR123456789",
+                "trackingUrl": "https://rastreamento.superfrete.com/#BR123456789",
+                "labelUrl": null
+            }
+        }
+    }
+}
+```
+
+Observacoes:
+
+- `payment.method` aceita `PIX`, `CREDIT_CARD`, `DEBIT_CARD` ou `null`
+- `payment.card` so e retornado quando existe snapshot valido de pagamento por cartao; pedidos antigos e pagamentos sem cartao retornam `null`
+- `payment.card.lastFourDigits` contem exatamente quatro digitos; PAN, CVV e token nunca sao retornados
+- `shipment.deliveryDays` vem do snapshot da cotacao escolhida
+- `shipment.estimatedDeliveryAt` fica `null` quando o provedor nao informa uma data absoluta confiavel
+- `shipment.trackingUrl` fica `null` antes de existir codigo de rastreio
+- campos internos dos provedores e payloads brutos nao fazem parte desta resposta
 
 ## 14.5 `PATCH /orders/:uuid/status`
 
@@ -2639,13 +2755,27 @@ Autenticacao:
 - obrigatoria
 - `ADMIN` ou `SUBADMIN`
 
+Query params:
+
+- `page`: padrao `1`
+- `pageSize`: padrao `20`, maximo `100`
+- `type`: `TEXT` ou `VIDEO`
+- `isActive`: `true` ou `false`
+- `sort`: `CREATED_AT_DESC` (padrao) ou `CREATED_AT_ASC`
+
 Resposta `200`:
 
 ```json
 {
     "success": true,
     "data": {
-        "testimonials": []
+        "testimonials": [],
+        "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 0,
+            "totalPages": 0
+        }
     }
 }
 ```
@@ -2921,6 +3051,34 @@ Resposta `201`:
 
 Se `PAYMENT_LINK_PUBLIC_BASE_URL` nao estiver configurada, `paymentUrl` sera `null`; o frontend pode montar a URL publica usando o `uuid`.
 
+#### `GET /payment-links/:uuid`
+
+Endpoint publico e sem efeito colateral para carregar a previa da cobranca antes de criar checkout.
+Nao chama a AbacatePay e nao expoe dados administrativos ou identificadores do provedor.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "paymentLink": {
+            "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            "amountInCents": 12500,
+            "description": "Encomenda personalizada para Maria",
+            "expiresAt": "2026-08-16T02:59:59.000Z",
+            "status": "ACTIVE"
+        }
+    }
+}
+```
+
+Estados possiveis: `ACTIVE`, `CREATING`, `PENDING`, `PAID`, `EXPIRED`, `REFUNDED`, `DISPUTED` e
+`LOST`. Estados nao pagaveis tambem retornam `200`; o frontend deve explicar o estado e desabilitar
+a acao de pagamento. Um link `ACTIVE` ou `PENDING` cujo prazo ja passou e apresentado como
+`EXPIRED`, sem gravacao no banco. UUID inexistente retorna `404 RESOURCE_NOT_FOUND`; UUID invalido
+retorna `422 VALIDATION_ERROR`.
+
 #### `POST /payment-links/:uuid/payment`
 
 Endpoint publico usado pela pagina compartilhada para criar ou recuperar o checkout hospedado. Nao recebe body e retorna sempre o mesmo checkout depois que ele foi criado.
@@ -3119,6 +3277,61 @@ Resposta `200`:
     "data": { "scheduled": true }
 }
 ```
+
+## 21. Dashboard administrativo
+
+### `GET /admin/dashboard`
+
+Requer `ADMIN` ou `SUBADMIN`.
+
+Query obrigatoria:
+
+- `from`: data/hora ISO 8601 com offset
+- `to`: data/hora ISO 8601 com offset, igual ou posterior a `from`
+
+Receita, pedidos pagos e ticket medio usam somente pagamentos `PAID` cujo `paidAt` esta no periodo.
+Contagens operacionais e prioridades usam pedidos criados no periodo. Estoque considera todos os
+produtos artesanais ativos: sem estoque significa `stock <= 0`; baixo estoque significa de 1 a 5
+unidades. `priorityOrders` retorna no maximo 10 itens, ordenados por fulfillment falho, pago para
+preparar, em processamento para enviar e aguardando pagamento.
+
+Resposta `200`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "period": {
+            "from": "2026-10-01T00:00:00.000Z",
+            "to": "2026-10-31T23:59:59.999Z"
+        },
+        "metrics": {
+            "paidRevenueInCents": 250000,
+            "paidOrders": 20,
+            "averagePaidTicketInCents": 12500,
+            "awaitingPaymentOrders": 3,
+            "ordersToPrepare": 4,
+            "ordersToShip": 2,
+            "failedFulfillments": 1,
+            "outOfStockProducts": 5,
+            "lowStockProducts": 3
+        },
+        "priorityOrders": [
+            {
+                "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b501",
+                "status": "PAID",
+                "paymentStatus": "PAID",
+                "shipmentStatus": "CONFIRMED",
+                "fulfillmentStatus": "FAILED",
+                "totalInCents": 12500,
+                "placedAt": "2026-10-05T12:00:00.000Z"
+            }
+        ]
+    }
+}
+```
+
+Consulta ou validacao falha retorna erro; a API nunca converte falha em metricas zeradas.
 
 ### Variaveis de ambiente
 
