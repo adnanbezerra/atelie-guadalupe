@@ -202,6 +202,7 @@ function ProductForm({
     const initialLongDescription = product?.longDescription ?? "";
     const initialStock = String(product?.stock ?? 0);
     const initialWeight = String(product?.shippingWeightGrams ?? 0);
+    const initialIsActive = product?.isActive ?? true;
     const initialSnapshot = JSON.stringify({
         name: initialName,
         lineUuid: initialLineUuid,
@@ -211,6 +212,8 @@ function ProductForm({
         stock: initialStock,
         shippingWeightGrams: initialWeight,
         image: null,
+        removeImage: false,
+        isActive: initialIsActive,
     });
     const [name, setName] = useState(initialName);
     const [lineUuid, setLineUuid] = useState(initialLineUuid);
@@ -226,6 +229,8 @@ function ProductForm({
         useState(initialWeight);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState(product?.imageUrl ?? "");
+    const [removeSavedImage, setRemoveSavedImage] = useState(false);
+    const [isActive, setIsActive] = useState(initialIsActive);
     const [validationError, setValidationError] = useState<string | null>(null);
     const [pendingPayload, setPendingPayload] =
         useState<ProductFormPayload | null>(null);
@@ -243,6 +248,8 @@ function ProductForm({
         image: imageFile
             ? `${imageFile.name}:${imageFile.size}:${imageFile.lastModified}`
             : null,
+        removeImage: removeSavedImage,
+        isActive,
     });
     const isDirty = currentSnapshot !== savedSnapshot;
     const selectedLine = lines.find((line) => line.uuid === lineUuid);
@@ -308,6 +315,12 @@ function ProductForm({
             longDescription: trimmedLongDescription,
             description: trimmedLongDescription,
             ...(imageFile ? { image: imageFile } : {}),
+            ...(product
+                ? {
+                      isActive,
+                      ...(removeSavedImage ? { removeImage: true } : {}),
+                  }
+                : {}),
         };
 
         if (category === "ARTISANAL") {
@@ -473,8 +486,8 @@ function ProductForm({
                             Imagem do produto
                         </h3>
                         <p className="mb-5 text-sm text-slate-500">
-                            O contrato atual permite substituir, mas não remover
-                            uma imagem salva.
+                            Substitua a imagem ou remova a imagem salva.
+                            Produtos sem imagem usam o fallback da vitrine.
                         </p>
                         <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-blue-800 transition hover:border-primary hover:bg-blue-50 hover:text-primary">
                             <span
@@ -519,6 +532,7 @@ function ProductForm({
                                     }
 
                                     setImageFile(file);
+                                    setRemoveSavedImage(false);
                                     setPreviewUrl(URL.createObjectURL(file));
                                 }}
                                 type="file"
@@ -529,11 +543,30 @@ function ProductForm({
                                 className="mt-3 min-h-11 rounded-lg border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
                                 onClick={() => {
                                     setImageFile(null);
+                                    setRemoveSavedImage(false);
                                     setPreviewUrl(product?.imageUrl ?? "");
                                 }}
                                 type="button"
                             >
                                 Descartar imagem escolhida
+                            </button>
+                        ) : null}
+                        {product?.imageUrl && !imageFile ? (
+                            <button
+                                className="mt-3 min-h-11 rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                    setRemoveSavedImage((current) => !current);
+                                    setPreviewUrl(
+                                        removeSavedImage
+                                            ? (product.imageUrl ?? "")
+                                            : "",
+                                    );
+                                }}
+                                type="button"
+                            >
+                                {removeSavedImage
+                                    ? "Manter imagem salva"
+                                    : "Remover imagem salva"}
                             </button>
                         ) : null}
                     </section>
@@ -578,6 +611,28 @@ function ProductForm({
                                 </select>
                             </Field>
                         </div>
+                        {product ? (
+                            <label className="mt-5 flex items-start gap-3 rounded-lg bg-slate-50 p-4">
+                                <input
+                                    checked={isActive}
+                                    className="mt-1 size-4 accent-primary"
+                                    onChange={(event) =>
+                                        setIsActive(event.target.checked)
+                                    }
+                                    type="checkbox"
+                                />
+                                <span>
+                                    <span className="block text-sm font-bold text-slate-900">
+                                        Produto ativo na vitrine
+                                    </span>
+                                    <span className="mt-1 block text-xs leading-5 text-slate-600">
+                                        Ao reativar, o backend valida textos,
+                                        preços, estoque e peso antes de
+                                        publicar.
+                                    </span>
+                                </span>
+                            </label>
+                        ) : null}
                     </section>
 
                     <ProductCardPreview

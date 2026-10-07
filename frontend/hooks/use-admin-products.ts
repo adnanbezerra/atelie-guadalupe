@@ -40,7 +40,7 @@ export function useAdminProducts(initialData: AdminProductsPayload) {
     const token = useApiToken();
     const resource = useApiResource(initialData, async () => {
         const [productsResponse, linesResponse] = await Promise.all([
-            getProducts({ page: 1, pageSize: 24 }),
+            getProducts({ page: 1, pageSize: 24, status: "ALL" }, token),
             getProductLines(),
         ]);
 

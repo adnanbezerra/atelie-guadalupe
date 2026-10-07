@@ -4,7 +4,7 @@ import { fetchProductLines, fetchProducts } from "@/lib/server-api";
 export default async function AdminProductsPage() {
     const [linesResult, productsResult] = await Promise.allSettled([
         fetchProductLines(),
-        fetchProducts({ page: 1, pageSize: 40 }),
+        fetchProducts({ page: 1, pageSize: 40, status: "ALL" }),
     ]);
 
     const lines =

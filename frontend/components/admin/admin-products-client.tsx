@@ -6,7 +6,7 @@ import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { ProductImage } from "@/components/shared/product-image";
 import { useApiToken } from "@/hooks/use-api-token";
 import { useProductLines, useProducts } from "@/hooks/use-products";
-import { deleteProduct } from "@/lib/api";
+import { updateProduct } from "@/lib/api";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import type { Product, ProductLine, ProductsPayload } from "@/lib/types";
 import { formatCurrency, getLowestPriceOption } from "@/lib/utils";
@@ -62,8 +62,12 @@ export function AdminProductsClient({
     const [category, setCategory] = useState<"" | "BELEZA" | "ARTESANATO">("");
     const [lineUuid, setLineUuid] = useState("");
     const [onlyLowStock, setOnlyLowStock] = useState(false);
-    const [productToDeactivate, setProductToDeactivate] =
-        useState<Product | null>(null);
+    const [visibility, setVisibility] = useState<"ACTIVE" | "INACTIVE" | "ALL">(
+        "ALL",
+    );
+    const [productToToggle, setProductToToggle] = useState<Product | null>(
+        null,
+    );
     const [pendingProductUuid, setPendingProductUuid] = useState<string | null>(
         null,
     );
@@ -76,9 +80,10 @@ export function AdminProductsClient({
             search,
             category: category || undefined,
             lineUuid: lineUuid || undefined,
+            status: visibility,
         },
         initialCatalog,
-        { skipClientFetch: true },
+        { skipClientFetch: true, token },
     );
     const lines = useProductLines(initialLines);
 
@@ -119,12 +124,12 @@ export function AdminProductsClient({
         setPage(1);
     }
 
-    async function handleDeactivate() {
-        const target = productToDeactivate;
+    async function handleVisibilityChange() {
+        const target = productToToggle;
         if (!target) return;
 
         if (!token) {
-            setProductToDeactivate(null);
+            setProductToToggle(null);
             setFeedback({
                 title: "Sessão necessária",
                 description: "Entre novamente para desativar este produto.",
@@ -134,18 +139,23 @@ export function AdminProductsClient({
 
         try {
             setPendingProductUuid(target.uuid);
-            await deleteProduct(token, target.uuid);
-            setProductToDeactivate(null);
+            await updateProduct(token, target.uuid, {
+                isActive: !target.isActive,
+            });
+            setProductToToggle(null);
             await products.refresh();
             setFeedback({
-                title: "Produto desativado",
-                description:
-                    "O produto saiu da vitrine. Os dados foram preservados, mas a reativação permanece bloqueada até o backend oferecer listagem de inativos.",
+                title: target.isActive
+                    ? "Produto desativado"
+                    : "Produto reativado",
+                description: target.isActive
+                    ? "O produto saiu da vitrine e continua disponível para gestão."
+                    : "O produto voltou a aparecer na vitrine.",
             });
         } catch (error) {
-            setProductToDeactivate(null);
+            setProductToToggle(null);
             setFeedback({
-                title: "Não foi possível desativar",
+                title: "Não foi possível alterar a disponibilidade",
                 description:
                     error instanceof Error ? error.message : "Tente novamente.",
             });
@@ -309,6 +319,25 @@ export function AdminProductsClient({
                                 ))}
                             </select>
                         </label>
+                        <label className="text-sm font-medium text-slate-600">
+                            <span className="mb-1 block">Visibilidade</span>
+                            <select
+                                className="min-h-11 rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-3 text-base"
+                                onChange={(event) => {
+                                    setVisibility(
+                                        event.target.value as typeof visibility,
+                                    );
+                                    setPage(1);
+                                }}
+                                value={visibility}
+                            >
+                                <option value="ALL">Ativos e inativos</option>
+                                <option value="ACTIVE">Somente ativos</option>
+                                <option value="INACTIVE">
+                                    Somente inativos
+                                </option>
+                            </select>
+                        </label>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -322,6 +351,7 @@ export function AdminProductsClient({
                                         Quantidade
                                     </th>
                                     <th className="px-6 py-4">Preço</th>
+                                    <th className="px-6 py-4">Vitrine</th>
                                     <th className="px-6 py-4 text-right">
                                         Ações
                                     </th>
@@ -386,6 +416,19 @@ export function AdminProductsClient({
                                                       )
                                                     : "Sob consulta"}
                                             </td>
+                                            <td className="px-6 py-4">
+                                                <span
+                                                    className={
+                                                        product.isActive
+                                                            ? "text-sm font-bold text-emerald-700"
+                                                            : "text-sm font-bold text-slate-500"
+                                                    }
+                                                >
+                                                    {product.isActive
+                                                        ? "Ativo"
+                                                        : "Inativo"}
+                                                </span>
+                                            </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Link
@@ -401,14 +444,14 @@ export function AdminProductsClient({
                                                         </span>
                                                     </Link>
                                                     <button
-                                                        aria-label={`Desativar ${product.name}`}
-                                                        className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        aria-label={`${product.isActive ? "Desativar" : "Reativar"} ${product.name}`}
+                                                        className="rounded-lg p-2 transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                                                         disabled={
                                                             pendingProductUuid ===
                                                             product.uuid
                                                         }
                                                         onClick={() =>
-                                                            setProductToDeactivate(
+                                                            setProductToToggle(
                                                                 product,
                                                             )
                                                         }
@@ -418,7 +461,9 @@ export function AdminProductsClient({
                                                             aria-hidden="true"
                                                             className="material-symbols-outlined text-lg"
                                                         >
-                                                            visibility_off
+                                                            {product.isActive
+                                                                ? "visibility_off"
+                                                                : "visibility"}
                                                         </span>
                                                     </button>
                                                 </div>
@@ -475,16 +520,27 @@ export function AdminProductsClient({
             </div>
 
             <FeedbackDialog
-                confirmLabel="Desativar produto"
-                description="O produto sairá da vitrine e os dados serão preservados. A reativação permanece indisponível até o backend permitir listar e reativar produtos inativos."
-                onConfirm={() => void handleDeactivate()}
+                confirmLabel={
+                    productToToggle?.isActive
+                        ? "Desativar produto"
+                        : "Reativar produto"
+                }
+                description={
+                    productToToggle?.isActive
+                        ? "O produto sairá da vitrine, mas seus dados e imagem serão preservados."
+                        : "O produto voltará à vitrine depois que o backend validar seus dados, preço, estoque e frete."
+                }
+                onConfirm={() => void handleVisibilityChange()}
                 onOpenChange={(open) => {
-                    if (!open && !pendingProductUuid)
-                        setProductToDeactivate(null);
+                    if (!open && !pendingProductUuid) setProductToToggle(null);
                 }}
-                open={Boolean(productToDeactivate)}
-                secondaryLabel="Manter produto"
-                title="Desativar este produto?"
+                open={Boolean(productToToggle)}
+                secondaryLabel="Cancelar"
+                title={
+                    productToToggle?.isActive
+                        ? "Desativar este produto?"
+                        : "Reativar este produto?"
+                }
             />
             <FeedbackDialog
                 description={feedback?.description ?? ""}

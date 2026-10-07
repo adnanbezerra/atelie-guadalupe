@@ -12,6 +12,7 @@ import type {
 type HydrationOptions = {
     skipClientFetch?: boolean;
     category?: string;
+    token?: string | null;
 };
 
 export function useProductCatalog(query: ProductQuery) {
@@ -117,8 +118,9 @@ export function useProducts(
     );
     const [isLoading, setIsLoading] = useState(!initialData);
     const [error, setError] = useState<string | null>(null);
-    const queryKey = JSON.stringify(query);
+    const queryKey = JSON.stringify([query, options.token ?? null]);
     const queryRef = useRef(query);
+    const requestToken = options.token;
     const initialQueryKeyRef = useRef(queryKey);
     const hasDepartedFromInitialQueryRef = useRef(false);
     const canUseInitialData = Boolean(options.skipClientFetch && initialData);
@@ -135,7 +137,7 @@ export function useProducts(
         try {
             setIsLoading(true);
             setError(null);
-            const response = await getProducts(queryRef.current);
+            const response = await getProducts(queryRef.current, requestToken);
             setData(response);
         } catch (err) {
             setError(
@@ -146,7 +148,7 @@ export function useProducts(
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [requestToken]);
 
     useEffect(() => {
         if (
@@ -165,7 +167,10 @@ export function useProducts(
             try {
                 setIsLoading(true);
                 setError(null);
-                const response = await getProducts(queryRef.current);
+                const response = await getProducts(
+                    queryRef.current,
+                    requestToken,
+                );
                 if (!cancelled) {
                     setData(response);
                 }
@@ -189,7 +194,7 @@ export function useProducts(
         return () => {
             cancelled = true;
         };
-    }, [canUseInitialData, queryKey]);
+    }, [canUseInitialData, queryKey, requestToken]);
 
     return { data, isLoading, error, refresh, isPending: isLoading };
 }
