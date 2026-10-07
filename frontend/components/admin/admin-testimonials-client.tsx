@@ -55,10 +55,15 @@ export function AdminTestimonialsClient({
     initialData,
     initialError,
 }: AdminTestimonialsClientProps) {
-    const testimonials = useAdminTestimonials(initialData);
     const [typeFilter, setTypeFilter] = useState<"ALL" | TestimonialType>(
         "ALL",
     );
+    const [page, setPage] = useState(1);
+    const testimonials = useAdminTestimonials(initialData, {
+        page,
+        pageSize: 20,
+        type: typeFilter === "ALL" ? undefined : typeFilter,
+    });
     const [editorOpen, setEditorOpen] = useState(false);
     const [editing, setEditing] = useState<Testimonial | null>(null);
     const [preview, setPreview] = useState<Testimonial | null>(null);
@@ -96,26 +101,24 @@ export function AdminTestimonialsClient({
         }
     }
 
-    const filteredItems = useMemo(() => {
-        if (typeFilter === "ALL") {
-            return testimonials.data.testimonials;
-        }
-
-        return testimonials.data.testimonials.filter(
-            (testimonial) => testimonial.type === typeFilter,
-        );
-    }, [testimonials.data.testimonials, typeFilter]);
+    const filteredItems = testimonials.data.testimonials;
+    const pagination = testimonials.data.pagination ?? {
+        page: 1,
+        pageSize: filteredItems.length,
+        total: filteredItems.length,
+        totalPages: filteredItems.length ? 1 : 0,
+    };
 
     const stats = useMemo(() => {
         const items = testimonials.data.testimonials;
 
         return {
-            total: items.length,
+            total: pagination.total,
             active: items.filter((item) => item.isActive).length,
             text: items.filter((item) => item.type === "TEXT").length,
             video: items.filter((item) => item.type === "VIDEO").length,
         };
-    }, [testimonials.data.testimonials]);
+    }, [pagination.total, testimonials.data.testimonials]);
 
     return (
         <div className="flex min-h-full flex-col">
@@ -252,19 +255,19 @@ export function AdminTestimonialsClient({
                         {
                             icon: "verified",
                             tone: "bg-emerald-100 text-emerald-600",
-                            label: "Ativos",
+                            label: "Ativos nesta página",
                             value: `${stats.active}`,
                         },
                         {
                             icon: "abc",
                             tone: "bg-amber-100 text-amber-600",
-                            label: "Texto",
+                            label: "Texto nesta página",
                             value: `${stats.text}`,
                         },
                         {
                             icon: "movie",
                             tone: "bg-purple-100 text-purple-600",
-                            label: "Vídeo",
+                            label: "Vídeo nesta página",
                             value: `${stats.video}`,
                         },
                     ].map((item) => (
@@ -309,11 +312,12 @@ export function AdminTestimonialsClient({
                                             : "rounded-lg px-4 py-2 text-sm font-semibold text-slate-600"
                                     }
                                     key={value}
-                                    onClick={() =>
+                                    onClick={() => {
                                         setTypeFilter(
                                             value as "ALL" | TestimonialType,
-                                        )
-                                    }
+                                        );
+                                        setPage(1);
+                                    }}
                                     type="button"
                                 >
                                     {label}
@@ -525,6 +529,44 @@ export function AdminTestimonialsClient({
                             </tbody>
                         </table>
                     </div>
+                    {pagination.totalPages > 1 ? (
+                        <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
+                            <p className="text-sm text-slate-600">
+                                Página {pagination.page} de{" "}
+                                {pagination.totalPages} · {pagination.total}{" "}
+                                testemunhos
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-bold disabled:opacity-50"
+                                    disabled={
+                                        testimonials.isLoading || page <= 1
+                                    }
+                                    onClick={() =>
+                                        setPage((current) =>
+                                            Math.max(1, current - 1),
+                                        )
+                                    }
+                                    type="button"
+                                >
+                                    Anterior
+                                </button>
+                                <button
+                                    className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-bold disabled:opacity-50"
+                                    disabled={
+                                        testimonials.isLoading ||
+                                        page >= pagination.totalPages
+                                    }
+                                    onClick={() =>
+                                        setPage((current) => current + 1)
+                                    }
+                                    type="button"
+                                >
+                                    Próxima
+                                </button>
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
             </div>
             <Dialog

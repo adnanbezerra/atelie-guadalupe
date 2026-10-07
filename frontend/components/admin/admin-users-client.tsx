@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     Dialog,
@@ -11,12 +11,12 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAdminUsers } from "@/hooks/use-admin-users";
-import type { User, UserRole } from "@/lib/types";
+import type { User, UserRole, UsersPayload } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
 
 type Props = {
     initialError: { message: string; status: number | null } | null;
-    initialUsers: User[];
+    initialData: UsersPayload;
 };
 type ManagedRole = "ADMIN" | "SUBADMIN" | "USER";
 type AccessAction =
@@ -44,14 +44,14 @@ function isManagedRole(role: UserRole): role is ManagedRole {
     return role === "ADMIN" || role === "SUBADMIN" || role === "USER";
 }
 
-export function AdminUsersClient({ initialError, initialUsers }: Props) {
-    const users = useAdminUsers(initialUsers);
+export function AdminUsersClient({ initialData, initialError }: Props) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
     const [group, setGroup] = useState<"TEAM" | "CUSTOMERS">("TEAM");
     const [status, setStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
-    const [role, setRole] = useState<"ALL" | ManagedRole>("ALL");
+    const [role, setRole] = useState<ManagedRole>("SUBADMIN");
     const [pendingAction, setPendingAction] = useState<AccessAction | null>(
         null,
     );
@@ -69,39 +69,15 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
         password: "",
         role: "SUBADMIN" as "ADMIN" | "SUBADMIN",
     });
-
-    const filteredUsers = useMemo(() => {
-        const query = search.trim().toLocaleLowerCase("pt-BR");
-        return users.data.filter((user) => {
-            const userRole = isManagedRole(user.role) ? user.role : "USER";
-            return (
-                (group === "CUSTOMERS"
-                    ? userRole === "USER"
-                    : userRole !== "USER") &&
-                (role === "ALL" || userRole === role) &&
-                (status === "ALL" ||
-                    (status === "ACTIVE" ? user.isActive : !user.isActive)) &&
-                (!query ||
-                    [
-                        user.name,
-                        user.email,
-                        user.document,
-                        roleDetails[userRole].label,
-                    ]
-                        .join(" ")
-                        .toLocaleLowerCase("pt-BR")
-                        .includes(query))
-            );
-        });
-    }, [group, role, search, status, users.data]);
-
-    const counts = useMemo(
-        () => ({
-            customers: users.data.filter((user) => user.role === "USER").length,
-            team: users.data.filter((user) => user.role !== "USER").length,
-        }),
-        [users.data],
-    );
+    const users = useAdminUsers(initialData, {
+        page,
+        pageSize: 20,
+        search: search.trim() || undefined,
+        role: group === "CUSTOMERS" ? "USER" : role,
+        isActive: status === "ALL" ? undefined : status === "ACTIVE",
+    });
+    const filteredUsers = users.data.users;
+    const pagination = users.data.pagination;
 
     async function handleCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -354,18 +330,20 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                 <div className="mt-8 flex flex-wrap gap-2" role="tablist">
                     <GroupButton
                         active={group === "TEAM"}
-                        label={`Equipe (${counts.team})`}
+                        label="Equipe"
                         onClick={() => {
                             setGroup("TEAM");
-                            setRole("ALL");
+                            setRole("SUBADMIN");
+                            setPage(1);
                         }}
                     />
                     <GroupButton
                         active={group === "CUSTOMERS"}
-                        label={`Clientes (${counts.customers})`}
+                        label="Clientes"
                         onClick={() => {
                             setGroup("CUSTOMERS");
                             setRole("USER");
+                            setPage(1);
                         }}
                     />
                 </div>
@@ -384,9 +362,10 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             </span>
                             <input
                                 className="h-11 w-full rounded-lg border border-slate-300 pl-10 pr-3 text-base"
-                                onChange={(event) =>
-                                    setSearch(event.target.value)
-                                }
+                                onChange={(event) => {
+                                    setSearch(event.target.value);
+                                    setPage(1);
+                                }}
                                 placeholder="Nome, e-mail ou documento"
                                 value={search}
                             />
@@ -396,13 +375,10 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
                             disabled={group === "CUSTOMERS"}
                             onChange={(event) =>
-                                setRole(
-                                    event.target.value as "ALL" | ManagedRole,
-                                )
+                                setRole(event.target.value as ManagedRole)
                             }
                             value={role}
                         >
-                            <option value="ALL">Todos os papéis</option>
                             {group === "TEAM" ? (
                                 <>
                                     <option value="SUBADMIN">Equipe</option>
@@ -415,14 +391,15 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                         <select
                             aria-label="Filtrar por status"
                             className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
-                            onChange={(event) =>
+                            onChange={(event) => {
                                 setStatus(
                                     event.target.value as
                                         | "ALL"
                                         | "ACTIVE"
                                         | "INACTIVE",
-                                )
-                            }
+                                );
+                                setPage(1);
+                            }}
                             value={status}
                         >
                             <option value="ALL">Todos os status</option>
@@ -430,12 +407,11 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             <option value="INACTIVE">Acesso revogado</option>
                         </select>
                         <p className="text-xs leading-5 text-slate-500 md:col-span-3">
-                            Busca e filtros aplicados à lista completa retornada
-                            pela API. O contrato atual não oferece paginação.
+                            Busca, papel e status são aplicados no servidor.
                         </p>
                     </div>
 
-                    {users.data.length === 0 && !loadError ? (
+                    {users.data.users.length === 0 && !loadError ? (
                         <EmptyState
                             description={
                                 group === "TEAM"
@@ -562,6 +538,42 @@ export function AdminUsersClient({ initialError, initialUsers }: Props) {
                             </table>
                         </div>
                     )}
+                    {pagination.totalPages > 1 ? (
+                        <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
+                            <p className="text-sm text-slate-600">
+                                Página {pagination.page} de{" "}
+                                {pagination.totalPages} · {pagination.total}{" "}
+                                usuários
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-bold disabled:opacity-50"
+                                    disabled={users.isLoading || page <= 1}
+                                    onClick={() =>
+                                        setPage((current) =>
+                                            Math.max(1, current - 1),
+                                        )
+                                    }
+                                    type="button"
+                                >
+                                    Anterior
+                                </button>
+                                <button
+                                    className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-bold disabled:opacity-50"
+                                    disabled={
+                                        users.isLoading ||
+                                        page >= pagination.totalPages
+                                    }
+                                    onClick={() =>
+                                        setPage((current) => current + 1)
+                                    }
+                                    type="button"
+                                >
+                                    Próxima
+                                </button>
+                            </div>
+                        </div>
+                    ) : null}
                 </section>
             </div>
 

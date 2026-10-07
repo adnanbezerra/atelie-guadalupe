@@ -4,6 +4,7 @@ import logo from "public/logo-empty.png";
 
 type AdminSidebarProps = {
     pathname: string;
+    role?: string;
 };
 
 export const adminNavItems = [
@@ -27,7 +28,10 @@ export const adminNavItems = [
     { href: "/admin/usuarios", icon: "group", label: "Usuários" },
 ];
 
-export function AdminSidebar({ pathname }: AdminSidebarProps) {
+export function AdminSidebar({ pathname, role }: AdminSidebarProps) {
+    const visibleItems = adminNavItems.filter(
+        (item) => item.href !== "/admin/usuarios" || role === "ADMIN",
+    );
     return (
         <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
             <div className="p-6">
@@ -48,7 +52,7 @@ export function AdminSidebar({ pathname }: AdminSidebarProps) {
                 </div>
             </div>
             <nav className="flex-1 space-y-1 px-4">
-                {adminNavItems.map((item) => {
+                {visibleItems.map((item) => {
                     const isActive =
                         item.href === "/admin"
                             ? pathname === "/admin"
@@ -64,7 +68,7 @@ export function AdminSidebar({ pathname }: AdminSidebarProps) {
                             className={
                                 isActive
                                     ? "flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white"
-                                    : "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600 hover:bg-blue-500 hover:text-white"
+                                    : "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600 hover:bg-primary/10 hover:text-primary"
                             }
                             href={item.href}
                         >

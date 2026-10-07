@@ -4,18 +4,27 @@ import { useApiResource } from "@/hooks/use-api-resource";
 import { useApiToken } from "@/hooks/use-api-token";
 import { createAdminUser, getUsers, updateAdminUser } from "@/lib/api";
 import { ApiError } from "@/lib/api-error";
-import { User, UserRole } from "@/lib/types";
+import { User, UserRole, UsersPayload } from "@/lib/types";
+import { useEffect, useRef } from "react";
 
-export function useAdminUsers(initialUsers: User[]) {
+export function useAdminUsers(
+    initialData: UsersPayload,
+    query: {
+        page: number;
+        pageSize: number;
+        search?: string;
+        role?: string;
+        isActive?: boolean;
+    },
+) {
     const token = useApiToken();
-    const resource = useApiResource<User[]>(initialUsers, async () => {
+    const resource = useApiResource<UsersPayload>(initialData, async () => {
         if (!token) {
             throw new Error("Faça login para consultar usuários.");
         }
 
         try {
-            const payload = await getUsers(token);
-            return payload.users;
+            return await getUsers(token, query);
         } catch (error) {
             if (error instanceof ApiError && error.status === 403) {
                 throw new Error(
@@ -26,6 +35,18 @@ export function useAdminUsers(initialUsers: User[]) {
             throw error;
         }
     });
+    const queryKey = JSON.stringify([query, token]);
+    const didMount = useRef(false);
+    const refresh = resource.refresh;
+
+    useEffect(() => {
+        if (!didMount.current) {
+            didMount.current = true;
+            return;
+        }
+
+        void refresh();
+    }, [queryKey, refresh]);
 
     return {
         ...resource,

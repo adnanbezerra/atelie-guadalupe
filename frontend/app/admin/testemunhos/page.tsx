@@ -3,11 +3,21 @@ import { ApiError } from "@/lib/api-error";
 import { fetchTestimonials } from "@/lib/server-api";
 
 export default async function AdminTestimonialsPage() {
-    const testimonialsResult = await Promise.allSettled([fetchTestimonials()]);
+    const testimonialsResult = await Promise.allSettled([
+        fetchTestimonials({ page: 1, pageSize: 20 }),
+    ]);
     const initialTestimonials =
         testimonialsResult[0].status === "fulfilled"
             ? testimonialsResult[0].value
-            : { testimonials: [] };
+            : {
+                  testimonials: [],
+                  pagination: {
+                      page: 1,
+                      pageSize: 20,
+                      total: 0,
+                      totalPages: 0,
+                  },
+              };
     const initialError =
         testimonialsResult[0].status === "rejected"
             ? {

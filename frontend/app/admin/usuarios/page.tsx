@@ -3,9 +3,21 @@ import { ApiError } from "@/lib/api-error";
 import { fetchUsers } from "@/lib/server-api";
 
 export default async function AdminUsersPage() {
-    const usersResult = await Promise.allSettled([fetchUsers()]);
-    const initialUsers =
-        usersResult[0].status === "fulfilled" ? usersResult[0].value.users : [];
+    const usersResult = await Promise.allSettled([
+        fetchUsers({ page: 1, pageSize: 20, role: "SUBADMIN" }),
+    ]);
+    const initialData =
+        usersResult[0].status === "fulfilled"
+            ? usersResult[0].value
+            : {
+                  users: [],
+                  pagination: {
+                      page: 1,
+                      pageSize: 20,
+                      total: 0,
+                      totalPages: 0,
+                  },
+              };
     const initialError =
         usersResult[0].status === "rejected"
             ? {
@@ -23,7 +35,7 @@ export default async function AdminUsersPage() {
     return (
         <AdminUsersClient
             initialError={initialError}
-            initialUsers={initialUsers}
+            initialData={initialData}
         />
     );
 }

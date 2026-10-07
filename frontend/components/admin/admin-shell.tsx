@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { AdminSidebar, adminNavItems } from "./admin-sidebar";
+import { useUser } from "@/hooks/use-user";
 
 type AdminShellProps = {
     children: React.ReactNode;
@@ -21,13 +22,15 @@ type AdminShellProps = {
 
 export function AdminShell({ children }: AdminShellProps) {
     const pathname = usePathname();
+    const { user } = useUser();
+    const role = user?.role;
 
     return (
         <div className="fixed inset-0 bg-[#f6f6f8] text-slate-900">
             <div className="flex h-full overflow-hidden">
-                <AdminSidebar pathname={pathname} />
+                <AdminSidebar pathname={pathname} role={role} />
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                    <AdminMobileHeader pathname={pathname} />
+                    <AdminMobileHeader pathname={pathname} role={role} />
                     <main className="min-h-0 flex-1 overflow-y-auto">
                         {children}
                     </main>
@@ -37,7 +40,16 @@ export function AdminShell({ children }: AdminShellProps) {
     );
 }
 
-function AdminMobileHeader({ pathname }: { pathname: string }) {
+function AdminMobileHeader({
+    pathname,
+    role,
+}: {
+    pathname: string;
+    role?: string;
+}) {
+    const visibleItems = adminNavItems.filter(
+        (item) => item.href !== "/admin/usuarios" || role === "ADMIN",
+    );
     return (
         <header className="flex h-16 items-center border-b border-slate-200 bg-white px-4 lg:hidden">
             <Dialog>
@@ -69,7 +81,7 @@ function AdminMobileHeader({ pathname }: { pathname: string }) {
                         </DialogTitle>
                     </DialogHeader>
                     <nav className="space-y-1 p-4">
-                        {adminNavItems.map((item) => {
+                        {visibleItems.map((item) => {
                             const isActive =
                                 item.href === "/admin"
                                     ? pathname === "/admin"
@@ -133,7 +145,7 @@ function AdminMobileHeader({ pathname }: { pathname: string }) {
                     <p className="text-sm font-bold leading-tight text-primary">
                         Ateliê Guadalupe
                     </p>
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                         Administração
                     </p>
                 </div>
