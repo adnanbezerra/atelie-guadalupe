@@ -28,9 +28,12 @@ import type {
     CheckoutPaymentPayload,
     CreatePaymentLinkInput,
     PaymentLink,
+    PaymentLinkPreview,
     PaymentLinkCheckoutPayload,
     PaymentLinkStatus,
     PaymentLinksPayload,
+    AdminDashboardPayload,
+    UsersPayload,
 } from "@/lib/types";
 import {
     clearAuthSession,
@@ -264,8 +267,8 @@ function requestWithUploadProgress<T>(
     });
 }
 
-export function getProducts(query?: ProductQuery) {
-    return request<ProductListResponse>("/products", { query });
+export function getProducts(query?: ProductQuery, token?: string | null) {
+    return request<ProductListResponse>("/products", { query, token });
 }
 
 export function getProductBySlug(slug: string) {
@@ -274,9 +277,10 @@ export function getProductBySlug(slug: string) {
     );
 }
 
-export function getProductByUuid(productUuid: string) {
+export function getProductByUuid(productUuid: string, token?: string | null) {
     return request<{ product: Product }>(
         `/products/${encodeURIComponent(productUuid)}`,
+        { token },
     );
 }
 
@@ -340,12 +344,44 @@ export function createCartItem(
     });
 }
 
-export function getOrders(token: string) {
-    return request<OrdersResponse>("/orders", { token });
+export function getOrders(
+    token: string,
+    query: {
+        page?: number;
+        pageSize?: number;
+        status?: string;
+        paymentStatus?: string;
+        shipmentStatus?: string;
+        fulfillmentStatus?: string;
+        search?: string;
+        sort?: string;
+    } = {},
+) {
+    return request<OrdersResponse>("/orders", { token, query });
 }
 
-export function getUsers(token: string) {
-    return request<{ users: User[] }>("/users", { token });
+export function getUsers(
+    token: string,
+    query: {
+        page?: number;
+        pageSize?: number;
+        search?: string;
+        role?: string;
+        isActive?: boolean;
+        sort?: string;
+    } = {},
+) {
+    return request<UsersPayload>("/users", { token, query });
+}
+
+export function getAdminDashboard(
+    token: string,
+    query: { from: string; to: string },
+) {
+    return request<AdminDashboardPayload>("/admin/dashboard", {
+        token,
+        query,
+    });
 }
 
 export function getMyOrders(
@@ -475,6 +511,12 @@ export function openPaymentLink(paymentLinkUuid: string) {
     );
 }
 
+export function getPaymentLinkPreview(paymentLinkUuid: string) {
+    return request<{ paymentLink: PaymentLinkPreview }>(
+        `/payment-links/${encodeURIComponent(paymentLinkUuid)}`,
+    );
+}
+
 export function createProduct(token: string, body: CreateProductInput) {
     return request<{ product: Product }>("/products", {
         method: "POST",
@@ -580,8 +622,17 @@ export function cancelMarketingCoupon(token: string, couponUuid: string) {
     );
 }
 
-export function getTestimonials(token?: string | null) {
-    return request<TestimonialsPayload>("/testimonials", { token });
+export function getTestimonials(
+    token?: string | null,
+    query: {
+        page?: number;
+        pageSize?: number;
+        type?: string;
+        isActive?: boolean;
+        sort?: string;
+    } = {},
+) {
+    return request<TestimonialsPayload>("/testimonials", { token, query });
 }
 
 export function upsertTestimonial(

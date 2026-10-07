@@ -150,7 +150,7 @@ export type Product = {
     priceOptions: PriceOption[];
     activePromotion?: Promotion | null;
     promotionDiscountPercent?: number;
-    imageUrl: string;
+    imageUrl: string | null;
     stock: number | null;
     shippingWeightGrams: number | null;
     description?: string | null;
@@ -391,9 +391,43 @@ export type PaymentLinkCheckoutPayload = {
     >;
 };
 
+export type PaymentLinkPreview = Pick<
+    PaymentLink,
+    "uuid" | "amountInCents" | "description" | "expiresAt" | "status"
+>;
+
 export type OrdersResponse = {
     orders: Order[];
-    pagination?: Pagination;
+    pagination: Pagination;
+};
+
+export type UsersPayload = {
+    users: User[];
+    pagination: Pagination;
+};
+
+export type AdminDashboardPayload = {
+    period: { from: string; to: string };
+    metrics: {
+        paidRevenueInCents: number;
+        paidOrders: number;
+        averagePaidTicketInCents: number;
+        awaitingPaymentOrders: number;
+        ordersToPrepare: number;
+        ordersToShip: number;
+        failedFulfillments: number;
+        outOfStockProducts: number;
+        lowStockProducts: number;
+    };
+    priorityOrders: Array<{
+        uuid: string;
+        status: OrderStatus;
+        paymentStatus: PaymentStatus | null;
+        shipmentStatus: ShippingStatus | null;
+        fulfillmentStatus: FulfillmentStatus | null;
+        totalInCents: number;
+        placedAt: string;
+    }>;
 };
 
 export type ProfileAddressInput = {
@@ -429,6 +463,7 @@ export type ProductQuery = {
     minPriceInCents?: number;
     maxPriceInCents?: number;
     inStock?: boolean;
+    status?: "ACTIVE" | "INACTIVE" | "ALL";
 };
 
 export type TestimonialType = "TEXT" | "VIDEO";
@@ -446,6 +481,7 @@ export type Testimonial = {
 
 export type TestimonialsPayload = {
     testimonials: Testimonial[];
+    pagination?: Pagination;
 };
 
 export type CreateTestimonialInput =
@@ -501,5 +537,7 @@ export type CreateProductInput = {
 export type UpdateProductInput = Partial<
     Omit<CreateProductInput, "image"> & {
         image: ProductImageInput;
+        removeImage: boolean;
+        isActive: boolean;
     }
 >;

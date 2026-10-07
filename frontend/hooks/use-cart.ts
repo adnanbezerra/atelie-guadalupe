@@ -197,7 +197,7 @@ function getOptimisticCart(
             totalPriceInCents: unitPriceInCents * input.quantity,
             activePromotion: product.activePromotion,
             promotionDiscountPercent: product.promotionDiscountPercent ?? 0,
-            imageUrl: product.imageUrl,
+            imageUrl: product.imageUrl ?? "",
             isAvailable: product.isActive,
         });
     }

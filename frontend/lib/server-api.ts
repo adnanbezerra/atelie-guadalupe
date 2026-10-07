@@ -6,13 +6,16 @@ import {
     MarketingCoupon,
     MarketingPayload,
     MarketingPromotion,
-    Order,
     PaymentLinksPayload,
+    PaymentLinkPreview,
+    AdminDashboardPayload,
     ProductLine,
     Product,
     ProductsPayload,
     TestimonialsPayload,
     User,
+    UsersPayload,
+    OrdersResponse,
 } from "@/lib/types";
 import { buildQuery } from "@/lib/utils";
 import { ApiError } from "@/lib/api-error";
@@ -69,6 +72,7 @@ export async function fetchProducts(params: {
     minPriceInCents?: number;
     maxPriceInCents?: number;
     inStock?: boolean;
+    status?: "ACTIVE" | "INACTIVE" | "ALL";
 }) {
     const query = buildQuery(params);
     const suffix = query ? `?${query}` : "";
@@ -91,8 +95,21 @@ export async function fetchCart() {
     return serverApi<{ cart: Cart }>("/cart").then((payload) => payload.cart);
 }
 
-export async function fetchOrders() {
-    return serverApi<{ orders: Order[] }>("/orders");
+export async function fetchOrders(
+    params: {
+        page?: number;
+        pageSize?: number;
+        status?: string;
+        paymentStatus?: string;
+        shipmentStatus?: string;
+        fulfillmentStatus?: string;
+        search?: string;
+        sort?: string;
+    } = {},
+) {
+    const query = buildQuery(params);
+    const suffix = query ? `?${query}` : "";
+    return serverApi<OrdersResponse>(`/orders${suffix}`);
 }
 
 export async function fetchPaymentLinks(params?: {
@@ -104,8 +121,19 @@ export async function fetchPaymentLinks(params?: {
     return serverApi<PaymentLinksPayload>(`/payment-links${suffix}`);
 }
 
-export async function fetchUsers() {
-    return serverApi<{ users: User[] }>("/users");
+export async function fetchUsers(
+    params: {
+        page?: number;
+        pageSize?: number;
+        search?: string;
+        role?: string;
+        isActive?: boolean;
+        sort?: string;
+    } = {},
+) {
+    const query = buildQuery(params);
+    const suffix = query ? `?${query}` : "";
+    return serverApi<UsersPayload>(`/users${suffix}`);
 }
 
 export async function fetchMyOrders(params?: {
@@ -114,15 +142,39 @@ export async function fetchMyOrders(params?: {
 }) {
     const query = buildQuery(params ?? {});
     const suffix = query ? `?${query}` : "";
-    return serverApi<{ orders: Order[] }>(`/users/me/orders${suffix}`);
+    return serverApi<OrdersResponse>(`/users/me/orders${suffix}`);
 }
 
 export async function fetchCurrentUser() {
     return serverApi<{ user: User }>("/users/me");
 }
 
-export async function fetchTestimonials() {
-    return serverApi<TestimonialsPayload>("/testimonials");
+export async function fetchTestimonials(
+    params: {
+        page?: number;
+        pageSize?: number;
+        type?: string;
+        isActive?: boolean;
+        sort?: string;
+    } = {},
+) {
+    const query = buildQuery(params);
+    const suffix = query ? `?${query}` : "";
+    return serverApi<TestimonialsPayload>(`/testimonials${suffix}`);
+}
+
+export async function fetchPaymentLinkPreview(paymentLinkUuid: string) {
+    return serverApi<{ paymentLink: PaymentLinkPreview }>(
+        `/payment-links/${encodeURIComponent(paymentLinkUuid)}`,
+    );
+}
+
+export async function fetchAdminDashboard(params: {
+    from: string;
+    to: string;
+}) {
+    const query = buildQuery(params);
+    return serverApi<AdminDashboardPayload>(`/admin/dashboard?${query}`);
 }
 
 export async function fetchActiveTestimonials() {
