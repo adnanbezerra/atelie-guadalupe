@@ -15,7 +15,11 @@ export const adminNavItems = [
         label: "Adicionar produto",
     },
     { href: "/admin", icon: "dashboard", label: "Painel" },
-    { href: "/admin/produtos", icon: "inventory_2", label: "Produtos" },
+    {
+        href: "/admin/produtos",
+        icon: "inventory_2",
+        label: "Produtos/Linhas",
+    },
     {
         href: "/admin/testemunhos",
         icon: "reviews",

@@ -64,6 +64,12 @@ export type ProductLine = {
     updatedAt?: string;
 };
 
+export type ProductLineInput = {
+    name: string;
+    price70gInCents: number;
+    price100gInCents: number;
+};
+
 export type Promotion = {
     uuid: string;
     name: string;
