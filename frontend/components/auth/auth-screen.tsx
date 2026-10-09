@@ -141,6 +141,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
     const [errorField, setErrorField] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const isLogin = mode === "login";
     const nextPath = searchParams.get("next");
     const safeNextPath =
@@ -235,7 +236,9 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                 );
             }
 
-            document.cookie = `auth_token=${payload.data.token}; path=/; max-age=2592000; samesite=lax`;
+            const cookieMaxAge =
+                !isLogin || rememberMe ? "; max-age=2592000" : "";
+            document.cookie = `auth_token=${payload.data.token}; path=/${cookieMaxAge}; samesite=lax`;
             notifyAuthSessionChanged();
             const isAdmin = ADMIN_ROLES.has(payload.data.user.role ?? "");
             const adminTarget = nextPath?.startsWith("/admin")
@@ -370,7 +373,22 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                         ))}
 
                         {isLogin ? (
-                            <div className="mb-6 flex justify-end">
+                            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                                <label
+                                    className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-[#334155]"
+                                    htmlFor="remember-me"
+                                >
+                                    <input
+                                        checked={rememberMe}
+                                        className="size-5 rounded border-[#334155]/40 accent-[#1A2E44] focus:ring-2 focus:ring-[#8C6D4F]"
+                                        id="remember-me"
+                                        onChange={(event) =>
+                                            setRememberMe(event.target.checked)
+                                        }
+                                        type="checkbox"
+                                    />
+                                    Lembrar de mim
+                                </label>
                                 <Link
                                     className="text-sm font-bold text-primary underline-offset-4 hover:underline"
                                     href={`/recuperar-senha${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
