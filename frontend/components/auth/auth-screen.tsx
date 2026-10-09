@@ -35,6 +35,40 @@ const ADMIN_ROLES = new Set(["ADMIN", "SUBADMIN"]);
 const PASSWORD_PATTERN =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 
+function EyeIcon({ hidden }: { hidden: boolean }) {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <path
+                d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+            />
+            <circle
+                cx="12"
+                cy="12"
+                r="2.5"
+                stroke="currentColor"
+                strokeWidth="2"
+            />
+            {hidden ? (
+                <path
+                    d="m4 4 16 16"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                />
+            ) : null}
+        </svg>
+    );
+}
+
 const fields = {
     login: [
         {
@@ -308,14 +342,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                                             }
                                             type="button"
                                         >
-                                            <span
-                                                aria-hidden="true"
-                                                className="material-symbols-outlined text-xl"
-                                            >
-                                                {showPassword
-                                                    ? "visibility_off"
-                                                    : "visibility"}
-                                            </span>
+                                            <EyeIcon hidden={showPassword} />
                                         </button>
                                     ) : null}
                                 </div>

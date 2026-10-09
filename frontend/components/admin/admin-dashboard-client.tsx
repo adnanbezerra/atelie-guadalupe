@@ -23,6 +23,32 @@ const metricCards = [
     ["local_shipping", "Pedidos para enviar", "ordersToShip", "number"],
 ] as const;
 
+function ClockIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-6 text-primary"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                strokeWidth="2"
+            />
+            <path
+                d="M12 7v5l3 2"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+            />
+        </svg>
+    );
+}
+
 function queueLabel(item: AdminDashboardPayload["priorityOrders"][number]) {
     if (item.fulfillmentStatus === "FAILED") return "Corrigir fulfillment";
     if (item.status === "PAID") return "Preparar pedido";
@@ -77,12 +103,16 @@ export function AdminDashboardClient({
                                 className="rounded-xl border border-slate-200 bg-white p-5"
                                 key={key}
                             >
-                                <span
-                                    aria-hidden="true"
-                                    className="material-symbols-outlined text-2xl text-primary"
-                                >
-                                    {icon}
-                                </span>
+                                {icon === "schedule" ? (
+                                    <ClockIcon />
+                                ) : (
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined text-2xl text-primary"
+                                    >
+                                        {icon}
+                                    </span>
+                                )}
                                 <p className="mt-4 text-sm font-medium text-slate-600">
                                     {label}
                                 </p>
@@ -96,29 +126,6 @@ export function AdminDashboardClient({
                             </div>
                         );
                     })}
-                </section>
-
-                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <OperationalCount
-                        label="Falhas de fulfillment"
-                        value={metrics?.failedFulfillments}
-                        tone="text-red-700"
-                    />
-                    <OperationalCount
-                        label="Sem estoque"
-                        value={metrics?.outOfStockProducts}
-                        tone="text-red-700"
-                    />
-                    <OperationalCount
-                        label="Estoque baixo"
-                        value={metrics?.lowStockProducts}
-                        tone="text-amber-800"
-                    />
-                    <OperationalCount
-                        label="Prioridades"
-                        value={dashboard?.priorityOrders.length}
-                        tone="text-primary"
-                    />
                 </section>
 
                 <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -194,24 +201,5 @@ export function AdminDashboardClient({
                 title="Painel indisponível"
             />
         </>
-    );
-}
-
-function OperationalCount({
-    label,
-    tone,
-    value,
-}: {
-    label: string;
-    tone: string;
-    value?: number;
-}) {
-    return (
-        <div className="rounded-xl bg-white p-5 ring-1 ring-slate-200">
-            <p className="text-sm font-medium text-slate-600">{label}</p>
-            <p className={`mt-2 text-2xl font-extrabold ${tone}`}>
-                {value ?? "—"}
-            </p>
-        </div>
     );
 }

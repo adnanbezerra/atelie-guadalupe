@@ -465,10 +465,7 @@ async function main() {
                     "shippingWeightGrams" in productSeedItem
                         ? productSeedItem.shippingWeightGrams
                         : null;
-                const imageUrl =
-                    "imageUrl" in productSeedItem
-                        ? productSeedItem.imageUrl
-                        : `/media/products/${productSlug}.webp`;
+                const imageUrl = "imageUrl" in productSeedItem ? productSeedItem.imageUrl : null;
 
                 if (legacySlugs.length > 0) {
                     const existingProduct = await prisma.product.findUnique({
@@ -516,7 +513,6 @@ async function main() {
                         description: productDescriptionsBySlug[productSlug] ?? null,
                         shortDescription: productSeedItem.shortDescription,
                         longDescription: productSeedItem.longDescription,
-                        imageUrl,
                         stock: lineSeed.category === "ARTISANAL" ? (stock ?? 0) : null,
                         shippingWeightGrams,
                         isActive: true

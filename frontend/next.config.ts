@@ -7,18 +7,25 @@ const apiUrl = process.env.API_BASE_URL
 const nextConfig: NextConfig = {
     output: "standalone",
     images: {
-        remotePatterns: apiUrl
-            ? [
-                  {
-                      protocol: apiUrl.protocol.replace(":", "") as
-                          | "http"
-                          | "https",
-                      hostname: apiUrl.hostname,
-                      port: apiUrl.port,
-                      pathname: "/media/images/**",
-                  },
-              ]
-            : [],
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "atelie-guadalupe-backend.ithx86.easypanel.host",
+                pathname: "/media/images/**",
+            },
+            ...(apiUrl
+                ? [
+                      {
+                          protocol: apiUrl.protocol.replace(":", "") as
+                              | "http"
+                              | "https",
+                          hostname: apiUrl.hostname,
+                          port: apiUrl.port,
+                          pathname: "/media/images/**",
+                      },
+                  ]
+                : []),
+        ],
     },
 };
 

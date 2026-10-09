@@ -3,6 +3,7 @@ import Link from "next/link";
 import logo from "public/logo-empty.png";
 
 type AdminSidebarProps = {
+    onLogout: () => void;
     pathname: string;
     role?: string;
 };
@@ -28,7 +29,7 @@ export const adminNavItems = [
     { href: "/admin/usuarios", icon: "group", label: "Usuários" },
 ];
 
-export function AdminSidebar({ pathname, role }: AdminSidebarProps) {
+export function AdminSidebar({ onLogout, pathname, role }: AdminSidebarProps) {
     const visibleItems = adminNavItems.filter(
         (item) => item.href !== "/admin/usuarios" || role === "ADMIN",
     );
@@ -89,7 +90,11 @@ export function AdminSidebar({ pathname, role }: AdminSidebarProps) {
                 >
                     Visão de usuário
                 </Link>
-                <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-red-600">
+                <button
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-red-600"
+                    onClick={onLogout}
+                    type="button"
+                >
                     <span className="material-symbols-outlined">logout</span>
                     <span className="text-sm font-medium">Sair</span>
                 </button>

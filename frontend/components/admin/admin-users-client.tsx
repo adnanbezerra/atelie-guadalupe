@@ -690,12 +690,34 @@ function EmptyState({
 }) {
     return (
         <div className="px-6 py-14 text-center">
-            <span
+            <svg
                 aria-hidden="true"
-                className="material-symbols-outlined text-4xl text-slate-300"
+                className="mx-auto size-10 text-slate-300"
+                fill="none"
+                viewBox="0 0 24 24"
             >
-                group_off
-            </span>
+                <path
+                    d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                />
+                <circle
+                    cx="9.5"
+                    cy="7"
+                    r="4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                />
+                <path
+                    d="M17 11a4 4 0 0 1 4 4v2M3 3l18 18"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                />
+            </svg>
             <h2 className="mt-3 font-bold text-slate-950">{title}</h2>
             <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>

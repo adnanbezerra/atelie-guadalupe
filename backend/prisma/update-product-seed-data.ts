@@ -82,6 +82,9 @@ async function main() {
                         }
                     });
                 } else {
+                    const imageUrl =
+                        "imageUrl" in productSeedItem ? productSeedItem.imageUrl : null;
+
                     await prisma.product.create({
                         data: {
                             uuid: createUuid(),
@@ -89,7 +92,7 @@ async function main() {
                             category: lineSeed.category,
                             name: productSeedItem.name,
                             slug: productSlug,
-                            imageUrl: `/media/products/${productSlug}.webp`,
+                            imageUrl,
                             stock: lineSeed.category === "ARTISANAL" ? 0 : null,
                             shippingWeightGrams: null,
                             description: null,
