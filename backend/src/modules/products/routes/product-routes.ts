@@ -35,6 +35,14 @@ const productRoutes: FastifyPluginAsync = async (fastify) => {
         controller.updateLine
     );
 
+    fastify.delete(
+        "/lines/:uuid",
+        {
+            preHandler: [fastify.authenticate, fastify.authorize(["ADMIN", "SUBADMIN"])]
+        },
+        controller.deleteLine
+    );
+
     fastify.post(
         "/",
         {
