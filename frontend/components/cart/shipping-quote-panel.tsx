@@ -210,19 +210,14 @@ export function ShippingQuotePanel({
         if (
             !savedAddressPreview ||
             !automaticQuoteSignature ||
-            lastAutomaticQuoteSignatureRef.current ===
-                automaticQuoteSignature
+            lastAutomaticQuoteSignatureRef.current === automaticQuoteSignature
         ) {
             return;
         }
 
         lastAutomaticQuoteSignatureRef.current = automaticQuoteSignature;
         void requestQuote(savedAddressPreview);
-    }, [
-        automaticQuoteSignature,
-        requestQuote,
-        savedAddressPreview,
-    ]);
+    }, [automaticQuoteSignature, requestQuote, savedAddressPreview]);
 
     function resetQuote() {
         quoteRequestIdRef.current += 1;
