@@ -605,6 +605,12 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             ) : (
                                 <CheckoutAddressForm
                                     address={userContext.address}
+                                    onCancel={
+                                        hasValidAddress
+                                            ? () =>
+                                                  setIsEditingAddress(false)
+                                            : undefined
+                                    }
                                     onError={(title, description) =>
                                         setCheckoutError({
                                             title,
@@ -633,6 +639,14 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                     <CheckoutCustomerFieldForm
                                         field="document"
                                         initialValue={document}
+                                        onCancel={
+                                            hasValidDocument
+                                                ? () =>
+                                                      setIsEditingDocument(
+                                                          false,
+                                                      )
+                                                : undefined
+                                        }
                                         onError={(title, description) =>
                                             setCheckoutError({
                                                 title,

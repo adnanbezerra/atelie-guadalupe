@@ -14,6 +14,7 @@ import { updateCurrentUser } from "@/lib/api";
 type CheckoutCustomerFieldFormProps = {
     field: "document" | "phone";
     initialValue?: string | null;
+    onCancel?: () => void;
     onError: (title: string, description: string) => void;
     onSaved: (title: string, description: string) => void;
 };
@@ -66,6 +67,7 @@ const fieldConfig = {
 export function CheckoutCustomerFieldForm({
     field,
     initialValue,
+    onCancel,
     onError,
     onSaved,
 }: CheckoutCustomerFieldFormProps) {
@@ -171,7 +173,17 @@ export function CheckoutCustomerFieldForm({
                     />
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-5">
+                <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center">
+                    {onCancel ? (
+                        <button
+                            className="inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                            disabled={isSubmitting}
+                            onClick={onCancel}
+                            type="button"
+                        >
+                            Cancelar
+                        </button>
+                    ) : null}
                     <button
                         className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 font-bold text-white shadow-md shadow-primary/20 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                         disabled={!isDirty || isSubmitting}
