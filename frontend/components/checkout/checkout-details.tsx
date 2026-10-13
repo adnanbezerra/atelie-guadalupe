@@ -20,27 +20,20 @@ export function DeliveryAddress({
 }) {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start gap-4">
-                <span
-                    aria-hidden="true"
-                    className="material-symbols-outlined text-[#8a642e]"
-                >
-                    home_pin
-                </span>
+            <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined shrink-0 text-2xl leading-none text-[#8a642e]"
+                        >
+                            home_pin
+                        </span>
                         <h2 className="font-display text-xl font-bold text-slate-950">
                             Entrega em
                         </h2>
-                        <button
-                            className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-primary hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20"
-                            onClick={onEdit}
-                            type="button"
-                        >
-                            Alterar endereço
-                        </button>
                     </div>
-                    <address className="mt-2 not-italic text-sm leading-6 text-slate-600">
+                    <address className="mt-2 pl-9 not-italic text-sm leading-6 text-slate-600">
                         {address.street}, {address.number}
                         <br />
                         {address.neighborhood} · {address.city} —{" "}
@@ -49,6 +42,13 @@ export function DeliveryAddress({
                         CEP {address.zipCode}
                     </address>
                 </div>
+                <button
+                    className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-primary hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20"
+                    onClick={onEdit}
+                    type="button"
+                >
+                    Alterar endereço
+                </button>
             </div>
         </section>
     );
