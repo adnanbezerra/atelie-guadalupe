@@ -1,4 +1,8 @@
 import { ProductImage } from "@/components/shared/product-image";
+import {
+    formatDocument,
+    formatPhone,
+} from "@/components/profile/profile-page-helpers";
 import type { Address } from "@/lib/types";
 import { formatCurrency, formatProductSizeLabel } from "@/lib/utils";
 
@@ -50,6 +54,71 @@ export function DeliveryAddress({
                     Alterar endereço
                 </button>
             </div>
+        </section>
+    );
+}
+
+export function CheckoutReviewDetails({
+    document,
+    notes,
+    onEdit,
+    phone,
+}: {
+    document: string;
+    notes: string;
+    onEdit: () => void;
+    phone?: string | null;
+}) {
+    return (
+        <section className="rounded-xl border border-primary/20 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                    <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined shrink-0 text-2xl leading-none text-primary"
+                    >
+                        receipt_long
+                    </span>
+                    <div>
+                        <h2 className="font-display text-xl font-bold text-slate-950">
+                            Confira antes de confirmar
+                        </h2>
+                        <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+                            Revise seus dados, a entrega, os produtos e o valor
+                            final. O pedido só será criado após sua confirmação.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-primary hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20"
+                    onClick={onEdit}
+                    type="button"
+                >
+                    Voltar e editar
+                </button>
+            </div>
+            <dl className="mt-5 grid gap-4 border-t border-slate-100 pt-5 text-sm sm:grid-cols-2">
+                <div>
+                    <dt className="font-bold text-slate-900">CPF ou CNPJ</dt>
+                    <dd className="mt-1 text-slate-600">
+                        {formatDocument(document)}
+                    </dd>
+                </div>
+                {phone ? (
+                    <div>
+                        <dt className="font-bold text-slate-900">Telefone</dt>
+                        <dd className="mt-1 text-slate-600">
+                            {formatPhone(phone)}
+                        </dd>
+                    </div>
+                ) : null}
+                <div className="sm:col-span-2">
+                    <dt className="font-bold text-slate-900">Observações</dt>
+                    <dd className="mt-1 whitespace-pre-wrap text-slate-600">
+                        {notes || "Nenhuma observação para este pedido."}
+                    </dd>
+                </div>
+            </dl>
         </section>
     );
 }

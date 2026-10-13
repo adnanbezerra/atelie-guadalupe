@@ -10,7 +10,12 @@ import {
     CheckoutLoading,
     EmptyCheckout,
 } from "./checkout-feedback";
-import { DeliveryAddress, OrderItems, OrderNotes } from "./checkout-details";
+import {
+    CheckoutReviewDetails,
+    DeliveryAddress,
+    OrderItems,
+    OrderNotes,
+} from "./checkout-details";
 import { CheckoutSteps } from "./checkout-steps";
 import { CheckoutSummary } from "./checkout-summary";
 import {
@@ -64,6 +69,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         null,
     );
     const [isEditingAddress, setIsEditingAddress] = useState(false);
+    const [isReviewing, setIsReviewing] = useState(false);
 
     const hasValidServiceCode =
         Number.isInteger(quotedShipping.serviceCode) &&
@@ -82,6 +88,11 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         userContext.address.street.trim().length > 0 &&
         userContext.address.street.length <= 30,
     );
+    const canReview =
+        hasValidDocument &&
+        hasValidAddress &&
+        hasValidPhone &&
+        hasVerifiedShippingQuote;
     const paymentConfirmed = Boolean(
         order &&
         (PAYMENT_CONFIRMED_STATUSES.has(order.status) ||
@@ -521,7 +532,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const currentStep =
         paymentConfirmed || paymentProblem || awaitingPayment
             ? 3
-            : isShippingConfirmed
+            : isReviewing || isShippingConfirmed
               ? 2
               : 1;
 
@@ -572,10 +583,21 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                 ) : (
                     <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
                         <div className="space-y-6">
+                            {isReviewing ? (
+                                <CheckoutReviewDetails
+                                    document={userContext.user?.document ?? ""}
+                                    notes={notes}
+                                    onEdit={() => setIsReviewing(false)}
+                                    phone={userContext.user?.phone}
+                                />
+                            ) : null}
                             {hasValidAddress && !isEditingAddress ? (
                                 <DeliveryAddress
                                     address={userContext.address!}
-                                    onEdit={() => setIsEditingAddress(true)}
+                                    onEdit={() => {
+                                        setIsReviewing(false);
+                                        setIsEditingAddress(true);
+                                    }}
                                 />
                             ) : (
                                 <CheckoutAddressForm
@@ -596,7 +618,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                 />
                             )}
 
-                            {!hasValidDocument ? (
+                            {!isReviewing && !hasValidDocument ? (
                                 <CheckoutCustomerFieldForm
                                     field="document"
                                     onError={(title, description) =>
@@ -613,7 +635,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                 />
                             ) : null}
 
-                            {!hasValidPhone ? (
+                            {!isReviewing && !hasValidPhone ? (
                                 <CheckoutCustomerFieldForm
                                     field="phone"
                                     onError={(title, description) =>
@@ -631,26 +653,23 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             ) : null}
                             <OrderItems items={displayItems} />
 
-                            {!order ? (
+                            {!order && !isReviewing ? (
                                 <OrderNotes notes={notes} onChange={setNotes} />
                             ) : null}
                         </div>
 
                         <CheckoutSummary
-                            canPrepare={
-                                hasValidDocument &&
-                                hasValidAddress &&
-                                hasValidPhone &&
-                                hasVerifiedShippingQuote
-                            }
+                            canPrepare={canReview}
                             discount={discount}
                             hasVerifiedShippingQuote={hasVerifiedShippingQuote}
                             isPreparing={isPreparing}
                             isRedirecting={isRedirecting}
+                            isReviewing={isReviewing}
                             isShippingQuoteLoading={isShippingQuoteLoading}
                             isShippingConfirmed={isShippingConfirmed}
                             onOpenPayment={() => void openPayment()}
                             onPrepareOrder={() => void prepareOrder()}
+                            onReview={() => setIsReviewing(true)}
                             serviceName={quotedShipping.serviceName}
                             shipping={shipping}
                             subtotal={subtotal}

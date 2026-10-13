@@ -6,10 +6,12 @@ type CheckoutSummaryProps = {
     hasVerifiedShippingQuote: boolean;
     isPreparing: boolean;
     isRedirecting: boolean;
+    isReviewing: boolean;
     isShippingConfirmed: boolean;
     isShippingQuoteLoading: boolean;
     onOpenPayment: () => void;
     onPrepareOrder: () => void;
+    onReview: () => void;
     serviceName: string;
     shipping: number;
     subtotal: number;
@@ -22,10 +24,12 @@ export function CheckoutSummary({
     hasVerifiedShippingQuote,
     isPreparing,
     isRedirecting,
+    isReviewing,
     isShippingConfirmed,
     isShippingQuoteLoading,
     onOpenPayment,
     onPrepareOrder,
+    onReview,
     serviceName,
     shipping,
     subtotal,
@@ -103,9 +107,11 @@ export function CheckoutSummary({
                                 ? "Calculando frete..."
                                 : isPreparing
                                   ? "Confirmando pedido..."
-                                  : "Confirmar pedido e frete"
+                                  : isReviewing
+                                    ? "Confirmar e ir ao pagamento"
+                                    : "Ir para conferência"
                         }
-                        onClick={onPrepareOrder}
+                        onClick={isReviewing ? onPrepareOrder : onReview}
                     />
                 )}
                 <p className="mt-3 text-center text-xs leading-5 text-slate-500">
