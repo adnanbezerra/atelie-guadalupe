@@ -62,6 +62,62 @@ test("product update rejects image upload combined with image removal", () => {
     assert.equal(result.success, false);
 });
 
+test("product service deletes an unused product line", async () => {
+    let deletedUuid: string | undefined;
+    const repository = {
+        findLineByUuid: async () => ({ uuid: "line-1" }),
+        deleteLineByUuidIfUnused: async (uuid: string) => {
+            deletedUuid = uuid;
+            return true;
+        }
+    };
+    const service = new ProductService(repository as never, {} as never, {} as never);
+
+    const result = await service.deleteLine("line-1");
+
+    assert.equal(result.success, true);
+    assert.equal(deletedUuid, "line-1");
+    if (result.success) assert.deepEqual(result.value, { deleted: true });
+});
+
+test("product service returns not found when deleting a missing product line", async () => {
+    let deleteCalls = 0;
+    const repository = {
+        findLineByUuid: async () => null,
+        deleteLineByUuidIfUnused: async () => {
+            deleteCalls += 1;
+            return true;
+        }
+    };
+    const service = new ProductService(repository as never, {} as never, {} as never);
+
+    const result = await service.deleteLine("line-1");
+
+    assert.equal(result.success, false);
+    assert.equal(deleteCalls, 0);
+    if (!result.success) {
+        assert.equal(result.value.statusCode, 404);
+        assert.equal(result.value.code, "RESOURCE_NOT_FOUND");
+    }
+});
+
+test("product service rejects deletion when product line is in use", async () => {
+    const repository = {
+        findLineByUuid: async () => ({ uuid: "line-1" }),
+        deleteLineByUuidIfUnused: async () => false
+    };
+    const service = new ProductService(repository as never, {} as never, {} as never);
+
+    const result = await service.deleteLine("line-1");
+
+    assert.equal(result.success, false);
+    if (!result.success) {
+        assert.equal(result.value.statusCode, 409);
+        assert.equal(result.value.code, "PRODUCT_LINE_IN_USE");
+        assert.equal(result.value.message, "Esta linha ainda está vinculada a produtos.");
+    }
+});
+
 test("product service creates slug from product name", async () => {
     const repository = {
         findBySlug: async () => null,

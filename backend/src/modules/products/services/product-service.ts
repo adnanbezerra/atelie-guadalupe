@@ -121,6 +121,28 @@ export class ProductService {
         });
     }
 
+    public async deleteLine(lineUuid: string): Promise<Either<AppError, { deleted: true }>> {
+        const existingLine = await this.productRepository.findLineByUuid(lineUuid);
+        if (!existingLine) {
+            return left(AppError.notFound("Linha nao encontrada"));
+        }
+
+        const deleted = await this.productRepository.deleteLineByUuidIfUnused(lineUuid);
+        if (!deleted) {
+            return left(
+                new AppError(
+                    "PRODUCT_LINE_IN_USE",
+                    409,
+                    "Esta linha ainda está vinculada a produtos."
+                )
+            );
+        }
+
+        return right({
+            deleted: true as const
+        });
+    }
+
     public async list(
         query: ListProductsInput,
         role?: RoleName

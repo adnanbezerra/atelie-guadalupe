@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AdminProductLinesClient } from "@/components/admin/admin-product-lines-client";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { ProductImage } from "@/components/shared/product-image";
 import { useApiToken } from "@/hooks/use-api-token";
@@ -17,6 +18,7 @@ type AdminProductsClientProps = {
 };
 
 type Feedback = { title: string; description: string };
+type CatalogSection = "products" | "lines";
 
 function getStock(product: { stock?: number | null }) {
     return product.stock ?? null;
@@ -53,6 +55,56 @@ function getStockState(product: Product) {
 }
 
 export function AdminProductsClient({
+    initialCatalog,
+    initialLines,
+}: AdminProductsClientProps) {
+    const [section, setSection] = useState<CatalogSection>("products");
+
+    return (
+        <div className="flex min-h-full flex-col">
+            <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-4 py-3 md:px-8">
+                <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Catálogo
+                        </p>
+                        <p className="font-bold text-slate-900">
+                            Produtos e linhas
+                        </p>
+                    </div>
+                    <nav
+                        aria-label="Escolher área do catálogo"
+                        className="grid grid-cols-2 rounded-xl bg-slate-100 p-1"
+                    >
+                        <CatalogTab
+                            active={section === "products"}
+                            icon="inventory_2"
+                            label="Produtos"
+                            onClick={() => setSection("products")}
+                        />
+                        <CatalogTab
+                            active={section === "lines"}
+                            icon="sell"
+                            label="Linhas"
+                            onClick={() => setSection("lines")}
+                        />
+                    </nav>
+                </div>
+            </header>
+
+            {section === "products" ? (
+                <ProductsPanel
+                    initialCatalog={initialCatalog}
+                    initialLines={initialLines}
+                />
+            ) : (
+                <AdminProductLinesClient initialLines={initialLines} />
+            )}
+        </div>
+    );
+}
+
+function ProductsPanel({
     initialCatalog,
     initialLines,
 }: AdminProductsClientProps) {
@@ -166,7 +218,7 @@ export function AdminProductsClient({
 
     return (
         <div className="flex min-h-full flex-col">
-            <header className="sticky top-0 z-10 flex min-h-16 items-center border-b border-slate-200 bg-white px-4 py-3 md:px-8">
+            <header className="flex min-h-16 items-center border-b border-slate-200 bg-white px-4 py-3 md:px-8">
                 <div className="relative w-full max-w-md">
                     <span
                         aria-hidden="true"
@@ -561,6 +613,39 @@ export function AdminProductsClient({
                 title="Produtos indisponíveis"
             />
         </div>
+    );
+}
+
+function CatalogTab({
+    active,
+    icon,
+    label,
+    onClick,
+}: {
+    active: boolean;
+    icon: string;
+    label: string;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            aria-current={active ? "page" : undefined}
+            className={
+                active
+                    ? "flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-bold text-white shadow-sm sm:px-5"
+                    : "flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold text-slate-600 hover:bg-white hover:text-slate-900 sm:px-5"
+            }
+            onClick={onClick}
+            type="button"
+        >
+            <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-lg"
+            >
+                {icon}
+            </span>
+            {label}
+        </button>
     );
 }
 

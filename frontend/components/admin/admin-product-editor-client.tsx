@@ -625,11 +625,6 @@ function ProductForm({
                                     <span className="block text-sm font-bold text-slate-900">
                                         Produto ativo na vitrine
                                     </span>
-                                    <span className="mt-1 block text-xs leading-5 text-slate-600">
-                                        Ao reativar, o backend valida textos,
-                                        preços, estoque e peso antes de
-                                        publicar.
-                                    </span>
                                 </span>
                             </label>
                         ) : null}

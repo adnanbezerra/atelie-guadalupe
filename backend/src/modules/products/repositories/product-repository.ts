@@ -110,6 +110,19 @@ export class ProductRepository {
         });
     }
 
+    public async deleteLineByUuidIfUnused(uuid: string): Promise<boolean> {
+        const result = await this.prisma.productLine.deleteMany({
+            where: {
+                uuid,
+                products: {
+                    none: {}
+                }
+            }
+        });
+
+        return result.count > 0;
+    }
+
     public async list(query: ProductListQuery) {
         const where = {
             ...((query.status ?? "ACTIVE") === "ACTIVE"

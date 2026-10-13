@@ -58,6 +58,12 @@ export class ProductController {
         return sendEither(reply, result);
     };
 
+    public deleteLine = async (request: FastifyRequest, reply: FastifyReply) => {
+        const params = this.fastify.validateSchema(productLineUuidParamSchema, request.params);
+        const result = await this.productService.deleteLine(params.uuid);
+        return sendEither(reply, result);
+    };
+
     public create = async (request: FastifyRequest, reply: FastifyReply) => {
         const body = await this.parseProductMultipartRequest(request, true);
         const input = this.fastify.validateSchema(createProductSchema, body);

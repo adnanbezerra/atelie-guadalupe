@@ -12,6 +12,7 @@ import type {
     Order,
     Product,
     ProductLine,
+    ProductLineInput,
     ProductListResponse,
     ProductQuery,
     ShippingQuoteItemInput,
@@ -286,6 +287,29 @@ export function getProductByUuid(productUuid: string, token?: string | null) {
 
 export function getProductLines(query?: { category?: string }) {
     return request<{ lines: ProductLine[] }>("/products/lines", { query });
+}
+
+export function createProductLine(token: string, body: ProductLineInput) {
+    return request<{ line: ProductLine }>("/products/lines", {
+        method: "POST",
+        token,
+        body,
+    });
+}
+
+export function updateProductLine(
+    token: string,
+    lineUuid: string,
+    body: Partial<ProductLineInput>,
+) {
+    return request<{ line: ProductLine }>(
+        `/products/lines/${encodeURIComponent(lineUuid)}`,
+        {
+            method: "PATCH",
+            token,
+            body,
+        },
+    );
 }
 
 export function getCart(token: string) {

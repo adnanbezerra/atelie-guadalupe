@@ -51,6 +51,32 @@ function getBodyPreview(testimonial: Testimonial) {
     return testimonial.text ?? "";
 }
 
+function EyeIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            className="size-[18px]"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <path
+                d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+            />
+            <circle
+                cx="12"
+                cy="12"
+                r="2.5"
+                stroke="currentColor"
+                strokeWidth="2"
+            />
+        </svg>
+    );
+}
+
 export function AdminTestimonialsClient({
     initialData,
     initialError,
@@ -400,12 +426,7 @@ export function AdminTestimonialsClient({
                                                     }
                                                     type="button"
                                                 >
-                                                    <span
-                                                        aria-hidden="true"
-                                                        className="material-symbols-outlined text-lg"
-                                                    >
-                                                        visibility
-                                                    </span>
+                                                    <EyeIcon />
                                                 </button>
                                                 <button
                                                     aria-label="Editar testemunho"
@@ -423,78 +444,6 @@ export function AdminTestimonialsClient({
                                                         edit
                                                     </span>
                                                 </button>
-                                                {testimonial.isActive ? (
-                                                    <button
-                                                        aria-label="Desativar testemunho"
-                                                        className="rounded-lg p-2 transition-colors hover:bg-amber-100 hover:text-amber-600"
-                                                        onClick={() => {
-                                                            void handleTestimonialAction(
-                                                                () =>
-                                                                    testimonials.deactivateTestimonial(
-                                                                        testimonial.uuid,
-                                                                    ),
-                                                                "O testemunho foi desativado.",
-                                                            );
-                                                        }}
-                                                        type="button"
-                                                    >
-                                                        <span
-                                                            aria-hidden="true"
-                                                            className="material-symbols-outlined text-lg"
-                                                        >
-                                                            visibility_off
-                                                        </span>
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        aria-label="Reativar testemunho"
-                                                        className="rounded-lg p-2 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
-                                                        onClick={() => {
-                                                            const payload =
-                                                                testimonial.type ===
-                                                                "TEXT"
-                                                                    ? {
-                                                                          uuid: testimonial.uuid,
-                                                                          type: "TEXT" as const,
-                                                                          ...(testimonial.title
-                                                                              ? {
-                                                                                    title: testimonial.title,
-                                                                                }
-                                                                              : {}),
-                                                                          text:
-                                                                              testimonial.text ??
-                                                                              "",
-                                                                          isActive: true,
-                                                                      }
-                                                                    : {
-                                                                          uuid: testimonial.uuid,
-                                                                          type: "VIDEO" as const,
-                                                                          ...(testimonial.title
-                                                                              ? {
-                                                                                    title: testimonial.title,
-                                                                                }
-                                                                              : {}),
-                                                                          isActive: true,
-                                                                      };
-
-                                                            void handleTestimonialAction(
-                                                                () =>
-                                                                    testimonials.updateTestimonial(
-                                                                        payload,
-                                                                    ),
-                                                                "O testemunho voltou a aparecer na vitrine.",
-                                                            );
-                                                        }}
-                                                        type="button"
-                                                    >
-                                                        <span
-                                                            aria-hidden="true"
-                                                            className="material-symbols-outlined text-lg"
-                                                        >
-                                                            visibility
-                                                        </span>
-                                                    </button>
-                                                )}
                                                 <button
                                                     aria-label="Excluir testemunho"
                                                     className="rounded-lg p-2 transition-colors hover:bg-red-100 hover:text-red-600"

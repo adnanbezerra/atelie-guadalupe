@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import logo from "public/logo-empty.png";
 import {
     Dialog,
@@ -13,6 +13,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { clearAuthSession } from "@/lib/auth-session";
 import { AdminSidebar, adminNavItems } from "./admin-sidebar";
 import { useUser } from "@/hooks/use-user";
 
@@ -22,15 +23,30 @@ type AdminShellProps = {
 
 export function AdminShell({ children }: AdminShellProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const { user } = useUser();
     const role = user?.role;
+
+    function handleLogout() {
+        clearAuthSession();
+        router.replace("/login");
+        router.refresh();
+    }
 
     return (
         <div className="fixed inset-0 bg-[#f6f6f8] text-slate-900">
             <div className="flex h-full overflow-hidden">
-                <AdminSidebar pathname={pathname} role={role} />
+                <AdminSidebar
+                    onLogout={handleLogout}
+                    pathname={pathname}
+                    role={role}
+                />
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                    <AdminMobileHeader pathname={pathname} role={role} />
+                    <AdminMobileHeader
+                        onLogout={handleLogout}
+                        pathname={pathname}
+                        role={role}
+                    />
                     <main className="min-h-0 flex-1 overflow-y-auto">
                         {children}
                     </main>
@@ -41,9 +57,11 @@ export function AdminShell({ children }: AdminShellProps) {
 }
 
 function AdminMobileHeader({
+    onLogout,
     pathname,
     role,
 }: {
+    onLogout: () => void;
     pathname: string;
     role?: string;
 }) {
@@ -125,6 +143,7 @@ function AdminMobileHeader({
                         </DialogClose>
                         <button
                             className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
+                            onClick={onLogout}
                             type="button"
                         >
                             <span className="material-symbols-outlined">
