@@ -11,6 +11,7 @@ import { ProductImage } from "@/components/shared/product-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/hooks/use-user";
+import { getShippingContextKey } from "@/lib/shipping";
 import { Cart } from "@/lib/types";
 import {
     formatCurrency,
@@ -76,13 +77,18 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
         cart.data?.items.some((item) => !item.isAvailable),
     );
     const orderTotal = total + (shippingOption?.priceInCents ?? 0);
+    const shippingContextKey = getShippingContextKey(
+        cart.data,
+        userContext.address?.zipCode.replace(/\D/g, "") ?? "",
+    );
     const checkoutHref = (() => {
-        if (!hasItems || !shippingOption || hasUnavailableItems)
-            return undefined;
+        if (!hasItems || hasUnavailableItems) return undefined;
         if (!userContext.isAuthenticated) return "/login?next=%2Fcarrinho";
+        if (!shippingOption) return undefined;
 
         const params = new URLSearchParams({
             serviceCode: String(shippingOption.serviceCode),
+            quoteContext: shippingContextKey,
         });
 
         return `/checkout?${params.toString()}`;
@@ -207,7 +213,10 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                     onClick={() => cart.removeItem(item.uuid)}
                                     type="button"
                                 >
-                                    <span className="material-symbols-outlined text-lg">
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined text-lg"
+                                    >
                                         delete
                                     </span>
                                     Remover
@@ -281,19 +290,13 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                     ) : null}
                 </div>
 
-                <aside className="flex flex-col gap-6 self-start lg:sticky lg:top-24">
-                    {hasItems && !hasUnavailableItems ? (
-                        <ShippingQuotePanel
-                            items={cartItems}
-                            onSelectionChange={handleShippingSelection}
-                            selectedOption={shippingOption}
-                        />
-                    ) : null}
-
+                <aside
+                    className={`flex flex-col gap-6 self-start ${userContext.address ? "lg:sticky lg:top-24" : ""}`}
+                >
                     <div className="rounded-2xl border border-primary/10 bg-white p-6 shadow-lg">
-                        <h4 className="mb-6 font-display text-xl font-bold text-slate-900">
+                        <h2 className="mb-6 font-display text-xl font-bold text-slate-900">
                             Resumo do Pedido
-                        </h4>
+                        </h2>
                         {cart.isLoading && !cart.data ? (
                             <div className="space-y-4">
                                 <Skeleton className="h-4 w-full" />
@@ -337,23 +340,18 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                             </span>
                                         </div>
                                     ) : null}
-                                    {shippingOption ? (
-                                        <div className="flex justify-between gap-4 text-sm">
-                                            <span className="text-slate-500">
-                                                {shippingOption.name}
-                                            </span>
-                                            <span className="text-right font-medium">
-                                                {shippingOption.priceInCents > 0
-                                                    ? formatCurrency(
-                                                          shippingOption.priceInCents,
-                                                      )
-                                                    : "Grátis"}
-                                            </span>
-                                        </div>
+                                    {hasItems && !hasUnavailableItems ? (
+                                        <ShippingQuotePanel
+                                            items={cartItems}
+                                            onSelectionChange={
+                                                handleShippingSelection
+                                            }
+                                            selectedOption={shippingOption}
+                                        />
                                     ) : null}
                                 </div>
                                 <div className="mb-8 border-t border-slate-100 pt-4">
-                                    <div className="flex items-baseline justify-between">
+                                    <div className="flex items-baseline justify-between gap-4">
                                         <span className="font-display text-lg font-bold text-slate-900">
                                             Total estimado
                                         </span>
@@ -371,8 +369,9 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                 <Link
                                     aria-disabled={
                                         !hasItems ||
-                                        !shippingOption ||
-                                        hasUnavailableItems
+                                        hasUnavailableItems ||
+                                        (userContext.isAuthenticated &&
+                                            !shippingOption)
                                     }
                                     className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-bold text-white shadow-md shadow-primary/20 transition hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-60"
                                     href={checkoutHref ?? "/carrinho"}
@@ -382,11 +381,16 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
                                         : userContext.isAuthenticated
                                           ? "Continuar para pagamento"
                                           : "Entrar para continuar"}
-                                    <span className="material-symbols-outlined text-lg">
+                                    <span
+                                        aria-hidden="true"
+                                        className="material-symbols-outlined text-lg"
+                                    >
                                         arrow_forward
                                     </span>
                                 </Link>
-                                {hasItems && !shippingOption ? (
+                                {hasItems &&
+                                userContext.isAuthenticated &&
+                                !shippingOption ? (
                                     <p className="mb-4 text-center text-xs font-semibold leading-5 text-slate-500">
                                         Calcule e escolha como receber antes de
                                         finalizar.

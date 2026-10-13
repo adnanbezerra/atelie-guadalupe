@@ -23,6 +23,7 @@ import type { Address } from "@/lib/types";
 
 type CheckoutAddressFormProps = {
     address?: Address | null;
+    embedded?: boolean;
     onCancel?: () => void;
     onError: (title: string, description: string) => void;
     onSaved: () => void;
@@ -98,6 +99,7 @@ function AddressInput({
 
 export function CheckoutAddressForm({
     address,
+    embedded = false,
     onCancel,
     onError,
     onSaved,
@@ -225,17 +227,29 @@ export function CheckoutAddressForm({
     }
 
     return (
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-            <div className="border-b border-slate-100 bg-[#f8f5ef] px-5 py-5 sm:px-6">
+        <section
+            className={
+                embedded ? "" : "overflow-hidden rounded-xl bg-white shadow-sm"
+            }
+        >
+            <div
+                className={
+                    embedded
+                        ? "pb-5"
+                        : "border-b border-slate-100 bg-[#f8f5ef] px-5 py-5 sm:px-6"
+                }
+            >
                 <div className="flex items-start gap-4">
                     <span
                         aria-hidden="true"
-                        className="material-symbols-outlined flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                        className={`material-symbols-outlined flex size-11 shrink-0 items-center justify-center rounded-xl text-primary ${embedded ? "bg-[#d1a054]/15" : "bg-primary/10"}`}
                     >
                         home_pin
                     </span>
                     <div>
-                        <h2 className="font-display text-xl font-bold text-slate-950">
+                        <h2
+                            className={`font-display font-bold text-slate-950 ${embedded ? "text-lg" : "text-xl"}`}
+                        >
                             {address
                                 ? "Ajuste o endereço de entrega"
                                 : "Cadastre o endereço de entrega"}
@@ -251,12 +265,16 @@ export function CheckoutAddressForm({
 
             <form
                 aria-busy={isSubmitting}
-                className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-6"
+                className={
+                    embedded
+                        ? "grid grid-cols-1 gap-5"
+                        : "grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-6"
+                }
                 onChange={(event) => updateDirtyState(event.currentTarget)}
                 onSubmit={(event) => void handleSubmit(event)}
                 ref={formRef}
             >
-                <div className="space-y-2 sm:col-span-2">
+                <div className={`space-y-2 ${embedded ? "" : "sm:col-span-2"}`}>
                     <div className="flex items-center justify-between gap-4">
                         <label
                             className="text-sm font-bold text-slate-800"
@@ -319,7 +337,7 @@ export function CheckoutAddressForm({
                     name="street"
                     placeholder="Rua das Oliveiras"
                     required
-                    wide
+                    wide={!embedded}
                 />
                 <AddressInput
                     autoComplete="address-line2"
@@ -380,7 +398,9 @@ export function CheckoutAddressForm({
                     required
                 />
 
-                <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:col-span-2 sm:flex-row sm:items-center">
+                <div
+                    className={`flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center ${embedded ? "" : "sm:col-span-2"}`}
+                >
                     {onCancel ? (
                         <button
                             className="inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
@@ -404,7 +424,9 @@ export function CheckoutAddressForm({
                         </span>
                         {isSubmitting
                             ? "Salvando endereço..."
-                            : "Salvar endereço e continuar"}
+                            : embedded
+                              ? "Salvar endereço"
+                              : "Salvar endereço e continuar"}
                     </button>
                 </div>
             </form>
