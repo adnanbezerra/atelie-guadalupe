@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
     CheckoutError,
     CheckoutErrorDialog,
@@ -22,7 +23,6 @@ import {
 import { PaymentStatus } from "./payment-status";
 import { CheckoutAddressForm } from "./checkout-address-form";
 import { CheckoutCustomerFieldForm } from "./checkout-customer-field-form";
-import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { useApiToken } from "@/hooks/use-api-token";
 import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/hooks/use-user";
@@ -61,9 +61,6 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         useState(false);
     const [pollingTimedOut, setPollingTimedOut] = useState(false);
     const [checkoutError, setCheckoutError] = useState<CheckoutError | null>(
-        null,
-    );
-    const [checkoutNotice, setCheckoutNotice] = useState<CheckoutError | null>(
         null,
     );
     const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -591,8 +588,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                     }
                                     onSaved={() => {
                                         setIsEditingAddress(false);
-                                        setCheckoutNotice({
-                                            title: "Endereço atualizado",
+                                        toast.success("Endereço atualizado", {
                                             description:
                                                 "O endereço de entrega foi salvo. Confira os dados antes de confirmar o pedido.",
                                         });
@@ -610,8 +606,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                         })
                                     }
                                     onSaved={(title, description) =>
-                                        setCheckoutNotice({
-                                            title,
+                                        toast.success(title, {
                                             description,
                                         })
                                     }
@@ -628,8 +623,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                         })
                                     }
                                     onSaved={(title, description) =>
-                                        setCheckoutNotice({
-                                            title,
+                                        toast.success(title, {
                                             description,
                                         })
                                     }
@@ -669,12 +663,6 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             <CheckoutErrorDialog
                 error={checkoutError}
                 onClose={() => setCheckoutError(null)}
-            />
-            <FeedbackDialog
-                description={checkoutNotice?.description ?? ""}
-                onOpenChange={(open) => !open && setCheckoutNotice(null)}
-                open={checkoutNotice != null}
-                title={checkoutNotice?.title ?? ""}
             />
         </main>
     );
