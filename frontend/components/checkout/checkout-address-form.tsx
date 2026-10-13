@@ -182,7 +182,7 @@ export function CheckoutAddressForm({
                         aria-hidden="true"
                         className="material-symbols-outlined flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
                     >
-                        add_location_alt
+                        home_pin
                     </span>
                     <div>
                         <h2 className="font-display text-xl font-bold text-slate-950">
