@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import {
     CheckoutError,
     CheckoutErrorDialog,
@@ -19,6 +18,7 @@ import {
 } from "./checkout-details";
 import { CheckoutSteps } from "./checkout-steps";
 import { CheckoutSummary } from "./checkout-summary";
+import { CheckoutShippingOptions } from "./checkout-shipping-options";
 import {
     idempotencyStorageKey,
     PAYMENT_CONFIRMED_STATUSES,
@@ -39,7 +39,13 @@ import {
     getOrder,
     previewShippingQuote,
 } from "@/lib/api";
-import type { Cart, Order } from "@/lib/types";
+import {
+    getShippingContextKey,
+    sortShippingServices,
+    toShippingOption,
+    type ShippingOption,
+} from "@/lib/shipping";
+import type { Cart, Order, ShippingQuoteService } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 type CheckoutPageClientProps = {
@@ -58,11 +64,12 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isShippingConfirmed, setIsShippingConfirmed] = useState(false);
-    const [quotedShipping, setQuotedShipping] = useState(() => ({
-        serviceCode: Number(searchParams.get("serviceCode")),
-        serviceName: "Frete",
-        priceInCents: 0,
-    }));
+    const [quotedShipping, setQuotedShipping] = useState<ShippingOption | null>(
+        null,
+    );
+    const [quotedServices, setQuotedServices] = useState<
+        ShippingQuoteService[]
+    >([]);
     const [isShippingQuoteLoading, setIsShippingQuoteLoading] = useState(false);
     const [hasVerifiedShippingQuote, setHasVerifiedShippingQuote] =
         useState(false);
@@ -75,19 +82,20 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [isReviewing, setIsReviewing] = useState(false);
 
     const hasValidServiceCode =
-        Number.isInteger(quotedShipping.serviceCode) &&
-        quotedShipping.serviceCode > 0;
+        Number.isInteger(quotedShipping?.serviceCode) &&
+        (quotedShipping?.serviceCode ?? 0) > 0;
     const document = userContext.user?.document ?? "";
     const documentLength = document.replace(/\D/g, "").length;
     const hasValidDocument =
         documentLength === 14 ||
         (documentLength === 11 && isValidCpf(document));
-    const requiresPhone = quotedShipping.serviceCode === 33;
+    const requiresPhone = quotedShipping?.serviceCode === 33;
     const hasValidPhone =
         !requiresPhone ||
         userContext.user?.phone?.replace(/\D/g, "").length === 11;
     const hasValidAddress = Boolean(
         userContext.address?.uuid &&
+        userContext.address.zipCode.replace(/\D/g, "").length === 8 &&
         userContext.address.street.trim().length > 0 &&
         userContext.address.street.length <= 30,
     );
@@ -147,13 +155,21 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             })),
         [cart.data?.items],
     );
+    const shippingZipCode =
+        userContext.address?.zipCode.replace(/\D/g, "") ?? "";
+    const shippingContextKey = getShippingContextKey(
+        cart.data,
+        shippingZipCode,
+    );
+    const requestedServiceCode = Number(searchParams.get("serviceCode"));
+    const requestedQuoteContext = searchParams.get("quoteContext");
 
     useEffect(() => {
         if (order) return;
 
-        const zipCode = userContext.address?.zipCode.replace(/\D/g, "");
-
-        if (!hasValidServiceCode || !zipCode || !quoteItems.length) {
+        if (shippingZipCode.length !== 8 || !quoteItems.length) {
+            setQuotedServices([]);
+            setQuotedShipping(null);
             setHasVerifiedShippingQuote(false);
             return;
         }
@@ -161,34 +177,38 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         let cancelled = false;
         setIsShippingQuoteLoading(true);
         setHasVerifiedShippingQuote(false);
+        setQuotedServices([]);
+        setQuotedShipping(null);
 
-        void previewShippingQuote(zipCode, quoteItems)
+        void previewShippingQuote(shippingZipCode, quoteItems)
             .then((quote) => {
                 if (cancelled) return;
 
-                const selectedService = quote.quotedServices.find(
-                    (service) =>
-                        service.serviceCode === quotedShipping.serviceCode,
-                );
+                const services = sortShippingServices(quote.quotedServices);
+                const canRestoreCartSelection =
+                    requestedQuoteContext != null &&
+                    requestedQuoteContext === shippingContextKey;
+                const selectedService =
+                    (canRestoreCartSelection
+                        ? services.find(
+                              (service) =>
+                                  service.serviceCode === requestedServiceCode,
+                          )
+                        : undefined) ?? services[0];
 
                 if (!selectedService) {
-                    setQuotedShipping((current) => ({
-                        ...current,
-                        serviceCode: Number.NaN,
-                    }));
+                    setQuotedServices([]);
+                    setQuotedShipping(null);
                     setCheckoutError({
-                        title: "Opção de frete indisponível",
+                        title: "Não há frete disponível",
                         description:
-                            "Volte ao carrinho para calcular e escolher outra opção de entrega.",
+                            "Nenhuma transportadora atende este endereço para os produtos do carrinho. Confira o endereço e tente novamente.",
                     });
                     return;
                 }
 
-                setQuotedShipping({
-                    serviceCode: selectedService.serviceCode,
-                    serviceName: selectedService.serviceName,
-                    priceInCents: selectedService.priceInCents,
-                });
+                setQuotedServices(services);
+                setQuotedShipping(toShippingOption(selectedService));
                 setHasVerifiedShippingQuote(true);
             })
             .catch(() => {
@@ -208,11 +228,12 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             cancelled = true;
         };
     }, [
-        hasValidServiceCode,
         order,
         quoteItems,
-        quotedShipping.serviceCode,
-        userContext.address?.zipCode,
+        requestedQuoteContext,
+        requestedServiceCode,
+        shippingContextKey,
+        shippingZipCode,
     ]);
 
     const refreshOrder = useCallback(
@@ -339,6 +360,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             !hasValidAddress ||
             !hasValidPhone ||
             !userContext.address?.uuid ||
+            !quotedShipping ||
             !hasValidServiceCode ||
             !hasVerifiedShippingQuote
         ) {
@@ -386,10 +408,12 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                         userContext.address.zipCode.replace(/\D/g, ""),
                         quoteItems,
                     );
-                    const updatedService = quote.quotedServices.find(
+                    const services = sortShippingServices(quote.quotedServices);
+                    const updatedService = services.find(
                         (service) =>
                             service.serviceCode === quotedShipping.serviceCode,
                     );
+                    setQuotedServices(services);
 
                     if (
                         updatedService &&
@@ -397,11 +421,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             quotedShipping.priceInCents
                     ) {
                         const previousPrice = quotedShipping.priceInCents;
-                        setQuotedShipping({
-                            serviceCode: updatedService.serviceCode,
-                            serviceName: updatedService.serviceName,
-                            priceInCents: updatedService.priceInCents,
-                        });
+                        setQuotedShipping(toShippingOption(updatedService));
                         setHasVerifiedShippingQuote(true);
                         setCheckoutError({
                             title: "Frete atualizado",
@@ -418,19 +438,28 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                         });
                         return;
                     }
+
+                    if (services[0]) {
+                        setQuotedShipping(toShippingOption(services[0]));
+                        setHasVerifiedShippingQuote(true);
+                        setIsReviewing(false);
+                        setCheckoutError({
+                            title: "Opção de frete atualizada",
+                            description: `${quotedShipping.name} não está mais disponível. Selecionamos ${services[0].serviceName}, a opção mais barata disponível. Confira prazo e total antes de continuar.`,
+                        });
+                        return;
+                    }
                 } catch {
                     // O modal abaixo orienta nova cotação sem esconder o conflito.
                 }
 
-                setQuotedShipping((current) => ({
-                    ...current,
-                    serviceCode: Number.NaN,
-                }));
+                setQuotedShipping(null);
+                setQuotedServices([]);
                 setHasVerifiedShippingQuote(false);
                 setCheckoutError({
                     title: "Frete atualizado",
                     description:
-                        "A opção escolhida não está mais disponível. Volte ao carrinho para calcular e escolher outro frete.",
+                        "A opção escolhida não está mais disponível. Confira o endereço e tente novamente.",
                 });
                 return;
             }
@@ -526,7 +555,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         order?.subtotalInCents ?? cart.data?.summary.subtotalInCents ?? 0;
     const shipping = order
         ? order.shippingInCents
-        : hasVerifiedShippingQuote
+        : hasVerifiedShippingQuote && quotedShipping
           ? quotedShipping.priceInCents
           : 0;
     const total =
@@ -607,8 +636,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                     address={userContext.address}
                                     onCancel={
                                         hasValidAddress
-                                            ? () =>
-                                                  setIsEditingAddress(false)
+                                            ? () => setIsEditingAddress(false)
                                             : undefined
                                     }
                                     onError={(title, description) =>
@@ -619,13 +647,29 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                     }
                                     onSaved={() => {
                                         setIsEditingAddress(false);
-                                        toast.success("Endereço atualizado", {
+                                        setCheckoutError({
+                                            title: "Endereço atualizado",
                                             description:
                                                 "O endereço de entrega foi salvo. Confira os dados antes de confirmar o pedido.",
                                         });
                                     }}
                                 />
                             )}
+
+                            {hasValidAddress && !isEditingAddress ? (
+                                <CheckoutShippingOptions
+                                    isLoading={isShippingQuoteLoading}
+                                    onSelect={(service) => {
+                                        setQuotedShipping(
+                                            toShippingOption(service),
+                                        );
+                                        setHasVerifiedShippingQuote(true);
+                                        setIsReviewing(false);
+                                    }}
+                                    selected={quotedShipping}
+                                    services={quotedServices}
+                                />
+                            ) : null}
 
                             {!isReviewing ? (
                                 hasValidDocument && !isEditingDocument ? (
@@ -655,7 +699,8 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                         }
                                         onSaved={(title, description) => {
                                             setIsEditingDocument(false);
-                                            toast.success(title, {
+                                            setCheckoutError({
+                                                title,
                                                 description,
                                             });
                                         }}
@@ -673,7 +718,8 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                         })
                                     }
                                     onSaved={(title, description) =>
-                                        toast.success(title, {
+                                        setCheckoutError({
+                                            title,
                                             description,
                                         })
                                     }
@@ -698,7 +744,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             onOpenPayment={() => void openPayment()}
                             onPrepareOrder={() => void prepareOrder()}
                             onReview={() => setIsReviewing(true)}
-                            serviceName={quotedShipping.serviceName}
+                            serviceName={quotedShipping?.name ?? "Frete"}
                             shipping={shipping}
                             subtotal={subtotal}
                             total={total}
