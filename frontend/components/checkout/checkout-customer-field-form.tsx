@@ -73,6 +73,9 @@ export function CheckoutCustomerFieldForm({
     const userContext = useUser();
     const config = fieldConfig[field];
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const initialDigits = onlyDigits(initialValue ?? "", config.maxDigits);
+    const [value, setValue] = useState(config.format(initialDigits));
+    const isDirty = onlyDigits(value, config.maxDigits) !== initialDigits;
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -80,14 +83,16 @@ export function CheckoutCustomerFieldForm({
         if (!token || isSubmitting) return;
 
         const formData = new FormData(event.currentTarget);
-        const value = onlyDigits(
+        const submittedValue = onlyDigits(
             String(formData.get(field) ?? ""),
             config.maxDigits,
         );
 
+        if (submittedValue === initialDigits) return;
+
         if (
-            value.length !== config.maxDigits ||
-            (field === "document" && !isValidCpf(value))
+            submittedValue.length !== config.maxDigits ||
+            (field === "document" && !isValidCpf(submittedValue))
         ) {
             onError(config.errorTitle, config.errorDescription);
             return;
@@ -98,7 +103,9 @@ export function CheckoutCustomerFieldForm({
         try {
             const response = await updateCurrentUser(
                 token,
-                field === "document" ? { document: value } : { phone: value },
+                field === "document"
+                    ? { document: submittedValue }
+                    : { phone: submittedValue },
             );
             userContext.setUser(response.user);
             onSaved(config.savedTitle, config.savedDescription);
@@ -151,25 +158,23 @@ export function CheckoutCustomerFieldForm({
                     <input
                         autoComplete={config.autoComplete}
                         className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none placeholder:text-slate-500 focus:border-primary focus:ring-4 focus:ring-primary/15"
-                        defaultValue={config.format(initialValue ?? "")}
                         id={`checkout-${field}`}
                         inputMode={config.inputMode}
                         maxLength={config.maxLength}
                         name={field}
                         onChange={(event) => {
-                            event.currentTarget.value = config.format(
-                                event.currentTarget.value,
-                            );
+                            setValue(config.format(event.currentTarget.value));
                         }}
                         placeholder={config.placeholder}
                         type={config.type}
+                        value={value}
                     />
                 </div>
 
                 <div className="mt-5 border-t border-slate-100 pt-5">
                     <button
-                        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 font-bold text-white shadow-md shadow-primary/20 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:opacity-60 sm:w-auto"
-                        disabled={isSubmitting}
+                        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 font-bold text-white shadow-md shadow-primary/20 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        disabled={!isDirty || isSubmitting}
                         type="submit"
                     >
                         <span

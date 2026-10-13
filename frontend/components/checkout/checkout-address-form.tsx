@@ -27,6 +27,49 @@ type CheckoutAddressFormProps = {
     onSaved: () => void;
 };
 
+const addressFieldNames = [
+    "zipCode",
+    "street",
+    "number",
+    "complement",
+    "neighborhood",
+    "city",
+    "state",
+    "country",
+] as const;
+
+function getAddressFormValues(formData: FormData) {
+    const getField = (name: (typeof addressFieldNames)[number]) =>
+        String(formData.get(name) ?? "").trim();
+
+    return {
+        zipCode: onlyDigits(getField("zipCode"), 8),
+        street: getField("street"),
+        number: getField("number"),
+        complement: getField("complement"),
+        neighborhood: getField("neighborhood"),
+        city: getField("city"),
+        state: getField("state").toUpperCase(),
+        country: getField("country"),
+    };
+}
+
+function hasAddressChanges(formData: FormData, address?: Address | null) {
+    const current = getAddressFormValues(formData);
+    const initial = {
+        zipCode: onlyDigits(address?.zipCode ?? "", 8),
+        street: address?.street?.trim() ?? "",
+        number: address?.number?.trim() ?? "",
+        complement: address?.complement?.trim() ?? "",
+        neighborhood: address?.neighborhood?.trim() ?? "",
+        city: address?.city?.trim() ?? "",
+        state: address?.state?.trim().toUpperCase() ?? "",
+        country: address?.country?.trim() || "Brasil",
+    };
+
+    return addressFieldNames.some((field) => current[field] !== initial[field]);
+}
+
 function AddressInput({
     id,
     label,
@@ -66,6 +109,12 @@ export function CheckoutAddressForm({
     );
     const [isCepLoading, setIsCepLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+
+    function updateDirtyState(form = formRef.current) {
+        if (!form) return;
+        setIsDirty(hasAddressChanges(new FormData(form), address));
+    }
 
     function setAddressField(name: string, value: string) {
         const field = formRef.current?.elements.namedItem(name);
@@ -95,6 +144,7 @@ export function CheckoutAddressForm({
             setAddressField("city", payload.localidade ?? "");
             setAddressField("state", payload.uf ?? "");
             setAddressField("country", "Brasil");
+            updateDirtyState();
         } catch {
             if (lastCepRequestRef.current === cleanZipCode) {
                 onError(
@@ -131,10 +181,14 @@ export function CheckoutAddressForm({
         if (!token || isCepLoading || isSubmitting) return;
 
         const formData = new FormData(event.currentTarget);
-        const getField = (name: string) =>
-            String(formData.get(name) ?? "").trim();
+        if (!hasAddressChanges(formData, address)) {
+            setIsDirty(false);
+            return;
+        }
 
-        if (getField("street").length > 30) {
+        const values = getAddressFormValues(formData);
+
+        if (values.street.length > 30) {
             onError(
                 "Confira o endereço",
                 "A rua deve ter no máximo 30 caracteres para a transportadora.",
@@ -148,19 +202,13 @@ export function CheckoutAddressForm({
             const response = await updateCurrentUser(token, {
                 address: {
                     ...(address?.uuid ? { uuid: address.uuid } : {}),
-                    zipCode: onlyDigits(getField("zipCode"), 8),
-                    street: getField("street"),
-                    number: getField("number"),
-                    complement: getField("complement"),
-                    neighborhood: getField("neighborhood"),
-                    city: getField("city"),
-                    state: getField("state").toUpperCase(),
-                    country: getField("country"),
+                    ...values,
                 },
             });
 
             userContext.setUser(response.user);
             clearAddressZipCodeDraft();
+            setIsDirty(false);
             onSaved();
         } catch (error) {
             onError(
@@ -202,6 +250,7 @@ export function CheckoutAddressForm({
             <form
                 aria-busy={isSubmitting}
                 className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-6"
+                onChange={(event) => updateDirtyState(event.currentTarget)}
                 onSubmit={(event) => void handleSubmit(event)}
                 ref={formRef}
             >
@@ -331,8 +380,8 @@ export function CheckoutAddressForm({
 
                 <div className="border-t border-slate-100 pt-5 sm:col-span-2">
                     <button
-                        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 font-bold text-white shadow-md shadow-primary/20 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:opacity-60 sm:w-auto"
-                        disabled={isCepLoading || isSubmitting}
+                        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 font-bold text-white shadow-md shadow-primary/20 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        disabled={!isDirty || isCepLoading || isSubmitting}
                         type="submit"
                     >
                         <span
