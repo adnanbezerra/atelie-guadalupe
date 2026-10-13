@@ -575,24 +575,6 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                 ) : (
                     <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
                         <div className="space-y-6">
-                            {!hasValidDocument ? (
-                                <CheckoutCustomerFieldForm
-                                    field="document"
-                                    onError={(title, description) =>
-                                        setCheckoutError({
-                                            title,
-                                            description,
-                                        })
-                                    }
-                                    onSaved={(title, description) =>
-                                        setCheckoutNotice({
-                                            title,
-                                            description,
-                                        })
-                                    }
-                                />
-                            ) : null}
-
                             {hasValidAddress && !isEditingAddress ? (
                                 <DeliveryAddress
                                     address={userContext.address!}
@@ -617,6 +599,24 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                     }}
                                 />
                             )}
+
+                            {!hasValidDocument ? (
+                                <CheckoutCustomerFieldForm
+                                    field="document"
+                                    onError={(title, description) =>
+                                        setCheckoutError({
+                                            title,
+                                            description,
+                                        })
+                                    }
+                                    onSaved={(title, description) =>
+                                        setCheckoutNotice({
+                                            title,
+                                            description,
+                                        })
+                                    }
+                                />
+                            ) : null}
 
                             {!hasValidPhone ? (
                                 <CheckoutCustomerFieldForm
