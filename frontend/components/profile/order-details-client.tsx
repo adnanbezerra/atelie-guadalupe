@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import {
     formatAddress,
@@ -28,7 +29,7 @@ const ORDER_STEPS = [
     { key: "paid", icon: "check_circle", label: "Pagamento confirmado" },
     { key: "preparing", icon: "inventory_2", label: "Em preparação" },
     { key: "shipped", icon: "local_shipping", label: "A caminho" },
-    { key: "delivered", icon: "home", label: "Entregue" },
+    { key: "delivered", icon: "home_pin", label: "Entregue" },
 ] as const;
 
 const statusStep: Record<string, number> = {
@@ -546,7 +547,6 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
 
     const loadOrder = useCallback(
         async (signal?: AbortSignal) => {
@@ -626,9 +626,10 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
         setIsRefreshing(true);
         try {
             await loadOrder();
-            setNotice(
-                "Os dados de pagamento e entrega foram consultados novamente.",
-            );
+            toast.success("Pedido atualizado", {
+                description:
+                    "Os dados de pagamento e entrega foram consultados novamente.",
+            });
         } catch (requestError) {
             setError(
                 requestError instanceof Error
@@ -696,12 +697,6 @@ export function OrderDetailsClient({ orderUuid }: OrderDetailsClientProps) {
                 }}
                 open={Boolean(error)}
                 title="Não foi possível consultar o pedido"
-            />
-            <FeedbackDialog
-                description={notice ?? ""}
-                onOpenChange={(open) => !open && setNotice(null)}
-                open={Boolean(notice)}
-                title="Pedido atualizado"
             />
         </main>
     );
