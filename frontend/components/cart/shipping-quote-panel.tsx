@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SavedAddressEditDialog } from "@/components/cart/saved-address-edit-dialog";
 import {
     fetchViaCepAddress,
@@ -86,6 +86,8 @@ export function ShippingQuotePanel({
     const [hasCalculated, setHasCalculated] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const lastCepRequestRef = useRef("");
+    const quoteRequestIdRef = useRef(0);
+    const lastAutomaticQuoteSignatureRef = useRef("");
 
     const savedAddress = userContext.address;
     const savedZipCode = onlyDigits(savedAddress?.zipCode ?? "", 8);
@@ -126,6 +128,61 @@ export function ShippingQuotePanel({
                 `${item.productUuid}:${item.productSize}:${item.quantity}`,
         )
         .join("|");
+    const automaticQuoteSignature = savedAddressPreview
+        ? `${savedZipCode}|${cartSignature}`
+        : "";
+
+    const requestQuote = useCallback(
+        async (targetAddress: AddressPreview) => {
+            const cleanZipCode = onlyDigits(targetAddress.zipCode, 8);
+
+            if (cleanZipCode.length !== 8 || !quoteItems.length) {
+                return;
+            }
+
+            const requestId = ++quoteRequestIdRef.current;
+
+            setIsQuoting(true);
+            setQuoteError(null);
+            setHasCalculated(true);
+            onSelectionChange(null);
+
+            try {
+                const payload = await previewShippingQuote(
+                    cleanZipCode,
+                    quoteItems,
+                );
+
+                if (quoteRequestIdRef.current !== requestId) {
+                    return;
+                }
+
+                setQuotedServices(payload.quotedServices);
+
+                if (!payload.quotedServices.length) {
+                    setQuoteError(
+                        "Nenhuma opção de entrega foi encontrada para este CEP. Confira o endereço e tente novamente.",
+                    );
+                }
+            } catch (caughtError) {
+                if (quoteRequestIdRef.current !== requestId) {
+                    return;
+                }
+
+                setQuotedServices([]);
+                setQuoteError(
+                    caughtError instanceof Error
+                        ? caughtError.message
+                        : "Não foi possível calcular a entrega. Confira sua conexão e tente novamente.",
+                );
+            } finally {
+                if (quoteRequestIdRef.current === requestId) {
+                    setIsQuoting(false);
+                }
+            }
+        },
+        [onSelectionChange, quoteItems],
+    );
 
     useEffect(() => {
         if (savedAddressPreview) {
@@ -142,13 +199,34 @@ export function ShippingQuotePanel({
     }, [savedAddressPreview, userContext.isLoading]);
 
     useEffect(() => {
+        quoteRequestIdRef.current += 1;
         setQuotedServices([]);
         setQuoteError(null);
         setHasCalculated(false);
         onSelectionChange(null);
     }, [cartSignature, onSelectionChange]);
 
+    useEffect(() => {
+        if (
+            !savedAddressPreview ||
+            !automaticQuoteSignature ||
+            lastAutomaticQuoteSignatureRef.current ===
+                automaticQuoteSignature
+        ) {
+            return;
+        }
+
+        lastAutomaticQuoteSignatureRef.current = automaticQuoteSignature;
+        void requestQuote(savedAddressPreview);
+    }, [
+        automaticQuoteSignature,
+        requestQuote,
+        savedAddressPreview,
+    ]);
+
     function resetQuote() {
+        quoteRequestIdRef.current += 1;
+        lastAutomaticQuoteSignatureRef.current = "";
         setQuotedServices([]);
         setQuoteError(null);
         setHasCalculated(false);
@@ -216,43 +294,11 @@ export function ShippingQuotePanel({
     }
 
     async function handleQuote() {
-        const cleanZipCode = onlyDigits(addressPreview?.zipCode ?? zipCode, 8);
-
-        if (
-            cleanZipCode.length !== 8 ||
-            !addressPreview ||
-            !quoteItems.length
-        ) {
+        if (!addressPreview) {
             return;
         }
 
-        setIsQuoting(true);
-        setQuoteError(null);
-        setHasCalculated(true);
-        onSelectionChange(null);
-
-        try {
-            const payload = await previewShippingQuote(
-                cleanZipCode,
-                quoteItems,
-            );
-            setQuotedServices(payload.quotedServices);
-
-            if (!payload.quotedServices.length) {
-                setQuoteError(
-                    "Nenhuma opção de entrega foi encontrada para este CEP. Confira o endereço e tente novamente.",
-                );
-            }
-        } catch (caughtError) {
-            setQuotedServices([]);
-            setQuoteError(
-                caughtError instanceof Error
-                    ? caughtError.message
-                    : "Não foi possível calcular a entrega. Confira sua conexão e tente novamente.",
-            );
-        } finally {
-            setIsQuoting(false);
-        }
+        await requestQuote(addressPreview);
     }
 
     function selectDelivery(service: ShippingQuoteService) {
