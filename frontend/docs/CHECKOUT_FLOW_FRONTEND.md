@@ -46,7 +46,11 @@ type ShippingStatus =
     | "LABEL_PURCHASED"
     | "CANCELLED";
 
-type FulfillmentStatus = "PENDING" | "PROCESSING" | "RETRY_SCHEDULED" | "COMPLETED";
+type FulfillmentStatus =
+    | "PENDING"
+    | "PROCESSING"
+    | "RETRY_SCHEDULED"
+    | "COMPLETED";
 
 type Order = {
     uuid: string;
@@ -107,9 +111,9 @@ const quote = await api("/shipping/quote", {
         items: cartItems.map((item) => ({
             productUuid: item.productUuid,
             productSize: item.productSize,
-            quantity: item.quantity
-        }))
-    })
+            quantity: item.quantity,
+        })),
+    }),
 });
 ```
 
@@ -118,21 +122,27 @@ const quote = await api("/shipping/quote", {
 `addressUuid` e `shipping` sao obrigatorios.
 
 ```ts
-const created = await api<{ success: true; data: { order: Order } }>("/orders", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-        addressUuid,
-        shipping: {
-            serviceCode: selectedService.serviceCode,
-            priceInCents: selectedService.priceInCents
-        },
-        notes
-    })
-});
+const created = await api<{ success: true; data: { order: Order } }>(
+    "/orders",
+    {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+            addressUuid,
+            shipping: {
+                serviceCode: selectedService.serviceCode,
+                priceInCents: selectedService.priceInCents,
+            },
+            notes,
+        }),
+    },
+);
 
 const order = created.data.order;
-sessionStorage.setItem(`checkout:${order.uuid}:key`, order.paymentIdempotencyKey);
+sessionStorage.setItem(
+    `checkout:${order.uuid}:key`,
+    order.paymentIdempotencyKey,
+);
 ```
 
 Desabilite o botao enquanto a requisicao estiver em andamento. Depois de receber o pedido, nao crie outro automaticamente por timeout de uma etapa posterior.
@@ -150,8 +160,8 @@ const checkout = await api<CheckoutResponse>(`/orders/${order.uuid}/payment`, {
     method: "POST",
     headers: {
         Authorization: `Bearer ${token}`,
-        "Idempotency-Key": key
-    }
+        "Idempotency-Key": key,
+    },
 });
 
 window.location.assign(checkout.data.checkoutUrl);
@@ -179,14 +189,22 @@ async function waitForPayment(orderUuid: string, signal: AbortSignal) {
     while (Date.now() < deadline && !signal.aborted) {
         const response = await api<{ success: true; data: { order: Order } }>(
             `/orders/${orderUuid}`,
-            { headers: { Authorization: `Bearer ${token}` }, signal }
+            { headers: { Authorization: `Bearer ${token}` }, signal },
         );
         const order = response.data.order;
 
-        if (["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(order.status)) {
+        if (
+            ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(
+                order.status,
+            )
+        ) {
             return order;
         }
-        if (["REFUNDED", "DISPUTED", "LOST"].includes(order.payment?.status ?? "")) {
+        if (
+            ["REFUNDED", "DISPUTED", "LOST"].includes(
+                order.payment?.status ?? "",
+            )
+        ) {
             return order;
         }
         await new Promise((resolve) => setTimeout(resolve, 3000));

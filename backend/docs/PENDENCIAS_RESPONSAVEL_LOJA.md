@@ -7,18 +7,25 @@ O checkout continua em **NO-GO** enquanto os itens obrigatórios abaixo não tiv
 
 ## 1. Respostas e decisões que preciso receber
 
-- [ ] Informar o domínio oficial do frontend e dizer se o domínio temporário pode ser usado no
+- [x] Informar o domínio oficial do frontend e dizer se o domínio temporário pode ser usado no
       smoke test.
-- [ ] Informar qual commit/release está implantado no Easypanel.
-- [ ] Nomear uma segunda pessoa para a revisão técnica/operacional.
-- [ ] Nomear o responsável técnico e o responsável operacional/financeiro.
-- [ ] Escolher o canal humano que receberá alertas e garantir que essas pessoas tenham acesso a
+      R: Será atelieguadalupe.com.br, mas pode usar o que está configurado por enquanto
+- [x] Informar qual commit/release está implantado no Easypanel.
+      R: O mais recente
+- [x] Nomear uma segunda pessoa para a revisão técnica/operacional.
+      R: minha esposa? 
+- [x] Nomear o responsável técnico e o responsável operacional/financeiro.
+      R: tudo eu
+- [x] Escolher o canal humano que receberá alertas e garantir que essas pessoas tenham acesso a
       AbacatePay, SuperFrete, Resend, logs e Easypanel.
-- [ ] Definir quem pode desligar checkout e workers em um incidente.
-- [ ] Confirmar, com documento ou resposta oficial da SuperFrete, se o limite de 30 caracteres é
+      R: eu 
+- [x] Definir quem pode desligar checkout e workers em um incidente.
+      R: eu
+- [x] Confirmar, com documento ou resposta oficial da SuperFrete, se o limite de 30 caracteres é
       somente para `street`/logradouro ou para outra composição do endereço. Hoje o frontend
       limita `street` a 30, mas o contrato em `docs/API.md` e o backend ainda aceitam 50; o contrato
       precisa ser uniformizado depois dessa confirmação.
+      R: é 30
 - [ ] Decidir se o rastreamento por consulta periódica à SuperFrete é suficiente. Se quiser webhook
       ou link direto já preenchido, solicitar à SuperFrete a documentação oficial e disponibilizar
       a resposta, sem enviar credenciais. A página pública atual exige que o cliente cole o código.
