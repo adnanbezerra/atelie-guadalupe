@@ -15,6 +15,44 @@ export type CheckoutDisplayItem = {
     totalPriceInCents: number;
 };
 
+export function CheckoutCustomerDocument({
+    document,
+    onEdit,
+}: {
+    document: string;
+    onEdit: () => void;
+}) {
+    return (
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3">
+                        <span
+                            aria-hidden="true"
+                            className="material-symbols-outlined shrink-0 text-2xl leading-none text-primary"
+                        >
+                            badge
+                        </span>
+                        <h2 className="font-display text-xl font-bold text-slate-950">
+                            CPF ou CNPJ
+                        </h2>
+                    </div>
+                    <p className="mt-2 pl-9 text-sm leading-6 text-slate-600">
+                        {formatDocument(document)}
+                    </p>
+                </div>
+                <button
+                    className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-primary hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20"
+                    onClick={onEdit}
+                    type="button"
+                >
+                    Alterar CPF
+                </button>
+            </div>
+        </section>
+    );
+}
+
 export function DeliveryAddress({
     address,
     onEdit,

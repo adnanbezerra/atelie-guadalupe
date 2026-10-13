@@ -11,6 +11,7 @@ import {
     EmptyCheckout,
 } from "./checkout-feedback";
 import {
+    CheckoutCustomerDocument,
     CheckoutReviewDetails,
     DeliveryAddress,
     OrderItems,
@@ -28,6 +29,7 @@ import {
 import { PaymentStatus } from "./payment-status";
 import { CheckoutAddressForm } from "./checkout-address-form";
 import { CheckoutCustomerFieldForm } from "./checkout-customer-field-form";
+import { isValidCpf } from "@/components/profile/profile-page-helpers";
 import { useApiToken } from "@/hooks/use-api-token";
 import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/hooks/use-user";
@@ -69,16 +71,17 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         null,
     );
     const [isEditingAddress, setIsEditingAddress] = useState(false);
+    const [isEditingDocument, setIsEditingDocument] = useState(false);
     const [isReviewing, setIsReviewing] = useState(false);
 
     const hasValidServiceCode =
         Number.isInteger(quotedShipping.serviceCode) &&
         quotedShipping.serviceCode > 0;
-    const documentLength = userContext.user?.document?.replace(
-        /\D/g,
-        "",
-    ).length;
-    const hasValidDocument = documentLength === 11 || documentLength === 14;
+    const document = userContext.user?.document ?? "";
+    const documentLength = document.replace(/\D/g, "").length;
+    const hasValidDocument =
+        documentLength === 14 ||
+        (documentLength === 11 && isValidCpf(document));
     const requiresPhone = quotedShipping.serviceCode === 33;
     const hasValidPhone =
         !requiresPhone ||
@@ -618,21 +621,32 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                 />
                             )}
 
-                            {!isReviewing && !hasValidDocument ? (
-                                <CheckoutCustomerFieldForm
-                                    field="document"
-                                    onError={(title, description) =>
-                                        setCheckoutError({
-                                            title,
-                                            description,
-                                        })
-                                    }
-                                    onSaved={(title, description) =>
-                                        toast.success(title, {
-                                            description,
-                                        })
-                                    }
-                                />
+                            {!isReviewing ? (
+                                hasValidDocument && !isEditingDocument ? (
+                                    <CheckoutCustomerDocument
+                                        document={document}
+                                        onEdit={() =>
+                                            setIsEditingDocument(true)
+                                        }
+                                    />
+                                ) : (
+                                    <CheckoutCustomerFieldForm
+                                        field="document"
+                                        initialValue={document}
+                                        onError={(title, description) =>
+                                            setCheckoutError({
+                                                title,
+                                                description,
+                                            })
+                                        }
+                                        onSaved={(title, description) => {
+                                            setIsEditingDocument(false);
+                                            toast.success(title, {
+                                                description,
+                                            });
+                                        }}
+                                    />
+                                )
                             ) : null}
 
                             {!isReviewing && !hasValidPhone ? (

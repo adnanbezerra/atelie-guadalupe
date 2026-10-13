@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import {
     formatCpf,
     formatPhone,
+    isValidCpf,
     onlyDigits,
 } from "@/components/profile/profile-page-helpers";
 import { useApiToken } from "@/hooks/use-api-token";
@@ -12,6 +13,7 @@ import { updateCurrentUser } from "@/lib/api";
 
 type CheckoutCustomerFieldFormProps = {
     field: "document" | "phone";
+    initialValue?: string | null;
     onError: (title: string, description: string) => void;
     onSaved: (title: string, description: string) => void;
 };
@@ -21,7 +23,7 @@ const fieldConfig = {
         autoComplete: "off",
         description:
             "O CPF é obrigatório para emitir seu pedido. Cadastre sem sair desta página.",
-        errorDescription: "Digite um CPF com 11 números.",
+        errorDescription: "Digite um CPF válido com 11 números.",
         errorTitle: "Confira o CPF",
         format: formatCpf,
         icon: "badge",
@@ -63,6 +65,7 @@ const fieldConfig = {
 
 export function CheckoutCustomerFieldForm({
     field,
+    initialValue,
     onError,
     onSaved,
 }: CheckoutCustomerFieldFormProps) {
@@ -82,7 +85,10 @@ export function CheckoutCustomerFieldForm({
             config.maxDigits,
         );
 
-        if (value.length !== config.maxDigits) {
+        if (
+            value.length !== config.maxDigits ||
+            (field === "document" && !isValidCpf(value))
+        ) {
             onError(config.errorTitle, config.errorDescription);
             return;
         }
@@ -145,6 +151,7 @@ export function CheckoutCustomerFieldForm({
                     <input
                         autoComplete={config.autoComplete}
                         className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none placeholder:text-slate-500 focus:border-primary focus:ring-4 focus:ring-primary/15"
+                        defaultValue={config.format(initialValue ?? "")}
                         id={`checkout-${field}`}
                         inputMode={config.inputMode}
                         maxLength={config.maxLength}

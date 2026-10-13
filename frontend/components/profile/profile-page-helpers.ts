@@ -141,6 +141,33 @@ export function formatCpf(value: string) {
         .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
 }
 
+export function isValidCpf(value: string) {
+    const digits = onlyDigits(value, 11);
+
+    if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) {
+        return false;
+    }
+
+    const calculateDigit = (length: number) => {
+        const sum = digits
+            .slice(0, length)
+            .split("")
+            .reduce(
+                (total, digit, index) =>
+                    total + Number(digit) * (length + 1 - index),
+                0,
+            );
+        const remainder = sum % 11;
+
+        return remainder < 2 ? 0 : 11 - remainder;
+    };
+
+    return (
+        Number(digits[9]) === calculateDigit(9) &&
+        Number(digits[10]) === calculateDigit(10)
+    );
+}
+
 export function formatDocument(value: string) {
     const digits = onlyDigits(value, 14);
 
