@@ -5,7 +5,10 @@ import {
     PaymentMethod,
     ProductSize
 } from "../../../src/generated/prisma/enums";
-import { presentOrderDetails } from "../../../src/modules/orders/services/order-presenter";
+import {
+    presentOrder,
+    presentOrderDetails
+} from "../../../src/modules/orders/services/order-presenter";
 
 function orderDetailsFixture() {
     const now = new Date("2026-03-12T12:00:00.000Z");
@@ -87,6 +90,14 @@ test("order detail presents safe payment and shipment fields", () => {
     });
     assert.equal("providerResponse" in (result.payment ?? {}), false);
     assert.equal("checkoutResponse" in (result.shipment ?? {}), false);
+});
+
+test("order list derives credit card method from provider payment", () => {
+    const fixture = { ...orderDetailsFixture(), paymentMethod: null };
+
+    const result = presentOrder(fixture);
+
+    assert.equal(result.paymentMethod, PaymentMethod.CREDIT_CARD);
 });
 
 test("order detail omits invalid or unavailable card snapshot", () => {

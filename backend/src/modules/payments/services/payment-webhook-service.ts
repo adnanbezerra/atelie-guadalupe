@@ -29,6 +29,7 @@ export type AbacateWebhookPayload = {
         payerInformation?: {
             method?: string;
             card?: { brand?: string; lastFourDigits?: string };
+            CARD?: { brand?: string; number?: string };
             cardBrand?: string;
             cardLastFourDigits?: string;
         };
@@ -44,9 +45,14 @@ export const ABACATEPAY_WEBHOOK_PUBLIC_KEY =
 const PROCESSING_MARKER = "__PROCESSING__";
 
 function cardSnapshot(payerInformation: PayerInformation) {
-    const brand = payerInformation?.card?.brand ?? payerInformation?.cardBrand;
+    const brand =
+        payerInformation?.card?.brand ??
+        payerInformation?.CARD?.brand ??
+        payerInformation?.cardBrand;
     const lastFourDigits =
-        payerInformation?.card?.lastFourDigits ?? payerInformation?.cardLastFourDigits;
+        payerInformation?.card?.lastFourDigits ??
+        payerInformation?.CARD?.number ??
+        payerInformation?.cardLastFourDigits;
 
     return {
         cardBrand: typeof brand === "string" && brand.trim() ? brand.trim() : undefined,

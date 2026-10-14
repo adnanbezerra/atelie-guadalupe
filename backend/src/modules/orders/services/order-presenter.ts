@@ -204,7 +204,7 @@ export function presentOrder(order: OrderEntity) {
         subtotalInCents: order.subtotalInCents,
         shippingInCents: order.shippingInCents,
         discountInCents: order.discountInCents,
-        paymentMethod: order.paymentMethod ?? null,
+        paymentMethod: presentPaymentMethod(order),
         promotionDiscountInCents: order.promotionDiscountInCents ?? 0,
         couponDiscountInCents: order.couponDiscountInCents ?? 0,
         couponCode: order.couponCodeSnapshot ?? null,
