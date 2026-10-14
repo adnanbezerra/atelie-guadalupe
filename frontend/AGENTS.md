@@ -8,7 +8,9 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 ## 0. Logs de erro e de sucesso
 
-Este é relacionado um pouco a design e um pouco a como estruturar o site. **Nunca**, _jamais_, coloque mensagens de sucesso ou erro escritas no HTML ou qualquer coisa que seja. Deve ser **sempre** através de modais, e repare que já temos um modal configurado para o site. Use-o.
+Este é relacionado um pouco a design e um pouco a como estruturar o site. **Nunca**, _jamais_, coloque mensagens de sucesso ou erro escritas no HTML ou qualquer coisa que seja. Deve ser **sempre** através de modais ou toasts, e repare que já temos um modal/toasts configurado para o site. Use-o. Use toast sempre que estivermos em algum fluxo que não pode interromper diretamente a usabilidade do site.
+
+Outro ponto: ao final de qualquer prompt, crie um commit semântico como "(front)feat/etc", "(front)fix/etc"
 
 ## 1. Think Before Coding
 
