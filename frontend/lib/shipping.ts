@@ -1,15 +1,20 @@
-import type { Cart, ShippingQuoteService } from "@/lib/types";
+import type { Cart, DeliveryOption, PickupLocation } from "@/lib/types";
 
 export type ShippingOption = {
     id: string;
-    serviceCode: number;
+    type: "LOCAL_PICKUP" | "SHIPMENT";
+    serviceCode: number | null;
     name: string;
     priceInCents: number;
     deliveryLabel: string;
     destinationLabel?: string;
+    location?: PickupLocation;
 };
 
-export function getShippingDeliveryLabel(service: ShippingQuoteService) {
+function getShippingDeliveryLabel(service: {
+    deliveryDays: number | null;
+    deliveryRange: { min: number | null; max: number | null };
+}) {
     const { min, max } = service.deliveryRange;
 
     if (min != null && max != null) {
@@ -25,8 +30,16 @@ export function getShippingDeliveryLabel(service: ShippingQuoteService) {
     return "Prazo confirmado ao finalizar o pedido";
 }
 
-export function sortShippingServices(services: ShippingQuoteService[]) {
-    return [...services].sort((left, right) => {
+export function sortDeliveryOptions(options: DeliveryOption[]) {
+    return [...options].sort((left, right) => {
+        if (left.type !== right.type) {
+            return left.type === "LOCAL_PICKUP" ? -1 : 1;
+        }
+
+        if (left.type === "LOCAL_PICKUP" || right.type === "LOCAL_PICKUP") {
+            return 0;
+        }
+
         const priceDifference = left.priceInCents - right.priceInCents;
         if (priceDifference !== 0) return priceDifference;
 
@@ -39,16 +52,46 @@ export function sortShippingServices(services: ShippingQuoteService[]) {
     });
 }
 
-export function toShippingOption(
-    service: ShippingQuoteService,
+function getPickupLocationLabel(location: PickupLocation) {
+    const street = [location.street, location.number, location.complement]
+        .filter(Boolean)
+        .join(", ");
+    const city = [location.neighborhood, location.city, location.state]
+        .filter(Boolean)
+        .join(" · ");
+
+    return [street, city, `CEP ${location.zipCode}`]
+        .filter(Boolean)
+        .join(" — ");
+}
+
+export function toDeliveryOption(
+    option: DeliveryOption,
     destinationLabel?: string,
 ): ShippingOption {
+    if (option.type === "LOCAL_PICKUP") {
+        return {
+            id: option.id,
+            type: option.type,
+            serviceCode: null,
+            name: option.name,
+            priceInCents: option.priceInCents,
+            deliveryLabel: `Retire em ${option.location.name}`,
+            destinationLabel: getPickupLocationLabel(option.location),
+            location: option.location,
+        };
+    }
+
     return {
-        id: `shipping-${service.serviceCode}`,
-        serviceCode: service.serviceCode,
-        name: service.serviceName,
-        priceInCents: service.priceInCents,
-        deliveryLabel: getShippingDeliveryLabel(service),
+        id: option.id,
+        type: option.type,
+        serviceCode: option.serviceCode,
+        name: option.name,
+        priceInCents: option.priceInCents,
+        deliveryLabel: getShippingDeliveryLabel({
+            deliveryDays: option.deliveryDays,
+            deliveryRange: option.deliveryRange,
+        }),
         destinationLabel,
     };
 }

@@ -87,9 +87,12 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
         if (!shippingOption) return undefined;
 
         const params = new URLSearchParams({
-            serviceCode: String(shippingOption.serviceCode),
+            deliveryType: shippingOption.type,
             quoteContext: shippingContextKey,
         });
+        if (shippingOption.serviceCode != null) {
+            params.set("serviceCode", String(shippingOption.serviceCode));
+        }
 
         return `/checkout?${params.toString()}`;
     })();

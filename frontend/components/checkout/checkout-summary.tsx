@@ -4,6 +4,7 @@ type CheckoutSummaryProps = {
     canPrepare: boolean;
     discount: number;
     hasVerifiedShippingQuote: boolean;
+    isLocalPickup: boolean;
     isPreparing: boolean;
     isRedirecting: boolean;
     isReviewing: boolean;
@@ -22,6 +23,7 @@ export function CheckoutSummary({
     canPrepare,
     discount,
     hasVerifiedShippingQuote,
+    isLocalPickup,
     isPreparing,
     isRedirecting,
     isReviewing,
@@ -60,7 +62,9 @@ export function CheckoutSummary({
                         isShippingQuoteLoading
                             ? "Calculando..."
                             : hasVerifiedShippingQuote
-                              ? formatCurrency(shipping)
+                              ? isLocalPickup
+                                  ? "Grátis"
+                                  : formatCurrency(shipping)
                               : "A confirmar"
                     }
                 />
@@ -77,7 +81,9 @@ export function CheckoutSummary({
                         className={`mt-2 text-xs leading-5 ${isShippingConfirmed ? "font-bold text-[#167a45]" : "text-slate-500"}`}
                     >
                         {isShippingConfirmed
-                            ? "Frete e total confirmados pelo ateliê."
+                            ? isLocalPickup
+                                ? "Retirada e total confirmados pelo ateliê."
+                                : "Frete e total confirmados pelo ateliê."
                             : "Confira os valores antes de confirmar o pedido."}
                     </p>
                 </div>
@@ -104,7 +110,7 @@ export function CheckoutSummary({
                         }
                         label={
                             isShippingQuoteLoading
-                                ? "Calculando frete..."
+                                ? "Calculando opções..."
                                 : isPreparing
                                   ? "Confirmando pedido..."
                                   : isReviewing

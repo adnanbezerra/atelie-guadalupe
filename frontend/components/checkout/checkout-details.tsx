@@ -56,9 +56,11 @@ export function CheckoutCustomerDocument({
 export function DeliveryAddress({
     address,
     onEdit,
+    title = "Entrega em",
 }: {
     address: Address;
     onEdit: () => void;
+    title?: string;
 }) {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -72,7 +74,7 @@ export function DeliveryAddress({
                             home_pin
                         </span>
                         <h2 className="font-display text-xl font-bold text-slate-950">
-                            Entrega em
+                            {title}
                         </h2>
                     </div>
                     <address className="mt-2 pl-9 not-italic text-sm leading-6 text-slate-600">

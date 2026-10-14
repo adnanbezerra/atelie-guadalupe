@@ -16,11 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/hooks/use-user";
 import { previewShippingQuote } from "@/lib/api";
 import {
-    sortShippingServices,
-    toShippingOption,
+    sortDeliveryOptions,
+    toDeliveryOption,
     type ShippingOption,
 } from "@/lib/shipping";
-import type { Cart, ShippingQuoteService } from "@/lib/types";
+import type { Cart } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 export type CartShippingOption = ShippingOption;
@@ -50,9 +50,9 @@ export function ShippingQuotePanel({
     onSelectionChange,
 }: ShippingQuotePanelProps) {
     const userContext = useUser();
-    const [quotedServices, setQuotedServices] = useState<
-        ShippingQuoteService[]
-    >([]);
+    const [deliveryOptions, setDeliveryOptions] = useState<ShippingOption[]>(
+        [],
+    );
     const [isQuoting, setIsQuoting] = useState(false);
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
     const [feedback, setFeedback] = useState<{
@@ -100,23 +100,25 @@ export function ShippingQuotePanel({
 
             if (quoteRequestIdRef.current !== requestId) return;
 
-            const services = sortShippingServices(payload.quotedServices);
-            setQuotedServices(services);
+            const options = sortDeliveryOptions(payload.deliveryOptions).map(
+                (option) => toDeliveryOption(option, addressLabel),
+            );
+            setDeliveryOptions(options);
 
-            if (!services.length) {
+            if (!options.length) {
                 setFeedback({
-                    title: "Não há frete disponível",
+                    title: "Não há opção de entrega disponível",
                     description:
-                        "Nenhuma transportadora atende este endereço para os produtos do carrinho. Confira o endereço e tente novamente.",
+                        "Não encontramos entrega nem retirada para os produtos do carrinho. Confira o endereço e tente novamente.",
                 });
                 return;
             }
 
-            onSelectionChange(toShippingOption(services[0], addressLabel));
+            onSelectionChange(options[0]);
         } catch (error) {
             if (quoteRequestIdRef.current !== requestId) return;
 
-            setQuotedServices([]);
+            setDeliveryOptions([]);
             setFeedback({
                 title: "Não foi possível calcular a entrega",
                 description:
@@ -131,7 +133,7 @@ export function ShippingQuotePanel({
 
     useEffect(() => {
         quoteRequestIdRef.current += 1;
-        setQuotedServices([]);
+        setDeliveryOptions([]);
         onSelectionChange(null);
 
         if (!quoteSignature) return;
@@ -142,8 +144,8 @@ export function ShippingQuotePanel({
         };
     }, [onSelectionChange, quoteSignature, requestQuote]);
 
-    function selectService(service: ShippingQuoteService) {
-        onSelectionChange(toShippingOption(service, addressLabel));
+    function selectOption(option: ShippingOption) {
+        onSelectionChange(option);
         setIsOptionsOpen(false);
     }
 
@@ -160,7 +162,7 @@ export function ShippingQuotePanel({
                         </span>
                         <div className="min-w-0">
                             <p className="font-semibold text-slate-700">
-                                Frete estimado
+                                Entrega ou retirada
                             </p>
                             {selectedOption ? (
                                 <>
@@ -184,21 +186,25 @@ export function ShippingQuotePanel({
                         {isQuoting || userContext.isLoading ? (
                             <Skeleton className="h-5 w-20" />
                         ) : selectedOption ? (
-                            formatCurrency(selectedOption.priceInCents)
+                            selectedOption.type === "LOCAL_PICKUP" ? (
+                                "Grátis"
+                            ) : (
+                                formatCurrency(selectedOption.priceInCents)
+                            )
                         ) : (
                             "—"
                         )}
                     </div>
                 </div>
 
-                {hasSavedAddress && quotedServices.length ? (
+                {hasSavedAddress && deliveryOptions.length ? (
                     <div className="flex flex-wrap items-center gap-x-2">
                         <button
                             className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-bold text-primary transition hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20"
                             onClick={() => setIsOptionsOpen(true)}
                             type="button"
                         >
-                            Mais opções de frete
+                            Ver opções de entrega
                             <span
                                 aria-hidden="true"
                                 className="material-symbols-outlined text-lg"
@@ -215,7 +221,7 @@ export function ShippingQuotePanel({
                     </div>
                 ) : null}
 
-                {hasSavedAddress && !isQuoting && !quotedServices.length ? (
+                {hasSavedAddress && !isQuoting && !deliveryOptions.length ? (
                     <button
                         className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-bold text-primary transition hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/20"
                         onClick={() => void requestQuote()}
@@ -250,16 +256,16 @@ export function ShippingQuotePanel({
                 <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-xl overflow-y-auto bg-white">
                     <DialogHeader className="border-b border-slate-100 px-6 py-5 pr-16">
                         <DialogTitle className="font-display text-2xl font-bold text-slate-950">
-                            Opções de frete
+                            Entrega ou retirada
                         </DialogTitle>
                         <DialogDescription className="text-sm leading-6 text-slate-600">
-                            Valores calculados para seu endereço. A opção mais
-                            barata já vem selecionada.
+                            Escolha receber no endereço cadastrado ou retirar
+                            pessoalmente.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogClose asChild>
                         <button
-                            aria-label="Fechar opções de frete"
+                            aria-label="Fechar opções de entrega"
                             className="absolute right-5 top-5 flex size-11 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-primary/20"
                             type="button"
                         >
@@ -272,43 +278,47 @@ export function ShippingQuotePanel({
                         </button>
                     </DialogClose>
                     <fieldset className="space-y-3 p-6">
-                        <legend className="sr-only">Escolha o frete</legend>
-                        {quotedServices.map((service) => {
-                            const option = toShippingOption(
-                                service,
-                                addressLabel,
-                            );
-
+                        <legend className="sr-only">
+                            Como você quer receber seu pedido?
+                        </legend>
+                        {deliveryOptions.map((option) => {
+                            const isPickup = option.type === "LOCAL_PICKUP";
                             return (
                                 <label
                                     className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-primary/30 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary/15"
-                                    key={service.serviceCode}
+                                    key={option.id}
                                 >
                                     <input
                                         checked={
-                                            selectedOption?.serviceCode ===
-                                            service.serviceCode
+                                            selectedOption?.id === option.id
                                         }
                                         className="mt-1 accent-[#1940b3]"
                                         name="cart-shipping-option"
-                                        onChange={() => selectService(service)}
+                                        onChange={() => selectOption(option)}
                                         type="radio"
                                         value={option.id}
                                     />
                                     <span className="min-w-0 flex-1">
                                         <span className="flex items-start justify-between gap-4">
                                             <span className="font-bold text-slate-950">
-                                                {service.serviceName}
+                                                {option.name}
                                             </span>
                                             <span className="shrink-0 font-black text-primary">
-                                                {formatCurrency(
-                                                    service.priceInCents,
-                                                )}
+                                                {isPickup
+                                                    ? "Grátis"
+                                                    : formatCurrency(
+                                                          option.priceInCents,
+                                                      )}
                                             </span>
                                         </span>
                                         <span className="mt-1 block text-sm leading-5 text-slate-600">
                                             {option.deliveryLabel}
                                         </span>
+                                        {option.destinationLabel ? (
+                                            <span className="mt-1 block text-sm leading-5 text-slate-600">
+                                                {option.destinationLabel}
+                                            </span>
+                                        ) : null}
                                     </span>
                                 </label>
                             );

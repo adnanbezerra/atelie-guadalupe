@@ -272,9 +272,50 @@ export type ShippingQuoteService = {
     };
 };
 
+export type PickupLocation = {
+    name: string;
+    street: string;
+    number: string;
+    complement: string | null;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+};
+
+export type DeliveryOption =
+    | {
+          id: string;
+          type: "LOCAL_PICKUP";
+          name: string;
+          priceInCents: 0;
+          location: PickupLocation;
+      }
+    | {
+          id: string;
+          type: "SHIPMENT";
+          serviceCode: number;
+          name: string;
+          priceInCents: number;
+          deliveryDays: number | null;
+          deliveryRange: {
+              min: number | null;
+              max: number | null;
+          };
+      };
+
 export type ShippingQuotePayload = {
     quotedServices: ShippingQuoteService[];
+    deliveryOptions: DeliveryOption[];
 };
+
+export type OrderDeliveryInput =
+    | { type: "LOCAL_PICKUP" }
+    | {
+          type: "SHIPMENT";
+          serviceCode: number;
+          priceInCents: number;
+      };
 
 export type OrderItem = {
     uuid: string;

@@ -10,6 +10,7 @@ import type {
     MarketingPromotion,
     OrdersResponse,
     Order,
+    OrderDeliveryInput,
     Product,
     ProductLine,
     ProductLineInput,
@@ -470,12 +471,8 @@ export function updateAdminUser(
 export function createOrder(
     token: string,
     body: {
-        addressUuid: string;
-        delivery: {
-            type: "SHIPMENT";
-            serviceCode: number;
-            priceInCents: number;
-        };
+        addressUuid?: string;
+        delivery: OrderDeliveryInput;
         notes?: string;
         paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
     },

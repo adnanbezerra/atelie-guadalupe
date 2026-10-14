@@ -41,11 +41,11 @@ import {
 } from "@/lib/api";
 import {
     getShippingContextKey,
-    sortShippingServices,
-    toShippingOption,
+    sortDeliveryOptions,
+    toDeliveryOption,
     type ShippingOption,
 } from "@/lib/shipping";
-import type { Cart, Order, ShippingQuoteService } from "@/lib/types";
+import type { Cart, Order } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 type CheckoutPageClientProps = {
@@ -67,9 +67,9 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [quotedShipping, setQuotedShipping] = useState<ShippingOption | null>(
         null,
     );
-    const [quotedServices, setQuotedServices] = useState<
-        ShippingQuoteService[]
-    >([]);
+    const [deliveryOptions, setDeliveryOptions] = useState<ShippingOption[]>(
+        [],
+    );
     const [isShippingQuoteLoading, setIsShippingQuoteLoading] = useState(false);
     const [hasVerifiedShippingQuote, setHasVerifiedShippingQuote] =
         useState(false);
@@ -81,15 +81,20 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
     const [isEditingDocument, setIsEditingDocument] = useState(false);
     const [isReviewing, setIsReviewing] = useState(false);
 
-    const hasValidServiceCode =
-        Number.isInteger(quotedShipping?.serviceCode) &&
-        (quotedShipping?.serviceCode ?? 0) > 0;
+    const hasValidDeliveryOption = Boolean(
+        quotedShipping &&
+        (quotedShipping.type === "LOCAL_PICKUP" ||
+            (Number.isInteger(quotedShipping.serviceCode) &&
+                (quotedShipping.serviceCode ?? 0) > 0)),
+    );
     const document = userContext.user?.document ?? "";
     const documentLength = document.replace(/\D/g, "").length;
     const hasValidDocument =
         documentLength === 14 ||
         (documentLength === 11 && isValidCpf(document));
-    const requiresPhone = quotedShipping?.serviceCode === 33;
+    const requiresPhone =
+        quotedShipping?.type === "SHIPMENT" &&
+        quotedShipping.serviceCode === 33;
     const hasValidPhone =
         !requiresPhone ||
         userContext.user?.phone?.replace(/\D/g, "").length === 11;
@@ -162,13 +167,14 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         shippingZipCode,
     );
     const requestedServiceCode = Number(searchParams.get("serviceCode"));
+    const requestedDeliveryType = searchParams.get("deliveryType");
     const requestedQuoteContext = searchParams.get("quoteContext");
 
     useEffect(() => {
         if (order) return;
 
         if (shippingZipCode.length !== 8 || !quoteItems.length) {
-            setQuotedServices([]);
+            setDeliveryOptions([]);
             setQuotedShipping(null);
             setHasVerifiedShippingQuote(false);
             return;
@@ -177,45 +183,49 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         let cancelled = false;
         setIsShippingQuoteLoading(true);
         setHasVerifiedShippingQuote(false);
-        setQuotedServices([]);
+        setDeliveryOptions([]);
         setQuotedShipping(null);
 
         void previewShippingQuote(shippingZipCode, quoteItems)
             .then((quote) => {
                 if (cancelled) return;
 
-                const services = sortShippingServices(quote.quotedServices);
+                const options = sortDeliveryOptions(quote.deliveryOptions).map(
+                    (option) => toDeliveryOption(option),
+                );
                 const canRestoreCartSelection =
                     requestedQuoteContext != null &&
                     requestedQuoteContext === shippingContextKey;
-                const selectedService =
+                const selectedOption =
                     (canRestoreCartSelection
-                        ? services.find(
-                              (service) =>
-                                  service.serviceCode === requestedServiceCode,
+                        ? options.find((option) =>
+                              requestedDeliveryType === "LOCAL_PICKUP"
+                                  ? option.type === "LOCAL_PICKUP"
+                                  : option.type === "SHIPMENT" &&
+                                    option.serviceCode === requestedServiceCode,
                           )
-                        : undefined) ?? services[0];
+                        : undefined) ?? options[0];
 
-                if (!selectedService) {
-                    setQuotedServices([]);
+                if (!selectedOption) {
+                    setDeliveryOptions([]);
                     setQuotedShipping(null);
                     setCheckoutError({
-                        title: "Não há frete disponível",
+                        title: "Não há opção de entrega disponível",
                         description:
-                            "Nenhuma transportadora atende este endereço para os produtos do carrinho. Confira o endereço e tente novamente.",
+                            "Não encontramos entrega nem retirada para os produtos do carrinho. Confira o endereço e tente novamente.",
                     });
                     return;
                 }
 
-                setQuotedServices(services);
-                setQuotedShipping(toShippingOption(selectedService));
+                setDeliveryOptions(options);
+                setQuotedShipping(selectedOption);
                 setHasVerifiedShippingQuote(true);
             })
             .catch(() => {
                 if (cancelled) return;
 
                 setCheckoutError({
-                    title: "Não foi possível confirmar o frete",
+                    title: "Não foi possível carregar as opções",
                     description:
                         "Aguarde um pouco, verifique sua conexão com a internet e atualize a página para tentar novamente.",
                 });
@@ -231,6 +241,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
         order,
         quoteItems,
         requestedQuoteContext,
+        requestedDeliveryType,
         requestedServiceCode,
         shippingContextKey,
         shippingZipCode,
@@ -361,7 +372,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             !hasValidPhone ||
             !userContext.address?.uuid ||
             !quotedShipping ||
-            !hasValidServiceCode ||
+            !hasValidDeliveryOption ||
             !hasVerifiedShippingQuote
         ) {
             setCheckoutError({
@@ -372,7 +383,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                       ? "Cadastre um endereço com a rua limitada a 30 caracteres."
                       : !hasValidPhone
                         ? "Esta transportadora exige um telefone com DDD e 11 números."
-                        : "Volte ao carrinho, calcule o frete e escolha uma opção de entrega.",
+                        : "Escolha uma opção de entrega ou retirada para continuar.",
             });
             return;
         }
@@ -383,13 +394,19 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
             let currentOrder = order;
 
             if (!currentOrder) {
+                const delivery =
+                    quotedShipping.type === "LOCAL_PICKUP"
+                        ? ({ type: "LOCAL_PICKUP" } as const)
+                        : ({
+                              type: "SHIPMENT",
+                              serviceCode: quotedShipping.serviceCode!,
+                              priceInCents: quotedShipping.priceInCents,
+                          } as const);
                 currentOrder = await cart.checkout(
-                    userContext.address.uuid,
-                    {
-                        type: "SHIPMENT",
-                        serviceCode: quotedShipping.serviceCode,
-                        priceInCents: quotedShipping.priceInCents,
-                    },
+                    delivery.type === "SHIPMENT"
+                        ? userContext.address.uuid
+                        : undefined,
+                    delivery,
                     notes.trim() || undefined,
                 );
                 storeOrder(currentOrder);
@@ -409,44 +426,48 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                         userContext.address.zipCode.replace(/\D/g, ""),
                         quoteItems,
                     );
-                    const services = sortShippingServices(quote.quotedServices);
-                    const updatedService = services.find(
-                        (service) =>
-                            service.serviceCode === quotedShipping.serviceCode,
+                    const options = sortDeliveryOptions(
+                        quote.deliveryOptions,
+                    ).map((option) => toDeliveryOption(option));
+                    const updatedOption = options.find(
+                        (option) => option.id === quotedShipping.id,
                     );
-                    setQuotedServices(services);
+                    setDeliveryOptions(options);
 
                     if (
-                        updatedService &&
-                        updatedService.priceInCents !==
+                        updatedOption?.type === "SHIPMENT" &&
+                        quotedShipping.type === "SHIPMENT" &&
+                        updatedOption.priceInCents !==
                             quotedShipping.priceInCents
                     ) {
                         const previousPrice = quotedShipping.priceInCents;
-                        setQuotedShipping(toShippingOption(updatedService));
+                        setQuotedShipping(updatedOption);
                         setHasVerifiedShippingQuote(true);
                         setCheckoutError({
                             title: "Frete atualizado",
-                            description: `${updatedService.serviceName} passou de ${formatCurrency(previousPrice)} para ${formatCurrency(updatedService.priceInCents)}. Confira o novo total e confirme o pedido novamente.`,
+                            description: `${updatedOption.name} passou de ${formatCurrency(previousPrice)} para ${formatCurrency(updatedOption.priceInCents)}. Confira o novo total e confirme o pedido novamente.`,
                         });
                         return;
                     }
 
-                    if (updatedService) {
+                    if (updatedOption) {
                         setCheckoutError({
-                            title: "Não foi possível confirmar o frete",
+                            title: "Não foi possível confirmar a entrega",
                             description:
-                                "A transportadora recusou a confirmação, mas a nova cotação manteve o mesmo valor. Tente confirmar o pedido novamente.",
+                                updatedOption.type === "LOCAL_PICKUP"
+                                    ? "A retirada continua disponível. Tente confirmar o pedido novamente."
+                                    : "A transportadora recusou a confirmação, mas a nova cotação manteve o mesmo valor. Tente confirmar o pedido novamente.",
                         });
                         return;
                     }
 
-                    if (services[0]) {
-                        setQuotedShipping(toShippingOption(services[0]));
+                    if (options[0]) {
+                        setQuotedShipping(options[0]);
                         setHasVerifiedShippingQuote(true);
                         setIsReviewing(false);
                         setCheckoutError({
-                            title: "Opção de frete atualizada",
-                            description: `${quotedShipping.name} não está mais disponível. Selecionamos ${services[0].serviceName}, a opção mais barata disponível. Confira prazo e total antes de continuar.`,
+                            title: "Opção de entrega atualizada",
+                            description: `${quotedShipping.name} não está mais disponível. Selecionamos ${options[0].name}. Confira a opção antes de continuar.`,
                         });
                         return;
                     }
@@ -455,7 +476,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                 }
 
                 setQuotedShipping(null);
-                setQuotedServices([]);
+                setDeliveryOptions([]);
                 setHasVerifiedShippingQuote(false);
                 setCheckoutError({
                     title: "Frete atualizado",
@@ -631,6 +652,11 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                                         setIsReviewing(false);
                                         setIsEditingAddress(true);
                                     }}
+                                    title={
+                                        quotedShipping?.type === "LOCAL_PICKUP"
+                                            ? "Seu endereço cadastrado"
+                                            : "Entrega em"
+                                    }
                                 />
                             ) : (
                                 <CheckoutAddressForm
@@ -660,15 +686,13 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             {hasValidAddress && !isEditingAddress ? (
                                 <CheckoutShippingOptions
                                     isLoading={isShippingQuoteLoading}
-                                    onSelect={(service) => {
-                                        setQuotedShipping(
-                                            toShippingOption(service),
-                                        );
+                                    onSelect={(option) => {
+                                        setQuotedShipping(option);
                                         setHasVerifiedShippingQuote(true);
                                         setIsReviewing(false);
                                     }}
+                                    options={deliveryOptions}
                                     selected={quotedShipping}
-                                    services={quotedServices}
                                 />
                             ) : null}
 
@@ -737,6 +761,9 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             canPrepare={canReview}
                             discount={discount}
                             hasVerifiedShippingQuote={hasVerifiedShippingQuote}
+                            isLocalPickup={
+                                quotedShipping?.type === "LOCAL_PICKUP"
+                            }
                             isPreparing={isPreparing}
                             isRedirecting={isRedirecting}
                             isReviewing={isReviewing}
@@ -745,7 +772,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                             onOpenPayment={() => void openPayment()}
                             onPrepareOrder={() => void prepareOrder()}
                             onReview={() => setIsReviewing(true)}
-                            serviceName={quotedShipping?.name ?? "Frete"}
+                            serviceName={quotedShipping?.name ?? "Entrega"}
                             shipping={shipping}
                             subtotal={subtotal}
                             total={total}

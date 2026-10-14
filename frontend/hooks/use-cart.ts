@@ -23,7 +23,13 @@ import {
     updateCartItem,
 } from "@/lib/api";
 import type { ReactNode } from "react";
-import type { Cart, CartItem, Order, Product } from "@/lib/types";
+import type {
+    Cart,
+    CartItem,
+    Order,
+    OrderDeliveryInput,
+    Product,
+} from "@/lib/types";
 import { useApiToken } from "@/hooks/use-api-token";
 import { applyProductDiscount } from "@/lib/utils";
 
@@ -58,12 +64,8 @@ type CartContextValue = {
     applyCoupon: (code: string) => Promise<void>;
     removeCoupon: () => Promise<void>;
     checkout: (
-        addressUuid: string,
-        delivery: {
-            type: "SHIPMENT";
-            serviceCode: number;
-            priceInCents: number;
-        },
+        addressUuid: string | undefined,
+        delivery: OrderDeliveryInput,
         notes?: string,
         paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD",
     ) => Promise<Order>;
@@ -481,12 +483,8 @@ export function CartProvider({
                 await runMutation(() => removeCartCoupon(token));
             },
             checkout: async (
-                addressUuid: string,
-                delivery: {
-                    type: "SHIPMENT";
-                    serviceCode: number;
-                    priceInCents: number;
-                },
+                addressUuid: string | undefined,
+                delivery: OrderDeliveryInput,
                 notes?: string,
                 paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD",
             ) => {
