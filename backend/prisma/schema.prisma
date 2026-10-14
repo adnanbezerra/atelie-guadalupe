@@ -320,6 +320,8 @@ model Order {
   uuid                     String            @unique @db.Uuid
   userId                   Int
   addressId                Int?
+  deliveryType             DeliveryType      @default(SHIPMENT)
+  pickupLocationSnapshot   Json?
   status                   OrderStatus       @default(PENDING)
   subtotalInCents          Int
   shippingInCents          Int               @default(0)
@@ -351,6 +353,11 @@ model Order {
   @@index([status])
   @@index([uuid])
   @@index([couponId])
+}
+
+enum DeliveryType {
+  SHIPMENT
+  LOCAL_PICKUP
 }
 
 model OrderPayment {
