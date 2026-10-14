@@ -1,9 +1,15 @@
 import { Prisma, PrismaClient } from "../../../generated/prisma/client";
-import { OrderStatus, PaymentStatus, ShippingStatus } from "../../../generated/prisma/enums";
+import {
+    OrderStatus,
+    PaymentStatus,
+    ProductSize,
+    ShippingStatus
+} from "../../../generated/prisma/enums";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import { isCpfOrCnpj } from "../../../core/utils/document";
+import { getProductSizeInGrams } from "../../products/services/product-pricing";
 import { AbacateCheckout, AbacatePayClient } from "./abacatepay-client";
 import { checkoutUnavailableError, isCheckoutCreationEnabled } from "./checkout-availability";
 
@@ -243,7 +249,7 @@ export class PaymentService {
         items: Array<{
             uuid: string;
             productNameSnapshot: string;
-            productSize: string;
+            productSize: ProductSize;
             totalPriceInCents: number;
         }>;
     }) {
@@ -253,7 +259,7 @@ export class PaymentService {
             remainingDiscount -= discount;
             return {
                 externalId: `order-item:${item.uuid}`,
-                name: `${item.productNameSnapshot} (${item.productSize})`,
+                name: `${item.productNameSnapshot} (${getProductSizeInGrams(item.productSize)} g)`,
                 price: item.totalPriceInCents - discount
             };
         });

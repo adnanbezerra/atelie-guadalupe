@@ -337,6 +337,7 @@ test("payment service returns an existing checkout while new checkouts are disab
 
 test("payment checkout does not subtract the promotion discount twice", async () => {
     const productPrices: number[] = [];
+    const productNames: string[] = [];
     let checkoutInput: Record<string, unknown> | undefined;
     const order = {
         id: 1,
@@ -387,8 +388,9 @@ test("payment checkout does not subtract the promotion discount twice", async ()
             callback(transactionClient)
     };
     const client = {
-        createProduct: async (input: { externalId: string; price: number }) => {
+        createProduct: async (input: { externalId: string; name: string; price: number }) => {
             productPrices.push(input.price);
+            productNames.push(input.name);
             return { id: `provider:${input.externalId}` };
         },
         createCheckout: async (input: Record<string, unknown>) => {
@@ -410,6 +412,7 @@ test("payment checkout does not subtract the promotion discount twice", async ()
 
     assert.equal(result.success, true);
     assert.deepStrictEqual(productPrices, [8500, 1000]);
+    assert.deepStrictEqual(productNames, ["Produto em promocao (70 g)", "Frete"]);
     assert.deepStrictEqual(checkoutInput?.methods, ["PIX", "CARD"]);
 });
 
