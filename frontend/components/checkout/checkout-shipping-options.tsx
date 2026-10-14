@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getShippingDeliveryLabel, type ShippingOption } from "@/lib/shipping";
 import type { ShippingQuoteService } from "@/lib/types";
@@ -19,8 +18,6 @@ export function CheckoutShippingOptions({
     selected,
     services,
 }: CheckoutShippingOptionsProps) {
-    const detailsRef = useRef<HTMLDetailsElement | null>(null);
-
     return (
         <section className="overflow-hidden rounded-xl bg-white shadow-sm">
             <div className="border-b border-slate-100 bg-[#f8f5ef] px-5 py-5 sm:px-6">
@@ -36,8 +33,8 @@ export function CheckoutShippingOptions({
                             Frete
                         </h2>
                         <p className="mt-1 text-sm leading-6 text-slate-600">
-                            Reveja os prazos e escolha outra opção antes de
-                            confirmar.
+                            Escolha uma opção de entrega pelo prazo e pelo
+                            preço.
                         </p>
                     </div>
                 </div>
@@ -53,71 +50,40 @@ export function CheckoutShippingOptions({
                         <Skeleton className="h-14 w-full rounded-lg" />
                     </div>
                 ) : selected ? (
-                    <details
-                        className="group rounded-xl border border-slate-200 open:border-primary/30"
-                        ref={detailsRef}
-                    >
-                        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 rounded-xl px-4 py-3 focus:outline-none focus:ring-4 focus:ring-primary/20 [&::-webkit-details-marker]:hidden">
-                            <span className="min-w-0">
-                                <span className="block font-bold text-slate-950">
-                                    {selected.name}
-                                </span>
-                                <span className="mt-0.5 block text-sm leading-5 text-slate-600">
-                                    {selected.deliveryLabel}
-                                </span>
-                            </span>
-                            <span className="flex shrink-0 items-center gap-2">
-                                <span className="font-black text-primary">
-                                    {formatCurrency(selected.priceInCents)}
-                                </span>
-                                <svg
-                                    aria-hidden="true"
-                                    className="size-5 text-slate-500 transition-transform group-open:rotate-180"
-                                    fill="none"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        d="m5 7.5 5 5 5-5"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.75"
-                                    />
-                                </svg>
-                            </span>
-                        </summary>
+                    <fieldset className="space-y-3">
+                        <legend className="mb-3 font-bold text-slate-950">
+                            Opções disponíveis
+                        </legend>
+                        {services.map((service, index) => {
+                            const isSelected =
+                                selected.serviceCode === service.serviceCode;
 
-                        <fieldset className="space-y-2 border-t border-slate-100 p-3">
-                            <legend className="sr-only">
-                                Opções de frete disponíveis
-                            </legend>
-                            {services.map((service, index) => (
+                            return (
                                 <label
-                                    className="flex cursor-pointer items-start gap-3 rounded-lg p-3 transition hover:bg-slate-50 has-[:checked]:bg-primary/5"
+                                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-slate-300 hover:bg-slate-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-primary/20"
                                     key={service.serviceCode}
                                 >
                                     <input
-                                        checked={
-                                            selected.serviceCode ===
-                                            service.serviceCode
-                                        }
-                                        className="mt-1 accent-[#1940b3]"
+                                        checked={isSelected}
+                                        className="mt-0.5 size-5 shrink-0 accent-[#1940b3]"
                                         name="checkout-shipping-option"
-                                        onChange={() => {
-                                            onSelect(service);
-                                            if (detailsRef.current) {
-                                                detailsRef.current.open = false;
-                                            }
-                                        }}
+                                        onChange={() => onSelect(service)}
                                         type="radio"
                                     />
                                     <span className="min-w-0 flex-1">
                                         <span className="flex items-start justify-between gap-4">
-                                            <span className="font-bold text-slate-950">
-                                                {service.serviceName}
+                                            <span className="flex min-w-0 flex-wrap items-center gap-2 font-bold text-slate-950">
+                                                <span>
+                                                    {service.serviceName}
+                                                </span>
                                                 {index === 0 ? (
-                                                    <span className="ml-2 inline-flex rounded-full bg-[#d1a054]/15 px-2 py-0.5 align-middle text-[0.6875rem] font-bold text-[#795116]">
-                                                        Mais barato
+                                                    <span className="inline-flex rounded-full bg-[#d1a054]/15 px-2 py-0.5 text-[0.6875rem] font-bold text-[#795116]">
+                                                        Menor preço
+                                                    </span>
+                                                ) : null}
+                                                {isSelected ? (
+                                                    <span className="inline-flex rounded-full bg-primary px-2 py-0.5 text-[0.6875rem] font-bold text-white">
+                                                        Selecionado
                                                     </span>
                                                 ) : null}
                                             </span>
@@ -132,9 +98,9 @@ export function CheckoutShippingOptions({
                                         </span>
                                     </span>
                                 </label>
-                            ))}
-                        </fieldset>
-                    </details>
+                            );
+                        })}
+                    </fieldset>
                 ) : (
                     <p className="text-sm leading-6 text-slate-600">
                         Salve o endereço para ver as opções de frete.
