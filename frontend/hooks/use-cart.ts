@@ -59,7 +59,11 @@ type CartContextValue = {
     removeCoupon: () => Promise<void>;
     checkout: (
         addressUuid: string,
-        shipping: { serviceCode: number; priceInCents: number },
+        delivery: {
+            type: "SHIPMENT";
+            serviceCode: number;
+            priceInCents: number;
+        },
         notes?: string,
         paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD",
     ) => Promise<Order>;
@@ -478,7 +482,11 @@ export function CartProvider({
             },
             checkout: async (
                 addressUuid: string,
-                shipping: { serviceCode: number; priceInCents: number },
+                delivery: {
+                    type: "SHIPMENT";
+                    serviceCode: number;
+                    priceInCents: number;
+                },
                 notes?: string,
                 paymentMethod?: "PIX" | "CREDIT_CARD" | "DEBIT_CARD",
             ) => {
@@ -489,7 +497,7 @@ export function CartProvider({
 
                 const payload = await createOrder(token, {
                     addressUuid,
-                    shipping,
+                    delivery,
                     notes,
                     paymentMethod,
                 });

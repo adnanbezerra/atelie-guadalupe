@@ -119,7 +119,7 @@ const quote = await api("/shipping/quote", {
 
 ## 2. Criar o pedido
 
-`addressUuid` e `shipping` sao obrigatorios.
+Para envio, `addressUuid` e `delivery` sao obrigatorios.
 
 ```ts
 const created = await api<{ success: true; data: { order: Order } }>(
@@ -129,7 +129,8 @@ const created = await api<{ success: true; data: { order: Order } }>(
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
             addressUuid,
-            shipping: {
+            delivery: {
+                type: "SHIPMENT",
                 serviceCode: selectedService.serviceCode,
                 priceInCents: selectedService.priceInCents,
             },

@@ -386,6 +386,7 @@ export function CheckoutPageClient({ initialCart }: CheckoutPageClientProps) {
                 currentOrder = await cart.checkout(
                     userContext.address.uuid,
                     {
+                        type: "SHIPMENT",
                         serviceCode: quotedShipping.serviceCode,
                         priceInCents: quotedShipping.priceInCents,
                     },

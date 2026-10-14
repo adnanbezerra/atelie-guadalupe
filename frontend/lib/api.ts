@@ -471,7 +471,8 @@ export function createOrder(
     token: string,
     body: {
         addressUuid: string;
-        shipping: {
+        delivery: {
+            type: "SHIPMENT";
             serviceCode: number;
             priceInCents: number;
         };
