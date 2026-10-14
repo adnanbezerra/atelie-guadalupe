@@ -24,6 +24,7 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     const contentType = request.headers.get("content-type");
     const accept = request.headers.get("accept");
     const idempotencyKey = request.headers.get("idempotency-key");
+    const webhookSignature = request.headers.get("x-webhook-signature");
 
     const body =
         request.method === "GET" || request.method === "HEAD"
@@ -39,6 +40,9 @@ async function proxyRequest(request: NextRequest, path: string[]) {
                 ...(contentType ? { "content-type": contentType } : {}),
                 ...(idempotencyKey
                     ? { "idempotency-key": idempotencyKey }
+                    : {}),
+                ...(webhookSignature
+                    ? { "x-webhook-signature": webhookSignature }
                     : {}),
                 ...(token
                     ? {
