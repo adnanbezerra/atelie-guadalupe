@@ -1743,7 +1743,8 @@ Request:
 ```json
 {
     "addressUuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b301",
-    "shipping": {
+    "delivery": {
+        "type": "SHIPMENT",
         "serviceCode": 1,
         "priceInCents": 1590
     },
@@ -1752,10 +1753,23 @@ Request:
 }
 ```
 
+Para retirada local:
+
+```json
+{
+    "delivery": {
+        "type": "LOCAL_PICKUP"
+    },
+    "paymentMethod": "PIX",
+    "notes": "Retirar no periodo da tarde"
+}
+```
+
 Observacoes:
 
-- `addressUuid` e obrigatorio
-- `shipping.serviceCode` e `shipping.priceInCents` devem vir do preview de `POST /shipping/quote`
+- `addressUuid` e obrigatorio somente quando `delivery.type` e `SHIPMENT`
+- `delivery.serviceCode` e `delivery.priceInCents` devem vir do preview de `POST /shipping/quote`
+- `LOCAL_PICKUP` nao aceita `serviceCode` nem `priceInCents`
 - o backend recalcula o frete; se o preco mudou, responde `409` sem criar o pedido
 - `paymentMethod` e opcional e aceita `PIX`, `CREDIT_CARD` ou `DEBIT_CARD`
 - `paymentMethod` e apenas snapshot simples no pedido; metodos salvos/tokenizados ainda nao existem
@@ -2955,11 +2969,12 @@ A resposta publica de pedido agora inclui:
 
 ### `POST /orders`
 
-Requer autenticacao e `addressUuid`. O CPF/CNPJ continua opcional no cadastro e no banco, mas e
-obrigatorio para iniciar o checkout: o backend usa primeiro `address.document` e, quando ausente,
-`user.document`. O documento deve conter 11 ou 14 digitos. Sem documento, o endpoint responde
-`400 BUSINESS_RULE_ERROR` com a mensagem `Informe um CPF ou CNPJ para continuar o checkout` e nao
-cria o pedido.
+Requer autenticacao. Para `delivery.type=SHIPMENT`, requer `addressUuid`; para
+`delivery.type=LOCAL_PICKUP`, o endereco deve ser omitido. O CPF/CNPJ continua opcional no cadastro
+e no banco, mas e obrigatorio para iniciar o checkout: o backend usa primeiro `address.document` e,
+quando ausente, `user.document`. O documento deve conter 11 ou 14 digitos. Sem documento, o endpoint
+responde `400 BUSINESS_RULE_ERROR` com a mensagem `Informe um CPF ou CNPJ para continuar o checkout`
+e nao cria o pedido.
 
 O endpoint tambem valida os limites de destinatario exigidos pela SuperFrete antes de criar o
 pedido. O nome deve conter nome e sobrenome; nome e endereco aceitam ate 50 caracteres, numero ate
