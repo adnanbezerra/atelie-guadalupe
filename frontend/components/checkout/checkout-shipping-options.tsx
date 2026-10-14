@@ -70,12 +70,20 @@ export function CheckoutShippingOptions({
                                 <span className="font-black text-primary">
                                     {formatCurrency(selected.priceInCents)}
                                 </span>
-                                <span
+                                <svg
                                     aria-hidden="true"
-                                    className="material-symbols-outlined text-xl text-slate-500 transition-transform group-open:rotate-180"
+                                    className="size-5 text-slate-500 transition-transform group-open:rotate-180"
+                                    fill="none"
+                                    viewBox="0 0 20 20"
                                 >
-                                    expand_more
-                                </span>
+                                    <path
+                                        d="m5 7.5 5 5 5-5"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.75"
+                                    />
+                                </svg>
                             </span>
                         </summary>
 
