@@ -231,68 +231,69 @@ export function CartPageClient({ initialCart }: CartPageClientProps) {
 
     return (
         <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
-            <div className="mb-10 flex flex-col gap-2">
-                <h1 className="font-display text-4xl font-black tracking-tight text-slate-900">
-                    Meu Carrinho
-                </h1>
-                <p className="text-base text-slate-500">
-                    Produtos selecionados para você.
-                </p>
-            </div>
-
             <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
-                <div className="flex flex-col gap-8 lg:col-span-2">
-                    {cart.isLoading && !cart.data
-                        ? Array.from({ length: 3 }).map((_, index) => (
-                              <div
-                                  key={index}
-                                  className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
-                              >
-                                  <div className="flex items-center gap-4">
-                                      <Skeleton className="size-20 rounded-lg" />
-                                      <div className="flex-1 space-y-3">
-                                          <Skeleton className="h-5 w-48" />
-                                          <Skeleton className="h-3 w-32" />
-                                          <Skeleton className="h-4 w-20" />
+                <div className="lg:col-span-2">
+                    <div className="mb-10 flex flex-col gap-2">
+                        <h1 className="font-display text-4xl font-black tracking-tight text-slate-900">
+                            Meu Carrinho
+                        </h1>
+                        <p className="text-base text-slate-500">
+                            Produtos selecionados para você.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-8">
+                        {cart.isLoading && !cart.data
+                            ? Array.from({ length: 3 }).map((_, index) => (
+                                  <div
+                                      key={index}
+                                      className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                                  >
+                                      <div className="flex items-center gap-4">
+                                          <Skeleton className="size-20 rounded-lg" />
+                                          <div className="flex-1 space-y-3">
+                                              <Skeleton className="h-5 w-48" />
+                                              <Skeleton className="h-3 w-32" />
+                                              <Skeleton className="h-4 w-20" />
+                                          </div>
                                       </div>
                                   </div>
-                              </div>
-                          ))
-                        : null}
+                              ))
+                            : null}
 
-                    {renderSection("Botica & Cremes", "spa", beautyItems)}
-                    {renderSection(
-                        "Artesanato Feito à Mão",
-                        "brush",
-                        craftItems,
-                    )}
-                    {renderSection(
-                        "Produtos no Carrinho",
-                        "shopping_bag",
-                        uncategorizedItems,
-                    )}
+                        {renderSection("Botica & Cremes", "spa", beautyItems)}
+                        {renderSection(
+                            "Artesanato Feito à Mão",
+                            "brush",
+                            craftItems,
+                        )}
+                        {renderSection(
+                            "Produtos no Carrinho",
+                            "shopping_bag",
+                            uncategorizedItems,
+                        )}
 
-                    {cart.data && !cart.data.items.length ? (
-                        <div className="rounded-xl border border-slate-100 bg-white p-10 text-center shadow-sm">
-                            <h2 className="font-display text-2xl font-bold text-slate-900">
-                                Seu carrinho está vazio
-                            </h2>
-                            <p className="mt-3 text-sm text-slate-500">
-                                Adicione alguns produtos para começar a comprar
-                            </p>
-                            <Link
-                                href="/beleza-natural"
-                                className="mt-6 inline-flex rounded-lg bg-primary px-6 py-3 font-bold text-white"
-                            >
-                                Voltar para a vitrine
-                            </Link>
-                        </div>
-                    ) : null}
+                        {cart.data && !cart.data.items.length ? (
+                            <div className="rounded-xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+                                <h2 className="font-display text-2xl font-bold text-slate-900">
+                                    Seu carrinho está vazio
+                                </h2>
+                                <p className="mt-3 text-sm text-slate-500">
+                                    Adicione alguns produtos para começar a
+                                    comprar
+                                </p>
+                                <Link
+                                    href="/beleza-natural"
+                                    className="mt-6 inline-flex rounded-lg bg-primary px-6 py-3 font-bold text-white"
+                                >
+                                    Voltar para a vitrine
+                                </Link>
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
 
-                <aside
-                    className={`flex flex-col gap-6 self-start ${userContext.address ? "lg:sticky lg:top-24" : ""}`}
-                >
+                <aside className="flex flex-col gap-6 self-start lg:sticky lg:top-24">
                     <div className="rounded-2xl border border-primary/10 bg-white p-6 shadow-lg">
                         <h2 className="mb-6 font-display text-xl font-bold text-slate-900">
                             Resumo do Pedido
