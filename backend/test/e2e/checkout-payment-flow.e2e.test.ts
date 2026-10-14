@@ -114,7 +114,8 @@ async function createOrderWithFreshQuote(
             headers,
             payload: {
                 addressUuid,
-                shipping: {
+                delivery: {
+                    type: "SHIPMENT",
                     serviceCode: selectedService.serviceCode,
                     priceInCents: selectedService.priceInCents
                 },

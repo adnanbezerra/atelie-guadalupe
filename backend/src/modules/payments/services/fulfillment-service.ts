@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "../../../generated/prisma/client";
 import {
+    DeliveryType,
     FulfillmentJobStatus,
     OrderStatus,
     PaymentStatus,
@@ -170,7 +171,11 @@ export class FulfillmentService {
                     );
                     const order = await tx.order.findUniqueOrThrow({
                         where: { uuid: orderUuid },
-                        select: { status: true, payment: { select: { status: true } } }
+                        select: {
+                            status: true,
+                            deliveryType: true,
+                            payment: { select: { status: true } }
+                        }
                     });
                     if (
                         (order.status !== OrderStatus.PAID &&
@@ -184,6 +189,23 @@ export class FulfillmentService {
                                 lockedAt: null,
                                 lastError: `Pedido em estado ${order.status} ou financeiro ${order.payment?.status ?? "AUSENTE"} nao pode ser processado`
                             }
+                        });
+                        return;
+                    }
+
+                    if (order.deliveryType === DeliveryType.LOCAL_PICKUP) {
+                        await tx.fulfillmentJob.update({
+                            where: { id: jobId },
+                            data: {
+                                status: FulfillmentJobStatus.COMPLETED,
+                                completedAt: new Date(),
+                                lockedAt: null,
+                                lastError: null
+                            }
+                        });
+                        await tx.order.updateMany({
+                            where: { uuid: orderUuid, status: OrderStatus.PAID },
+                            data: { status: OrderStatus.PROCESSING }
                         });
                         return;
                     }

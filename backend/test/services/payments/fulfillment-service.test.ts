@@ -1,6 +1,6 @@
 import * as assert from "node:assert";
 import { test } from "node:test";
-import { FulfillmentJobStatus } from "../../../src/generated/prisma/enums";
+import { DeliveryType, FulfillmentJobStatus } from "../../../src/generated/prisma/enums";
 import { FulfillmentService } from "../../../src/modules/payments/services/fulfillment-service";
 
 test("fulfillment retry processes the requested order job", async () => {
@@ -144,6 +144,52 @@ test("financial terminal event after claim blocks label purchase", async () => {
     assert.equal(shippingCalls, 0);
     assert.equal(updates[0].status, FulfillmentJobStatus.FAILED);
     assert.match(String(updates[0].lastError), /DISPUTED/);
+});
+
+test("local pickup fulfillment completes without buying a shipping label", async () => {
+    const jobUpdates: Array<Record<string, unknown>> = [];
+    const orderUpdates: Array<Record<string, unknown>> = [];
+    let shippingCalls = 0;
+    const prisma = {
+        order: {
+            findUniqueOrThrow: async () => ({
+                status: "PAID",
+                deliveryType: DeliveryType.LOCAL_PICKUP,
+                payment: { status: "PAID" }
+            }),
+            updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                orderUpdates.push(data);
+                return { count: 1 };
+            }
+        },
+        fulfillmentJob: {
+            updateMany: async () => ({ count: 1 }),
+            findUniqueOrThrow: async () => ({ orderId: 7 }),
+            update: async ({ data }: { data: Record<string, unknown> }) => {
+                jobUpdates.push(data);
+            }
+        },
+        $queryRaw: async () => [{ id: 3 }],
+        $transaction: async (callback: (tx: Record<string, unknown>) => Promise<unknown>) =>
+            callback(prisma)
+    };
+    const service = new FulfillmentService(prisma as never);
+    const testService = service as unknown as {
+        shippingService: { checkoutOrder(): Promise<unknown> };
+        processJob(jobId: number, orderUuid: string): Promise<void>;
+    };
+    testService.shippingService = {
+        checkoutOrder: async () => {
+            shippingCalls += 1;
+            return { success: true, value: {} };
+        }
+    };
+
+    await testService.processJob(42, "pickup-order");
+
+    assert.equal(shippingCalls, 0);
+    assert.equal(jobUpdates[0].status, FulfillmentJobStatus.COMPLETED);
+    assert.equal(orderUpdates[0].status, "PROCESSING");
 });
 
 test("fulfillment stops retrying after configured maximum attempts", async () => {

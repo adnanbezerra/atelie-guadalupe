@@ -53,7 +53,7 @@ test("order service blocks order creation with empty cart", async () => {
 
     const result = await service.createFromCart("user-1", {
         addressUuid: "address-1",
-        shipping: { serviceCode: 1, priceInCents: 1590 }
+        delivery: { type: "SHIPMENT", serviceCode: 1, priceInCents: 1590 }
     });
 
     assert.equal(result.success, false);
@@ -105,7 +105,7 @@ test("order service requires CPF or CNPJ only when starting checkout", async () 
 
     const result = await service.createFromCart("user-1", {
         addressUuid: "address-1",
-        shipping: { serviceCode: 1, priceInCents: 1590 }
+        delivery: { type: "SHIPMENT", serviceCode: 1, priceInCents: 1590 }
     });
 
     assert.equal(result.success, false);
@@ -266,7 +266,7 @@ test("order service creates order from cart snapshot", async () => {
 
     const result = await service.createFromCart("user-1", {
         addressUuid: "address-1",
-        shipping: { serviceCode: 1, priceInCents: 1590 },
+        delivery: { type: "SHIPMENT", serviceCode: 1, priceInCents: 1590 },
         paymentMethod: PaymentMethod.PIX,
         notes: "Entregar em horario comercial"
     });
@@ -301,6 +301,135 @@ test("order service creates order from cart snapshot", async () => {
         discountInCents: 0,
         totalInCents: 6770
     });
+});
+
+test("order service creates local pickup without address or shipment", async () => {
+    let createdInput: Record<string, unknown> | undefined;
+    let createdCheckout: { shipment?: unknown } | undefined;
+    let addressLookupCalled = false;
+    const pickupLocation = {
+        name: "Atelie Guadalupe",
+        street: "Rua da Origem",
+        number: "123",
+        complement: "Fundos",
+        neighborhood: "Centro",
+        city: "Sao Paulo",
+        state: "SP",
+        zipCode: "01153000"
+    };
+    const service = new OrderService(
+        {
+            findByUuid: async () => ({
+                id: 1,
+                uuid: "user-1",
+                name: "Maria",
+                email: "maria@example.com",
+                document: null,
+                phone: null
+            })
+        } as never,
+        {
+            findByUuid: async () => {
+                addressLookupCalled = true;
+                return null;
+            }
+        } as never,
+        {
+            findByUserId: async () => ({
+                id: 10,
+                userId: 1,
+                coupon: null,
+                items: [
+                    {
+                        uuid: "item-1",
+                        productSize: "GRAMS_70",
+                        quantity: 1,
+                        product: {
+                            id: 99,
+                            name: "Sabonete",
+                            imageUrl: null,
+                            category: "ARTISANAL",
+                            stock: 2,
+                            shippingWeightGrams: 100,
+                            isActive: true,
+                            line: { price70gInCents: 2590, price100gInCents: 3700 }
+                        }
+                    }
+                ]
+            })
+        } as never,
+        {
+            createFromCart: async (
+                input: Record<string, unknown>,
+                _cart: unknown,
+                _redemption: unknown,
+                _guard: unknown,
+                checkout: { shipment?: unknown }
+            ) => {
+                createdInput = input;
+                createdCheckout = checkout;
+                return {
+                    ...input,
+                    id: 20,
+                    notes: null,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    address: null,
+                    shipment: null,
+                    items: (input.items as Array<Record<string, unknown>>).map((item) => ({
+                        ...item,
+                        imageUrlSnapshot: null
+                    }))
+                };
+            }
+        } as never,
+        { findBestActivePromotionForCategory: async () => null } as never,
+        { prepareLocalPickup: async () => ({ success: true, value: pickupLocation }) } as never
+    );
+
+    const result = await service.createFromCart("user-1", {
+        delivery: { type: "LOCAL_PICKUP" }
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(addressLookupCalled, false);
+    assert.equal(createdInput?.shippingInCents, 0);
+    assert.equal(createdInput?.addressId, undefined);
+    assert.equal(createdInput?.deliveryType, "LOCAL_PICKUP");
+    assert.deepEqual(createdInput?.pickupLocationSnapshot, pickupLocation);
+    assert.equal(createdCheckout?.shipment, undefined);
+    if (result.success) {
+        assert.equal(result.value.order.shippingInCents, 0);
+        assert.equal(result.value.order.shipment, null);
+        assert.deepEqual(result.value.order.delivery, {
+            type: "LOCAL_PICKUP",
+            location: pickupLocation
+        });
+    }
+});
+
+test("order service rejects fields incompatible with delivery type", async () => {
+    const service = new OrderService(
+        { findByUuid: async () => ({ id: 1, uuid: "user-1" }) } as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never
+    );
+
+    const pickup = await service.createFromCart("user-1", {
+        addressUuid: "address-1",
+        delivery: { type: "LOCAL_PICKUP" }
+    });
+    const shipment = await service.createFromCart("user-1", {
+        delivery: { type: "SHIPMENT" }
+    });
+
+    assert.equal(pickup.success, false);
+    assert.equal(shipment.success, false);
+    if (!pickup.success) assert.equal(pickup.value.code, "BUSINESS_RULE_ERROR");
+    if (!shipment.success) assert.equal(shipment.value.code, "BUSINESS_RULE_ERROR");
 });
 
 test("order service prevents invalid status transition", async () => {
@@ -385,10 +514,7 @@ test("order service allows admin to read another user's order details", async ()
         {} as never
     );
 
-    const result = await service.detail(
-        { sub: "admin-1", role: RoleName.ADMIN },
-        "order-1"
-    );
+    const result = await service.detail({ sub: "admin-1", role: RoleName.ADMIN }, "order-1");
 
     assert.equal(result.success, true);
     if (result.success) assert.equal(result.value.order.uuid, "order-1");

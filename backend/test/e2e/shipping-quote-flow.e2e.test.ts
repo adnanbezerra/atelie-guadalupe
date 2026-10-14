@@ -135,7 +135,8 @@ test(
             headers,
             payload: {
                 addressUuid: me.user.address.uuid,
-                shipping: {
+                delivery: {
+                    type: "SHIPMENT",
                     serviceCode: selectedService.serviceCode,
                     priceInCents: selectedService.priceInCents
                 },

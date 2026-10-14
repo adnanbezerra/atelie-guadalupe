@@ -34,22 +34,22 @@ O checkout continua em **NO-GO** enquanto os itens obrigatórios abaixo não tiv
 
 Executar em desktop e celular, usando uma conta de teste controlada:
 
-- [ ] Sem CPF cadastrado, tentar fechar o pedido, cadastrar o CPF dentro do checkout e prosseguir.
-- [ ] Sem endereço cadastrado, cadastrar o endereço dentro do checkout e prosseguir.
-- [ ] Testar logradouro com exatamente 30 caracteres e confirmar que 31 caracteres são impedidos.
-- [ ] Escolher uma cotação cujo `serviceCode` seja `33`, usar uma conta sem telefone, cadastrar o
+- [x] Sem CPF cadastrado, tentar fechar o pedido, cadastrar o CPF dentro do checkout e prosseguir.
+- [x] Sem endereço cadastrado, cadastrar o endereço dentro do checkout e prosseguir.
+- [x] Testar logradouro com exatamente 30 caracteres e confirmar que 31 caracteres são impedidos.
+- [x] Escolher uma cotação cujo `serviceCode` seja `33`, usar uma conta sem telefone, cadastrar o
       telefone dentro do checkout e prosseguir.
-- [ ] Repetir o fluxo com CPF, endereço e telefone já cadastrados, confirmando que os formulários
+- [x] Repetir o fluxo com CPF, endereço e telefone já cadastrados, confirmando que os formulários
       não aparecem sem necessidade.
-- [ ] Confirmar que erros e sucessos aparecem no modal do projeto, sem mensagem solta na página.
-- [ ] Concluir um checkout de teste e conferir produto, endereço, frete e total antes de pagar.
+- [x] Confirmar que erros e sucessos aparecem no modal do projeto, sem mensagem solta na página.
+- [x] Concluir um checkout de teste e conferir produto, endereço, frete e total antes de pagar.
 
 ## 3. Infraestrutura de staging e controles de entrega
 
-- [ ] Enviar os commits aprovados ao repositório remoto e implantar exatamente a release revisada;
+- [x] Enviar os commits aprovados ao repositório remoto e implantar exatamente a release revisada;
       correção local ainda não é correção em produção.
-- [ ] Provisionar um backend HTTPS de staging, banco PostgreSQL e MongoDB exclusivos, DNS,
-      certificado e acesso a logs.
+- [x] Provisionar um backend HTTPS de staging, banco PostgreSQL e MongoDB exclusivos, DNS,
+      certificado e acesso a logs. - Pode acessar o normal que está com BDs de HLG
 - [ ] Criar uma conta interna allowlisted para os testes.
 - [ ] Configurar no painel da AbacatePay de desenvolvimento o webhook de staging para
       `checkout.completed`, `checkout.refunded`, `checkout.disputed` e `checkout.lost`.
@@ -57,10 +57,10 @@ Executar em desktop e celular, usando uma conta de teste controlada:
       não conta.
 - [ ] Usar o redelivery oficial, se disponível, e confirmar que o evento repetido não duplica
       efeitos.
-- [ ] Rodar `prisma migrate status` no staging, aplicar somente as migrations já versionadas e
+- [x] Rodar `prisma migrate status` no staging, aplicar somente as migrations já versionadas e
       validar constraints, duração e locks. Nunca escrever migration Prisma à mão.
 - [ ] Repetir o teste de backup e restauração com o inventário real do ambiente autorizado.
-- [ ] Ativar proteção da branch `main` para impedir merge/deploy quando o CI falhar.
+- [x] Ativar proteção da branch `main` para impedir merge/deploy quando o CI falhar.
 
 ## 4. Operação e alertas antes de cobrar de verdade
 

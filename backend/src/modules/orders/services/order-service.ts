@@ -1,4 +1,5 @@
 import {
+    DeliveryType,
     EmailJobType,
     FulfillmentJobStatus,
     OrderStatus,
@@ -7,6 +8,7 @@ import {
     RoleName,
     ShippingStatus
 } from "../../../generated/prisma/enums";
+import { Prisma } from "../../../generated/prisma/client";
 import { Either, left, right } from "../../../core/either/either";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
@@ -21,17 +23,18 @@ import {
 import { calculateProductPriceInCents } from "../../products/services/product-pricing";
 import { hasAvailableStock } from "../../products/services/product-stock";
 import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
-import { ShippingService } from "../../shipping/services/shipping-service";
+import { PreparedOrderShipping, ShippingService } from "../../shipping/services/shipping-service";
 import { validateSuperFreteRecipient } from "../../shipping/services/superfrete-client";
 import { UserRepository } from "../../users/repositories/user-repository";
 import { OrderRepository } from "../repositories/order-repository";
 import { presentOrder, presentOrderDetails } from "./order-presenter";
 
 type CreateOrderInput = {
-    addressUuid: string;
-    shipping: {
-        serviceCode: number;
-        priceInCents: number;
+    addressUuid?: string;
+    delivery: {
+        type: "SHIPMENT" | "LOCAL_PICKUP";
+        serviceCode?: number;
+        priceInCents?: number;
     };
     paymentMethod?: PaymentMethod;
     notes?: string;
@@ -95,9 +98,33 @@ export class OrderService {
             return left(AppError.notFound("Usuario nao encontrado"));
         }
 
-        const address = await this.addressRepository.findByUuid(input.addressUuid);
-        if (!address || address.userId !== user.id) {
-            return left(AppError.notFound("Endereco nao encontrado"));
+        if (
+            input.delivery.type === "SHIPMENT" &&
+            (!input.addressUuid ||
+                input.delivery.serviceCode === undefined ||
+                input.delivery.priceInCents === undefined)
+        ) {
+            return left(
+                AppError.business("Endereco, servico e preco do frete sao obrigatorios para envio")
+            );
+        }
+        if (
+            input.delivery.type === "LOCAL_PICKUP" &&
+            (input.addressUuid !== undefined ||
+                input.delivery.serviceCode !== undefined ||
+                input.delivery.priceInCents !== undefined)
+        ) {
+            return left(
+                AppError.business("Retirada no local nao aceita endereco ou dados de frete")
+            );
+        }
+
+        let address: Awaited<ReturnType<AddressRepository["findByUuid"]>> = null;
+        if (input.delivery.type === "SHIPMENT") {
+            address = await this.addressRepository.findByUuid(input.addressUuid!);
+            if (!address || address.userId !== user.id) {
+                return left(AppError.notFound("Endereco nao encontrado"));
+            }
         }
 
         const cart = await this.cartRepository.findByUserId(user.id);
@@ -105,27 +132,29 @@ export class OrderService {
             return left(AppError.business("Nao e possivel criar pedido com carrinho vazio"));
         }
 
-        const recipientDocument = address.document ?? user.document;
-        if (!isCpfOrCnpj(recipientDocument)) {
-            return left(AppError.business("Informe um CPF ou CNPJ para continuar o checkout"));
-        }
-        const recipientError = validateSuperFreteRecipient(
-            {
-                name: user.name,
-                address: address.street,
-                number: address.number,
-                complement: address.complement,
-                district: address.neighborhood,
-                city: address.city,
-                stateAbbr: address.state,
-                postalCode: address.zipCode,
-                document: recipientDocument,
-                phone: user.phone
-            },
-            input.shipping.serviceCode
-        );
-        if (recipientError) {
-            return left(AppError.business(recipientError));
+        if (input.delivery.type === "SHIPMENT") {
+            const recipientDocument = address!.document ?? user.document;
+            if (!isCpfOrCnpj(recipientDocument)) {
+                return left(AppError.business("Informe um CPF ou CNPJ para continuar o checkout"));
+            }
+            const recipientError = validateSuperFreteRecipient(
+                {
+                    name: user.name,
+                    address: address!.street,
+                    number: address!.number,
+                    complement: address!.complement,
+                    district: address!.neighborhood,
+                    city: address!.city,
+                    stateAbbr: address!.state,
+                    postalCode: address!.zipCode,
+                    document: recipientDocument,
+                    phone: user.phone
+                },
+                input.delivery.serviceCode!
+            );
+            if (recipientError) {
+                return left(AppError.business(recipientError));
+            }
         }
 
         for (const item of cart.items) {
@@ -200,32 +229,46 @@ export class OrderService {
                 totalPriceInCents: pricedItem.unitPriceInCents * item.quantity
             };
         });
-        const shippingResult = await this.shippingService.prepareOrderShipping({
-            orderUuid,
-            addressUuid: address.uuid,
-            destinationZipCode: address.zipCode,
-            subtotalInCents,
-            serviceCode: input.shipping.serviceCode,
-            expectedPriceInCents: input.shipping.priceInCents,
-            items: orderItems.map((item, index) => ({
-                ...item,
-                product: {
-                    category: pricedItems[index].item.product.category,
-                    shippingWeightGrams: pricedItems[index].item.product.shippingWeightGrams
-                }
-            }))
-        });
-        if (!shippingResult.success) {
-            return shippingResult;
+        let shippingInCents = 0;
+        let serviceName = "Retirada na loja";
+        let shipment: PreparedOrderShipping["shipment"] | undefined;
+        let pickupLocationSnapshot: Prisma.InputJsonValue | undefined;
+
+        if (input.delivery.type === "SHIPMENT") {
+            const shippingResult = await this.shippingService.prepareOrderShipping({
+                orderUuid,
+                addressUuid: address!.uuid,
+                destinationZipCode: address!.zipCode,
+                subtotalInCents,
+                serviceCode: input.delivery.serviceCode!,
+                expectedPriceInCents: input.delivery.priceInCents!,
+                items: orderItems.map((item, index) => ({
+                    ...item,
+                    product: {
+                        category: pricedItems[index].item.product.category,
+                        shippingWeightGrams: pricedItems[index].item.product.shippingWeightGrams
+                    }
+                }))
+            });
+            if (!shippingResult.success) return shippingResult;
+
+            shippingInCents = shippingResult.value.shippingInCents;
+            serviceName = shippingResult.value.serviceName;
+            shipment = shippingResult.value.shipment;
+        } else {
+            const pickupResult = await this.shippingService.prepareLocalPickup();
+            if (!pickupResult.success) return pickupResult;
+            pickupLocationSnapshot = pickupResult.value as Prisma.InputJsonValue;
         }
-        const shippingInCents = shippingResult.value.shippingInCents;
         const totalInCents = subtotalInCents + shippingInCents - discountInCents;
 
         const orderInput = {
             uuid: orderUuid,
             paymentIdempotencyKey: createUuid(),
             userId: user.id,
-            addressId: address.id,
+            addressId: address?.id,
+            deliveryType: DeliveryType[input.delivery.type],
+            pickupLocationSnapshot,
             status: OrderStatus.AWAITING_PAYMENT,
             subtotalInCents,
             shippingInCents,
@@ -267,7 +310,7 @@ export class OrderService {
                       }
                     : undefined,
                 {
-                    shipment: shippingResult.value.shipment,
+                    shipment,
                     emailJob: createEmailJob({
                         type: EmailJobType.ORDER_CREATED,
                         recipient: user.email,
@@ -282,7 +325,7 @@ export class OrderService {
                             })),
                             subtotalInCents: orderInput.subtotalInCents,
                             shippingInCents: orderInput.shippingInCents,
-                            shippingServiceName: shippingResult.value.serviceName,
+                            shippingServiceName: serviceName,
                             discountInCents: orderInput.discountInCents,
                             totalInCents: orderInput.totalInCents
                         })

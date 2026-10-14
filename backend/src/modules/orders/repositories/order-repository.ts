@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "../../../generated/prisma/client";
 import { AppError } from "../../../core/errors/app-error";
 import {
+    DeliveryType,
     FulfillmentJobStatus,
     OrderStatus,
     PaymentMethod,
@@ -14,6 +15,8 @@ type CreateOrderInput = {
     paymentIdempotencyKey: string;
     userId: number;
     addressId?: number;
+    deliveryType: DeliveryType;
+    pickupLocationSnapshot?: Prisma.InputJsonValue;
     status: OrderStatus;
     subtotalInCents: number;
     shippingInCents: number;
@@ -77,6 +80,8 @@ export class OrderRepository {
                 paymentIdempotencyKey: input.paymentIdempotencyKey,
                 userId: input.userId,
                 addressId: input.addressId,
+                deliveryType: input.deliveryType,
+                pickupLocationSnapshot: input.pickupLocationSnapshot,
                 status: input.status,
                 subtotalInCents: input.subtotalInCents,
                 shippingInCents: input.shippingInCents,
@@ -112,7 +117,7 @@ export class OrderRepository {
         couponRedemption: CouponRedemptionInput | undefined,
         couponGuard: CouponRedemptionGuard | undefined,
         checkout: {
-            shipment: CreateShipmentInput;
+            shipment?: CreateShipmentInput;
             emailJob: Prisma.EmailJobCreateInput;
         }
     ) {
@@ -148,6 +153,8 @@ export class OrderRepository {
                         paymentIdempotencyKey: input.paymentIdempotencyKey,
                         userId: input.userId,
                         addressId: input.addressId,
+                        deliveryType: input.deliveryType,
+                        pickupLocationSnapshot: input.pickupLocationSnapshot,
                         status: input.status,
                         subtotalInCents: input.subtotalInCents,
                         shippingInCents: input.shippingInCents,
@@ -196,12 +203,14 @@ export class OrderRepository {
                     }
                 });
 
-                await tx.orderShipment.create({
-                    data: {
-                        ...checkout.shipment,
-                        orderId: order.id
-                    }
-                });
+                if (checkout.shipment) {
+                    await tx.orderShipment.create({
+                        data: {
+                            ...checkout.shipment,
+                            orderId: order.id
+                        }
+                    });
+                }
 
                 await tx.emailJob.create({ data: checkout.emailJob });
 

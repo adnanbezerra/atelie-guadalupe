@@ -133,6 +133,36 @@ test("cart shipping quote uses backend product data and does not persist a shipm
                         max: null
                     }
                 }
+            ],
+            deliveryOptions: [
+                {
+                    id: "local-pickup",
+                    type: "LOCAL_PICKUP",
+                    name: "Retirada na loja",
+                    priceInCents: 0,
+                    location: {
+                        name: "Atelie Guadalupe",
+                        street: "Rua da Origem",
+                        number: "123",
+                        complement: null,
+                        neighborhood: "Centro",
+                        city: "Sao Paulo",
+                        state: "SP",
+                        zipCode: "01153000"
+                    }
+                },
+                {
+                    id: "shipping-1",
+                    type: "SHIPMENT",
+                    serviceCode: 1,
+                    name: "PAC",
+                    priceInCents: 3526,
+                    deliveryDays: 7,
+                    deliveryRange: {
+                        min: null,
+                        max: null
+                    }
+                }
             ]
         }
     });
@@ -258,6 +288,38 @@ test("order shipping preparation rejects a changed quote price", async () => {
     }
 });
 
+test("order shipping preparation rejects an unconfigured service", async () => {
+    let calculatorCalled = false;
+    const service = new ShippingService(
+        { listActiveBoxes: async () => [createSelfcareBox()] } as never,
+        { findDefaultActive: async () => createPlatform() } as never,
+        {
+            calculateQuote: async () => {
+                calculatorCalled = true;
+                return [];
+            }
+        } as never,
+        {} as never
+    );
+
+    const result = await service.prepareOrderShipping({
+        orderUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b404",
+        addressUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b405",
+        destinationZipCode: "01001000",
+        subtotalInCents: 3000,
+        serviceCode: 999,
+        expectedPriceInCents: 1000,
+        items: []
+    });
+
+    assert.equal(result.success, false);
+    assert.equal(calculatorCalled, false);
+    if (!result.success) {
+        assert.equal(result.value.code, "RESOURCE_NOT_FOUND");
+        assert.equal(result.value.statusCode, 404);
+    }
+});
+
 test("cart shipping quote returns not found for a missing product", async () => {
     const service = new ShippingService(
         {
@@ -322,7 +384,7 @@ test("cart shipping quote validates aggregated stock for repeated products", asy
     }
 });
 
-test("cart shipping quote returns a business error when no carrier is available", async () => {
+test("cart shipping quote returns local pickup when no carrier is available", async () => {
     const service = new ShippingService(
         {
             listActiveBoxes: async () => [createSelfcareBox()]
@@ -343,14 +405,15 @@ test("cart shipping quote returns a business error when no carrier is available"
         items: [{ productUuid, productSize: "GRAMS_70", quantity: 1 }]
     });
 
-    assert.equal(result.success, false);
-    if (!result.success) {
-        assert.equal(result.value.code, "BUSINESS_RULE_ERROR");
-        assert.equal(result.value.statusCode, 400);
+    assert.equal(result.success, true);
+    if (result.success) {
+        assert.deepEqual(result.value.quotedServices, []);
+        assert.equal(result.value.deliveryOptions.length, 1);
+        assert.equal(result.value.deliveryOptions[0].type, "LOCAL_PICKUP");
     }
 });
 
-test("cart shipping quote hides SuperFrete integration details", async () => {
+test("cart shipping quote keeps local pickup when SuperFrete is unavailable", async () => {
     const service = new ShippingService(
         {
             listActiveBoxes: async () => [createSelfcareBox()]
@@ -373,10 +436,26 @@ test("cart shipping quote hides SuperFrete integration details", async () => {
         items: [{ productUuid, productSize: "GRAMS_70", quantity: 1 }]
     });
 
+    assert.equal(result.success, true);
+    if (result.success) {
+        assert.deepEqual(result.value.quotedServices, []);
+        assert.equal(result.value.deliveryOptions[0].type, "LOCAL_PICKUP");
+    }
+});
+
+test("local pickup preparation returns not found without a configured location", async () => {
+    const service = new ShippingService(
+        {} as never,
+        { findDefaultActive: async () => null } as never,
+        {} as never,
+        {} as never
+    );
+
+    const result = await service.prepareLocalPickup();
+
     assert.equal(result.success, false);
     if (!result.success) {
-        assert.equal(result.value.code, "SERVICE_UNAVAILABLE");
-        assert.equal(result.value.statusCode, 503);
-        assert.equal(result.value.message, "SuperFrete indisponivel no momento");
+        assert.equal(result.value.code, "RESOURCE_NOT_FOUND");
+        assert.equal(result.value.statusCode, 404);
     }
 });

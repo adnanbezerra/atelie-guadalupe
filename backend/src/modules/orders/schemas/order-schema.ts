@@ -1,10 +1,11 @@
 import { z } from "zod";
 
 export const createOrderSchema = z.object({
-    addressUuid: z.uuid(),
-    shipping: z.object({
-        serviceCode: z.number().int().positive(),
-        priceInCents: z.number().int().min(0)
+    addressUuid: z.uuid().optional(),
+    delivery: z.object({
+        type: z.enum(["SHIPMENT", "LOCAL_PICKUP"]),
+        serviceCode: z.number().int().positive().optional(),
+        priceInCents: z.number().int().min(0).optional()
     }),
     paymentMethod: z.enum(["PIX", "CREDIT_CARD", "DEBIT_CARD"]).optional(),
     notes: z.string().trim().max(500).optional()

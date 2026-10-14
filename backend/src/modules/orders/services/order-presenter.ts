@@ -1,4 +1,9 @@
-import { OrderStatus, PaymentMethod, ProductSize } from "../../../generated/prisma/enums";
+import {
+    DeliveryType,
+    OrderStatus,
+    PaymentMethod,
+    ProductSize
+} from "../../../generated/prisma/enums";
 import { getProductSizeInGrams } from "../../products/services/product-pricing";
 
 type OrderItemEntity = {
@@ -42,6 +47,8 @@ type OrderEntity = {
     updatedAt: Date;
     items: OrderItemEntity[];
     address?: AddressEntity | null;
+    deliveryType?: DeliveryType;
+    pickupLocationSnapshot?: unknown;
     payment?: {
         status: string;
         providerMethod: string | null;
@@ -55,6 +62,7 @@ type OrderEntity = {
         status: string;
         selectedServiceCode: number | null;
         selectedServiceName: string | null;
+        shippingPriceInCents?: number | null;
         quotedServices: unknown;
         trackingCode: string | null;
         labelUrl: string | null;
@@ -139,6 +147,23 @@ function presentShipment(shipment: OrderEntity["shipment"]) {
     };
 }
 
+function presentDelivery(order: OrderEntity) {
+    if (order.deliveryType === DeliveryType.LOCAL_PICKUP) {
+        return {
+            type: "LOCAL_PICKUP" as const,
+            location: order.pickupLocationSnapshot ?? null
+        };
+    }
+
+    return {
+        type: "SHIPMENT" as const,
+        serviceCode: order.shipment?.selectedServiceCode ?? null,
+        name: order.shipment?.selectedServiceName ?? null,
+        priceInCents: order.shipment?.shippingPriceInCents ?? order.shippingInCents,
+        deliveryDays: order.shipment ? selectedDeliveryDays(order.shipment) : null
+    };
+}
+
 function presentOrderItem(item: OrderItemEntity) {
     return {
         uuid: item.uuid,
@@ -189,6 +214,7 @@ export function presentOrder(order: OrderEntity) {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         address: presentAddress(order.address),
+        delivery: presentDelivery(order),
         payment: order.payment ?? null,
         shipment: order.shipment ?? null,
         fulfillment: order.fulfillmentJob ?? null,

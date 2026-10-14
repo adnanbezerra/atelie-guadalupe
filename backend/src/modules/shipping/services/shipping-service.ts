@@ -105,6 +105,35 @@ type QuotedService = {
     raw: Record<string, unknown>;
 };
 
+export type PickupLocation = {
+    name: string;
+    street: string;
+    number: string;
+    complement: string | null;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+};
+
+type DeliveryOption =
+    | {
+          id: "local-pickup";
+          type: "LOCAL_PICKUP";
+          name: "Retirada na loja";
+          priceInCents: 0;
+          location: PickupLocation;
+      }
+    | {
+          id: string;
+          type: "SHIPMENT";
+          serviceCode: number;
+          name: string;
+          priceInCents: number;
+          deliveryDays: number | null;
+          deliveryRange: QuotedService["deliveryRange"];
+      };
+
 export type SuperFreteOrderInfo = {
     orderId: string;
     protocol: string | null;
@@ -441,9 +470,15 @@ export class ShippingService {
         return right(this.presentOrderShipment(order.value));
     }
 
-    public async quoteCart(
-        input: QuoteCartInput
-    ): Promise<Either<AppError, { quotedServices: Array<Omit<QuotedService, "raw">> }>> {
+    public async quoteCart(input: QuoteCartInput): Promise<
+        Either<
+            AppError,
+            {
+                quotedServices: Array<Omit<QuotedService, "raw">>;
+                deliveryOptions: DeliveryOption[];
+            }
+        >
+    > {
         const productUuids = [...new Set(input.items.map((item) => item.productUuid))];
         const products = await Promise.all(
             productUuids.map(async (productUuid) => {
@@ -489,11 +524,21 @@ export class ShippingService {
                 }
             };
         });
-        const boxes = await this.shippingRepository.listActiveBoxes();
-        const packaging = buildPackagingPlan(packagingItems, boxes);
         const platformResult = await this.loadPlatform();
         if (!platformResult.success) {
             return platformResult;
+        }
+
+        const pickupOption = this.buildPickupOption(platformResult.value);
+        const boxes = await this.shippingRepository.listActiveBoxes();
+        let packaging: ReturnType<typeof buildPackagingPlan>;
+        try {
+            packaging = buildPackagingPlan(packagingItems, boxes);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return right({ quotedServices: [], deliveryOptions: [pickupOption] });
+            }
+            throw error;
         }
 
         const subtotalInCents = packagingItems.reduce(
@@ -513,31 +558,56 @@ export class ShippingService {
             calculatorResponse = await this.superFreteClient.calculateQuote(calculatorPayload);
         } catch (error) {
             if (error instanceof AppError && error.code === "SERVICE_UNAVAILABLE") {
-                return left(AppError.serviceUnavailable("SuperFrete indisponivel no momento"));
+                return right({ quotedServices: [], deliveryOptions: [pickupOption] });
             }
 
             throw error;
         }
 
         const quotedServices = extractQuotedServices(calculatorResponse);
-        if (quotedServices.length === 0) {
-            return left(AppError.business("Nenhuma opcao de frete foi retornada pelo SuperFrete"));
-        }
+        const presentedServices = quotedServices.map((service) => ({
+            serviceCode: service.serviceCode,
+            serviceName: service.serviceName,
+            priceInCents: service.priceInCents,
+            deliveryDays: service.deliveryDays,
+            deliveryRange: service.deliveryRange
+        }));
 
         return right({
-            quotedServices: quotedServices.map((service) => ({
-                serviceCode: service.serviceCode,
-                serviceName: service.serviceName,
-                priceInCents: service.priceInCents,
-                deliveryDays: service.deliveryDays,
-                deliveryRange: service.deliveryRange
-            }))
+            quotedServices: presentedServices,
+            deliveryOptions: [
+                pickupOption,
+                ...presentedServices.map((service) => ({
+                    id: `shipping-${service.serviceCode}`,
+                    type: "SHIPMENT" as const,
+                    serviceCode: service.serviceCode,
+                    name: service.serviceName,
+                    priceInCents: service.priceInCents,
+                    deliveryDays: service.deliveryDays,
+                    deliveryRange: service.deliveryRange
+                }))
+            ]
         });
+    }
+
+    public async prepareLocalPickup(): Promise<Either<AppError, PickupLocation>> {
+        const platformResult = await this.loadPlatform();
+        if (!platformResult.success) return platformResult;
+
+        return right(this.buildPickupLocation(platformResult.value));
     }
 
     public async prepareOrderShipping(
         input: PrepareOrderShippingInput
     ): Promise<Either<AppError, PreparedOrderShipping>> {
+        const configuredServiceCodes = (process.env.SUPERFRETE_SERVICE_CODES ?? "1,2,17")
+            .split(",")
+            .map((value) => Number(value.trim()))
+            .filter(Number.isInteger);
+        if (!configuredServiceCodes.includes(input.serviceCode)) {
+            return left(AppError.notFound("Servico de frete nao configurado"));
+        }
+
         const boxes = await this.shippingRepository.listActiveBoxes();
         let packaging: ReturnType<typeof buildPackagingPlan>;
         try {
@@ -573,7 +643,7 @@ export class ShippingService {
             (service) => service.serviceCode === input.serviceCode
         );
         if (!selectedService) {
-            return left(AppError.business("Servico de frete nao encontrado na cotacao"));
+            return left(AppError.conflict("O servico de frete mudou; calcule o frete novamente"));
         }
         if (selectedService.priceInCents !== input.expectedPriceInCents) {
             return left(AppError.conflict("A cotacao de frete mudou; calcule o frete novamente"));
@@ -982,14 +1052,33 @@ export class ShippingService {
     private async loadPlatform() {
         const platform = await this.platformRepository.findDefaultActive();
         if (!platform || !platform.address) {
-            return left(
-                AppError.serviceUnavailable(
-                    "Nenhuma plataforma padrao com endereco foi configurada"
-                )
-            );
+            return left(AppError.notFound("Local de retirada nao configurado"));
         }
 
         return right(platform);
+    }
+
+    private buildPickupOption(platform: ShippingPlatform): DeliveryOption {
+        return {
+            id: "local-pickup",
+            type: "LOCAL_PICKUP",
+            name: "Retirada na loja",
+            priceInCents: 0,
+            location: this.buildPickupLocation(platform)
+        };
+    }
+
+    private buildPickupLocation(platform: ShippingPlatform): PickupLocation {
+        return {
+            name: platform.name,
+            street: platform.address!.street,
+            number: platform.address!.number,
+            complement: platform.address!.complement,
+            neighborhood: platform.address!.neighborhood,
+            city: platform.address!.city,
+            state: platform.address!.state,
+            zipCode: platform.address!.zipCode
+        };
     }
 
     private async requirePlatformForOrder() {
