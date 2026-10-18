@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { toast } from "sonner";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { notifyAuthSessionChanged } from "@/lib/auth-session";
 
@@ -248,11 +249,23 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             router.push(isAdmin ? adminTarget : userTarget);
             router.refresh();
         } catch (caughtError) {
-            setError(
+            const message =
                 caughtError instanceof Error
                     ? caughtError.message
-                    : "Não foi possível autenticar.",
-            );
+                    : "Não foi possível autenticar.";
+
+            if (isLogin) {
+                toast.error("Não foi possível entrar", {
+                    id: "auth-login-error",
+                    description: message,
+                });
+                window.setTimeout(
+                    () => document.getElementById("password")?.focus(),
+                    0,
+                );
+            } else {
+                setError(message);
+            }
         } finally {
             setIsSubmitting(false);
         }
