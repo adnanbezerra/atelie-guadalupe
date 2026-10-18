@@ -44,9 +44,20 @@ async function serverApi<T>(path: string, options: RequestOptions = {}) {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         cache: "no-store",
+        redirect: "manual",
     });
 
-    const payload = (await response.json()) as ApiResponse<T>;
+    if (response.status >= 300 && response.status < 400 && token) {
+        throw new ApiError("Sessão expirada.", 401, "UNAUTHORIZED");
+    }
+
+    let payload: ApiResponse<T>;
+
+    try {
+        payload = (await response.json()) as ApiResponse<T>;
+    } catch {
+        throw new ApiError("Resposta inválida da API.", response.status);
+    }
 
     if (!response.ok || !payload.success) {
         const message = payload.error?.message ?? "Falha ao consultar a API.";
