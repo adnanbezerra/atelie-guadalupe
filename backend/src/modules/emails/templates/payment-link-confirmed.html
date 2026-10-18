@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
+        <title>Pagamento confirmado</title>
+        <style>
+            @media only screen and (max-width: 620px) {
+                .email-shell {
+                    width: 100% !important;
+                    border-radius: 0 !important;
+                }
+                .email-padding {
+                    padding-left: 24px !important;
+                    padding-right: 24px !important;
+                }
+                .email-title {
+                    font-size: 30px !important;
+                    line-height: 36px !important;
+                }
+                .email-button {
+                    display: block !important;
+                    text-align: center !important;
+                }
+            }
+        </style>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f6f6f8">
+        <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent">
+            Seu pagamento de {{amount}} foi confirmado pelo Ateliê Guadalupe.
+        </div>
+        <table
+            role="presentation"
+            width="100%"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            style="width: 100%; background-color: #f6f6f8"
+        >
+            <tr>
+                <td align="center" style="padding: 32px 12px">
+                    <table
+                        role="presentation"
+                        width="600"
+                        cellspacing="0"
+                        cellpadding="0"
+                        border="0"
+                        class="email-shell"
+                        style="
+                            width: 100%;
+                            max-width: 600px;
+                            overflow: hidden;
+                            background-color: #ffffff;
+                            border-radius: 14px;
+                        "
+                    >
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="padding: 28px 40px; background-color: #1940b3"
+                            >
+                                <table
+                                    role="presentation"
+                                    width="100%"
+                                    cellspacing="0"
+                                    cellpadding="0"
+                                >
+                                    <tr>
+                                        <td
+                                            style="
+                                                font-family:
+                                                    Georgia, &quot;Times New Roman&quot;, serif;
+                                                font-size: 20px;
+                                                font-weight: 700;
+                                                color: #ffffff;
+                                            "
+                                        >
+                                            Ateliê Guadalupe
+                                        </td>
+                                        <td align="right">
+                                            <img
+                                                src="https://atelieguadalupe.adnanbezerra.tech/logo-empty.png"
+                                                height="48"
+                                                alt="Logo do Ateliê Guadalupe"
+                                                style="
+                                                    display: block;
+                                                    width: auto;
+                                                    height: 48px;
+                                                    border: 0;
+                                                "
+                                            />
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 4px; background-color: #d1a054; font-size: 0">
+                                &nbsp;
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="email-padding" style="padding: 36px 40px 18px">
+                                <span
+                                    style="
+                                        display: inline-block;
+                                        padding: 7px 11px;
+                                        border-radius: 6px;
+                                        background-color: #e9f6ef;
+                                        font-family: Arial, Helvetica, sans-serif;
+                                        font-size: 13px;
+                                        font-weight: 700;
+                                        color: #167a45;
+                                    "
+                                    >PAGAMENTO CONFIRMADO</span
+                                >
+                                <h1
+                                    class="email-title"
+                                    style="
+                                        margin: 20px 0 14px;
+                                        font-family: Georgia, &quot;Times New Roman&quot;, serif;
+                                        font-size: 36px;
+                                        line-height: 42px;
+                                        color: #101828;
+                                    "
+                                >
+                                    Recebemos seu pagamento.
+                                </h1>
+                                <p
+                                    style="
+                                        margin: 0;
+                                        font-family: Arial, Helvetica, sans-serif;
+                                        font-size: 17px;
+                                        line-height: 28px;
+                                        color: #475467;
+                                    "
+                                >
+                                    A cobrança personalizada foi confirmada com segurança.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="email-padding" style="padding: 18px 40px 32px">
+                                <table
+                                    role="presentation"
+                                    width="100%"
+                                    cellspacing="0"
+                                    cellpadding="0"
+                                    style="background-color: #f8f5ef; border-radius: 10px"
+                                >
+                                    <tr>
+                                        <td
+                                            style="
+                                                padding: 20px 20px 8px;
+                                                font-family: Arial, Helvetica, sans-serif;
+                                                font-size: 12px;
+                                                font-weight: 700;
+                                                letter-spacing: 0.08em;
+                                                color: #667085;
+                                            "
+                                        >
+                                            COBRANÇA
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td
+                                            style="
+                                                padding: 0 20px 18px;
+                                                font-family: Arial, Helvetica, sans-serif;
+                                                font-size: 16px;
+                                                line-height: 24px;
+                                                font-weight: 700;
+                                                color: #101828;
+                                            "
+                                        >
+                                            {{description}}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td
+                                            style="
+                                                padding: 18px 20px;
+                                                border-top: 1px solid #e7e0d4;
+                                                font-family: Arial, Helvetica, sans-serif;
+                                                font-size: 14px;
+                                                color: #667085;
+                                            "
+                                        >
+                                            Valor
+                                            <strong
+                                                style="
+                                                    float: right;
+                                                    font-size: 18px;
+                                                    color: #101828;
+                                                "
+                                                >{{amount}}</strong
+                                            >
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td
+                                            style="
+                                                padding: 0 20px 20px;
+                                                font-family: Arial, Helvetica, sans-serif;
+                                                font-size: 13px;
+                                                color: #667085;
+                                            "
+                                        >
+                                            Referência: {{paymentLinkReference}}
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p
+                                    style="
+                                        margin: 24px 0;
+                                        font-family: Arial, Helvetica, sans-serif;
+                                        font-size: 14px;
+                                        line-height: 23px;
+                                        color: #667085;
+                                    "
+                                >
+                                    Guarde este e-mail como confirmação. Esta cobrança é avulsa e
+                                    não gera um pedido no e-commerce.
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td style="border-radius: 8px; background-color: #1940b3">
+                                            <a
+                                                class="email-button"
+                                                href="{{ecommerceUrl}}"
+                                                style="
+                                                    display: inline-block;
+                                                    padding: 13px 20px;
+                                                    font-family: Arial, Helvetica, sans-serif;
+                                                    font-size: 15px;
+                                                    font-weight: 700;
+                                                    text-decoration: none;
+                                                    color: #ffffff;
+                                                "
+                                                >Visitar o Ateliê Guadalupe</a
+                                            >
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                class="email-padding"
+                                style="
+                                    padding: 22px 40px;
+                                    border-top: 1px solid #eaecf0;
+                                    font-family: Arial, Helvetica, sans-serif;
+                                    font-size: 12px;
+                                    line-height: 19px;
+                                    color: #667085;
+                                "
+                            >
+                                Mensagem automática do Ateliê Guadalupe.
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

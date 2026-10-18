@@ -38,3 +38,13 @@ export type OrderEmailPayload = {
 export function orderEmailPayload(input: OrderEmailPayload): Prisma.InputJsonValue {
     return input as unknown as Prisma.InputJsonValue;
 }
+
+export type PaymentLinkEmailPayload = {
+    paymentLinkUuid: string;
+    description: string;
+    amountInCents: number;
+};
+
+export function paymentLinkEmailPayload(input: PaymentLinkEmailPayload): Prisma.InputJsonValue {
+    return input as unknown as Prisma.InputJsonValue;
+}

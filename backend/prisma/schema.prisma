@@ -92,6 +92,7 @@ enum EmailJobType {
   PASSWORD_RESET
   ORDER_CREATED
   PAYMENT_CONFIRMED
+  PAYMENT_LINK_CONFIRMED
   ORDER_SHIPPED
   ORDER_DELIVERED
 }
@@ -406,6 +407,7 @@ model PaymentLink {
   createdById              Int
   amountInCents            Int
   description              String            @db.Text
+  customerEmail            String?
   expiresAt                DateTime?
   status                   PaymentLinkStatus @default(ACTIVE)
   provider                 String            @default("ABACATEPAY")

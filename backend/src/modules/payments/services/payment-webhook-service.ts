@@ -6,7 +6,7 @@ import {
     PaymentLinkStatus,
     PaymentStatus
 } from "../../../generated/prisma/enums";
-import { createEmailJob, orderEmailPayload } from "../../emails/email-job";
+import { createEmailJob, orderEmailPayload, paymentLinkEmailPayload } from "../../emails/email-job";
 import { AppError } from "../../../core/errors/app-error";
 import { createUuid } from "../../../core/utils/uuid";
 import {
@@ -368,6 +368,8 @@ export class PaymentWebhookService {
             id: number;
             uuid: string;
             amountInCents: number;
+            description: string;
+            customerEmail: string | null;
             paidAt: Date | null;
         }
     ) {
@@ -378,6 +380,26 @@ export class PaymentWebhookService {
             ) {
                 throw AppError.conflict("Valor pago diverge do total esperado");
             }
+            const emailOperation = paymentLink.customerEmail
+                ? [
+                      this.prisma.emailJob.upsert({
+                          where: {
+                              deduplicationKey: `payment-link-paid:${paymentLink.uuid}`
+                          },
+                          create: createEmailJob({
+                              type: EmailJobType.PAYMENT_LINK_CONFIRMED,
+                              recipient: paymentLink.customerEmail,
+                              deduplicationKey: `payment-link-paid:${paymentLink.uuid}`,
+                              payload: paymentLinkEmailPayload({
+                                  paymentLinkUuid: paymentLink.uuid,
+                                  description: paymentLink.description,
+                                  amountInCents: paymentLink.amountInCents
+                              })
+                          }),
+                          update: {}
+                      })
+                  ]
+                : [];
             await this.prisma.$transaction([
                 this.prisma.paymentLink.update({
                     where: { id: paymentLink.id },
@@ -388,6 +410,7 @@ export class PaymentWebhookService {
                         paidAt: paymentLink.paidAt ?? new Date()
                     }
                 }),
+                ...emailOperation,
                 this.prisma.paymentWebhookEvent.update({
                     where: { eventId: payload.id },
                     data: { processedAt: new Date(), error: null }

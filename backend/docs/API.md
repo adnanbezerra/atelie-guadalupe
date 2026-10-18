@@ -3016,6 +3016,7 @@ Body:
 {
     "amountInCents": 12500,
     "description": "Encomenda personalizada para Maria",
+    "customerEmail": "maria@example.com",
     "expiresAt": "2026-08-15T23:59:59-03:00"
 }
 ```
@@ -3024,6 +3025,7 @@ Regras:
 
 - `amountInCents` deve ser um inteiro positivo;
 - `description` e obrigatoria e aceita de 1 a 500 caracteres;
+- `customerEmail` e obrigatorio e recebe a confirmacao quando o webhook comprovar o pagamento;
 - `expiresAt` e opcional, deve ser uma data/hora ISO 8601 futura e pode conter offset;
 - a cobranca e o produto correspondente sao criados uma unica vez na AbacatePay;
 - configure `PAYMENT_LINK_PUBLIC_BASE_URL` com a URL publica do frontend, sem o UUID final. Exemplo: `https://atelie.guadalupe/checkout/manual`.
@@ -3038,6 +3040,7 @@ Resposta `201`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
             "amountInCents": 12500,
             "description": "Encomenda personalizada para Maria",
+            "customerEmail": "maria@example.com",
             "expiresAt": "2026-08-16T02:59:59.000Z",
             "status": "ACTIVE",
             "paymentUrl": "https://atelie.guadalupe/checkout/manual/0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
@@ -3096,7 +3099,15 @@ retorna `422 VALIDATION_ERROR`.
 
 #### `POST /payment-links/:uuid/payment`
 
-Endpoint publico usado pela pagina compartilhada para criar ou recuperar o checkout hospedado. Nao recebe body e retorna sempre o mesmo checkout depois que ele foi criado.
+Endpoint publico usado pela pagina compartilhada para criar ou recuperar o checkout hospedado. O pagador informa o email que recebera a confirmacao e a API retorna sempre o mesmo checkout depois que ele foi criado.
+
+Body:
+
+```json
+{
+    "customerEmail": "pagador@example.com"
+}
+```
 
 Resposta `200`:
 
@@ -3124,6 +3135,8 @@ Erros relevantes:
 - `503` quando a AbacatePay estiver indisponivel.
 
 A expiracao bloqueia este endpoint e altera o status local para `EXPIRED`. A API de checkout hospedado da AbacatePay nao oferece expiracao propria: se o cliente ja tiver obtido a URL direta do provedor antes do prazo, essa URL pode continuar acessivel. Um pagamento posteriormente confirmado pelo webhook prevalece e altera o status para `PAID`.
+
+O checkout recebe uma `completionUrl` com `paymentLink=<uuid>`. Assim, a pagina publica de retorno consulta esta cobranca sem autenticacao e sem expor `customerEmail`. No evento `checkout.completed`, a API enfileira um email de confirmacao idempotente para o endereco cadastrado.
 
 #### `GET /payment-links`
 

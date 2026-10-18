@@ -3,6 +3,7 @@ import { sendEither } from "../../../core/http/send-either";
 import {
     createPaymentLinkSchema,
     listPaymentLinksQuerySchema,
+    payPaymentLinkSchema,
     paymentLinkUuidParamSchema
 } from "../payment-link-schema";
 import { PaymentLinkService } from "../services/payment-link-service";
@@ -20,7 +21,8 @@ export class PaymentLinkController {
 
     public pay = async (request: FastifyRequest, reply: FastifyReply) => {
         const params = this.fastify.validateSchema(paymentLinkUuidParamSchema, request.params);
-        return sendEither(reply, await this.service.pay(params.uuid));
+        const input = this.fastify.validateSchema(payPaymentLinkSchema, request.body);
+        return sendEither(reply, await this.service.pay(params.uuid, input.customerEmail));
     };
 
     public preview = async (request: FastifyRequest, reply: FastifyReply) => {

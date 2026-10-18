@@ -17,6 +17,7 @@ function paymentLink(overrides: Record<string, unknown> = {}) {
         createdById: 2,
         amountInCents: 12500,
         description: "Encomenda personalizada",
+        customerEmail: null,
         expiresAt: null,
         status: PaymentLinkStatus.ACTIVE,
         provider: "ABACATEPAY",
@@ -43,7 +44,10 @@ function paymentLink(overrides: Record<string, unknown> = {}) {
 test("admin creates a personalized payment link with amount, description and expiration", async () => {
     let providerInput: Record<string, unknown> | undefined;
     let persistedInput: Record<string, unknown> | undefined;
-    const stored = paymentLink({ expiresAt: new Date("2029-08-06T00:00:00.000Z") });
+    const stored = paymentLink({
+        customerEmail: "cliente@example.com",
+        expiresAt: new Date("2029-08-06T00:00:00.000Z")
+    });
     const prisma = {
         user: { findUnique: async () => ({ id: 2 }) },
         paymentLink: {
@@ -64,6 +68,7 @@ test("admin creates a personalized payment link with amount, description and exp
     const result = await service.create(creator.uuid, {
         amountInCents: 12500,
         description: "Encomenda personalizada",
+        customerEmail: "Cliente@Example.com",
         expiresAt: "2029-08-06T00:00:00.000Z"
     });
 
@@ -71,6 +76,7 @@ test("admin creates a personalized payment link with amount, description and exp
     assert.equal(providerInput?.price, 12500);
     assert.equal(providerInput?.description, "Encomenda personalizada");
     assert.equal(persistedInput?.amountInCents, 12500);
+    assert.equal(persistedInput?.customerEmail, "cliente@example.com");
     assert.deepStrictEqual(persistedInput?.expiresAt, new Date("2029-08-06T00:00:00.000Z"));
 });
 
@@ -128,18 +134,21 @@ test("public payment preview returns not found for an unknown uuid", async () =>
 });
 
 test("public payment endpoint creates and persists a hosted checkout", async () => {
+    const previousCompletionUrl = process.env.ABACATEPAY_COMPLETION_URL;
+    process.env.ABACATEPAY_COMPLETION_URL = "https://atelie.example/checkout/success";
     const stored = paymentLink();
     let checkoutInput: Record<string, unknown> | undefined;
+    let storedCustomerEmail: string | null = null;
     const prisma = {
         paymentLink: {
             findUnique: async () => stored,
             updateMany: async () => ({ count: 1 }),
-            update: async ({ data }: { data: Record<string, unknown> }) =>
-                paymentLink({
-                    ...data,
-                    providerCheckoutId: "bill_1",
-                    checkoutUrl: "https://pay.example/bill_1"
-                })
+            update: async ({ data }: { data: Record<string, unknown> }) => {
+                if (typeof data.customerEmail === "string") {
+                    storedCustomerEmail = data.customerEmail;
+                }
+                return paymentLink({ ...stored, ...data });
+            }
         }
     };
     const provider = {
@@ -157,12 +166,22 @@ test("public payment endpoint creates and persists a hosted checkout", async () 
     };
     const service = new PaymentLinkService(prisma as never, provider as never);
 
-    const result = await service.pay(stored.uuid);
+    try {
+        const result = await service.pay(stored.uuid, "pagador@example.com");
 
-    assert.equal(result.success, true);
-    assert.equal(checkoutInput?.externalId, `payment-link:${stored.uuid}`);
-    assert.deepStrictEqual(checkoutInput?.methods, ["PIX", "CARD"]);
-    if (result.success) assert.equal(result.value.checkoutUrl, "https://pay.example/bill_1");
+        assert.equal(result.success, true);
+        assert.equal(checkoutInput?.externalId, `payment-link:${stored.uuid}`);
+        assert.deepStrictEqual(checkoutInput?.methods, ["PIX", "CARD"]);
+        assert.equal(storedCustomerEmail, "pagador@example.com");
+        assert.equal(
+            checkoutInput?.completionUrl,
+            `https://atelie.example/checkout/success?paymentLink=${stored.uuid}`
+        );
+        if (result.success) assert.equal(result.value.checkoutUrl, "https://pay.example/bill_1");
+    } finally {
+        if (previousCompletionUrl === undefined) delete process.env.ABACATEPAY_COMPLETION_URL;
+        else process.env.ABACATEPAY_COMPLETION_URL = previousCompletionUrl;
+    }
 });
 
 test("provider timeout leaves payment link creating", async () => {
@@ -376,8 +395,10 @@ test("reconciled checkout with divergent amount stays blocked for manual action"
 test("valid late webhook audits an expired payment link as paid", async () => {
     let paymentUpdate: Record<string, unknown> | undefined;
     let eventUpdate: Record<string, unknown> | undefined;
+    let emailCreate: Record<string, unknown> | undefined;
     const expired = paymentLink({
         status: PaymentLinkStatus.EXPIRED,
+        customerEmail: "cliente@example.com",
         providerCheckoutId: "bill_expired_paid",
         checkoutUrl: "https://pay.example/bill_expired_paid"
     });
@@ -394,6 +415,11 @@ test("valid late webhook audits an expired payment link as paid", async () => {
             findUnique: async () => expired,
             update: async ({ data }: { data: Record<string, unknown> }) => {
                 paymentUpdate = data;
+            }
+        },
+        emailJob: {
+            upsert: async ({ create }: { create: Record<string, unknown> }) => {
+                emailCreate = create;
             }
         },
         $transaction: async (operations: Promise<unknown>[]) => Promise.all(operations)
@@ -418,6 +444,9 @@ test("valid late webhook audits an expired payment link as paid", async () => {
     assert.equal(paymentUpdate?.paidAmountInCents, expired.amountInCents);
     assert.equal(paymentUpdate?.providerMethod, "PIX");
     assert.ok(paymentUpdate?.paidAt instanceof Date);
+    assert.equal(emailCreate?.type, "PAYMENT_LINK_CONFIRMED");
+    assert.equal(emailCreate?.recipient, "cliente@example.com");
+    assert.equal(emailCreate?.deduplicationKey, `payment-link-paid:${expired.uuid}`);
     assert.ok(eventUpdate?.processedAt instanceof Date);
     assert.equal(eventUpdate?.error, null);
 });

@@ -9,10 +9,20 @@ import { checkoutUnavailableError, isCheckoutCreationEnabled } from "./checkout-
 
 const paymentLinkExternalId = (uuid: string) => `payment-link:${uuid}`;
 
+function paymentLinkCompletionUrl(uuid: string) {
+    const configuredUrl = process.env.ABACATEPAY_COMPLETION_URL;
+    if (!configuredUrl) return undefined;
+
+    const completionUrl = new URL(configuredUrl);
+    completionUrl.searchParams.set("paymentLink", uuid);
+    return completionUrl.toString();
+}
+
 function presentPaymentLink(link: {
     uuid: string;
     amountInCents: number;
     description: string;
+    customerEmail: string | null;
     expiresAt: Date | null;
     status: PaymentLinkStatus;
     providerCheckoutId: string | null;
@@ -35,6 +45,7 @@ function presentPaymentLink(link: {
         uuid: link.uuid,
         amountInCents: link.amountInCents,
         description: link.description,
+        customerEmail: link.customerEmail,
         expiresAt: link.expiresAt,
         status: link.status,
         paymentUrl: configuredBaseUrl ? `${configuredBaseUrl}/${link.uuid}` : null,
@@ -104,6 +115,7 @@ export class PaymentLinkService {
                 createdById: createdBy.id,
                 amountInCents: input.amountInCents,
                 description: input.description,
+                customerEmail: input.customerEmail.trim().toLowerCase(),
                 expiresAt,
                 providerProductId: providerProduct.id,
                 providerProductResponse: providerProduct as unknown as Prisma.InputJsonValue
@@ -115,7 +127,8 @@ export class PaymentLinkService {
     }
 
     public async pay(
-        uuid: string
+        uuid: string,
+        customerEmail?: string
     ): Promise<
         Either<
             AppError,
@@ -124,6 +137,18 @@ export class PaymentLinkService {
     > {
         let paymentLink = await this.findByUuid(uuid);
         if (!paymentLink) return left(AppError.notFound("Link de pagamento nao encontrado"));
+
+        if (
+            customerEmail &&
+            paymentLink.status !== PaymentLinkStatus.PAID &&
+            paymentLink.customerEmail !== customerEmail
+        ) {
+            paymentLink = await this.prisma.paymentLink.update({
+                where: { id: paymentLink.id },
+                data: { customerEmail: customerEmail.trim().toLowerCase() },
+                include: { createdBy: { select: { uuid: true, name: true, email: true } } }
+            });
+        }
 
         const expired = paymentLink.expiresAt !== null && paymentLink.expiresAt <= new Date();
         if (expired && paymentLink.status === PaymentLinkStatus.CREATING) {
@@ -195,7 +220,7 @@ export class PaymentLinkService {
             items: [{ id: paymentLink.providerProductId, quantity: 1 }],
             methods: ["PIX", "CARD"],
             returnUrl: process.env.ABACATEPAY_RETURN_URL,
-            completionUrl: process.env.ABACATEPAY_COMPLETION_URL,
+            completionUrl: paymentLinkCompletionUrl(uuid),
             metadata: { paymentLinkUuid: uuid }
         });
         return this.saveCheckout(

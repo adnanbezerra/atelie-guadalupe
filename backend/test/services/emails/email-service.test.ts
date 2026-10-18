@@ -40,6 +40,27 @@ test("password reset email renders code, expiry and escaped customer name", () =
     assert.match(rendered.text, /042731/);
 });
 
+test("personalized payment confirmation renders safe charge details without order link", () => {
+    const rendered = renderEmail(
+        EmailJobType.PAYMENT_LINK_CONFIRMED,
+        {
+            paymentLinkUuid: "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
+            description: "Encomenda <especial>",
+            amountInCents: 12500
+        },
+        "https://atelie.example"
+    );
+
+    assert.equal(rendered.subject, "Pagamento da cobrança confirmado");
+    assert.match(rendered.html, /R\$\s*125,00/);
+    assert.match(rendered.html, /Encomenda &lt;especial&gt;/);
+    assert.match(rendered.html, /Referência: 0195f4aa/);
+    assert.match(rendered.html, /https:\/\/atelie\.example/);
+    assert.doesNotMatch(rendered.html, /perfil#pedidos/);
+    assert.doesNotMatch(rendered.html, /{{[^}]+}}/);
+    assert.match(rendered.text, /0195f4aa/);
+});
+
 function createJob(
     type: EmailJobType = EmailJobType.WELCOME,
     payload: Record<string, unknown> = { customerName: "Maria" }

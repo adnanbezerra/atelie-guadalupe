@@ -18,6 +18,10 @@ const templates = {
     passwordReset: readFileSync(resolve(templateDirectory, "password-reset.html"), "utf8"),
     orderCreated: readFileSync(resolve(templateDirectory, "order-created.html"), "utf8"),
     paymentConfirmed: readFileSync(resolve(templateDirectory, "payment-confirmed.html"), "utf8"),
+    paymentLinkConfirmed: readFileSync(
+        resolve(templateDirectory, "payment-link-confirmed.html"),
+        "utf8"
+    ),
     orderShipped: readFileSync(resolve(templateDirectory, "order-shipped.html"), "utf8"),
     orderDelivered: readFileSync(resolve(templateDirectory, "order-delivered.html"), "utf8")
 };
@@ -151,6 +155,25 @@ export function renderEmail(
                 passwordResetUrl
             }),
             text: `Ola, ${customerName}!\n\nSeu codigo para redefinir a senha e ${resetCode}. Ele expira em ${expiresInMinutes} minutos.\n\nSe voce nao solicitou esta alteracao, ignore este email.`
+        };
+    }
+
+    if (type === EmailJobType.PAYMENT_LINK_CONFIRMED) {
+        const payload = record(payloadValue);
+        const description = stringValue(payload, "description");
+        const paymentLinkUuid = stringValue(payload, "paymentLinkUuid");
+        const amountInCents = numberValue(payload, "amountInCents");
+        const amount = currency(amountInCents);
+        const ecommerceUrl = frontendUrl.replace(/\/$/, "");
+        return {
+            subject: "Pagamento da cobrança confirmado",
+            html: renderTemplate(templates.paymentLinkConfirmed, {
+                description,
+                amount,
+                paymentLinkReference: paymentLinkUuid.slice(0, 8),
+                ecommerceUrl
+            }),
+            text: `Pagamento confirmado\n\nRecebemos ${amount} referente a ${description}.\nReferencia: ${paymentLinkUuid.slice(0, 8)}\n\n${ecommerceUrl}`
         };
     }
 
