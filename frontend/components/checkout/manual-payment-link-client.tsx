@@ -107,7 +107,7 @@ export function ManualPaymentLinkClient({
     }
 
     return (
-        <main className="flex min-h-[72vh] items-center justify-center bg-[#f6f6f8] px-5 py-12">
+        <main className="flex min-h-screen items-center justify-center bg-[#f6f6f8] px-5 py-12">
             <section className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-7 text-center shadow-sm md:p-10">
                 <span className="material-symbols-outlined mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-3xl text-primary">
                     lock
