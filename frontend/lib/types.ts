@@ -428,7 +428,6 @@ export type PaymentLinksPayload = {
 export type CreatePaymentLinkInput = {
     amountInCents: number;
     description: string;
-    customerEmail: string;
     expiresAt?: string;
 };
 
