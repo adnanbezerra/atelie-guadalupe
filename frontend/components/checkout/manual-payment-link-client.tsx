@@ -67,17 +67,26 @@ export function ManualPaymentLinkClient({
     uuid: string;
 }) {
     const [error, setError] = useState<string | null>(initialError);
+    const [customerEmail, setCustomerEmail] = useState("");
     const [isOpening, setIsOpening] = useState(false);
     const payable =
         preview?.status === "ACTIVE" || preview?.status === "PENDING";
     const status = preview ? statusContent[preview.status] : null;
 
     async function openCheckout() {
+        const normalizedEmail = customerEmail.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setError(
+                "Informe um e-mail válido para receber a confirmação do pagamento.",
+            );
+            return;
+        }
+
         setIsOpening(true);
         setError(null);
 
         try {
-            const payload = await openPaymentLink(uuid);
+            const payload = await openPaymentLink(uuid, normalizedEmail);
             window.location.assign(payload.checkoutUrl);
         } catch (reason) {
             let message =
@@ -107,7 +116,7 @@ export function ManualPaymentLinkClient({
     }
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-[#f6f6f8] px-5 py-12">
+        <main className="flex flex-1 items-center justify-center bg-[#f6f6f8] px-5 py-12">
             <section className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-7 text-center shadow-sm md:p-10">
                 <span className="material-symbols-outlined mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-3xl text-primary">
                     lock
@@ -151,6 +160,28 @@ export function ManualPaymentLinkClient({
                         </div>
                     </dl>
                 ) : null}
+                {!isOpening && payable ? (
+                    <div className="mt-6 text-left">
+                        <label
+                            className="mb-2 block text-sm font-bold text-slate-800"
+                            htmlFor="payment-confirmation-email"
+                        >
+                            E-mail para confirmação
+                        </label>
+                        <input
+                            autoComplete="email"
+                            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
+                            id="payment-confirmation-email"
+                            onChange={(event) =>
+                                setCustomerEmail(event.currentTarget.value)
+                            }
+                            placeholder="voce@exemplo.com"
+                            required
+                            type="email"
+                            value={customerEmail}
+                        />
+                    </div>
+                ) : null}
                 {isOpening ? (
                     <span
                         aria-label="Carregando pagamento"
@@ -174,6 +205,12 @@ export function ManualPaymentLinkClient({
                     >
                         Pagamento indisponível
                     </button>
+                ) : null}
+                {preview ? (
+                    <p className="mx-auto mt-5 max-w-sm text-sm leading-6 text-slate-600">
+                        Quando o pagamento for confirmado, enviaremos o
+                        comprovante para o e-mail informado acima.
+                    </p>
                 ) : null}
                 {!isOpening ? (
                     <a

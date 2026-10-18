@@ -1,4 +1,5 @@
 import { ManualPaymentLinkClient } from "@/components/checkout/manual-payment-link-client";
+import { PaymentFlowHeader } from "@/components/checkout/payment-flow-header";
 import { fetchPaymentLinkPreview } from "@/lib/server-api";
 
 export default async function ManualPaymentLinkPage({
@@ -22,10 +23,13 @@ export default async function ManualPaymentLinkPage({
             : null;
 
     return (
-        <ManualPaymentLinkClient
-            initialError={initialError}
-            preview={preview}
-            uuid={uuid}
-        />
+        <div className="flex min-h-screen flex-col bg-[#f6f6f8]">
+            <PaymentFlowHeader />
+            <ManualPaymentLinkClient
+                initialError={initialError}
+                preview={preview}
+                uuid={uuid}
+            />
+        </div>
     );
 }

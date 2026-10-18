@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FeedbackDialog } from "@/components/shared/feedback-dialog";
 import { useApiToken } from "@/hooks/use-api-token";
-import { getOrder } from "@/lib/api";
-import type { Order } from "@/lib/types";
+import { getOrder, getPaymentLinkPreview } from "@/lib/api";
+import type { Order, PaymentLinkPreview } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import {
     getDeliveryMessage,
@@ -28,21 +28,32 @@ export function CheckoutSuccessContent() {
     const searchParams = useSearchParams();
     const token = useApiToken();
     const orderUuidFromUrl = searchParams.get("orderUuid");
+    const paymentLinkUuid = searchParams.get("paymentLink");
     const [order, setOrder] = useState<Order | null>(null);
+    const [paymentLink, setPaymentLink] = useState<PaymentLinkPreview | null>(
+        null,
+    );
     const [state, setState] = useState<VerificationState>("loading");
     const [dialog, setDialog] = useState<VerificationDialog>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const paymentConfirmed = Boolean(
-        order &&
-        (PAYMENT_CONFIRMED_STATUSES.has(order.status) ||
-            order.payment?.status === "PAID"),
-    );
-    const paymentProblem = Boolean(
-        order &&
-        (order.status === "CANCELLED" ||
-            PAYMENT_PROBLEM_STATUSES.has(order.payment?.status ?? "")),
-    );
+    const isPaymentLinkFlow = Boolean(paymentLinkUuid);
+    const paymentConfirmed = paymentLink
+        ? paymentLink.status === "PAID"
+        : Boolean(
+              order &&
+              (PAYMENT_CONFIRMED_STATUSES.has(order.status) ||
+                  order.payment?.status === "PAID"),
+          );
+    const paymentProblem = paymentLink
+        ? ["EXPIRED", "REFUNDED", "DISPUTED", "LOST"].includes(
+              paymentLink.status,
+          )
+        : Boolean(
+              order &&
+              (order.status === "CANCELLED" ||
+                  PAYMENT_PROBLEM_STATUSES.has(order.payment?.status ?? "")),
+          );
 
     const orderUuid = useMemo(() => {
         if (orderUuidFromUrl) return orderUuidFromUrl;
@@ -63,7 +74,43 @@ export function CheckoutSuccessContent() {
         [orderUuid, token],
     );
 
+    const loadPaymentLink = useCallback(
+        async (signal?: AbortSignal) => {
+            if (!paymentLinkUuid) return null;
+            const response = await getPaymentLinkPreview(
+                paymentLinkUuid,
+                signal,
+            );
+            setPaymentLink(response.paymentLink);
+            setState("ready");
+            setDialog(null);
+            return response.paymentLink;
+        },
+        [paymentLinkUuid],
+    );
+
     useEffect(() => {
+        if (!paymentLinkUuid) return;
+
+        const controller = new AbortController();
+        setState("loading");
+        void loadPaymentLink(controller.signal).catch((error) => {
+            if (controller.signal.aborted) return;
+            setState("missing-order");
+            setDialog({
+                title: "Cobrança não identificada",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Não foi possível consultar esta cobrança agora.",
+            });
+        });
+
+        return () => controller.abort();
+    }, [loadPaymentLink, paymentLinkUuid]);
+
+    useEffect(() => {
+        if (paymentLinkUuid) return;
         if (!token) {
             setState("missing-auth");
             setDialog({
@@ -100,9 +147,11 @@ export function CheckoutSuccessContent() {
         });
 
         return () => controller.abort();
-    }, [loadOrder, orderUuid, token]);
+    }, [loadOrder, orderUuid, paymentLinkUuid, token]);
 
-    const shouldPoll = Boolean(order && !paymentConfirmed && !paymentProblem);
+    const shouldPoll = Boolean(
+        !isPaymentLinkFlow && order && !paymentConfirmed && !paymentProblem,
+    );
 
     useEffect(() => {
         if (!shouldPoll) return;
@@ -139,6 +188,44 @@ export function CheckoutSuccessContent() {
         };
     }, [loadOrder, shouldPoll]);
 
+    const shouldPollPaymentLink = Boolean(
+        isPaymentLinkFlow &&
+        paymentLink &&
+        !paymentConfirmed &&
+        !paymentProblem,
+    );
+
+    useEffect(() => {
+        if (!shouldPollPaymentLink) return;
+
+        const controller = new AbortController();
+        const deadline = Date.now() + 60_000;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+        async function poll() {
+            try {
+                const current = await loadPaymentLink(controller.signal);
+                const finished =
+                    !current ||
+                    current.status === "PAID" ||
+                    ["EXPIRED", "REFUNDED", "DISPUTED", "LOST"].includes(
+                        current.status,
+                    );
+                if (!finished && Date.now() < deadline) {
+                    timeoutId = setTimeout(poll, 3000);
+                }
+            } catch {
+                // Mantem o ultimo estado valido; atualizacao manual continua disponivel.
+            }
+        }
+
+        timeoutId = setTimeout(poll, 3000);
+        return () => {
+            controller.abort();
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [loadPaymentLink, shouldPollPaymentLink]);
+
     async function refreshOrder() {
         setIsRefreshing(true);
         try {
@@ -156,18 +243,49 @@ export function CheckoutSuccessContent() {
         }
     }
 
-    const statusTitle = order
-        ? getPaymentMessage(order)
-        : state === "loading"
-          ? "Verificando seu pagamento"
-          : "Pagamento ainda não verificado";
-    const statusDescription = order
+    async function refreshPaymentLink() {
+        setIsRefreshing(true);
+        try {
+            await loadPaymentLink();
+        } catch (error) {
+            setDialog({
+                title: "Não foi possível atualizar a cobrança",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Confira sua conexão e tente novamente.",
+            });
+        } finally {
+            setIsRefreshing(false);
+        }
+    }
+
+    const statusTitle = paymentLink
         ? paymentConfirmed
-            ? getDeliveryMessage(order)
+            ? "Pagamento confirmado"
             : paymentProblem
-              ? "O pedido está salvo, mas precisa de atenção. Consulte os detalhes ou fale com o atendimento."
-              : "A confirmação ainda não chegou. Esta página consulta o pedido por um tempo limitado e você pode atualizar quando quiser."
-        : "Só mostramos uma confirmação depois de consultar o pedido autenticado.";
+              ? "Pagamento precisa de atenção"
+              : "Aguardando confirmação"
+        : order
+          ? getPaymentMessage(order)
+          : state === "loading"
+            ? "Verificando seu pagamento"
+            : "Pagamento ainda não verificado";
+    const statusDescription = paymentLink
+        ? paymentConfirmed
+            ? "Tudo certo. A confirmação também será enviada para o e-mail informado nesta cobrança."
+            : paymentProblem
+              ? "Esta cobrança não pode ser confirmada por aqui. Fale com o atendimento para conferir o pagamento."
+              : "A confirmação pode levar alguns instantes. Assim que chegar, enviaremos um e-mail ao destinatário informado."
+        : order
+          ? paymentConfirmed
+              ? getDeliveryMessage(order)
+              : paymentProblem
+                ? "O pedido está salvo, mas precisa de atenção. Consulte os detalhes ou fale com o atendimento."
+                : "A confirmação ainda não chegou. Esta página consulta o pedido por um tempo limitado e você pode atualizar quando quiser."
+          : isPaymentLinkFlow
+            ? "Consultamos esta cobrança diretamente, sem exigir uma conta no e-commerce."
+            : "Só mostramos uma confirmação depois de consultar o pedido autenticado.";
 
     return (
         <section
@@ -201,7 +319,22 @@ export function CheckoutSuccessContent() {
             </div>
 
             <div className="px-6 py-7 sm:px-10 sm:py-9">
-                {order ? (
+                {paymentLink ? (
+                    <dl className="grid gap-4 rounded-xl bg-[#f8f5ef] p-5 text-sm sm:grid-cols-3">
+                        <ReceiptItem
+                            label="Cobrança"
+                            value={`#${paymentLink.uuid.slice(0, 8)}`}
+                        />
+                        <ReceiptItem
+                            label="Valor"
+                            value={formatCurrency(paymentLink.amountInCents)}
+                        />
+                        <ReceiptItem
+                            label="Descrição"
+                            value={paymentLink.description}
+                        />
+                    </dl>
+                ) : order ? (
                     <dl className="grid gap-4 rounded-xl bg-[#f8f5ef] p-5 text-sm sm:grid-cols-3">
                         <ReceiptItem
                             label="Pedido"
@@ -219,6 +352,18 @@ export function CheckoutSuccessContent() {
                 ) : null}
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                    {paymentLink && !paymentConfirmed && !paymentProblem ? (
+                        <button
+                            className="min-h-12 rounded-lg bg-primary px-5 py-3 font-bold text-white focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:opacity-60"
+                            disabled={isRefreshing}
+                            onClick={() => void refreshPaymentLink()}
+                            type="button"
+                        >
+                            {isRefreshing
+                                ? "Atualizando..."
+                                : "Atualizar confirmação"}
+                        </button>
+                    ) : null}
                     {order && !paymentConfirmed && !paymentProblem ? (
                         <button
                             className="min-h-12 rounded-lg bg-primary px-5 py-3 font-bold text-white focus:outline-none focus:ring-4 focus:ring-primary/30 disabled:opacity-60"
@@ -239,27 +384,21 @@ export function CheckoutSuccessContent() {
                             Voltar ao pagamento
                         </a>
                     ) : null}
-                    {token ? (
+                    {!isPaymentLinkFlow && token && order ? (
                         <Link
                             className="flex min-h-12 items-center justify-center rounded-lg border border-slate-200 px-5 py-3 font-bold text-primary"
-                            href={
-                                order
-                                    ? `/perfil/pedidos/${order.uuid}`
-                                    : "/perfil#pedidos"
-                            }
+                            href={`/perfil/pedidos/${order.uuid}`}
                         >
-                            {order
-                                ? "Ver detalhes do pedido"
-                                : "Ver meus pedidos"}
+                            Ver detalhes do pedido
                         </Link>
-                    ) : (
+                    ) : !isPaymentLinkFlow && !token ? (
                         <Link
                             className="flex min-h-12 items-center justify-center rounded-lg bg-primary px-5 py-3 font-bold text-white"
                             href={`/login?next=${encodeURIComponent("/checkout/success")}`}
                         >
                             Entrar para verificar
                         </Link>
-                    )}
+                    ) : null}
                     <Link
                         className="flex min-h-12 items-center justify-center rounded-lg px-5 py-3 font-bold text-slate-700"
                         href="/"

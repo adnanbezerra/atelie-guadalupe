@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { CheckoutSuccessContent } from "@/components/checkout/checkout-success-content";
-import { ServerHeader } from "@/components/header/server";
-import { SiteFooter } from "@/components/site/site-footer";
+import { PaymentFlowHeader } from "@/components/checkout/payment-flow-header";
 
 export const metadata: Metadata = {
     title: "Verificar pagamento | Ateliê Guadalupe",
@@ -10,11 +9,10 @@ export const metadata: Metadata = {
 export default function CheckoutSuccessPage() {
     return (
         <div className="flex min-h-screen flex-col bg-background text-foreground">
-            <ServerHeader />
+            <PaymentFlowHeader />
             <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
                 <CheckoutSuccessContent />
             </main>
-            <SiteFooter />
         </div>
     );
 }

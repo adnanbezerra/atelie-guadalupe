@@ -15,6 +15,7 @@ export type BillingError = { title: string; description: string };
 export type BillingReview = {
     amountInCents: number;
     description: string;
+    customerEmail: string;
     expiresAt: string | null;
     isUnusual: boolean;
 };
@@ -54,6 +55,12 @@ export function BillingReviewDialog({
                             <dt className="text-slate-500">Descrição</dt>
                             <dd className="mt-1 [overflow-wrap:anywhere] font-semibold text-slate-950">
                                 {review.description}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-slate-500">Confirmação para</dt>
+                            <dd className="mt-1 break-all font-semibold text-slate-950">
+                                {review.customerEmail}
                             </dd>
                         </div>
                         <div className="flex justify-between gap-4">

@@ -31,6 +31,7 @@ export function AdminBillingClient({
     const token = useApiToken();
     const [amount, setAmount] = useState("");
     const [description, setDescription] = useState("");
+    const [customerEmail, setCustomerEmail] = useState("");
     const [expiresAt, setExpiresAt] = useState("");
     const [paymentLinks, setPaymentLinks] =
         useState<PaymentLink[]>(initialPaymentLinks);
@@ -85,6 +86,7 @@ export function AdminBillingClient({
         event.preventDefault();
 
         const normalizedDescription = description.trim();
+        const normalizedEmail = customerEmail.trim().toLowerCase();
         const expiration = expiresAt ? new Date(expiresAt) : null;
 
         if (amountInCents <= 0) {
@@ -99,6 +101,15 @@ export function AdminBillingClient({
             setBillingError({
                 title: "Confira a descrição",
                 description: "Escreva uma descrição entre 1 e 500 caracteres.",
+            });
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setBillingError({
+                title: "Confira o e-mail",
+                description:
+                    "Informe um endereço válido para receber a confirmação do pagamento.",
             });
             return;
         }
@@ -133,6 +144,7 @@ export function AdminBillingClient({
         setReview({
             amountInCents,
             description: normalizedDescription,
+            customerEmail: normalizedEmail,
             expiresAt: expiration?.toISOString() ?? null,
             isUnusual,
         });
@@ -147,6 +159,7 @@ export function AdminBillingClient({
             const payload = await createPaymentLink(token, {
                 amountInCents: review.amountInCents,
                 description: review.description,
+                customerEmail: review.customerEmail,
                 ...(review.expiresAt ? { expiresAt: review.expiresAt } : {}),
             });
 
@@ -163,6 +176,7 @@ export function AdminBillingClient({
             setIsCopied(false);
             setAmount("");
             setDescription("");
+            setCustomerEmail("");
             setExpiresAt("");
         } catch (error) {
             setBillingError({
@@ -213,10 +227,12 @@ export function AdminBillingClient({
                 <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.55fr)]">
                     <BillingForm
                         amount={amount}
+                        customerEmail={customerEmail}
                         description={description}
                         expiresAt={expiresAt}
                         isSubmitting={isSubmitting}
                         onAmountChange={setAmount}
+                        onCustomerEmailChange={setCustomerEmail}
                         onDescriptionChange={setDescription}
                         onExpirationChange={setExpiresAt}
                         onSubmit={handleSubmit}

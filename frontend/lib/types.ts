@@ -396,6 +396,7 @@ export type PaymentLink = {
     uuid: string;
     amountInCents: number;
     description: string;
+    customerEmail: string | null;
     expiresAt: string | null;
     status: PaymentLinkStatus;
     paymentUrl?: string | null;
@@ -427,6 +428,7 @@ export type PaymentLinksPayload = {
 export type CreatePaymentLinkInput = {
     amountInCents: number;
     description: string;
+    customerEmail: string;
     expiresAt?: string;
 };
 

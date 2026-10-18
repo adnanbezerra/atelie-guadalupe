@@ -526,16 +526,23 @@ export function createPaymentLink(token: string, body: CreatePaymentLinkInput) {
     });
 }
 
-export function openPaymentLink(paymentLinkUuid: string) {
+export function openPaymentLink(
+    paymentLinkUuid: string,
+    customerEmail: string,
+) {
     return request<PaymentLinkCheckoutPayload>(
         `/payment-links/${encodeURIComponent(paymentLinkUuid)}/payment`,
-        { method: "POST" },
+        { method: "POST", body: { customerEmail } },
     );
 }
 
-export function getPaymentLinkPreview(paymentLinkUuid: string) {
+export function getPaymentLinkPreview(
+    paymentLinkUuid: string,
+    signal?: AbortSignal,
+) {
     return request<{ paymentLink: PaymentLinkPreview }>(
         `/payment-links/${encodeURIComponent(paymentLinkUuid)}`,
+        { signal },
     );
 }
 

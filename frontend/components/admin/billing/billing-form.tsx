@@ -3,9 +3,11 @@ import type { FormEvent } from "react";
 type BillingFormProps = {
     amount: string;
     description: string;
+    customerEmail: string;
     expiresAt: string;
     isSubmitting: boolean;
     onAmountChange: (value: string) => void;
+    onCustomerEmailChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onExpirationChange: (value: string) => void;
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -14,9 +16,11 @@ type BillingFormProps = {
 export function BillingForm({
     amount,
     description,
+    customerEmail,
     expiresAt,
     isSubmitting,
     onAmountChange,
+    onCustomerEmailChange,
     onDescriptionChange,
     onExpirationChange,
     onSubmit,
@@ -38,6 +42,31 @@ export function BillingForm({
             </div>
 
             <form className="mt-6 space-y-5" noValidate onSubmit={onSubmit}>
+                <div>
+                    <label
+                        className="mb-2 block text-sm font-bold text-slate-800"
+                        htmlFor="billing-customer-email"
+                    >
+                        E-mail para confirmação
+                    </label>
+                    <input
+                        autoComplete="email"
+                        className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
+                        id="billing-customer-email"
+                        onChange={(event) =>
+                            onCustomerEmailChange(event.currentTarget.value)
+                        }
+                        placeholder="cliente@exemplo.com"
+                        required
+                        type="email"
+                        value={customerEmail}
+                    />
+                    <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                        Enviaremos a confirmação para este endereço quando o
+                        pagamento for comprovado.
+                    </p>
+                </div>
+
                 <div>
                     <label
                         className="mb-2 block text-sm font-bold text-slate-800"
