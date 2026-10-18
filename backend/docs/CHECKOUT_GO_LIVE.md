@@ -508,7 +508,8 @@ Durante cada etapa:
 divergencia de valor, pedido pago parado ou etiqueta duplicada.
 
 Controle local: `CHECKOUT_ENABLED` prevalece como switch mestre. `CHECKOUT_ROLLOUT_MODE=ALLOWLIST`
-aceita somente donos autenticados listados e bloqueia links publicos; `PUBLIC` exige lista ausente.
+aceita somente donos autenticados listados para pedidos e permite links publicos ativos; `PUBLIC`
+exige lista ausente.
 `pnpm run canary:evaluate` avalia politica e contagens sanitizadas sem mudar configuracao.
 Procedimento em `docs/CHECKOUT_CANARY.md`. Thresholds, execucao implantada, paineis, evidencias e
 aprovacoes ainda nao existem; nenhum item operacional acima foi marcado.

@@ -269,7 +269,7 @@ Commits locais ainda nao presentes em `origin/main`:
 
 - `CHECKOUT_ENABLED=false` e master e sempre bloqueia nova criacao;
 - `CHECKOUT_ENABLED=true` + `ALLOWLIST` permite somente dono autenticado do pedido listado;
-- `ALLOWLIST` bloqueia nova criacao por link publico;
+- `ALLOWLIST` permite nova criacao por link publico ativo;
 - `PUBLIC` preserva comportamento geral e rejeita allowlist residual;
 - producao exige modo explicito;
 - allowlist aceita no maximo 100 UUIDs validos e sem repeticao;
@@ -357,7 +357,8 @@ export function isCheckoutCreationEnabled(
         (environment.NODE_ENV === "production" ? undefined : "PUBLIC");
     const allowedUsers = checkoutAllowedUserUuids(environment);
     if (mode === "PUBLIC") return allowedUsers?.length === 0;
-    if (mode !== "ALLOWLIST" || !allowedUsers || context.flow === "PAYMENT_LINK") return false;
+    if (mode !== "ALLOWLIST" || !allowedUsers?.length) return false;
+    if (context.flow === "PAYMENT_LINK") return true;
     return allowedUsers.includes(context.userUuid.toLowerCase());
 }
 ```

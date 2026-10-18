@@ -42,7 +42,7 @@ CHECKOUT_ALLOWED_USER_UUIDS=<um unico UUID interno aprovado>
 
 Confirme preflight com switch mestre desligado. No inicio aprovado, altere somente
 `CHECKOUT_ENABLED=true` e recarregue todas replicas. `ALLOWLIST` permite checkout novo apenas para
-pedido pertencente a essa identidade autenticada e bloqueia criacao por link publico.
+pedido pertencente a essa identidade autenticada, além de permitir links publicos ativos.
 
 Nao use tentativa negativa em producao para provar isolamento: se configuracao estiver errada, ela
 criara uma cobranca adicional. Use schema de ambiente, testes da release, configuracao efetiva das

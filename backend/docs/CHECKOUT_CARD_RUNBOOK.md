@@ -75,7 +75,7 @@ Compra CARD real somente depois de todos os itens abaixo confirmados por duas pe
 - cartao autorizado para teste e procedimento contabilidade/estorno aprovados;
 - `CHECKOUT_ENABLED=false` inicialmente; `CHECKOUT_ROLLOUT_MODE=ALLOWLIST` e somente UUID interno
   configurado antes de habilitar;
-- links publicos permanecem bloqueados e nenhuma expansao para `PUBLIC` ocorre nesta validacao;
+- links publicos ativos permanecem habilitados; nao compartilhe URLs fora do teste controlado;
 - mecanismo para aplicar flags e recarregar todas as replicas testado;
 - `FULFILLMENT_WORKER_ENABLED=false` inicialmente, evitando etiqueta antes da verificacao
   financeira; demais workers seguem decisao registrada;

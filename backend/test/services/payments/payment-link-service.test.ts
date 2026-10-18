@@ -478,7 +478,7 @@ test("public payment endpoint blocks a new checkout without calling the provider
     }
 });
 
-test("allowlist rollout blocks new public payment-link checkout", async () => {
+test("allowlist rollout permits new public payment-link checkout", async () => {
     const previousMode = process.env.CHECKOUT_ROLLOUT_MODE;
     const previousUsers = process.env.CHECKOUT_ALLOWED_USER_UUIDS;
     const previousEnabled = process.env.CHECKOUT_ENABLED;
@@ -487,10 +487,25 @@ test("allowlist rollout blocks new public payment-link checkout", async () => {
     process.env.CHECKOUT_ALLOWED_USER_UUIDS = "0195f4aa-7f18-7db5-9f32-06f4a9a2b401";
     const stored = paymentLink();
     let providerCalled = false;
-    const prisma = { paymentLink: { findUnique: async () => stored } };
+    const prisma = {
+        paymentLink: {
+            findUnique: async () => stored,
+            updateMany: async () => ({ count: 1 }),
+            update: async ({ data }: { data: Record<string, unknown> }) =>
+                paymentLink({ ...stored, ...data })
+        }
+    };
     const provider = {
         createCheckout: async () => {
             providerCalled = true;
+            return {
+                id: "bill_allowlist",
+                externalId: `payment-link:${stored.uuid}`,
+                url: "https://pay.example/bill_allowlist",
+                amount: stored.amountInCents,
+                paidAmount: null,
+                status: "PENDING"
+            };
         }
     };
 
@@ -498,9 +513,11 @@ test("allowlist rollout blocks new public payment-link checkout", async () => {
         const result = await new PaymentLinkService(prisma as never, provider as never).pay(
             stored.uuid
         );
-        assert.equal(result.success, false);
-        if (!result.success) assert.equal(result.value.code, "SERVICE_UNAVAILABLE");
-        assert.equal(providerCalled, false);
+        assert.equal(result.success, true);
+        assert.equal(providerCalled, true);
+        if (result.success) {
+            assert.equal(result.value.checkoutUrl, "https://pay.example/bill_allowlist");
+        }
     } finally {
         if (previousEnabled === undefined) delete process.env.CHECKOUT_ENABLED;
         else process.env.CHECKOUT_ENABLED = previousEnabled;

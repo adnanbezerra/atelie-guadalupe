@@ -11,18 +11,19 @@ GL-051 sem execucao no ambiente implantado.
 
 - `CHECKOUT_ROLLOUT_MODE=ALLOWLIST`: somente pedido cujo dono autenticado esteja em
   `CHECKOUT_ALLOWED_USER_UUIDS` pode criar checkout novo. Lista aceita ate 100 UUIDs validos, sem
-  repeticao. Link de pagamento publico nao cria checkout novo nesse modo;
+  repeticao. Links de pagamento publicos validos tambem podem criar checkout nesse modo;
 - `CHECKOUT_ROLLOUT_MODE=PUBLIC`: preserva acesso publico normal e exige
   `CHECKOUT_ALLOWED_USER_UUIDS` ausente. Use somente na liberacao total.
 
 Backend usa identidade autenticada e confirma que ela possui o pedido antes do gate; UUID enviado
-na rota nao escolhe coorte. Link publico permanece fechado em `ALLOWLIST`, mesmo conhecendo UUID do
-link. Checkout ja persistido continua acessivel e estado `CREATING` continua reconciliavel em todos
-os modos; gate fica imediatamente antes da primeira persistencia/chamada de criacao.
+na rota nao escolhe coorte. Link publico ativo dispensa autenticacao e permanece habilitado em
+`ALLOWLIST`; trate a URL como credencial compartilhavel. Checkout ja persistido continua acessivel e
+estado `CREATING` continua reconciliavel em todos os modos; gate fica imediatamente antes da primeira
+persistencia/chamada de criacao.
 
-Alteracao exige recarregar todas as replicas. Depois, prove que usuario fora da lista e link publico
-recebem HTTP 503 sem chamada de criacao, enquanto usuario interno aprovado entra no fluxo. Se uma
-replica divergir, retire-a do trafego e aplique `CHECKOUT_ENABLED=false` em todas.
+Alteracao exige recarregar todas as replicas. Depois, prove que usuario fora da lista recebe HTTP 503,
+enquanto usuario interno aprovado e link publico ativo entram nos respectivos fluxos. Se uma replica
+divergir, retire-a do trafego e aplique `CHECKOUT_ENABLED=false` em todas.
 
 ## Politica aprovada antes da etapa
 

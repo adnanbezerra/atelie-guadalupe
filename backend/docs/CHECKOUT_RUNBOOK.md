@@ -72,8 +72,8 @@ e link personalizado. Checkouts ja persistidos continuam acessiveis, e pagamento
 timeout. Webhooks, consultas, reembolsos e workers nao dependem desse switch.
 
 Com switch mestre ativo, `CHECKOUT_ROLLOUT_MODE=ALLOWLIST` limita pedidos novos aos donos
-autenticados em `CHECKOUT_ALLOWED_USER_UUIDS` e bloqueia criacao nova por link publico. Modo
-`PUBLIC` exige lista ausente. Configuracao ausente/invalida em producao falha fechada. Veja
+autenticados em `CHECKOUT_ALLOWED_USER_UUIDS`, mas permite criacao nova por link publico ativo.
+Modo `PUBLIC` exige lista ausente. Configuracao ausente/invalida em producao falha fechada. Veja
 `docs/CHECKOUT_CANARY.md`.
 
 ### Desativar sem novo deploy

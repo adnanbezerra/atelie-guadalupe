@@ -51,7 +51,7 @@ test("checkout creation fails closed for missing or invalid production configura
     );
 });
 
-test("allowlist permits only listed order owners and blocks payment links", () => {
+test("allowlist permits listed order owners and public payment links", () => {
     const environment = {
         NODE_ENV: "production",
         CHECKOUT_ENABLED: "true",
@@ -66,7 +66,7 @@ test("allowlist permits only listed order owners and blocks payment links", () =
         ),
         false
     );
-    assert.equal(isCheckoutCreationEnabled(paymentLink, environment), false);
+    assert.equal(isCheckoutCreationEnabled(paymentLink, environment), true);
 });
 
 test("rollout rejects malformed, duplicate or residual allowlists", () => {
@@ -76,6 +76,14 @@ test("rollout rejects malformed, duplicate or residual allowlists", () => {
     );
     assert.equal(
         isCheckoutCreationEnabled(order, {
+            CHECKOUT_ENABLED: "true",
+            CHECKOUT_ROLLOUT_MODE: "ALLOWLIST",
+            CHECKOUT_ALLOWED_USER_UUIDS: "not-a-uuid"
+        }),
+        false
+    );
+    assert.equal(
+        isCheckoutCreationEnabled(paymentLink, {
             CHECKOUT_ENABLED: "true",
             CHECKOUT_ROLLOUT_MODE: "ALLOWLIST",
             CHECKOUT_ALLOWED_USER_UUIDS: "not-a-uuid"

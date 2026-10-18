@@ -221,8 +221,8 @@ CHECKOUT_ROLLOUT_MODE=ALLOWLIST
 CHECKOUT_ALLOWED_USER_UUIDS=<uuid-do-usuario-interno-staging>
 ```
 
-`ALLOWLIST` bloqueia nova criacao por payment-link publico. Checkouts ja persistidos continuam
-consultaveis/pagaveis; fechar gate nao cancela cobranca existente.
+`ALLOWLIST` permite nova criacao por payment-link publico ativo, mas continua restringindo pedidos
+comuns aos usuarios listados. `CHECKOUT_ENABLED=false` bloqueia ambos os fluxos novos.
 
 ## Workers
 
