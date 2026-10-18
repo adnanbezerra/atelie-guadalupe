@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import { EventEmitter } from "node:events";
 import { test } from "node:test";
 import { ObjectId } from "mongodb";
+import { AppError } from "../../../src/core/errors/app-error";
 import { MongoImageStorage } from "../../../src/core/storage/mongo-image-storage";
 
 class FakeUploadStream extends EventEmitter {
@@ -42,4 +43,26 @@ test("mongo image storage keeps explicit media base URL without trailing slash",
     });
 
     assert.equal(imageUrl, "https://api.exemplo.com/media/images/507f1f77bcf86cd799439011");
+});
+
+test("mongo image storage returns service unavailable while MongoDB is offline", async () => {
+    const storage = new MongoImageStorage(null, null, "");
+    const expectedError = (error: unknown) => error instanceof AppError && error.statusCode === 503;
+
+    await assert.rejects(
+        storage.uploadProductImage({
+            filename: "lavanda.jpg",
+            contentType: "image/jpeg",
+            buffer: Buffer.from("image")
+        }),
+        expectedError
+    );
+    await assert.rejects(
+        storage.uploadTestimonialVideo({
+            filename: "depoimento.mp4",
+            contentType: "video/mp4",
+            buffer: Buffer.from("video")
+        }),
+        expectedError
+    );
 });

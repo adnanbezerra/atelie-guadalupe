@@ -22,7 +22,7 @@ export class MongoImageStorage implements ImageStorage {
 
     public async uploadProductImage(input: UploadImageInput): Promise<string> {
         if (!this.bucket) {
-            throw AppError.business("Storage de imagens nao configurado");
+            throw AppError.serviceUnavailable("Storage de imagens indisponivel");
         }
 
         if (!allowedContentTypes.has(input.contentType)) {
@@ -47,7 +47,7 @@ export class MongoImageStorage implements ImageStorage {
 
     public async uploadTestimonialVideo(input: UploadImageInput): Promise<string> {
         if (!this.videoBucket) {
-            throw AppError.business("Storage de videos nao configurado");
+            throw AppError.serviceUnavailable("Storage de videos indisponivel");
         }
 
         if (!allowedVideoContentTypes.has(input.contentType)) {

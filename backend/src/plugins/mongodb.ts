@@ -14,22 +14,32 @@ export default fp(async (fastify) => {
     let mongoVideoBucket: GridFSBucket | null = null;
 
     if (mongoUrl && dbName) {
-        mongoClient = new MongoClient(mongoUrl, {
+        const client = new MongoClient(mongoUrl, {
             connectTimeoutMS: 5_000,
             serverSelectionTimeoutMS: 8_000
         });
-        await mongoClient.connect();
-        mongoDb = mongoClient.db(dbName);
-        mongoBucket = new GridFSBucket(mongoDb, {
-            bucketName: "product-images"
-        });
-        mongoVideoBucket = new GridFSBucket(mongoDb, {
-            bucketName: "testimonial-videos"
-        });
 
-        fastify.addHook("onClose", async () => {
-            await mongoClient?.close();
-        });
+        try {
+            await client.connect();
+            mongoClient = client;
+            mongoDb = client.db(dbName);
+            mongoBucket = new GridFSBucket(mongoDb, {
+                bucketName: "product-images"
+            });
+            mongoVideoBucket = new GridFSBucket(mongoDb, {
+                bucketName: "testimonial-videos"
+            });
+
+            fastify.addHook("onClose", async () => {
+                await mongoClient?.close();
+            });
+        } catch (error) {
+            await client.close().catch(() => undefined);
+            fastify.log.error(
+                { err: error },
+                "MongoDB indisponivel; storage de midia iniciado em modo degradado"
+            );
+        }
     }
 
     fastify.decorate("mongoClient", mongoClient);
