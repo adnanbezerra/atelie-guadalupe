@@ -159,7 +159,7 @@ function PaymentLinkRow({
                 <div className="flex justify-end gap-2">
                     <button
                         aria-label={`Copiar link da cobrança ${paymentLink.description}`}
-                        className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+                        className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-primary/15"
                         onClick={() => {
                             void copyText(
                                 getPublicPaymentUrl(paymentLink),
@@ -183,17 +183,32 @@ function PaymentLinkRow({
                     </button>
                     <a
                         aria-label={`Abrir cobrança ${paymentLink.description}`}
-                        className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+                        className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-primary/15"
                         href={getPublicPaymentUrl(paymentLink)}
                         rel="noreferrer"
                         target="_blank"
                     >
-                        <span
+                        <svg
                             aria-hidden="true"
-                            className="material-symbols-outlined text-lg"
+                            className="size-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
                         >
-                            open_in_new
-                        </span>
+                            <path
+                                d="M14 5h5v5M19 5l-8 8"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                            />
+                            <path
+                                d="M19 13v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                            />
+                        </svg>
                     </a>
                 </div>
             </td>
