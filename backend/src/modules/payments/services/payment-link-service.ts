@@ -115,7 +115,7 @@ export class PaymentLinkService {
                 createdById: createdBy.id,
                 amountInCents: input.amountInCents,
                 description: input.description,
-                customerEmail: input.customerEmail.trim().toLowerCase(),
+                customerEmail: input.customerEmail?.trim().toLowerCase(),
                 expiresAt,
                 providerProductId: providerProduct.id,
                 providerProductResponse: providerProduct as unknown as Prisma.InputJsonValue

@@ -4,7 +4,10 @@ import { PaymentLinkStatus } from "../../generated/prisma/enums";
 export const createPaymentLinkSchema = z.object({
     amountInCents: z.number().int().positive(),
     description: z.string().trim().min(1).max(500),
-    customerEmail: z.email().transform((value) => value.trim().toLowerCase()),
+    customerEmail: z
+        .email()
+        .transform((value) => value.trim().toLowerCase())
+        .optional(),
     expiresAt: z.iso.datetime({ offset: true }).optional()
 });
 

@@ -41,13 +41,10 @@ function paymentLink(overrides: Record<string, unknown> = {}) {
     };
 }
 
-test("admin creates a personalized payment link with amount, description and expiration", async () => {
+test("admin creates a personalized payment link without requiring customer email", async () => {
     let providerInput: Record<string, unknown> | undefined;
     let persistedInput: Record<string, unknown> | undefined;
-    const stored = paymentLink({
-        customerEmail: "cliente@example.com",
-        expiresAt: new Date("2029-08-06T00:00:00.000Z")
-    });
+    const stored = paymentLink({ expiresAt: new Date("2029-08-06T00:00:00.000Z") });
     const prisma = {
         user: { findUnique: async () => ({ id: 2 }) },
         paymentLink: {
@@ -68,7 +65,6 @@ test("admin creates a personalized payment link with amount, description and exp
     const result = await service.create(creator.uuid, {
         amountInCents: 12500,
         description: "Encomenda personalizada",
-        customerEmail: "Cliente@Example.com",
         expiresAt: "2029-08-06T00:00:00.000Z"
     });
 
@@ -76,7 +72,7 @@ test("admin creates a personalized payment link with amount, description and exp
     assert.equal(providerInput?.price, 12500);
     assert.equal(providerInput?.description, "Encomenda personalizada");
     assert.equal(persistedInput?.amountInCents, 12500);
-    assert.equal(persistedInput?.customerEmail, "cliente@example.com");
+    assert.equal(persistedInput?.customerEmail, undefined);
     assert.deepStrictEqual(persistedInput?.expiresAt, new Date("2029-08-06T00:00:00.000Z"));
 });
 

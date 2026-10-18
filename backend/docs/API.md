@@ -3016,7 +3016,6 @@ Body:
 {
     "amountInCents": 12500,
     "description": "Encomenda personalizada para Maria",
-    "customerEmail": "maria@example.com",
     "expiresAt": "2026-08-15T23:59:59-03:00"
 }
 ```
@@ -3025,8 +3024,8 @@ Regras:
 
 - `amountInCents` deve ser um inteiro positivo;
 - `description` e obrigatoria e aceita de 1 a 500 caracteres;
-- `customerEmail` e obrigatorio e recebe a confirmacao quando o webhook comprovar o pagamento;
 - `expiresAt` e opcional, deve ser uma data/hora ISO 8601 futura e pode conter offset;
+- o email de confirmacao nao e exigido nesta etapa; ele e informado pelo pagador ao abrir o checkout publico;
 - a cobranca e o produto correspondente sao criados uma unica vez na AbacatePay;
 - configure `PAYMENT_LINK_PUBLIC_BASE_URL` com a URL publica do frontend, sem o UUID final. Exemplo: `https://atelie.guadalupe/checkout/manual`.
 
@@ -3040,7 +3039,7 @@ Resposta `201`:
             "uuid": "0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
             "amountInCents": 12500,
             "description": "Encomenda personalizada para Maria",
-            "customerEmail": "maria@example.com",
+            "customerEmail": null,
             "expiresAt": "2026-08-16T02:59:59.000Z",
             "status": "ACTIVE",
             "paymentUrl": "https://atelie.guadalupe/checkout/manual/0195f4aa-7f18-7db5-9f32-06f4a9a2b411",
